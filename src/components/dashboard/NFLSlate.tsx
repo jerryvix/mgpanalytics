@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Loader2, Signal, TrendingUp } from "lucide-react";
+import { Loader2, Signal, TrendingUp, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 
@@ -30,13 +30,25 @@ interface Odd {
   total_under_odds: number | null;
 }
 
+// Map game_id to DraftKings odds for card display
+type GameOddsMap = Record<number, Odd | null>;
+
+const SPORTSBOOKS = ["draftkings", "fanduel", "caesars", "betrivers"];
+const SPORTSBOOK_LABELS: Record<string, string> = {
+  draftkings: "DraftKings",
+  fanduel: "FanDuel",
+  caesars: "Caesars",
+  betrivers: "BetRivers",
+};
+
 export function NFLSlate() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const [odds, setOdds] = useState<Odd[]>([]);
+  const [allOdds, setAllOdds] = useState<Odd[]>([]);
   const [oddsLoading, setOddsLoading] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
 
   useEffect(() => {
     fetchGames();
@@ -44,45 +56,72 @@ export function NFLSlate() {
 
   const fetchGames = async () => {
     setLoading(true);
-    // Fetch all NFL games, then filter out completed ones client-side
-    // Status values vary: "Final", "Final/OT", or scheduled times like "1/17 - 4:30 PM EST"
-    const { data, error } = await supabase
+    
+    // Fetch all NFL games
+    const { data: gamesData, error: gamesError } = await supabase
       .from("games")
       .select("*")
       .eq("league", "NFL")
       .order("date", { ascending: true });
 
-    if (error) {
-      console.error("Error fetching games:", error);
-    } else {
-      // Filter out games that are completed (status starts with "Final")
-      const upcomingGames = (data || []).filter(
-        (game) => !game.status.toLowerCase().startsWith("final")
-      );
-      console.log("All NFL games:", data);
-      console.log("Upcoming games (non-Final):", upcomingGames);
-      setGames(upcomingGames);
+    if (gamesError) {
+      console.error("Error fetching games:", gamesError);
+      setLoading(false);
+      return;
     }
+
+    // Filter out completed games
+    const upcomingGames = (gamesData || []).filter(
+      (game) => !game.status.toLowerCase().startsWith("final")
+    );
+    console.log("All NFL games:", gamesData);
+    console.log("Upcoming games (non-Final):", upcomingGames);
+    setGames(upcomingGames);
+
+    // Fetch DraftKings odds for all upcoming games to display on cards
+    if (upcomingGames.length > 0) {
+      const gameIds = upcomingGames.map((g) => g.id);
+      const { data: oddsData, error: oddsError } = await supabase
+        .from("odds")
+        .select("*")
+        .in("game_id", gameIds)
+        .ilike("sportsbook", "%draftkings%");
+
+      if (oddsError) {
+        console.error("Error fetching DraftKings odds:", oddsError);
+      } else {
+        // Create map of game_id -> DraftKings odds
+        const oddsMap: GameOddsMap = {};
+        (oddsData || []).forEach((odd) => {
+          oddsMap[odd.game_id] = odd;
+        });
+        setGameOddsMap(oddsMap);
+        console.log("DraftKings odds map:", oddsMap);
+      }
+    }
+
     setLoading(false);
   };
 
-  const handleViewOdds = async (game: Game, e: React.MouseEvent) => {
+  const handleViewAllOdds = async (game: Game, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedGame(game);
     setSheetOpen(true);
     setOddsLoading(true);
-    setOdds([]);
+    setAllOdds([]);
 
+    // Fetch ALL sportsbooks for this game
     const { data, error } = await supabase
       .from("odds")
       .select("*")
       .eq("game_id", game.id)
-      .ilike("sportsbook", "%draftkings%");
+      .in("sportsbook", SPORTSBOOKS);
 
     if (error) {
-      console.error("Error fetching odds:", error);
+      console.error("Error fetching all odds:", error);
     } else {
-      setOdds(data || []);
+      console.log("All odds for game:", data);
+      setAllOdds(data || []);
     }
     setOddsLoading(false);
   };
@@ -113,17 +152,20 @@ export function NFLSlate() {
   };
 
   const formatPrice = (price: number | null) => {
-    if (price === null) return "—";
+    if (price === null) return "N/A";
     return price >= 0 ? `+${price}` : `${price}`;
   };
 
   const formatLine = (line: number | null) => {
-    if (line === null) return "—";
+    if (line === null) return "N/A";
     return line >= 0 ? `+${line}` : `${line}`;
   };
 
+  const getOddsBySportsbook = (sportsbook: string): Odd | undefined => {
+    return allOdds.find((o) => o.sportsbook.toLowerCase().includes(sportsbook));
+  };
+
   const scheduledGamesCount = games.length;
-  const dkOdds = odds.length > 0 ? odds[0] : null;
 
   return (
     <div className="space-y-6">
@@ -138,7 +180,7 @@ export function NFLSlate() {
             NFL SLATE
           </h1>
           <p className="text-sm text-muted-foreground font-mono">
-            Upcoming Games
+            Upcoming Games with Live Odds
           </p>
         </div>
         <Badge variant="outline" className="border-terminal-green text-terminal-green font-mono">
@@ -166,182 +208,249 @@ export function NFLSlate() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
         >
-          {games.map((game, index) => (
-            <motion.div
-              key={game.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card className="bg-card border-terminal-green/30 hover:border-terminal-green/60 transition-all">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-                      {formatGameTime(game.date)}
-                    </span>
-                    {getStatusBadge(game.status)}
-                  </div>
+          {games.map((game, index) => {
+            const dkOdds = gameOddsMap[game.id];
+            
+            return (
+              <motion.div
+                key={game.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Card className="bg-card border-terminal-green/30 hover:border-terminal-green/60 transition-all">
+                  <CardContent className="p-4">
+                    {/* Header row */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+                        {formatGameTime(game.date)}
+                      </span>
+                      {getStatusBadge(game.status)}
+                    </div>
 
-                  <div className="font-mono text-lg text-foreground">
-                    <span className="font-bold">{game.home_team_name}</span>
-                    <span className="text-terminal-green mx-2">vs</span>
-                    <span className="font-bold">{game.visitor_team_name}</span>
-                  </div>
+                    {/* Matchup */}
+                    <div className="font-mono text-base text-foreground mb-4">
+                      <span className="font-bold">{game.home_team_name}</span>
+                      <span className="text-terminal-green mx-2">vs</span>
+                      <span className="font-bold">{game.visitor_team_name}</span>
+                    </div>
 
-                  <div className="mt-4">
+                    {/* DraftKings Odds Section */}
+                    <div className="bg-terminal-green/5 border border-terminal-green/20 rounded-lg p-3 mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="w-3 h-3 text-terminal-green" />
+                        <span className="font-mono text-[10px] text-terminal-green uppercase tracking-wider">
+                          DraftKings Odds
+                        </span>
+                      </div>
+
+                      {dkOdds ? (
+                        <div className="space-y-2 font-mono text-xs">
+                          {/* Spread */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">SPREAD:</span>
+                            <span className="text-foreground">
+                              {dkOdds.spread_value !== null ? (
+                                <>
+                                  {game.home_team_name.split(" ").pop()} {formatLine(dkOdds.spread_value)}{" "}
+                                  <span className="text-terminal-green">({formatPrice(dkOdds.spread_odds)})</span>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Moneyline */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">ML:</span>
+                            <span className="text-foreground">
+                              {dkOdds.moneyline_home !== null || dkOdds.moneyline_away !== null ? (
+                                <>
+                                  {game.home_team_name.split(" ").pop()}{" "}
+                                  <span className="text-terminal-green">{formatPrice(dkOdds.moneyline_home)}</span>
+                                  <span className="text-muted-foreground mx-1">|</span>
+                                  {game.visitor_team_name.split(" ").pop()}{" "}
+                                  <span className="text-terminal-amber">{formatPrice(dkOdds.moneyline_away)}</span>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Total */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">TOTAL:</span>
+                            <span className="text-foreground">
+                              {dkOdds.total_value !== null ? (
+                                <>
+                                  <span className="text-terminal-amber">{dkOdds.total_value}</span>
+                                  <span className="text-muted-foreground ml-1">
+                                    O ({formatPrice(dkOdds.total_over_odds)}) / U ({formatPrice(dkOdds.total_under_odds)})
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground font-mono">
+                          Odds not available yet
+                        </p>
+                      )}
+                    </div>
+
+                    {/* View All Odds Button */}
                     <Button
-                      onClick={(e) => handleViewOdds(game, e)}
+                      onClick={(e) => handleViewAllOdds(game, e)}
                       className="w-full bg-terminal-green/20 hover:bg-terminal-green/30 text-terminal-green border border-terminal-green/50 font-mono text-sm"
                       variant="outline"
                     >
                       <TrendingUp className="w-4 h-4 mr-2" />
-                      View Odds
+                      View All Odds
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
         </motion.div>
       )}
 
-      {/* DraftKings Odds Side Panel */}
+      {/* All Sportsbooks Odds Panel */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="bg-background border-l border-terminal-green/30 w-full sm:max-w-lg">
-          <SheetHeader className="flex flex-row items-center justify-between">
+        <SheetContent className="bg-background border-l border-terminal-green/30 w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center justify-between pb-4 border-b border-terminal-green/20">
             <SheetTitle className="font-mono text-foreground">
               {selectedGame && (
-                <span className="text-lg">
-                  {selectedGame.home_team_name} vs {selectedGame.visitor_team_name}
-                </span>
+                <div>
+                  <span className="text-lg">
+                    {selectedGame.home_team_name} vs {selectedGame.visitor_team_name}
+                  </span>
+                  <p className="text-xs text-muted-foreground font-normal mt-1">
+                    {formatGameTime(selectedGame.date)}
+                  </p>
+                </div>
               )}
             </SheetTitle>
           </SheetHeader>
 
-          <div className="mt-6">
+          <div className="mt-6 space-y-6">
             {oddsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-5 h-5 animate-spin text-terminal-green" />
                 <span className="ml-2 font-mono text-sm text-muted-foreground">
-                  FETCHING DRAFTKINGS ODDS...
+                  FETCHING ALL ODDS...
                 </span>
               </div>
-            ) : !dkOdds ? (
+            ) : allOdds.length === 0 ? (
               <div className="border border-terminal-amber/30 rounded-lg p-6 bg-card">
                 <div className="text-center font-mono">
                   <Signal className="w-8 h-8 mx-auto mb-4 text-terminal-amber" />
-                  <p className="text-terminal-amber">DraftKings odds not available</p>
+                  <p className="text-terminal-amber">No odds available</p>
                   <p className="text-xs text-muted-foreground mt-2">
                     Odds data may not have been synced yet
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-6">
-                <div className="flex items-center gap-2 pb-4 border-b border-terminal-green/20">
-                  <Signal className="w-4 h-4 text-terminal-green" />
-                  <span className="font-mono text-xs text-terminal-green tracking-wider uppercase">
-                    DraftKings Odds
-                  </span>
-                </div>
+              /* Sportsbook sections */
+              SPORTSBOOKS.map((sportsbook) => {
+                const odds = getOddsBySportsbook(sportsbook);
+                
+                return (
+                  <div key={sportsbook} className="border border-terminal-green/20 rounded-lg overflow-hidden">
+                    {/* Sportsbook Header */}
+                    <div className="bg-terminal-green/10 px-4 py-2 border-b border-terminal-green/20">
+                      <span className="font-mono text-sm font-bold text-terminal-green">
+                        {SPORTSBOOK_LABELS[sportsbook]}
+                      </span>
+                    </div>
 
-                <div className="space-y-6">
-                  {/* Spread */}
-                  <div className="space-y-2">
-                    <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                      Spread
-                    </h3>
-                    <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
-                      {dkOdds.spread_value !== null ? (
-                        <div className="font-mono text-sm flex justify-between items-center">
-                          <span className="text-foreground">
-                            {selectedGame?.home_team_name}{" "}
-                            <span className="text-terminal-amber">
-                              {formatLine(dkOdds.spread_value)}
-                            </span>
-                            <span className="text-muted-foreground ml-1">
-                              ({formatPrice(dkOdds.spread_odds)})
-                            </span>
-                          </span>
-                          <span className="text-terminal-green mx-2">|</span>
-                          <span className="text-foreground">
-                            {selectedGame?.visitor_team_name}{" "}
-                            <span className="text-terminal-amber">
-                              {formatLine(dkOdds.spread_value ? -dkOdds.spread_value : null)}
-                            </span>
-                            <span className="text-muted-foreground ml-1">
-                              ({formatPrice(dkOdds.spread_odds)})
-                            </span>
-                          </span>
-                        </div>
+                    <div className="p-4 space-y-4 bg-card">
+                      {odds ? (
+                        <>
+                          {/* Spread */}
+                          <div>
+                            <h4 className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+                              Spread
+                            </h4>
+                            <div className="font-mono text-sm">
+                              {odds.spread_value !== null ? (
+                                <div className="flex justify-between items-center">
+                                  <span>
+                                    {selectedGame?.home_team_name}{" "}
+                                    <span className="text-terminal-amber">{formatLine(odds.spread_value)}</span>
+                                    <span className="text-muted-foreground ml-1">({formatPrice(odds.spread_odds)})</span>
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Moneyline */}
+                          <div>
+                            <h4 className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+                              Moneyline
+                            </h4>
+                            <div className="font-mono text-sm">
+                              {odds.moneyline_home !== null || odds.moneyline_away !== null ? (
+                                <div className="flex justify-between items-center gap-4">
+                                  <span>
+                                    {selectedGame?.home_team_name}{" "}
+                                    <span className="text-terminal-green">{formatPrice(odds.moneyline_home)}</span>
+                                  </span>
+                                  <span className="text-terminal-green/50">|</span>
+                                  <span>
+                                    {selectedGame?.visitor_team_name}{" "}
+                                    <span className="text-terminal-amber">{formatPrice(odds.moneyline_away)}</span>
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Total */}
+                          <div>
+                            <h4 className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+                              Total
+                            </h4>
+                            <div className="font-mono text-sm">
+                              {odds.total_value !== null ? (
+                                <div className="flex justify-between items-center">
+                                  <span>
+                                    <span className="text-terminal-amber">{odds.total_value}</span>{" "}
+                                    Over <span className="text-muted-foreground">({formatPrice(odds.total_over_odds)})</span>
+                                  </span>
+                                  <span className="text-terminal-green/50">/</span>
+                                  <span>
+                                    Under <span className="text-muted-foreground">({formatPrice(odds.total_under_odds)})</span>
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </div>
+                          </div>
+                        </>
                       ) : (
-                        <span className="text-muted-foreground text-sm">Not available</span>
+                        <p className="font-mono text-sm text-muted-foreground">
+                          No odds available for this sportsbook
+                        </p>
                       )}
                     </div>
                   </div>
-
-                  {/* Moneyline */}
-                  <div className="space-y-2">
-                    <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                      Moneyline
-                    </h3>
-                    <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
-                      {dkOdds.moneyline_home !== null || dkOdds.moneyline_away !== null ? (
-                        <div className="font-mono text-sm flex justify-between items-center">
-                          <span className="text-foreground">
-                            {selectedGame?.home_team_name}{" "}
-                            <span className={dkOdds.moneyline_home && dkOdds.moneyline_home < 0 ? "text-terminal-green" : "text-terminal-amber"}>
-                              {formatPrice(dkOdds.moneyline_home)}
-                            </span>
-                          </span>
-                          <span className="text-terminal-green mx-2">|</span>
-                          <span className="text-foreground">
-                            {selectedGame?.visitor_team_name}{" "}
-                            <span className={dkOdds.moneyline_away && dkOdds.moneyline_away > 0 ? "text-terminal-amber" : "text-terminal-green"}>
-                              {formatPrice(dkOdds.moneyline_away)}
-                            </span>
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">Not available</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Total */}
-                  <div className="space-y-2">
-                    <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                      Total
-                    </h3>
-                    <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
-                      {dkOdds.total_value !== null ? (
-                        <div className="font-mono text-sm flex justify-between items-center">
-                          <span className="text-foreground">
-                            <span className="text-terminal-amber">
-                              {dkOdds.total_value}
-                            </span>{" "}
-                            Over{" "}
-                            <span className="text-muted-foreground">
-                              ({formatPrice(dkOdds.total_over_odds)})
-                            </span>
-                          </span>
-                          <span className="text-terminal-green mx-2">/</span>
-                          <span className="text-foreground">
-                            Under{" "}
-                            <span className="text-muted-foreground">
-                              ({formatPrice(dkOdds.total_under_odds)})
-                            </span>
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">Not available</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                );
+              })
             )}
           </div>
         </SheetContent>
