@@ -105,12 +105,12 @@
   }
 
   html {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Space Grotesk', sans-serif;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: 'Space Grotesk', sans-serif;
   }
 
   /* Custom scrollbar for terminal feel */
