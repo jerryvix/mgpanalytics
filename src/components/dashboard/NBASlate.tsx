@@ -236,71 +236,72 @@ export function NBASlate() {
                     </div>
 
                     {/* DraftKings Odds Section */}
-                    <div className="bg-terminal-green/5 border border-terminal-green/20 rounded-lg p-3 mb-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="w-3 h-3 text-terminal-green" />
-                        <span className="font-mono text-[10px] text-terminal-green uppercase tracking-wider">
-                          DraftKings Odds
-                        </span>
+                    <div className={`border rounded-lg p-3 mb-3 ${dkOdds ? 'bg-terminal-green/5 border-terminal-green/20' : 'bg-muted/20 border-muted-foreground/20'}`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className={`w-3 h-3 ${dkOdds ? 'text-terminal-green' : 'text-muted-foreground'}`} />
+                          <span className={`font-mono text-[10px] uppercase tracking-wider ${dkOdds ? 'text-terminal-green' : 'text-muted-foreground'}`}>
+                            DraftKings Odds
+                          </span>
+                        </div>
+                        {!dkOdds && (
+                          <Badge variant="outline" className="text-[9px] font-mono border-muted-foreground/30 text-muted-foreground">
+                            PENDING
+                          </Badge>
+                        )}
                       </div>
 
-                      {dkOdds ? (
-                        <div className="space-y-2 font-mono text-xs">
-                          {/* Spread */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">SPREAD:</span>
-                            <span className="text-foreground">
-                              {dkOdds.spread_value !== null ? (
-                                <>
-                                  {game.home_team_name.split(" ").pop()} {formatLine(dkOdds.spread_value)}{" "}
-                                  <span className="text-terminal-green">({formatPrice(dkOdds.spread_odds)})</span>
-                                </>
-                              ) : (
-                                <span className="text-muted-foreground">N/A</span>
-                              )}
-                            </span>
-                          </div>
-
-                          {/* Moneyline */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">ML:</span>
-                            <span className="text-foreground">
-                              {dkOdds.moneyline_home !== null || dkOdds.moneyline_away !== null ? (
-                                <>
-                                  {game.home_team_name.split(" ").pop()}{" "}
-                                  <span className="text-terminal-green">{formatPrice(dkOdds.moneyline_home)}</span>
-                                  <span className="text-muted-foreground mx-1">|</span>
-                                  {game.visitor_team_name.split(" ").pop()}{" "}
-                                  <span className="text-terminal-amber">{formatPrice(dkOdds.moneyline_away)}</span>
-                                </>
-                              ) : (
-                                <span className="text-muted-foreground">N/A</span>
-                              )}
-                            </span>
-                          </div>
-
-                          {/* Total */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-muted-foreground">TOTAL:</span>
-                            <span className="text-foreground">
-                              {dkOdds.total_value !== null ? (
-                                <>
-                                  <span className="text-terminal-amber">{dkOdds.total_value}</span>
-                                  <span className="text-muted-foreground ml-1">
-                                    O ({formatPrice(dkOdds.total_over_odds)}) / U ({formatPrice(dkOdds.total_under_odds)})
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-muted-foreground">N/A</span>
-                              )}
-                            </span>
-                          </div>
+                      <div className="space-y-2 font-mono text-xs">
+                        {/* Spread */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">SPREAD:</span>
+                          <span className="text-foreground">
+                            {dkOdds && dkOdds.spread_value !== null ? (
+                              <>
+                                {game.home_team_name.split(" ").pop()} {formatLine(dkOdds.spread_value)}{" "}
+                                <span className="text-terminal-green">({formatPrice(dkOdds.spread_odds)})</span>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground/50">-- vs -- (--)</span>
+                            )}
+                          </span>
                         </div>
-                      ) : (
-                        <p className="text-[11px] text-muted-foreground font-mono">
-                          Odds not available yet
-                        </p>
-                      )}
+
+                        {/* Moneyline */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">ML:</span>
+                          <span className="text-foreground">
+                            {dkOdds && (dkOdds.moneyline_home !== null || dkOdds.moneyline_away !== null) ? (
+                              <>
+                                {game.home_team_name.split(" ").pop()}{" "}
+                                <span className="text-terminal-green">{formatPrice(dkOdds.moneyline_home)}</span>
+                                <span className="text-muted-foreground mx-1">|</span>
+                                {game.visitor_team_name.split(" ").pop()}{" "}
+                                <span className="text-terminal-amber">{formatPrice(dkOdds.moneyline_away)}</span>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground/50">-- | --</span>
+                            )}
+                          </span>
+                        </div>
+
+                        {/* Total */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">TOTAL:</span>
+                          <span className="text-foreground">
+                            {dkOdds && dkOdds.total_value !== null ? (
+                              <>
+                                <span className="text-terminal-amber">{dkOdds.total_value}</span>
+                                <span className="text-muted-foreground ml-1">
+                                  O ({formatPrice(dkOdds.total_over_odds)}) / U ({formatPrice(dkOdds.total_under_odds)})
+                                </span>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground/50">-- Over (--) / Under (--)</span>
+                            )}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     {/* View All Odds Button */}
@@ -350,9 +351,12 @@ export function NBASlate() {
               <div className="border border-terminal-amber/30 rounded-lg p-6 bg-card">
                 <div className="text-center font-mono">
                   <Signal className="w-8 h-8 mx-auto mb-4 text-terminal-amber" />
-                  <p className="text-terminal-amber">No odds available</p>
+                  <p className="text-terminal-amber">Odds data not yet available</p>
                   <p className="text-xs text-muted-foreground mt-2">
-                    Odds data may not have been synced yet
+                    Check back soon for live odds
+                  </p>
+                  <p className="text-[10px] text-muted-foreground/70 mt-3 max-w-xs mx-auto">
+                    Live odds from DraftKings, FanDuel, Caesars, and BetRivers coming soon
                   </p>
                 </div>
               </div>
