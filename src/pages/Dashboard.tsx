@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { DashboardContent } from "@/components/DashboardContent";
+import { ChatPanel } from "@/components/chatbot";
 import { User } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
@@ -90,6 +91,7 @@ const Dashboard = () => {
         <main className="flex-1 overflow-auto">
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
+        <ChatPanel />
       </div>
     </SidebarProvider>
   );
