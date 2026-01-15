@@ -2,3 +2,6 @@ project_id = "pgrrbkhxukxvzzauviyp"
 
 [functions.sync-nfl-games]
 verify_jwt = false
+
+[functions.sync-nfl-odds]
+verify_jwt = false

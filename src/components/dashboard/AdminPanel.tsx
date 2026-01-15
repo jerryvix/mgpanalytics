@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 
 export function AdminPanel() {
   const [isSyncingNFL, setIsSyncingNFL] = useState(false);
+  const [isSyncingOdds, setIsSyncingOdds] = useState(false);
 
   const handleSyncNFLGames = async () => {
     setIsSyncingNFL(true);
@@ -32,6 +33,31 @@ export function AdminPanel() {
       });
     } finally {
       setIsSyncingNFL(false);
+    }
+  };
+
+  const handleSyncNFLOdds = async () => {
+    setIsSyncingOdds(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-nfl-odds");
+      
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Bloomberg Feed: NFL Odds Synced",
+        description: `Successfully synced ${data.count} odds.`,
+      });
+    } catch (error: any) {
+      console.error("Sync error:", error);
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync NFL odds",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingOdds(false);
     }
   };
 
@@ -156,6 +182,20 @@ export function AdminPanel() {
               <Button variant="outline" size="sm" className="w-full justify-start font-mono text-xs">
                 <Database className="w-3 h-3 mr-2" />
                 Clear Cache
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full justify-start font-mono text-xs"
+                onClick={handleSyncNFLOdds}
+                disabled={isSyncingOdds}
+              >
+                {isSyncingOdds ? (
+                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3 h-3 mr-2" />
+                )}
+                Sync NFL Odds
               </Button>
             </CardContent>
           </Card>
