@@ -250,7 +250,7 @@ export function ChatPanel() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="w-12 h-full bg-card border-l border-border flex flex-col items-center py-4"
+            className="w-14 h-full bg-card border-l border-border flex flex-col items-center py-4"
           >
             <Button
               variant="ghost"
@@ -261,14 +261,16 @@ export function ChatPanel() {
               <PanelRightClose className="w-5 h-5" />
             </Button>
             <div className="flex-1 flex items-center">
-              <span
-                className="text-xs font-mono text-muted-foreground font-semibold tracking-wider"
+              <div 
+                className="px-2 py-3 rounded-md bg-terminal-green/10 border border-terminal-green/30"
                 style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
               >
-                MGP ANALYST
-              </span>
+                <span className="text-xs font-semibold tracking-wider text-terminal-green">
+                  MGP ANALYST
+                </span>
+              </div>
             </div>
-            <MessageCircle className="w-4 h-4 text-terminal-green/60 mt-3" />
+            <MessageCircle className="w-4 h-4 text-terminal-green mt-3" />
           </motion.div>
         )}
       </AnimatePresence>

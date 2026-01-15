@@ -204,8 +204,8 @@ export function DashboardHome() {
         transition={{ duration: 0.5 }}
         className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20"
       >
-        <h1 className="text-3xl md:text-5xl font-bold text-foreground text-center tracking-tight mb-8">
-          WHAT DO YOU WANT TO KNOW?
+        <h1 className="text-2xl md:text-4xl font-semibold text-foreground text-center tracking-tight mb-8">
+          What's on your mind today?
         </h1>
 
         <form onSubmit={handleSubmit} className="w-full max-w-2xl mb-6">
