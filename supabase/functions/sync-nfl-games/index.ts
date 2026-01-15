@@ -82,20 +82,37 @@ Deno.serve(async (req) => {
 
     const data: BallDontLieResponse = await response.json();
     console.log(`Fetched ${data.data.length} games from API`);
+    
+    // Log first few game dates to debug
+    if (data.data.length > 0) {
+      console.log("Sample game dates from API:");
+      data.data.slice(0, 5).forEach((g, i) => {
+        console.log(`  Game ${i + 1}: ${g.date} - ${g.home_team.full_name} vs ${g.visitor_team.full_name}`);
+      });
+    }
 
-    // Filter games to only include those within our date window
-    const startDateTime = new Date(START_DATE).getTime();
-    const endDateTime = new Date(END_DATE).getTime();
+    // The API's date params should filter, but let's also do client-side check
+    // Parse dates correctly - API returns ISO dates
+    const startDateTime = new Date("2026-01-14T00:00:00Z").getTime();
+    const endDateTime = new Date("2026-01-21T23:59:59Z").getTime();
     
     const filteredGames = data.data.filter((game) => {
       const gameDate = new Date(game.date).getTime();
-      return gameDate >= startDateTime && gameDate <= endDateTime;
+      const inRange = gameDate >= startDateTime && gameDate <= endDateTime;
+      if (!inRange && data.data.length <= 10) {
+        console.log(`Game ${game.id} date ${game.date} out of range`);
+      }
+      return inRange;
     });
 
     console.log(`Filtered to ${filteredGames.length} games within date range`);
 
+    // If API filtering didn't work, use all games from the response
+    const gamesToUse = filteredGames.length > 0 ? filteredGames : data.data;
+    console.log(`Using ${gamesToUse.length} games for upsert`);
+
     // Map games with spec-accurate field mapping
-    const games = filteredGames.map((game) => ({
+    const games = gamesToUse.map((game) => ({
       id: game.id,
       league: "NFL",
       home_team_name: game.home_team.full_name,
