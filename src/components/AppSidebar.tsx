@@ -23,11 +23,15 @@ import {
   LogOut,
   Eye,
   EyeOff,
-  PenLine
+  PenLine,
+  MessageSquare,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useChat } from "@/contexts/ChatContext";
 
 interface AppSidebarProps {
   user: User;
@@ -35,13 +39,6 @@ interface AppSidebarProps {
   isPreviewingAsUser?: boolean;
   onTogglePreview?: () => void;
 }
-
-// Primary navigation - New Conversation starts fresh chat
-const primaryMenuItem = {
-  title: "New Conversation",
-  url: "/dashboard",
-  icon: PenLine,
-};
 
 // Sports slates - secondary navigation with logos
 const sportsMenuItems = [
@@ -63,6 +60,13 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
   const collapsed = state === "collapsed";
   const navigate = useNavigate();
   const location = useLocation();
+  const { 
+    conversations, 
+    conversationsLoading, 
+    activeConversationId,
+    startNewConversation,
+    loadConversation 
+  } = useChat();
   
   // Use preview mode to show user view when testing
   const effectiveIsAdmin = isAdmin && !isPreviewingAsUser;
@@ -77,6 +81,18 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
       });
       navigate("/");
     }
+  };
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    if (diffHours < 1) return "Just now";
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffHours < 48) return "Yesterday";
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
   };
 
   return (
@@ -103,26 +119,69 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
       </SidebarHeader>
 
       <SidebarContent className="p-2">
-        {/* Primary Navigation */}
+        {/* New Conversation Button */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <NavLink 
-                    to={primaryMenuItem.url} 
-                    end
-                    className="flex items-center gap-3 px-3 py-2 rounded text-terminal-green hover:bg-terminal-green/10 transition-colors font-medium"
-                    activeClassName="bg-terminal-green/20 text-terminal-green"
+                  <button 
+                    onClick={() => {
+                      navigate("/dashboard");
+                      startNewConversation();
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2 rounded text-terminal-green hover:bg-terminal-green/10 transition-colors font-medium"
                   >
-                    <primaryMenuItem.icon className="w-4 h-4" />
-                    {!collapsed && <span className="text-sm">{primaryMenuItem.title}</span>}
-                  </NavLink>
+                    <PenLine className="w-4 h-4" />
+                    {!collapsed && <span className="text-sm">New Conversation</span>}
+                  </button>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Chat History */}
+        {!collapsed && (
+          <SidebarGroup className="mt-4">
+            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
+              Recent Chats
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <ScrollArea className="max-h-40">
+                <SidebarMenu>
+                  {conversationsLoading ? (
+                    <div className="px-3 py-2 text-xs text-sidebar-foreground/50">Loading...</div>
+                  ) : conversations.length === 0 ? (
+                    <div className="px-3 py-2 text-xs text-sidebar-foreground/50">No conversations yet</div>
+                  ) : (
+                    conversations.slice(0, 10).map((conv) => (
+                      <SidebarMenuItem key={conv.id}>
+                        <SidebarMenuButton asChild>
+                          <button
+                            onClick={() => {
+                              navigate("/dashboard");
+                              loadConversation(conv.id);
+                            }}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent transition-colors text-left ${
+                              activeConversationId === conv.id ? "bg-sidebar-accent text-terminal-green" : ""
+                            }`}
+                          >
+                            <MessageSquare className="w-3 h-3 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs truncate">{conv.title}</p>
+                              <p className="text-[10px] text-sidebar-foreground/50">{formatDate(conv.updated_at)}</p>
+                            </div>
+                          </button>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))
+                  )}
+                </SidebarMenu>
+              </ScrollArea>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Sports */}
         <SidebarGroup className="mt-4">
