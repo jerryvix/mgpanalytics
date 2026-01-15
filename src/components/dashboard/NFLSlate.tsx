@@ -146,7 +146,7 @@ export function NFLSlate() {
     }
     return (
       <Badge className="bg-terminal-green/10 text-terminal-green border-terminal-green/50 text-[10px] font-mono">
-        SCHEDULED
+        UPCOMING
       </Badge>
     );
   };
@@ -165,7 +165,10 @@ export function NFLSlate() {
     return allOdds.find((o) => o.sportsbook.toLowerCase().includes(sportsbook));
   };
 
-  const scheduledGamesCount = games.length;
+  // Count only scheduled games (not live ones)
+  const scheduledGamesCount = games.filter(
+    (g) => g.status.toLowerCase() === "scheduled"
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -308,10 +311,11 @@ export function NFLSlate() {
                     {/* View All Odds Button */}
                     <Button
                       onClick={(e) => handleViewAllOdds(game, e)}
-                      className="w-full bg-terminal-green/20 hover:bg-terminal-green/30 text-terminal-green border border-terminal-green/50 font-mono text-sm"
+                      className="w-full h-8 bg-terminal-green/20 hover:bg-terminal-green/30 text-terminal-green border border-terminal-green/50 font-mono text-xs py-1"
                       variant="outline"
+                      size="sm"
                     >
-                      <TrendingUp className="w-4 h-4 mr-2" />
+                      <TrendingUp className="w-3 h-3 mr-1.5" />
                       View All Odds
                     </Button>
                   </CardContent>
