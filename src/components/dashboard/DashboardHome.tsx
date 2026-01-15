@@ -70,19 +70,21 @@ export function DashboardHome() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch NFL games
+      // Fetch NFL games - not final and in the future
       const { data: nflGames } = await supabase
         .from("games")
         .select("*")
-        .in("status", ["scheduled", "SCHEDULED", "live", "LIVE"])
+        .not("status", "ilike", "%final%")
+        .gte("date", new Date().toISOString())
         .order("date", { ascending: true })
         .limit(10);
 
-      // Fetch NBA games
+      // Fetch NBA games - not final and in the future
       const { data: nbaGames } = await supabase
         .from("nba_games")
         .select("*")
-        .in("status", ["scheduled", "SCHEDULED", "live", "LIVE"])
+        .not("status", "ilike", "%final%")
+        .gte("date", new Date().toISOString())
         .order("date", { ascending: true })
         .limit(10);
 
