@@ -5,6 +5,9 @@ interface ChatContextType {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   toggleChat: () => void;
+  pendingQuery: string;
+  setPendingQuery: (query: string) => void;
+  openWithQuery: (query: string) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -13,6 +16,7 @@ const CHAT_OPEN_KEY = "mgp-chat-open";
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
+  const [pendingQuery, setPendingQuery] = useState("");
   
   const [isOpen, setIsOpen] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -45,8 +49,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
   const toggleChat = () => setIsOpen((prev) => !prev);
 
+  const openWithQuery = (query: string) => {
+    setPendingQuery(query);
+    setIsOpen(true);
+  };
+
   return (
-    <ChatContext.Provider value={{ isOpen, setIsOpen, toggleChat }}>
+    <ChatContext.Provider value={{ isOpen, setIsOpen, toggleChat, pendingQuery, setPendingQuery, openWithQuery }}>
       {children}
     </ChatContext.Provider>
   );

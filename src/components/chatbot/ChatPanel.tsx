@@ -16,7 +16,7 @@ interface Message {
 }
 
 export function ChatPanel() {
-  const { isOpen, toggleChat } = useChat();
+  const { isOpen, toggleChat, pendingQuery, setPendingQuery } = useChat();
   const isMobile = useIsMobile();
 
   const [messages, setMessages] = useState<Message[]>([
@@ -45,13 +45,25 @@ export function ChatPanel() {
     }
   }, [isOpen]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  // Handle pending query from hero input
+  useEffect(() => {
+    if (pendingQuery && isOpen && !isLoading) {
+      setInput(pendingQuery);
+      setPendingQuery("");
+      // Auto-submit after a short delay
+      setTimeout(() => {
+        handleSendWithQuery(pendingQuery);
+      }, 100);
+    }
+  }, [pendingQuery, isOpen]);
+
+  const handleSendWithQuery = async (query: string) => {
+    if (!query.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim(),
+      content: query.trim(),
       timestamp: new Date(),
     };
 
@@ -60,7 +72,7 @@ export function ChatPanel() {
     setIsLoading(true);
 
     try {
-      const response = await processQuery(input.trim());
+      const response = await processQuery(query.trim());
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "bot",
@@ -79,6 +91,10 @@ export function ChatPanel() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSend = async () => {
+    handleSendWithQuery(input);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
