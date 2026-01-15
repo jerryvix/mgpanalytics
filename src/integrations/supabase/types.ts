@@ -17,33 +17,33 @@ export type Database = {
       games: {
         Row: {
           created_at: string
-          home_team: string
+          date: string
+          home_team_name: string
           id: number
           league: string
-          start_time: string
           status: string
           updated_at: string
-          visitor_team: string
+          visitor_team_name: string
         }
         Insert: {
           created_at?: string
-          home_team: string
+          date: string
+          home_team_name: string
           id?: number
           league: string
-          start_time: string
           status?: string
           updated_at?: string
-          visitor_team: string
+          visitor_team_name: string
         }
         Update: {
           created_at?: string
-          home_team?: string
+          date?: string
+          home_team_name?: string
           id?: number
           league?: string
-          start_time?: string
           status?: string
           updated_at?: string
-          visitor_team?: string
+          visitor_team_name?: string
         }
         Relationships: []
       }
