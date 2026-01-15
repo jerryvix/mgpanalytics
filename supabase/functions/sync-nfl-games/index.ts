@@ -22,13 +22,9 @@ interface BallDontLieResponse {
   data: NFLGame[];
 }
 
-// Helper to format date as YYYY-MM-DD
-function formatDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
+// Fixed date range for NFL Playoffs
+const START_DATE = "2026-01-14";
+const END_DATE = "2026-01-21";
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -47,49 +43,34 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Calculate dynamic date window
-    const today = new Date();
-    const nextWeek = new Date(today);
-    nextWeek.setDate(today.getDate() + 7);
-    
-    // Calculate 48 hours ago for cleanup
-    const cutoffDate = new Date(today);
-    cutoffDate.setHours(cutoffDate.getHours() - 48);
+    console.log("Starting NFL Playoff sync for 2026-01-14 to 2026-01-21...");
 
-    const startDate = formatDate(today);
-    const endDate = formatDate(nextWeek);
-    const cutoffDateStr = cutoffDate.toISOString();
-
-    console.log(`Dynamic date window: ${startDate} to ${endDate}`);
-    console.log(`Cleanup cutoff: ${cutoffDateStr}`);
-
-    // Cleanup: Delete NFL games older than 48 hours to keep feed fresh
-    console.log("Cleaning up stale NFL games (older than 48 hours)...");
-    const { error: deleteError, count: deletedCount } = await supabase
+    // Delete all 2025 NFL games before fresh sync
+    console.log("Deleting existing 2025 NFL games for clean sync...");
+    const { error: deleteSeasonError } = await supabase
       .from("games")
       .delete()
-      .eq("league", "NFL")
-      .lt("date", cutoffDateStr);
+      .eq("league", "NFL");
 
-    if (deleteError) {
-      console.error("Error deleting old games:", deleteError);
+    if (deleteSeasonError) {
+      console.error("Error deleting season games:", deleteSeasonError);
     } else {
-      console.log(`Cleanup completed, removed ${deletedCount || 0} stale games`);
+      console.log("Cleared existing NFL games");
     }
 
     console.log("Fetching NFL games from BallDontLie API...");
 
-    // Fetch games using dynamic rolling date window
+    // Strict OpenAPI spec parameters
     const url = new URL("https://api.balldontlie.io/nfl/v1/games");
     url.searchParams.append("seasons[]", "2025");
-    url.searchParams.append("start_date", startDate);
-    url.searchParams.append("end_date", endDate);
+    url.searchParams.append("start_date", "2026-01-14");
+    url.searchParams.append("end_date", "2026-01-21");
 
     console.log(`API URL: ${url.toString()}`);
 
     const response = await fetch(url.toString(), {
       headers: {
-        Authorization: apiKey,
+        "Authorization": apiKey,
       },
     });
 
@@ -103,9 +84,8 @@ Deno.serve(async (req) => {
     console.log(`Fetched ${data.data.length} games from API`);
 
     // Filter games to only include those within our date window
-    // API may return full season - we filter to upcoming games only
-    const startDateTime = new Date(startDate).getTime();
-    const endDateTime = new Date(endDate).getTime();
+    const startDateTime = new Date(START_DATE).getTime();
+    const endDateTime = new Date(END_DATE).getTime();
     
     const filteredGames = data.data.filter((game) => {
       const gameDate = new Date(game.date).getTime();
@@ -138,13 +118,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Successfully synced ${games.length} NFL games for ${startDate} to ${endDate}`);
+    console.log(`Successfully synced ${games.length} NFL games for ${START_DATE} to ${END_DATE}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         count: games.length,
-        dateRange: { start: startDate, end: endDate }
+        dateRange: { start: START_DATE, end: END_DATE }
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
