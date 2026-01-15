@@ -165,10 +165,6 @@ export function NFLSlate() {
     return allOdds.find((o) => o.sportsbook.toLowerCase().includes(sportsbook));
   };
 
-  // Count only scheduled games (not live ones)
-  const scheduledGamesCount = games.filter(
-    (g) => g.status.toLowerCase() === "scheduled"
-  ).length;
 
   return (
     <div className="space-y-6">
@@ -186,9 +182,6 @@ export function NFLSlate() {
             Upcoming Games with Live Odds
           </p>
         </div>
-        <Badge variant="outline" className="border-terminal-green text-terminal-green font-mono">
-          {scheduledGamesCount} UPCOMING
-        </Badge>
       </motion.div>
 
       {/* Loading State */}
