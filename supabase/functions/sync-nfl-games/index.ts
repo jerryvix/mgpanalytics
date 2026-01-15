@@ -22,6 +22,14 @@ interface BallDontLieResponse {
   data: NFLGame[];
 }
 
+// Helper to format date as YYYY-MM-DD
+function formatDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -39,26 +47,45 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Cleanup: Delete all existing NFL games to start fresh
-    console.log("Cleaning up all existing NFL games...");
-    const { error: deleteError } = await supabase
+    // Calculate dynamic date window
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(today.getDate() + 7);
+    
+    // Calculate 48 hours ago for cleanup
+    const cutoffDate = new Date(today);
+    cutoffDate.setHours(cutoffDate.getHours() - 48);
+
+    const startDate = formatDate(today);
+    const endDate = formatDate(nextWeek);
+    const cutoffDateStr = cutoffDate.toISOString();
+
+    console.log(`Dynamic date window: ${startDate} to ${endDate}`);
+    console.log(`Cleanup cutoff: ${cutoffDateStr}`);
+
+    // Cleanup: Delete NFL games older than 48 hours to keep feed fresh
+    console.log("Cleaning up stale NFL games (older than 48 hours)...");
+    const { error: deleteError, count: deletedCount } = await supabase
       .from("games")
       .delete()
-      .eq("league", "NFL");
+      .eq("league", "NFL")
+      .lt("date", cutoffDateStr);
 
     if (deleteError) {
       console.error("Error deleting old games:", deleteError);
     } else {
-      console.log("Old games cleanup completed");
+      console.log(`Cleanup completed, removed ${deletedCount || 0} stale games`);
     }
 
-    console.log("Fetching NFL Playoff games from BallDontLie API...");
+    console.log("Fetching NFL games from BallDontLie API...");
 
-    // Fetch games using date range only (most reliable for playoffs)
+    // Fetch games using dynamic rolling date window
     const url = new URL("https://api.balldontlie.io/nfl/v1/games");
     url.searchParams.append("seasons[]", "2025");
-    url.searchParams.append("start_date", "2026-01-14");
-    url.searchParams.append("end_date", "2026-01-21");
+    url.searchParams.append("start_date", startDate);
+    url.searchParams.append("end_date", endDate);
+
+    console.log(`API URL: ${url.toString()}`);
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -75,7 +102,7 @@ Deno.serve(async (req) => {
     const data: BallDontLieResponse = await response.json();
     console.log(`Fetched ${data.data.length} games from API`);
 
-    // Map and upsert games
+    // Map games with spec-accurate field mapping
     const games = data.data.map((game) => ({
       id: game.id,
       league: "NFL",
@@ -88,6 +115,7 @@ Deno.serve(async (req) => {
     if (games.length > 0) {
       console.log("Upserting games to database...");
 
+      // Upsert: update existing games (scores/status) or insert new ones
       const { error } = await supabase
         .from("games")
         .upsert(games, { onConflict: "id" });
@@ -98,10 +126,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Successfully synced ${games.length} NFL Playoff games`);
+    console.log(`Successfully synced ${games.length} NFL games for ${startDate} to ${endDate}`);
 
     return new Response(
-      JSON.stringify({ success: true, count: games.length }),
+      JSON.stringify({ 
+        success: true, 
+        count: games.length,
+        dateRange: { start: startDate, end: endDate }
+      }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
