@@ -17,6 +17,8 @@ interface NFLGame {
   status: string;
   date: string;
   week?: number;
+  postseason: boolean;
+  season: number;
 }
 
 interface BallDontLieResponse {
@@ -40,24 +42,17 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Step 1: Build the exact query parameters per BallDontLie spec
-    const today = new Date("2026-01-14"); // Jan 14, 2026
-    const startDate = today.toISOString().split("T")[0]; // '2026-01-14'
-    const endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0]; // '2026-01-21'
-
+    // KEY CHANGE: Use postseason=true instead of date range
     const params = new URLSearchParams({
-      "seasons[]": "2025", // NFL 2025 season (includes postseason)
-      "start_date": startDate,
-      "end_date": endDate,
+      "seasons[]": "2025",
+      "postseason": "true",
     });
 
     const url = `https://api.balldontlie.io/nfl/v1/games?${params.toString()}`;
 
-    console.log("Fetching from:", url);
+    console.log("Fetching postseason games from:", url);
 
-    // Step 2: Fetch with proper authorization header
+    // Fetch with proper authorization header
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -69,51 +64,59 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("BallDontLie API error:", response.status, errorText);
+      
+      if (response.status === 401) {
+        throw new Error("Authorization failed - check API key");
+      }
       throw new Error(`BallDontLie API error: ${response.status} ${response.statusText}`);
     }
 
     const data: BallDontLieResponse = await response.json();
-    console.log(`Fetched ${data.data?.length || 0} games from BallDontLie`);
+    console.log(`Fetched ${data.data?.length || 0} postseason games from BallDontLie`);
 
     if (!data.data || data.data.length === 0) {
-      console.log("No games found in date range");
+      console.log("No postseason games found");
       return new Response(
-        JSON.stringify({ success: true, count: 0, message: "No games in date range" }),
+        JSON.stringify({ success: true, count: 0, message: "No postseason games found" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
     // Log sample games for debugging
-    console.log("Sample games from API:");
-    data.data.slice(0, 5).forEach((g, i) => {
-      console.log(`  Game ${i + 1}: ${g.date} - ${g.home_team.full_name} vs ${g.visitor_team.full_name}`);
-    });
+    console.log(`Found ${data.data.length} postseason games`);
+    console.log("First game:", JSON.stringify(data.data[0], null, 2));
 
-    // Step 3: Delete existing NFL games to avoid duplicates
+    // Delete existing 2025 postseason games to avoid duplicates
     const { error: deleteError } = await supabase
       .from("games")
       .delete()
-      .eq("league", "NFL");
+      .eq("league", "NFL")
+      .eq("season", 2025)
+      .eq("postseason", true);
 
     if (deleteError) {
       console.error("Delete error:", deleteError);
     } else {
-      console.log("Cleared existing NFL games");
+      console.log("Cleared existing NFL postseason games");
     }
 
-    // Step 4: Transform and upsert games using exact field mapping
+    // Transform and upsert games using exact field mapping
     const gamesToUpsert = data.data.map((game) => ({
       id: game.id,
       league: "NFL",
+      season: 2025,
+      week: game.week || null,
       date: game.date,
       status: game.status,
+      postseason: true,
       home_team_name: game.home_team?.full_name || "Unknown",
       visitor_team_name: game.visitor_team?.full_name || "Unknown",
+      external_id: `nfl_${game.id}`,
     }));
 
-    console.log(`Upserting ${gamesToUpsert.length} games...`);
+    console.log(`Upserting ${gamesToUpsert.length} postseason games...`);
 
-    // Step 5: Upsert (insert or update) games
+    // Upsert (insert or update) games
     const { error: upsertError } = await supabase
       .from("games")
       .upsert(gamesToUpsert, { onConflict: "id" });
@@ -123,13 +126,14 @@ Deno.serve(async (req) => {
       throw new Error(`Database error: ${upsertError.message}`);
     }
 
-    console.log(`Successfully upserted ${gamesToUpsert.length} games`);
+    console.log(`Successfully upserted ${gamesToUpsert.length} postseason games`);
 
-    // Step 6: Fetch updated count for verification
+    // Fetch updated count for verification (postseason games only)
     const { count, error: countError } = await supabase
       .from("games")
       .select("*", { count: "exact", head: true })
-      .eq("league", "NFL");
+      .eq("league", "NFL")
+      .eq("postseason", true);
 
     if (countError) {
       console.error("Count error:", countError);
@@ -141,7 +145,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         count: finalCount,
-        message: `Synced ${gamesToUpsert.length} NFL games`,
+        message: `Successfully synced ${gamesToUpsert.length} postseason games`,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
