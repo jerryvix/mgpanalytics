@@ -16,15 +16,12 @@ interface NFLGame {
   visitor_team: NFLTeam;
   status: string;
   date: string;
+  week?: number;
 }
 
 interface BallDontLieResponse {
   data: NFLGame[];
 }
-
-// Fixed date range for NFL Playoffs
-const START_DATE = "2026-01-14";
-const END_DATE = "2026-01-21";
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -43,105 +40,108 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("Starting NFL Playoff sync for 2026-01-14 to 2026-01-21...");
+    // Step 1: Build the exact query parameters per BallDontLie spec
+    const today = new Date("2026-01-14"); // Jan 14, 2026
+    const startDate = today.toISOString().split("T")[0]; // '2026-01-14'
+    const endDate = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0]; // '2026-01-21'
 
-    // Delete all 2025 NFL games before fresh sync
-    console.log("Deleting existing 2025 NFL games for clean sync...");
-    const { error: deleteSeasonError } = await supabase
-      .from("games")
-      .delete()
-      .eq("league", "NFL");
+    const params = new URLSearchParams({
+      "seasons[]": "2025", // NFL 2025 season (includes postseason)
+      "start_date": startDate,
+      "end_date": endDate,
+    });
 
-    if (deleteSeasonError) {
-      console.error("Error deleting season games:", deleteSeasonError);
-    } else {
-      console.log("Cleared existing NFL games");
-    }
+    const url = `https://api.balldontlie.io/nfl/v1/games?${params.toString()}`;
 
-    console.log("Fetching NFL games from BallDontLie API...");
+    console.log("Fetching from:", url);
 
-    // Strict OpenAPI spec parameters
-    const url = new URL("https://api.balldontlie.io/nfl/v1/games");
-    url.searchParams.append("seasons[]", "2025");
-    url.searchParams.append("start_date", "2026-01-14");
-    url.searchParams.append("end_date", "2026-01-21");
-
-    console.log(`API URL: ${url.toString()}`);
-
-    const response = await fetch(url.toString(), {
+    // Step 2: Fetch with proper authorization header
+    const response = await fetch(url, {
+      method: "GET",
       headers: {
         "Authorization": apiKey,
+        "Content-Type": "application/json",
       },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error("BallDontLie API error:", response.status, errorText);
-      throw new Error(`BallDontLie API error: ${response.status}`);
+      throw new Error(`BallDontLie API error: ${response.status} ${response.statusText}`);
     }
 
     const data: BallDontLieResponse = await response.json();
-    console.log(`Fetched ${data.data.length} games from API`);
-    
-    // Log first few game dates to debug
-    if (data.data.length > 0) {
-      console.log("Sample game dates from API:");
-      data.data.slice(0, 5).forEach((g, i) => {
-        console.log(`  Game ${i + 1}: ${g.date} - ${g.home_team.full_name} vs ${g.visitor_team.full_name}`);
-      });
+    console.log(`Fetched ${data.data?.length || 0} games from BallDontLie`);
+
+    if (!data.data || data.data.length === 0) {
+      console.log("No games found in date range");
+      return new Response(
+        JSON.stringify({ success: true, count: 0, message: "No games in date range" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
     }
 
-    // The API's date params should filter, but let's also do client-side check
-    // Parse dates correctly - API returns ISO dates
-    const startDateTime = new Date("2026-01-14T00:00:00Z").getTime();
-    const endDateTime = new Date("2026-01-21T23:59:59Z").getTime();
-    
-    const filteredGames = data.data.filter((game) => {
-      const gameDate = new Date(game.date).getTime();
-      const inRange = gameDate >= startDateTime && gameDate <= endDateTime;
-      if (!inRange && data.data.length <= 10) {
-        console.log(`Game ${game.id} date ${game.date} out of range`);
-      }
-      return inRange;
+    // Log sample games for debugging
+    console.log("Sample games from API:");
+    data.data.slice(0, 5).forEach((g, i) => {
+      console.log(`  Game ${i + 1}: ${g.date} - ${g.home_team.full_name} vs ${g.visitor_team.full_name}`);
     });
 
-    console.log(`Filtered to ${filteredGames.length} games within date range`);
+    // Step 3: Delete existing NFL games to avoid duplicates
+    const { error: deleteError } = await supabase
+      .from("games")
+      .delete()
+      .eq("league", "NFL");
 
-    // If API filtering didn't work, use all games from the response
-    const gamesToUse = filteredGames.length > 0 ? filteredGames : data.data;
-    console.log(`Using ${gamesToUse.length} games for upsert`);
-
-    // Map games with spec-accurate field mapping
-    const games = gamesToUse.map((game) => ({
-      id: game.id,
-      league: "NFL",
-      home_team_name: game.home_team.full_name,
-      visitor_team_name: game.visitor_team.full_name,
-      status: game.status,
-      date: game.date,
-    }));
-
-    if (games.length > 0) {
-      console.log("Upserting games to database...");
-
-      // Upsert: update existing games (scores/status) or insert new ones
-      const { error } = await supabase
-        .from("games")
-        .upsert(games, { onConflict: "id" });
-
-      if (error) {
-        console.error("Database upsert error:", error);
-        throw new Error(`Database error: ${error.message}`);
-      }
+    if (deleteError) {
+      console.error("Delete error:", deleteError);
+    } else {
+      console.log("Cleared existing NFL games");
     }
 
-    console.log(`Successfully synced ${games.length} NFL games for ${START_DATE} to ${END_DATE}`);
+    // Step 4: Transform and upsert games using exact field mapping
+    const gamesToUpsert = data.data.map((game) => ({
+      id: game.id,
+      league: "NFL",
+      date: game.date,
+      status: game.status,
+      home_team_name: game.home_team?.full_name || "Unknown",
+      visitor_team_name: game.visitor_team?.full_name || "Unknown",
+    }));
+
+    console.log(`Upserting ${gamesToUpsert.length} games...`);
+
+    // Step 5: Upsert (insert or update) games
+    const { error: upsertError } = await supabase
+      .from("games")
+      .upsert(gamesToUpsert, { onConflict: "id" });
+
+    if (upsertError) {
+      console.error("Upsert error:", upsertError);
+      throw new Error(`Database error: ${upsertError.message}`);
+    }
+
+    console.log(`Successfully upserted ${gamesToUpsert.length} games`);
+
+    // Step 6: Fetch updated count for verification
+    const { count, error: countError } = await supabase
+      .from("games")
+      .select("*", { count: "exact", head: true })
+      .eq("league", "NFL");
+
+    if (countError) {
+      console.error("Count error:", countError);
+    }
+
+    const finalCount = count || gamesToUpsert.length;
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        count: games.length,
-        dateRange: { start: START_DATE, end: END_DATE }
+      JSON.stringify({
+        success: true,
+        count: finalCount,
+        message: `Synced ${gamesToUpsert.length} NFL games`,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
