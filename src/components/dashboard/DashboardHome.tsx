@@ -249,7 +249,7 @@ export function DashboardHome() {
         >
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="text-sm text-muted-foreground uppercase tracking-wider font-medium">
+            <h2 className="text-sm text-foreground uppercase tracking-wider font-medium">
               Money Flows
             </h2>
           </div>
@@ -301,7 +301,7 @@ export function DashboardHome() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary" />
-              <h2 className="text-sm text-muted-foreground uppercase tracking-wider font-medium">
+              <h2 className="text-sm text-foreground uppercase tracking-wider font-medium">
                 Upcoming Games
               </h2>
             </div>
