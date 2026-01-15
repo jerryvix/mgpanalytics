@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       .from("games")
       .delete()
       .eq("league", "NFL")
-      .lt("start_time", "2026-01-01T00:00:00Z");
+      .lt("date", "2026-01-01T00:00:00Z");
 
     if (deleteError) {
       console.error("Error deleting old games:", deleteError);
@@ -84,10 +84,10 @@ Deno.serve(async (req) => {
     const games = data.data.map((game) => ({
       id: game.id,
       league: "NFL",
-      home_team: game.home_team.full_name,
-      visitor_team: game.visitor_team.full_name,
+      home_team_name: game.home_team.full_name,
+      visitor_team_name: game.visitor_team.full_name,
       status: game.status,
-      start_time: game.date,
+      date: game.date,
     }));
 
     if (games.length > 0) {

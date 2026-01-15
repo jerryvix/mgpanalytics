@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,22 @@ import { toast } from "@/hooks/use-toast";
 export function AdminPanel() {
   const [isSyncingNFL, setIsSyncingNFL] = useState(false);
   const [isSyncingOdds, setIsSyncingOdds] = useState(false);
+  const [gamesCount, setGamesCount] = useState<number | null>(null);
+
+  const fetchGamesCount = async () => {
+    const { count, error } = await supabase
+      .from("games")
+      .select("*", { count: "exact", head: true })
+      .eq("league", "NFL");
+    
+    if (!error && count !== null) {
+      setGamesCount(count);
+    }
+  };
+
+  useEffect(() => {
+    fetchGamesCount();
+  }, []);
 
   const handleSyncNFLGames = async () => {
     setIsSyncingNFL(true);
@@ -24,6 +40,9 @@ export function AdminPanel() {
         title: "Bloomberg Feed: NFL Games Synced",
         description: `Successfully synced ${data.count} games.`,
       });
+
+      // Refresh the games count
+      fetchGamesCount();
     } catch (error: any) {
       console.error("Sync error:", error);
       toast({
@@ -165,20 +184,25 @@ export function AdminPanel() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full justify-start font-mono text-xs"
-                onClick={handleSyncNFLGames}
-                disabled={isSyncingNFL}
-              >
-                {isSyncingNFL ? (
-                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-3 h-3 mr-2" />
-                )}
-                Sync NFL Games
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 justify-start font-mono text-xs"
+                  onClick={handleSyncNFLGames}
+                  disabled={isSyncingNFL}
+                >
+                  {isSyncingNFL ? (
+                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3 mr-2" />
+                  )}
+                  Sync NFL Games
+                </Button>
+                <Badge variant="secondary" className="font-mono text-xs whitespace-nowrap">
+                  Games in Vault: {gamesCount !== null ? gamesCount : "..."}
+                </Badge>
+              </div>
               <Button variant="outline" size="sm" className="w-full justify-start font-mono text-xs">
                 <Database className="w-3 h-3 mr-2" />
                 Clear Cache
