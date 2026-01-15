@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Lock, Signal } from "lucide-react";
+import { Loader2, Signal, TrendingUp, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 
@@ -26,6 +26,12 @@ interface Odd {
   price: number;
 }
 
+interface GroupedOdds {
+  spread: { home: Odd | null; away: Odd | null };
+  moneyline: { home: Odd | null; away: Odd | null };
+  total: { over: Odd | null; under: Odd | null };
+}
+
 export function NFLSlate() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +50,7 @@ export function NFLSlate() {
       .from("games")
       .select("*")
       .eq("league", "NFL")
+      .in("status", ["scheduled", "SCHEDULED", "live", "LIVE", "in progress", "IN PROGRESS"])
       .order("date", { ascending: true });
 
     if (error) {
@@ -54,7 +61,8 @@ export function NFLSlate() {
     setLoading(false);
   };
 
-  const handleGameClick = async (game: Game) => {
+  const handleViewOdds = async (game: Game, e: React.MouseEvent) => {
+    e.stopPropagation();
     setSelectedGame(game);
     setSheetOpen(true);
     setOddsLoading(true);
@@ -63,7 +71,8 @@ export function NFLSlate() {
     const { data, error } = await supabase
       .from("odds")
       .select("*")
-      .eq("game_id", game.id);
+      .eq("game_id", game.id)
+      .ilike("sportsbook", "%draftkings%");
 
     if (error) {
       console.error("Error fetching odds:", error);
@@ -84,25 +93,63 @@ export function NFLSlate() {
 
   const getStatusBadge = (status: string) => {
     const statusLower = status.toLowerCase();
-    if (statusLower === "final") {
+    if (statusLower === "in progress" || statusLower === "live") {
       return (
-        <Badge variant="outline" className="border-terminal-green text-terminal-green text-[10px] font-mono">
-          FINAL
-        </Badge>
-      );
-    } else if (statusLower === "in progress" || statusLower === "live") {
-      return (
-        <Badge variant="outline" className="border-terminal-amber text-terminal-amber text-[10px] font-mono animate-pulse">
+        <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green text-[10px] font-mono animate-pulse">
           LIVE
         </Badge>
       );
     }
     return (
-      <Badge variant="outline" className="border-muted-foreground text-muted-foreground text-[10px] font-mono">
+      <Badge className="bg-terminal-green/10 text-terminal-green border-terminal-green/50 text-[10px] font-mono">
         SCHEDULED
       </Badge>
     );
   };
+
+  const groupOdds = (odds: Odd[], game: Game): GroupedOdds => {
+    const grouped: GroupedOdds = {
+      spread: { home: null, away: null },
+      moneyline: { home: null, away: null },
+      total: { over: null, under: null },
+    };
+
+    odds.forEach((odd) => {
+      const marketType = odd.market_type.toLowerCase();
+      
+      if (marketType.includes("spread")) {
+        if (odd.line < 0) {
+          grouped.spread.home = odd;
+        } else {
+          grouped.spread.away = odd;
+        }
+      } else if (marketType.includes("moneyline") || marketType === "ml") {
+        if (odd.price < 0 || (grouped.moneyline.home === null && !grouped.moneyline.away)) {
+          grouped.moneyline.home = odd;
+        } else {
+          grouped.moneyline.away = odd;
+        }
+      } else if (marketType.includes("total") || marketType.includes("over") || marketType.includes("under")) {
+        if (marketType.includes("over") || (grouped.total.over === null && !marketType.includes("under"))) {
+          grouped.total.over = odd;
+        } else {
+          grouped.total.under = odd;
+        }
+      }
+    });
+
+    return grouped;
+  };
+
+  const formatPrice = (price: number) => {
+    return price >= 0 ? `+${price}` : `${price}`;
+  };
+
+  const formatLine = (line: number) => {
+    return line >= 0 ? `+${line}` : `${line}`;
+  };
+
+  const scheduledGamesCount = games.length;
 
   return (
     <div className="space-y-6">
@@ -117,11 +164,11 @@ export function NFLSlate() {
             NFL SLATE
           </h1>
           <p className="text-sm text-muted-foreground font-mono">
-            Week 19 • Playoffs
+            Upcoming Games
           </p>
         </div>
         <Badge variant="outline" className="border-terminal-green text-terminal-green font-mono">
-          {games.length} GAMES
+          {scheduledGamesCount} UPCOMING
         </Badge>
       </motion.div>
 
@@ -135,8 +182,8 @@ export function NFLSlate() {
         <Card className="bg-card border-terminal-green/30">
           <CardContent className="py-12 text-center font-mono">
             <Signal className="w-8 h-8 mx-auto mb-4 text-terminal-amber" />
-            <p className="text-muted-foreground">NO GAMES IN VAULT</p>
-            <p className="text-xs text-muted-foreground mt-1">Sync games from Admin Panel</p>
+            <p className="text-muted-foreground">No upcoming games scheduled</p>
+            <p className="text-xs text-muted-foreground mt-1">Check back later for new matchups</p>
           </CardContent>
         </Card>
       ) : (
@@ -154,34 +201,30 @@ export function NFLSlate() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
             >
-              <Card
-                className="bg-card border-terminal-green/30 hover:border-terminal-green/60 transition-all cursor-pointer group"
-                onClick={() => handleGameClick(game)}
-              >
+              <Card className="bg-card border-terminal-green/30 hover:border-terminal-green/60 transition-all">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-                      NFL • GAME {game.id}
+                      {formatGameTime(game.date)}
                     </span>
                     {getStatusBadge(game.status)}
                   </div>
 
-                  <div className="font-mono text-lg text-foreground group-hover:text-terminal-green transition-colors">
-                    <span className="font-bold">{game.visitor_team_name}</span>
-                    <span className="text-muted-foreground mx-2">@</span>
+                  <div className="font-mono text-lg text-foreground">
                     <span className="font-bold">{game.home_team_name}</span>
+                    <span className="text-terminal-green mx-2">vs</span>
+                    <span className="font-bold">{game.visitor_team_name}</span>
                   </div>
 
-                  <div className="mt-3 pt-3 border-t border-border">
-                    {game.status.toLowerCase() === "final" ? (
-                      <span className="font-mono text-terminal-green text-sm">
-                        FINAL SCORE AVAILABLE
-                      </span>
-                    ) : (
-                      <span className="font-mono text-muted-foreground text-sm">
-                        {formatGameTime(game.date)}
-                      </span>
-                    )}
+                  <div className="mt-4">
+                    <Button
+                      onClick={(e) => handleViewOdds(game, e)}
+                      className="w-full bg-terminal-green/20 hover:bg-terminal-green/30 text-terminal-green border border-terminal-green/50 font-mono text-sm"
+                      variant="outline"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      View Odds
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -190,14 +233,14 @@ export function NFLSlate() {
         </motion.div>
       )}
 
-      {/* Odds Side Panel */}
+      {/* DraftKings Odds Side Panel */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent className="bg-background border-l border-terminal-green/30 w-full sm:max-w-lg">
-          <SheetHeader>
+          <SheetHeader className="flex flex-row items-center justify-between">
             <SheetTitle className="font-mono text-foreground">
               {selectedGame && (
-                <span>
-                  {selectedGame.visitor_team_name} @ {selectedGame.home_team_name}
+                <span className="text-lg">
+                  {selectedGame.home_team_name} vs {selectedGame.visitor_team_name}
                 </span>
               )}
             </SheetTitle>
@@ -208,67 +251,127 @@ export function NFLSlate() {
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-5 h-5 animate-spin text-terminal-green" />
                 <span className="ml-2 font-mono text-sm text-muted-foreground">
-                  FETCHING ODDS DATA...
+                  FETCHING DRAFTKINGS ODDS...
                 </span>
               </div>
             ) : odds.length === 0 ? (
-              <div className="border border-terminal-green/30 rounded-lg p-6 bg-card">
-                <div className="flex items-center gap-3 mb-4">
-                  <Lock className="w-5 h-5 text-terminal-amber" />
-                  <span className="font-mono text-xs text-terminal-green tracking-wider">
-                    TERMINAL OUTPUT
-                  </span>
-                </div>
-                <div className="font-mono text-sm space-y-2 text-muted-foreground">
-                  <p className="text-terminal-green">$ query odds --game_id={selectedGame?.id}</p>
-                  <p className="text-foreground">DATA STATUS: SECURE CONNECTION ACTIVE.</p>
-                  <p className="text-terminal-amber">ODDS FEED REQUIRES GOAT TIER PERMISSION.</p>
-                  <p className="text-muted-foreground mt-4 text-xs">
-                    [Sync odds from Admin Panel to populate this feed]
+              <div className="border border-terminal-amber/30 rounded-lg p-6 bg-card">
+                <div className="text-center font-mono">
+                  <Signal className="w-8 h-8 mx-auto mb-4 text-terminal-amber" />
+                  <p className="text-terminal-amber">DraftKings odds not available</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Odds data may not have been synced yet
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 pb-4 border-b border-terminal-green/20">
                   <Signal className="w-4 h-4 text-terminal-green" />
-                  <span className="font-mono text-xs text-terminal-green tracking-wider">
-                    LIVE ODDS FEED • {odds.length} LINES
+                  <span className="font-mono text-xs text-terminal-green tracking-wider uppercase">
+                    DraftKings Odds
                   </span>
                 </div>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-terminal-green/30 hover:bg-transparent">
-                      <TableHead className="font-mono text-xs text-muted-foreground">SPORTSBOOK</TableHead>
-                      <TableHead className="font-mono text-xs text-muted-foreground">MARKET</TableHead>
-                      <TableHead className="font-mono text-xs text-muted-foreground text-right">LINE</TableHead>
-                      <TableHead className="font-mono text-xs text-muted-foreground text-right">PRICE</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {odds.map((odd) => (
-                      <TableRow key={odd.id} className="border-terminal-green/20 hover:bg-muted/30">
-                        <TableCell className="font-mono text-sm text-foreground">
-                          {odd.sportsbook}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          <Badge variant="outline" className="border-terminal-cyan/50 text-terminal-cyan text-[10px]">
-                            {odd.market_type.toUpperCase()}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-mono text-sm text-terminal-amber text-right">
-                          {odd.line > 0 ? `+${odd.line}` : odd.line}
-                        </TableCell>
-                        <TableCell className="font-mono text-sm text-right">
-                          <span className={odd.price >= 0 ? "text-terminal-green" : "text-terminal-red"}>
-                            {odd.price >= 0 ? `+${odd.price}` : odd.price}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                {(() => {
+                  const grouped = groupOdds(odds, selectedGame!);
+                  return (
+                    <div className="space-y-6">
+                      {/* Spread */}
+                      <div className="space-y-2">
+                        <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+                          Spread
+                        </h3>
+                        <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
+                          {grouped.spread.home || grouped.spread.away ? (
+                            <div className="font-mono text-sm flex justify-between items-center">
+                              <span className="text-foreground">
+                                {selectedGame?.home_team_name}{" "}
+                                <span className="text-terminal-amber">
+                                  {grouped.spread.home ? formatLine(grouped.spread.home.line) : "—"}
+                                </span>
+                                <span className="text-muted-foreground ml-1">
+                                  ({grouped.spread.home ? formatPrice(grouped.spread.home.price) : "—"})
+                                </span>
+                              </span>
+                              <span className="text-terminal-green mx-2">|</span>
+                              <span className="text-foreground">
+                                {selectedGame?.visitor_team_name}{" "}
+                                <span className="text-terminal-amber">
+                                  {grouped.spread.away ? formatLine(grouped.spread.away.line) : "—"}
+                                </span>
+                                <span className="text-muted-foreground ml-1">
+                                  ({grouped.spread.away ? formatPrice(grouped.spread.away.price) : "—"})
+                                </span>
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Not available</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Moneyline */}
+                      <div className="space-y-2">
+                        <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+                          Moneyline
+                        </h3>
+                        <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
+                          {grouped.moneyline.home || grouped.moneyline.away ? (
+                            <div className="font-mono text-sm flex justify-between items-center">
+                              <span className="text-foreground">
+                                {selectedGame?.home_team_name}{" "}
+                                <span className={grouped.moneyline.home && grouped.moneyline.home.price < 0 ? "text-terminal-green" : "text-terminal-amber"}>
+                                  {grouped.moneyline.home ? formatPrice(grouped.moneyline.home.price) : "—"}
+                                </span>
+                              </span>
+                              <span className="text-terminal-green mx-2">|</span>
+                              <span className="text-foreground">
+                                {selectedGame?.visitor_team_name}{" "}
+                                <span className={grouped.moneyline.away && grouped.moneyline.away.price > 0 ? "text-terminal-amber" : "text-terminal-green"}>
+                                  {grouped.moneyline.away ? formatPrice(grouped.moneyline.away.price) : "—"}
+                                </span>
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Not available</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Total */}
+                      <div className="space-y-2">
+                        <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+                          Total
+                        </h3>
+                        <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
+                          {grouped.total.over || grouped.total.under ? (
+                            <div className="font-mono text-sm flex justify-between items-center">
+                              <span className="text-foreground">
+                                <span className="text-terminal-amber">
+                                  {grouped.total.over ? grouped.total.over.line : "—"}
+                                </span>{" "}
+                                Over{" "}
+                                <span className="text-muted-foreground">
+                                  ({grouped.total.over ? formatPrice(grouped.total.over.price) : "—"})
+                                </span>
+                              </span>
+                              <span className="text-terminal-green mx-2">/</span>
+                              <span className="text-foreground">
+                                Under{" "}
+                                <span className="text-muted-foreground">
+                                  ({grouped.total.under ? formatPrice(grouped.total.under.price) : "—"})
+                                </span>
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">Not available</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
