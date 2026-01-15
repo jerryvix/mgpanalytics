@@ -64,30 +64,42 @@ export type Database = {
           created_at: string
           game_id: number
           id: string
-          line: number
-          market_type: string
-          price: number
+          moneyline_away: number | null
+          moneyline_home: number | null
           sportsbook: string
+          spread_odds: number
+          spread_value: number
+          total_over_odds: number | null
+          total_under_odds: number | null
+          total_value: number | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           game_id: number
           id?: string
-          line: number
-          market_type: string
-          price: number
+          moneyline_away?: number | null
+          moneyline_home?: number | null
           sportsbook: string
+          spread_odds: number
+          spread_value: number
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           game_id?: number
           id?: string
-          line?: number
-          market_type?: string
-          price?: number
+          moneyline_away?: number | null
+          moneyline_home?: number | null
           sportsbook?: string
+          spread_odds?: number
+          spread_value?: number
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
           updated_at?: string
         }
         Relationships: [

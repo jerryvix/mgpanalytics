@@ -62,17 +62,18 @@ export function AdminPanel() {
       }
 
       toast({
-        title: "NFL Postseason Games Synced",
-        description: data.message || `Successfully synced ${data.count} postseason games`,
+        title: "NFL Games & Odds Synced",
+        description: data.message || `Synced ${data.gamesCount} games with live odds`,
       });
 
-      // Refresh the games count
+      // Refresh both counts since we now sync games AND odds together
       fetchGamesCount();
+      fetchOddsCount();
     } catch (error: any) {
       console.error("Sync error:", error);
       toast({
         title: "Sync Failed",
-        description: error.message || "Failed to sync NFL games",
+        description: error.message || "Failed to sync NFL games and odds",
         variant: "destructive",
       });
     } finally {
