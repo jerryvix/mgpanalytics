@@ -52,17 +52,13 @@ Deno.serve(async (req) => {
       console.log("Old games cleanup completed");
     }
 
-    console.log("Fetching NFL Divisional Round games from BallDontLie API...");
+    console.log("Fetching NFL Playoff games from BallDontLie API...");
 
-    // Fetch Divisional Round games (Week 19, Postseason)
+    // Fetch games using date range only (most reliable for playoffs)
     const url = new URL("https://api.balldontlie.io/nfl/v1/games");
     url.searchParams.append("seasons[]", "2025");
-    url.searchParams.append("postseason", "true");
-    url.searchParams.append("weeks[]", "19");
-    
-    // Date fallback for Divisional Round (Jan 17-18, 2026)
     url.searchParams.append("start_date", "2026-01-14");
-    url.searchParams.append("end_date", "2026-01-20");
+    url.searchParams.append("end_date", "2026-01-21");
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -102,7 +98,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Successfully synced ${games.length} NFL Divisional Round games`);
+    console.log(`Successfully synced ${games.length} NFL Playoff games`);
 
     return new Response(
       JSON.stringify({ success: true, count: games.length }),
