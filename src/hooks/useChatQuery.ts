@@ -206,11 +206,13 @@ export function useChatQuery() {
   };
   
   const handleGamesQuery = async (query: string): Promise<string> => {
+    // Get games that are not final/completed - includes various status formats
     const { data: games, error } = await supabase
       .from("games")
       .select("*")
       .eq("league", "NFL")
-      .in("status", ["scheduled", "Scheduled", "SCHEDULED", "live", "Live", "LIVE", "in progress", "In Progress"])
+      .not("status", "ilike", "%final%")
+      .gte("date", new Date().toISOString())
       .order("date", { ascending: true });
     
     if (error) throw error;
@@ -254,12 +256,13 @@ export function useChatQuery() {
   };
   
   const handleOddsQuery = async (teamName: string): Promise<string> => {
-    // Find the game for this team
+    // Find the game for this team - not final and in the future
     const { data: games, error: gamesError } = await supabase
       .from("games")
       .select("*")
       .eq("league", "NFL")
-      .in("status", ["scheduled", "Scheduled", "SCHEDULED", "live", "Live", "LIVE", "in progress", "In Progress"])
+      .not("status", "ilike", "%final%")
+      .gte("date", new Date().toISOString())
       .or(`home_team_name.ilike.%${teamName}%,visitor_team_name.ilike.%${teamName}%`)
       .order("date", { ascending: true })
       .limit(1);
@@ -306,7 +309,8 @@ export function useChatQuery() {
       .from("games")
       .select("*")
       .eq("league", "NFL")
-      .in("status", ["scheduled", "Scheduled", "SCHEDULED"])
+      .not("status", "ilike", "%final%")
+      .gte("date", new Date().toISOString())
       .order("date", { ascending: true })
       .limit(3);
     
@@ -347,7 +351,8 @@ export function useChatQuery() {
       .from("games")
       .select("*")
       .eq("league", "NFL")
-      .in("status", ["scheduled", "Scheduled", "SCHEDULED", "live", "Live", "LIVE"])
+      .not("status", "ilike", "%final%")
+      .gte("date", new Date().toISOString())
       .or(`home_team_name.ilike.%${teamName}%,visitor_team_name.ilike.%${teamName}%`)
       .order("date", { ascending: true })
       .limit(1);
@@ -367,12 +372,13 @@ export function useChatQuery() {
   };
   
   const handleStatsQuery = async (query: string): Promise<string> => {
-    // Get all upcoming games with odds
+    // Get all upcoming games with odds - not final and in the future
     const { data: games, error: gamesError } = await supabase
       .from("games")
       .select("*")
       .eq("league", "NFL")
-      .in("status", ["scheduled", "Scheduled", "SCHEDULED"]);
+      .not("status", "ilike", "%final%")
+      .gte("date", new Date().toISOString());
     
     if (gamesError) throw gamesError;
     
@@ -451,12 +457,13 @@ export function useChatQuery() {
   };
   
   const handleTeamQuery = async (teamName: string): Promise<string> => {
-    // Get game info and odds for the team
+    // Get game info and odds for the team - not final and in the future
     const { data: games, error: gamesError } = await supabase
       .from("games")
       .select("*")
       .eq("league", "NFL")
-      .in("status", ["scheduled", "Scheduled", "SCHEDULED", "live", "Live", "LIVE"])
+      .not("status", "ilike", "%final%")
+      .gte("date", new Date().toISOString())
       .or(`home_team_name.ilike.%${teamName}%,visitor_team_name.ilike.%${teamName}%`)
       .order("date", { ascending: true })
       .limit(1);
