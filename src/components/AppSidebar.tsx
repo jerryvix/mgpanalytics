@@ -23,13 +23,19 @@ import {
   Settings, 
   LogOut,
   Trophy,
-  Dribbble
+  Dribbble,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface AppSidebarProps {
   user: User;
   isAdmin: boolean;
+  isPreviewingAsUser?: boolean;
+  onTogglePreview?: () => void;
 }
 
 const baseMenuItems = [
@@ -51,14 +57,17 @@ const adminMenuItem = {
   icon: Settings,
 };
 
-export function AppSidebar({ user, isAdmin }: AppSidebarProps) {
+export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Build menu items based on role
-  const menuItems = isAdmin 
+  // Use preview mode to show user view when testing
+  const effectiveIsAdmin = isAdmin && !isPreviewingAsUser;
+  
+  // Build menu items based on role (or preview mode)
+  const menuItems = effectiveIsAdmin 
     ? [...baseMenuItems, adminMenuItem] 
     : baseMenuItems;
 
@@ -144,6 +153,29 @@ export function AppSidebar({ user, isAdmin }: AppSidebarProps) {
             {user.email}
           </div>
         )}
+        
+        {/* Admin Preview Toggle - only show for actual admins */}
+        {isAdmin && !collapsed && onTogglePreview && (
+          <div className="mb-3 flex items-center justify-between gap-2 p-2 rounded bg-sidebar-accent/50 border border-dashed border-terminal-green/30">
+            <div className="flex items-center gap-2">
+              {isPreviewingAsUser ? (
+                <EyeOff className="w-3 h-3 text-terminal-green" />
+              ) : (
+                <Eye className="w-3 h-3 text-terminal-green" />
+              )}
+              <Label htmlFor="preview-mode" className="text-[10px] text-sidebar-foreground cursor-pointer">
+                Preview as User
+              </Label>
+            </div>
+            <Switch
+              id="preview-mode"
+              checked={isPreviewingAsUser}
+              onCheckedChange={onTogglePreview}
+              className="scale-75"
+            />
+          </div>
+        )}
+        
         <Button
           variant="ghost"
           size={collapsed ? "icon" : "sm"}

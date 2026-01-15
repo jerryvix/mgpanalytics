@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -13,7 +13,24 @@ const Dashboard = () => {
   const location = useLocation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPreviewingAsUser, setIsPreviewingAsUser] = useState(false);
   const { role, isAdmin, loading: roleLoading } = useUserRole(user);
+
+  const handleTogglePreview = useCallback(() => {
+    setIsPreviewingAsUser(prev => {
+      const newValue = !prev;
+      if (newValue) {
+        toast.info("Preview Mode ON", { description: "Viewing as regular user" });
+        // If on admin page, redirect away
+        if (location.pathname === "/dashboard/admin") {
+          navigate("/dashboard");
+        }
+      } else {
+        toast.info("Preview Mode OFF", { description: "Back to admin view" });
+      }
+      return newValue;
+    });
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -58,12 +75,20 @@ const Dashboard = () => {
     return null;
   }
 
+  // Compute effective admin status (real admin AND not previewing)
+  const effectiveIsAdmin = isAdmin && !isPreviewingAsUser;
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar user={user} isAdmin={isAdmin} />
+        <AppSidebar 
+          user={user} 
+          isAdmin={isAdmin} 
+          isPreviewingAsUser={isPreviewingAsUser}
+          onTogglePreview={handleTogglePreview}
+        />
         <main className="flex-1 overflow-auto">
-          <DashboardContent isAdmin={isAdmin} />
+          <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
       </div>
     </SidebarProvider>
