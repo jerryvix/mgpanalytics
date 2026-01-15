@@ -48,8 +48,8 @@ const sportsMenuItems = [
   { title: "NFL", url: "/dashboard/nfl", logo: "/logos/nfl.png" },
   { title: "NBA", url: "/dashboard/nba", logo: "/logos/nba.png" },
   { title: "MLB", url: "/dashboard/mlb", logo: "/logos/mlb.png" },
-  { title: "NCAAF", url: "/dashboard/ncaaf", logo: "/logos/ncaaf.png" },
-  { title: "NCAAB", url: "/dashboard/ncaab", logo: "/logos/ncaab.png" },
+  { title: "NCAAF", url: "/dashboard/ncaaf", logo: "/logos/ncaa.png" },
+  { title: "NCAAB", url: "/dashboard/ncaab", logo: "/logos/ncaa.png" },
 ];
 
 const adminMenuItem = {
