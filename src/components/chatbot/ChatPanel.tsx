@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatQuery } from "@/hooks/useChatQuery";
 import { useChat } from "@/contexts/ChatContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -16,7 +17,15 @@ interface Message {
 }
 
 export function ChatPanel() {
-  const { isOpen, toggleChat, pendingQuery, setPendingQuery } = useChat();
+  const { 
+    isOpen, 
+    toggleChat, 
+    pendingQuery, 
+    setPendingQuery,
+    activeConversationId,
+    setActiveConversationId,
+    refreshConversations
+  } = useChat();
   const isMobile = useIsMobile();
 
   const [messages, setMessages] = useState<Message[]>([
@@ -29,9 +38,53 @@ export function ChatPanel() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { processQuery } = useChatQuery();
+
+  // Load messages when activeConversationId changes
+  useEffect(() => {
+    if (activeConversationId) {
+      loadConversationMessages(activeConversationId);
+    } else if (activeConversationId === null && currentConversationId !== null) {
+      // Starting a new conversation - reset to welcome message
+      setMessages([
+        {
+          id: "welcome",
+          role: "bot",
+          content: "Hey! I'm your MGP Analyst. Ask me about upcoming NFL games, odds, or teams. 🏈",
+          timestamp: new Date(),
+        },
+      ]);
+      setCurrentConversationId(null);
+    }
+  }, [activeConversationId]);
+
+  const loadConversationMessages = async (convId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("conversation_id", convId)
+        .order("created_at", { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const loadedMessages: Message[] = data.map(msg => ({
+          id: msg.id,
+          role: msg.role as "user" | "bot",
+          content: msg.content,
+          timestamp: new Date(msg.created_at),
+        }));
+        setMessages(loadedMessages);
+        setCurrentConversationId(convId);
+      }
+    } catch (error) {
+      console.error("Error loading messages:", error);
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -50,12 +103,52 @@ export function ChatPanel() {
     if (pendingQuery && isOpen && !isLoading) {
       setInput(pendingQuery);
       setPendingQuery("");
-      // Auto-submit after a short delay
       setTimeout(() => {
         handleSendWithQuery(pendingQuery);
       }, 100);
     }
   }, [pendingQuery, isOpen]);
+
+  const createNewConversation = async (firstMessage: string): Promise<string | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const title = firstMessage.length > 50 
+        ? firstMessage.substring(0, 47) + "..." 
+        : firstMessage;
+
+      const { data, error } = await supabase
+        .from("conversations")
+        .insert({ user_id: user.id, title })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      refreshConversations();
+      return data.id;
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      return null;
+    }
+  };
+
+  const saveMessage = async (convId: string, role: "user" | "bot", content: string) => {
+    try {
+      await supabase
+        .from("messages")
+        .insert({ conversation_id: convId, role, content });
+
+      // Update conversation's updated_at
+      await supabase
+        .from("conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", convId);
+    } catch (error) {
+      console.error("Error saving message:", error);
+    }
+  };
 
   const handleSendWithQuery = async (query: string) => {
     if (!query.trim() || isLoading) return;
@@ -71,6 +164,21 @@ export function ChatPanel() {
     setInput("");
     setIsLoading(true);
 
+    // Create or use existing conversation
+    let convId = currentConversationId;
+    if (!convId) {
+      convId = await createNewConversation(query.trim());
+      if (convId) {
+        setCurrentConversationId(convId);
+        setActiveConversationId(convId);
+      }
+    }
+
+    // Save user message
+    if (convId) {
+      await saveMessage(convId, "user", query.trim());
+    }
+
     try {
       const response = await processQuery(query.trim());
       const botMessage: Message = {
@@ -80,6 +188,12 @@ export function ChatPanel() {
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
+
+      // Save bot response
+      if (convId) {
+        await saveMessage(convId, "bot", response);
+        refreshConversations();
+      }
     } catch (error) {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
