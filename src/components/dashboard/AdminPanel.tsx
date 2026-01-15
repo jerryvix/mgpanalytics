@@ -11,9 +11,11 @@ export function AdminPanel() {
   const [isSyncingNFL, setIsSyncingNFL] = useState(false);
   const [isSyncingOdds, setIsSyncingOdds] = useState(false);
   const [gamesCount, setGamesCount] = useState<number | null>(null);
+  const [postseasonCount, setPostseasonCount] = useState<number | null>(null);
   const [oddsCount, setOddsCount] = useState<number | null>(null);
 
   const fetchGamesCount = async () => {
+    // Fetch total NFL games
     const { count, error } = await supabase
       .from("games")
       .select("*", { count: "exact", head: true })
@@ -21,6 +23,17 @@ export function AdminPanel() {
     
     if (!error && count !== null) {
       setGamesCount(count);
+    }
+
+    // Fetch postseason games count
+    const { count: psCount, error: psError } = await supabase
+      .from("games")
+      .select("*", { count: "exact", head: true })
+      .eq("league", "NFL")
+      .eq("postseason", true);
+    
+    if (!psError && psCount !== null) {
+      setPostseasonCount(psCount);
     }
   };
 
@@ -49,8 +62,8 @@ export function AdminPanel() {
       }
 
       toast({
-        title: "MGP Feed: NFL Games Synchronized",
-        description: `MGP Feed: ${data.count} NFL Games Synchronized.`,
+        title: "NFL Postseason Games Synced",
+        description: data.message || `Successfully synced ${data.count} postseason games`,
       });
 
       // Refresh the games count
@@ -215,7 +228,7 @@ export function AdminPanel() {
                   Sync NFL Games
                 </Button>
                 <Badge variant="secondary" className="font-mono text-xs whitespace-nowrap">
-                  Games in Vault: {gamesCount !== null ? gamesCount : "..."}
+                  Postseason: {postseasonCount !== null ? postseasonCount : "..."} | Total: {gamesCount !== null ? gamesCount : "..."}
                 </Badge>
               </div>
               <Button variant="outline" size="sm" className="w-full justify-start font-mono text-xs">
