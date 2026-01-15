@@ -49,8 +49,8 @@ export function AdminPanel() {
       }
 
       toast({
-        title: "Bloomberg Feed: NFL Games Synced",
-        description: `Successfully synced ${data.count} games.`,
+        title: "MGP Feed: NFL Games Synchronized",
+        description: `MGP Feed: ${data.count} NFL Games Synchronized.`,
       });
 
       // Refresh the games count
