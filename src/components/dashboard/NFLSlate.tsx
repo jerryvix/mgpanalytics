@@ -46,17 +46,24 @@ export function NFLSlate() {
 
   const fetchGames = async () => {
     setLoading(true);
+    // Fetch all NFL games, then filter out completed ones client-side
+    // Status values vary: "Final", "Final/OT", or scheduled times like "1/17 - 4:30 PM EST"
     const { data, error } = await supabase
       .from("games")
       .select("*")
       .eq("league", "NFL")
-      .in("status", ["scheduled", "SCHEDULED", "live", "LIVE", "in progress", "IN PROGRESS"])
       .order("date", { ascending: true });
 
     if (error) {
       console.error("Error fetching games:", error);
     } else {
-      setGames(data || []);
+      // Filter out games that are completed (status starts with "Final")
+      const upcomingGames = (data || []).filter(
+        (game) => !game.status.toLowerCase().startsWith("final")
+      );
+      console.log("All NFL games:", data);
+      console.log("Upcoming games (non-Final):", upcomingGames);
+      setGames(upcomingGames);
     }
     setLoading(false);
   };
