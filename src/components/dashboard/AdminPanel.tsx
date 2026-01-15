@@ -1,10 +1,40 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings, Database, Users, RefreshCw } from "lucide-react";
+import { Settings, Database, Users, RefreshCw, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export function AdminPanel() {
+  const [isSyncingNFL, setIsSyncingNFL] = useState(false);
+
+  const handleSyncNFLGames = async () => {
+    setIsSyncingNFL(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-nfl-games");
+      
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "NFL Games Synchronized",
+        description: `Successfully synced ${data.count} games.`,
+      });
+    } catch (error: any) {
+      console.error("Sync error:", error);
+      toast({
+        title: "Sync Failed",
+        description: error.message || "Failed to sync NFL games",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingNFL(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -109,9 +139,19 @@ export function AdminPanel() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" size="sm" className="w-full justify-start font-mono text-xs">
-                <RefreshCw className="w-3 h-3 mr-2" />
-                Refresh Data Feeds
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full justify-start font-mono text-xs"
+                onClick={handleSyncNFLGames}
+                disabled={isSyncingNFL}
+              >
+                {isSyncingNFL ? (
+                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3 h-3 mr-2" />
+                )}
+                Sync NFL Games
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start font-mono text-xs">
                 <Database className="w-3 h-3 mr-2" />

@@ -1,1 +1,4 @@
 project_id = "pgrrbkhxukxvzzauviyp"
+
+[functions.sync-nfl-games]
+verify_jwt = false
