@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Loader2, Signal, TrendingUp, X } from "lucide-react";
+import { Loader2, Signal, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 
@@ -21,15 +21,13 @@ interface Odd {
   id: string;
   game_id: number;
   sportsbook: string;
-  market_type: string;
-  line: number;
-  price: number;
-}
-
-interface GroupedOdds {
-  spread: { home: Odd | null; away: Odd | null };
-  moneyline: { home: Odd | null; away: Odd | null };
-  total: { over: Odd | null; under: Odd | null };
+  spread_value: number | null;
+  spread_odds: number | null;
+  moneyline_home: number | null;
+  moneyline_away: number | null;
+  total_value: number | null;
+  total_over_odds: number | null;
+  total_under_odds: number | null;
 }
 
 export function NFLSlate() {
@@ -114,49 +112,18 @@ export function NFLSlate() {
     );
   };
 
-  const groupOdds = (odds: Odd[], game: Game): GroupedOdds => {
-    const grouped: GroupedOdds = {
-      spread: { home: null, away: null },
-      moneyline: { home: null, away: null },
-      total: { over: null, under: null },
-    };
-
-    odds.forEach((odd) => {
-      const marketType = odd.market_type.toLowerCase();
-      
-      if (marketType.includes("spread")) {
-        if (odd.line < 0) {
-          grouped.spread.home = odd;
-        } else {
-          grouped.spread.away = odd;
-        }
-      } else if (marketType.includes("moneyline") || marketType === "ml") {
-        if (odd.price < 0 || (grouped.moneyline.home === null && !grouped.moneyline.away)) {
-          grouped.moneyline.home = odd;
-        } else {
-          grouped.moneyline.away = odd;
-        }
-      } else if (marketType.includes("total") || marketType.includes("over") || marketType.includes("under")) {
-        if (marketType.includes("over") || (grouped.total.over === null && !marketType.includes("under"))) {
-          grouped.total.over = odd;
-        } else {
-          grouped.total.under = odd;
-        }
-      }
-    });
-
-    return grouped;
-  };
-
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number | null) => {
+    if (price === null) return "—";
     return price >= 0 ? `+${price}` : `${price}`;
   };
 
-  const formatLine = (line: number) => {
+  const formatLine = (line: number | null) => {
+    if (line === null) return "—";
     return line >= 0 ? `+${line}` : `${line}`;
   };
 
   const scheduledGamesCount = games.length;
+  const dkOdds = odds.length > 0 ? odds[0] : null;
 
   return (
     <div className="space-y-6">
@@ -261,7 +228,7 @@ export function NFLSlate() {
                   FETCHING DRAFTKINGS ODDS...
                 </span>
               </div>
-            ) : odds.length === 0 ? (
+            ) : !dkOdds ? (
               <div className="border border-terminal-amber/30 rounded-lg p-6 bg-card">
                 <div className="text-center font-mono">
                   <Signal className="w-8 h-8 mx-auto mb-4 text-terminal-amber" />
@@ -280,105 +247,100 @@ export function NFLSlate() {
                   </span>
                 </div>
 
-                {(() => {
-                  const grouped = groupOdds(odds, selectedGame!);
-                  return (
-                    <div className="space-y-6">
-                      {/* Spread */}
-                      <div className="space-y-2">
-                        <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                          Spread
-                        </h3>
-                        <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
-                          {grouped.spread.home || grouped.spread.away ? (
-                            <div className="font-mono text-sm flex justify-between items-center">
-                              <span className="text-foreground">
-                                {selectedGame?.home_team_name}{" "}
-                                <span className="text-terminal-amber">
-                                  {grouped.spread.home ? formatLine(grouped.spread.home.line) : "—"}
-                                </span>
-                                <span className="text-muted-foreground ml-1">
-                                  ({grouped.spread.home ? formatPrice(grouped.spread.home.price) : "—"})
-                                </span>
-                              </span>
-                              <span className="text-terminal-green mx-2">|</span>
-                              <span className="text-foreground">
-                                {selectedGame?.visitor_team_name}{" "}
-                                <span className="text-terminal-amber">
-                                  {grouped.spread.away ? formatLine(grouped.spread.away.line) : "—"}
-                                </span>
-                                <span className="text-muted-foreground ml-1">
-                                  ({grouped.spread.away ? formatPrice(grouped.spread.away.price) : "—"})
-                                </span>
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">Not available</span>
-                          )}
+                <div className="space-y-6">
+                  {/* Spread */}
+                  <div className="space-y-2">
+                    <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+                      Spread
+                    </h3>
+                    <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
+                      {dkOdds.spread_value !== null ? (
+                        <div className="font-mono text-sm flex justify-between items-center">
+                          <span className="text-foreground">
+                            {selectedGame?.home_team_name}{" "}
+                            <span className="text-terminal-amber">
+                              {formatLine(dkOdds.spread_value)}
+                            </span>
+                            <span className="text-muted-foreground ml-1">
+                              ({formatPrice(dkOdds.spread_odds)})
+                            </span>
+                          </span>
+                          <span className="text-terminal-green mx-2">|</span>
+                          <span className="text-foreground">
+                            {selectedGame?.visitor_team_name}{" "}
+                            <span className="text-terminal-amber">
+                              {formatLine(dkOdds.spread_value ? -dkOdds.spread_value : null)}
+                            </span>
+                            <span className="text-muted-foreground ml-1">
+                              ({formatPrice(dkOdds.spread_odds)})
+                            </span>
+                          </span>
                         </div>
-                      </div>
-
-                      {/* Moneyline */}
-                      <div className="space-y-2">
-                        <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                          Moneyline
-                        </h3>
-                        <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
-                          {grouped.moneyline.home || grouped.moneyline.away ? (
-                            <div className="font-mono text-sm flex justify-between items-center">
-                              <span className="text-foreground">
-                                {selectedGame?.home_team_name}{" "}
-                                <span className={grouped.moneyline.home && grouped.moneyline.home.price < 0 ? "text-terminal-green" : "text-terminal-amber"}>
-                                  {grouped.moneyline.home ? formatPrice(grouped.moneyline.home.price) : "—"}
-                                </span>
-                              </span>
-                              <span className="text-terminal-green mx-2">|</span>
-                              <span className="text-foreground">
-                                {selectedGame?.visitor_team_name}{" "}
-                                <span className={grouped.moneyline.away && grouped.moneyline.away.price > 0 ? "text-terminal-amber" : "text-terminal-green"}>
-                                  {grouped.moneyline.away ? formatPrice(grouped.moneyline.away.price) : "—"}
-                                </span>
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">Not available</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Total */}
-                      <div className="space-y-2">
-                        <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
-                          Total
-                        </h3>
-                        <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
-                          {grouped.total.over || grouped.total.under ? (
-                            <div className="font-mono text-sm flex justify-between items-center">
-                              <span className="text-foreground">
-                                <span className="text-terminal-amber">
-                                  {grouped.total.over ? grouped.total.over.line : "—"}
-                                </span>{" "}
-                                Over{" "}
-                                <span className="text-muted-foreground">
-                                  ({grouped.total.over ? formatPrice(grouped.total.over.price) : "—"})
-                                </span>
-                              </span>
-                              <span className="text-terminal-green mx-2">/</span>
-                              <span className="text-foreground">
-                                Under{" "}
-                                <span className="text-muted-foreground">
-                                  ({grouped.total.under ? formatPrice(grouped.total.under.price) : "—"})
-                                </span>
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">Not available</span>
-                          )}
-                        </div>
-                      </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Not available</span>
+                      )}
                     </div>
-                  );
-                })()}
+                  </div>
+
+                  {/* Moneyline */}
+                  <div className="space-y-2">
+                    <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+                      Moneyline
+                    </h3>
+                    <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
+                      {dkOdds.moneyline_home !== null || dkOdds.moneyline_away !== null ? (
+                        <div className="font-mono text-sm flex justify-between items-center">
+                          <span className="text-foreground">
+                            {selectedGame?.home_team_name}{" "}
+                            <span className={dkOdds.moneyline_home && dkOdds.moneyline_home < 0 ? "text-terminal-green" : "text-terminal-amber"}>
+                              {formatPrice(dkOdds.moneyline_home)}
+                            </span>
+                          </span>
+                          <span className="text-terminal-green mx-2">|</span>
+                          <span className="text-foreground">
+                            {selectedGame?.visitor_team_name}{" "}
+                            <span className={dkOdds.moneyline_away && dkOdds.moneyline_away > 0 ? "text-terminal-amber" : "text-terminal-green"}>
+                              {formatPrice(dkOdds.moneyline_away)}
+                            </span>
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Not available</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Total */}
+                  <div className="space-y-2">
+                    <h3 className="font-mono text-xs text-muted-foreground uppercase tracking-wider">
+                      Total
+                    </h3>
+                    <div className="bg-card border border-terminal-green/20 rounded-lg p-4">
+                      {dkOdds.total_value !== null ? (
+                        <div className="font-mono text-sm flex justify-between items-center">
+                          <span className="text-foreground">
+                            <span className="text-terminal-amber">
+                              {dkOdds.total_value}
+                            </span>{" "}
+                            Over{" "}
+                            <span className="text-muted-foreground">
+                              ({formatPrice(dkOdds.total_over_odds)})
+                            </span>
+                          </span>
+                          <span className="text-terminal-green mx-2">/</span>
+                          <span className="text-foreground">
+                            Under{" "}
+                            <span className="text-muted-foreground">
+                              ({formatPrice(dkOdds.total_under_odds)})
+                            </span>
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">Not available</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
