@@ -231,7 +231,7 @@ export function DashboardHome() {
             <button
               key={idx}
               onClick={() => handleExampleClick(prompt)}
-              className="px-4 py-2 text-sm font-mono text-muted-foreground bg-card/50 hover:bg-card hover:text-foreground border border-border hover:border-primary/50 rounded-lg transition-all"
+              className="px-4 py-2 text-sm text-muted-foreground bg-card/50 hover:bg-card hover:text-foreground border border-border hover:border-primary/50 rounded-lg transition-all"
             >
               {prompt}
             </button>
@@ -249,7 +249,7 @@ export function DashboardHome() {
         >
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
+            <h2 className="text-sm text-muted-foreground uppercase tracking-wider font-medium">
               Money Flows
             </h2>
           </div>
@@ -265,7 +265,7 @@ export function DashboardHome() {
               {moneyFlows.map((flow) => (
                 <div
                   key={flow.id}
-                  className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg font-mono text-sm"
+                  className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg text-sm"
                 >
                   <span>
                     <span className="mr-2">{getSportEmoji(flow.sport)}</span>
@@ -284,10 +284,10 @@ export function DashboardHome() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground font-mono">No recent movements detected.</p>
+            <p className="text-sm text-muted-foreground">No recent movements detected.</p>
           )}
 
-          <p className="text-xs text-muted-foreground font-mono mt-3">
+          <p className="text-xs text-muted-foreground mt-3">
             Odds refreshed periodically.{lastSync && ` Last update: ${lastSync}.`} Check DraftKings | FanDuel | Caesars for real-time.
           </p>
         </motion.section>
@@ -301,11 +301,11 @@ export function DashboardHome() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary" />
-              <h2 className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
+              <h2 className="text-sm text-muted-foreground uppercase tracking-wider font-medium">
                 Upcoming Games
               </h2>
             </div>
-            <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span className="w-2 h-2 rounded-full bg-terminal-green animate-pulse" />
               <span>LIVE</span>
               {lastSync && <span className="text-border">| Updated: {lastSync}</span>}
@@ -323,7 +323,7 @@ export function DashboardHome() {
               {upcomingGames.map((game) => (
                 <div
                   key={`${game.league}-${game.id}`}
-                  className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg font-mono text-sm"
+                  className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg text-sm"
                 >
                   <span>
                     <span className="mr-2">{getSportEmoji(game.league)}</span>
@@ -347,7 +347,7 @@ export function DashboardHome() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground font-mono">No upcoming games found.</p>
+            <p className="text-sm text-muted-foreground">No upcoming games found.</p>
           )}
         </motion.section>
       </div>
