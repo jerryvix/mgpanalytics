@@ -34,12 +34,36 @@ Deno.serve(async (req) => {
       throw new Error("BALLDONTLIE_API_KEY not configured");
     }
 
-    console.log("Fetching NFL games from BallDontLie API...");
+    // Initialize Supabase client with service role for admin operations
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch games from BallDontLie NFL API
+    // Cleanup: Delete games before January 1, 2026
+    console.log("Cleaning up old games before 2026-01-01...");
+    const { error: deleteError } = await supabase
+      .from("games")
+      .delete()
+      .eq("league", "NFL")
+      .lt("start_time", "2026-01-01T00:00:00Z");
+
+    if (deleteError) {
+      console.error("Error deleting old games:", deleteError);
+      // Continue anyway, don't fail the sync
+    } else {
+      console.log("Old games cleanup completed");
+    }
+
+    console.log("Fetching NFL games for current week from BallDontLie API...");
+
+    // Fetch games for current week (Week 19) with date range fallback
     const url = new URL("https://api.balldontlie.io/nfl/v1/games");
     url.searchParams.append("seasons[]", "2025");
-    url.searchParams.append("postseason", "false");
+    url.searchParams.append("week", "19");
+    
+    // Also add date filters as fallback/additional constraint
+    url.searchParams.append("start_date", "2026-01-14");
+    url.searchParams.append("end_date", "2026-01-21");
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -56,11 +80,6 @@ Deno.serve(async (req) => {
     const data: BallDontLieResponse = await response.json();
     console.log(`Fetched ${data.data.length} games from API`);
 
-    // Initialize Supabase client with service role for admin operations
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     // Map and upsert games
     const games = data.data.map((game) => ({
       id: game.id,
@@ -71,18 +90,20 @@ Deno.serve(async (req) => {
       start_time: game.date,
     }));
 
-    console.log("Upserting games to database...");
+    if (games.length > 0) {
+      console.log("Upserting games to database...");
 
-    const { error } = await supabase
-      .from("games")
-      .upsert(games, { onConflict: "id" });
+      const { error } = await supabase
+        .from("games")
+        .upsert(games, { onConflict: "id" });
 
-    if (error) {
-      console.error("Database upsert error:", error);
-      throw new Error(`Database error: ${error.message}`);
+      if (error) {
+        console.error("Database upsert error:", error);
+        throw new Error(`Database error: ${error.message}`);
+      }
     }
 
-    console.log(`Successfully synced ${games.length} NFL games`);
+    console.log(`Successfully synced ${games.length} NFL games for Week 19`);
 
     return new Response(
       JSON.stringify({ success: true, count: games.length }),
