@@ -20,7 +20,7 @@ export function AdminPanel() {
       }
 
       toast({
-        title: "NFL Games Synchronized",
+        title: "Bloomberg Feed: NFL Games Synced",
         description: `Successfully synced ${data.count} games.`,
       });
     } catch (error: any) {
