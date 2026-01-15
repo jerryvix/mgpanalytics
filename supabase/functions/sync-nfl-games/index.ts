@@ -39,31 +39,30 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Cleanup: Delete games before January 1, 2026
-    console.log("Cleaning up old games before 2026-01-01...");
+    // Cleanup: Delete all existing NFL games to start fresh
+    console.log("Cleaning up all existing NFL games...");
     const { error: deleteError } = await supabase
       .from("games")
       .delete()
-      .eq("league", "NFL")
-      .lt("date", "2026-01-01T00:00:00Z");
+      .eq("league", "NFL");
 
     if (deleteError) {
       console.error("Error deleting old games:", deleteError);
-      // Continue anyway, don't fail the sync
     } else {
       console.log("Old games cleanup completed");
     }
 
-    console.log("Fetching NFL games for current week from BallDontLie API...");
+    console.log("Fetching NFL Divisional Round games from BallDontLie API...");
 
-    // Fetch games for current week (Week 19) with date range fallback
+    // Fetch Divisional Round games (Week 19, Postseason)
     const url = new URL("https://api.balldontlie.io/nfl/v1/games");
     url.searchParams.append("seasons[]", "2025");
-    url.searchParams.append("week", "19");
+    url.searchParams.append("postseason", "true");
+    url.searchParams.append("weeks[]", "19");
     
-    // Also add date filters as fallback/additional constraint
+    // Date fallback for Divisional Round (Jan 17-18, 2026)
     url.searchParams.append("start_date", "2026-01-14");
-    url.searchParams.append("end_date", "2026-01-21");
+    url.searchParams.append("end_date", "2026-01-20");
 
     const response = await fetch(url.toString(), {
       headers: {
@@ -103,7 +102,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Successfully synced ${games.length} NFL games for Week 19`);
+    console.log(`Successfully synced ${games.length} NFL Divisional Round games`);
 
     return new Response(
       JSON.stringify({ success: true, count: games.length }),
