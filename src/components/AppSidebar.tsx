@@ -29,9 +29,10 @@ import { Button } from "@/components/ui/button";
 
 interface AppSidebarProps {
   user: User;
+  isAdmin: boolean;
 }
 
-const menuItems = [
+const baseMenuItems = [
   {
     title: "NFL Slate",
     url: "/dashboard/nfl",
@@ -42,18 +43,24 @@ const menuItems = [
     url: "/dashboard/nba",
     icon: Dribbble,
   },
-  {
-    title: "Admin Panel",
-    url: "/dashboard/admin",
-    icon: Settings,
-  },
 ];
 
-export function AppSidebar({ user }: AppSidebarProps) {
+const adminMenuItem = {
+  title: "Admin Panel",
+  url: "/dashboard/admin",
+  icon: Settings,
+};
+
+export function AppSidebar({ user, isAdmin }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Build menu items based on role
+  const menuItems = isAdmin 
+    ? [...baseMenuItems, adminMenuItem] 
+    : baseMenuItems;
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
