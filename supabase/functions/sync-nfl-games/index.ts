@@ -102,8 +102,20 @@ Deno.serve(async (req) => {
     const data: BallDontLieResponse = await response.json();
     console.log(`Fetched ${data.data.length} games from API`);
 
+    // Filter games to only include those within our date window
+    // API may return full season - we filter to upcoming games only
+    const startDateTime = new Date(startDate).getTime();
+    const endDateTime = new Date(endDate).getTime();
+    
+    const filteredGames = data.data.filter((game) => {
+      const gameDate = new Date(game.date).getTime();
+      return gameDate >= startDateTime && gameDate <= endDateTime;
+    });
+
+    console.log(`Filtered to ${filteredGames.length} games within date range`);
+
     // Map games with spec-accurate field mapping
-    const games = data.data.map((game) => ({
+    const games = filteredGames.map((game) => ({
       id: game.id,
       league: "NFL",
       home_team_name: game.home_team.full_name,
