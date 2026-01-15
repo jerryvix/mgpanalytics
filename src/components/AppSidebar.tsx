@@ -22,10 +22,9 @@ import {
   LayoutDashboard, 
   Settings, 
   LogOut,
-  Trophy,
-  Dribbble,
   Eye,
-  EyeOff
+  EyeOff,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -38,17 +37,21 @@ interface AppSidebarProps {
   onTogglePreview?: () => void;
 }
 
-const baseMenuItems = [
-  {
-    title: "NFL Slate",
-    url: "/dashboard/nfl",
-    icon: Trophy,
-  },
-  {
-    title: "NBA Slate",
-    url: "/dashboard/nba",
-    icon: Dribbble,
-  },
+// Primary navigation - MGP Analyst is the core feature
+const primaryMenuItem = {
+  title: "MGP Analyst",
+  url: "/dashboard/analyst",
+  icon: MessageCircle,
+  isPrimary: true,
+};
+
+// Sports slates - secondary navigation
+const sportsMenuItems = [
+  { title: "NFL 🏈", url: "/dashboard/nfl" },
+  { title: "NBA 🏀", url: "/dashboard/nba" },
+  { title: "MLB ⚾", url: "/dashboard/mlb" },
+  { title: "NCAAF 🏈", url: "/dashboard/ncaaf" },
+  { title: "NCAAB 🏀", url: "/dashboard/ncaab" },
 ];
 
 const adminMenuItem = {
@@ -65,11 +68,6 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
   
   // Use preview mode to show user view when testing
   const effectiveIsAdmin = isAdmin && !isPreviewingAsUser;
-  
-  // Build menu items based on role (or preview mode)
-  const menuItems = effectiveIsAdmin 
-    ? [...baseMenuItems, adminMenuItem] 
-    : baseMenuItems;
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -107,10 +105,11 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
       </SidebarHeader>
 
       <SidebarContent className="p-2">
+        {/* Primary Navigation */}
         <SidebarGroup>
           {!collapsed && (
             <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
-              Navigation
+              Analyze
             </SidebarGroupLabel>
           )}
           <SidebarGroupContent>
@@ -128,7 +127,32 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {menuItems.map((item) => (
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to={primaryMenuItem.url} 
+                    className="flex items-center gap-3 px-3 py-2 rounded text-terminal-green hover:bg-terminal-green/10 transition-colors font-medium"
+                    activeClassName="bg-terminal-green/20 text-terminal-green"
+                  >
+                    <primaryMenuItem.icon className="w-4 h-4" />
+                    {!collapsed && <span className="text-sm">{primaryMenuItem.title}</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Sports Slates */}
+        <SidebarGroup className="mt-4">
+          {!collapsed && (
+            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
+              Slates
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {sportsMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <NavLink 
@@ -136,7 +160,6 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                       className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                       activeClassName="bg-sidebar-accent text-terminal-green"
                     >
-                      <item.icon className="w-4 h-4" />
                       {!collapsed && <span className="text-sm">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
@@ -145,6 +168,33 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Admin */}
+        {effectiveIsAdmin && (
+          <SidebarGroup className="mt-4">
+            {!collapsed && (
+              <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
+                Admin
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink 
+                      to={adminMenuItem.url} 
+                      className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                      activeClassName="bg-sidebar-accent text-terminal-green"
+                    >
+                      <adminMenuItem.icon className="w-4 h-4" />
+                      {!collapsed && <span className="text-sm">{adminMenuItem.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-4">
