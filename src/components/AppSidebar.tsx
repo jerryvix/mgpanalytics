@@ -19,12 +19,11 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { 
   Activity, 
-  LayoutDashboard, 
   Settings, 
   LogOut,
   Eye,
   EyeOff,
-  MessageCircle
+  PenLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -37,12 +36,11 @@ interface AppSidebarProps {
   onTogglePreview?: () => void;
 }
 
-// Primary navigation - MGP Analyst is the core feature
+// Primary navigation - New Conversation starts fresh chat
 const primaryMenuItem = {
-  title: "MGP Analyst",
-  url: "/dashboard/analyst",
-  icon: MessageCircle,
-  isPrimary: true,
+  title: "New Conversation ✏️",
+  url: "/dashboard",
+  icon: PenLine,
 };
 
 // Sports slates - secondary navigation
@@ -107,30 +105,13 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
       <SidebarContent className="p-2">
         {/* Primary Navigation */}
         <SidebarGroup>
-          {!collapsed && (
-            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
-              Analyze
-            </SidebarGroupLabel>
-          )}
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <NavLink 
-                    to="/dashboard" 
-                    end 
-                    className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                    activeClassName="bg-sidebar-accent text-terminal-green"
-                  >
-                    <LayoutDashboard className="w-4 h-4" />
-                    {!collapsed && <span className="text-sm">Dashboard</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <NavLink 
                     to={primaryMenuItem.url} 
+                    end
                     className="flex items-center gap-3 px-3 py-2 rounded text-terminal-green hover:bg-terminal-green/10 transition-colors font-medium"
                     activeClassName="bg-terminal-green/20 text-terminal-green"
                   >
@@ -143,11 +124,11 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Sports Slates */}
+        {/* Sports */}
         <SidebarGroup className="mt-4">
           {!collapsed && (
             <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
-              Slates
+              Sports
             </SidebarGroupLabel>
           )}
           <SidebarGroupContent>
