@@ -11,6 +11,7 @@ export function AdminPanel() {
   const [isSyncingNFL, setIsSyncingNFL] = useState(false);
   const [isSyncingOdds, setIsSyncingOdds] = useState(false);
   const [gamesCount, setGamesCount] = useState<number | null>(null);
+  const [oddsCount, setOddsCount] = useState<number | null>(null);
 
   const fetchGamesCount = async () => {
     const { count, error } = await supabase
@@ -23,8 +24,19 @@ export function AdminPanel() {
     }
   };
 
+  const fetchOddsCount = async () => {
+    const { count, error } = await supabase
+      .from("odds")
+      .select("*", { count: "exact", head: true });
+    
+    if (!error && count !== null) {
+      setOddsCount(count);
+    }
+  };
+
   useEffect(() => {
     fetchGamesCount();
+    fetchOddsCount();
   }, []);
 
   const handleSyncNFLGames = async () => {
@@ -68,6 +80,9 @@ export function AdminPanel() {
         title: "Bloomberg Feed: NFL Odds Synced",
         description: `Successfully synced ${data.count} odds.`,
       });
+
+      // Refresh the odds count
+      fetchOddsCount();
     } catch (error: any) {
       console.error("Sync error:", error);
       toast({
@@ -207,20 +222,25 @@ export function AdminPanel() {
                 <Database className="w-3 h-3 mr-2" />
                 Clear Cache
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full justify-start font-mono text-xs"
-                onClick={handleSyncNFLOdds}
-                disabled={isSyncingOdds}
-              >
-                {isSyncingOdds ? (
-                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-3 h-3 mr-2" />
-                )}
-                Sync NFL Odds
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 justify-start font-mono text-xs"
+                  onClick={handleSyncNFLOdds}
+                  disabled={isSyncingOdds}
+                >
+                  {isSyncingOdds ? (
+                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3 mr-2" />
+                  )}
+                  Sync NFL Odds
+                </Button>
+                <Badge variant="secondary" className="font-mono text-xs whitespace-nowrap">
+                  Odds in Vault: {oddsCount !== null ? oddsCount : "..."}
+                </Badge>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

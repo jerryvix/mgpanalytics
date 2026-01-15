@@ -6,7 +6,6 @@ const corsHeaders = {
 };
 
 interface OddsData {
-  id: string;
   game_id: number;
   sportsbook: string;
   line: number;
@@ -96,10 +95,7 @@ Deno.serve(async (req) => {
     const oddsToUpsert: OddsData[] = [];
     for (const gameOdds of data.data) {
       for (const odd of gameOdds.odds || []) {
-        // Create a unique ID based on game_id, sportsbook, and market_type
-        const uniqueId = `${gameOdds.game_id}-${odd.sportsbook}-${odd.market_type}`;
         oddsToUpsert.push({
-          id: uniqueId,
           game_id: gameOdds.game_id,
           sportsbook: odd.sportsbook,
           line: odd.line,
