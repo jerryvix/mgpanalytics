@@ -1,18 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Loader2, MessageCircle, ChevronRight } from "lucide-react";
+import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatQuery } from "@/hooks/useChatQuery";
+import { useChat } from "@/contexts/ChatContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
 
 interface Message {
   id: string;
@@ -21,15 +15,9 @@ interface Message {
   timestamp: Date;
 }
 
-const CHAT_OPEN_KEY = "mgp-chat-open";
-
 export function ChatPanel() {
+  const { isOpen, toggleChat } = useChat();
   const isMobile = useIsMobile();
-  const [isOpen, setIsOpen] = useState(() => {
-    if (typeof window === "undefined") return true;
-    const stored = localStorage.getItem(CHAT_OPEN_KEY);
-    return stored === null ? true : stored === "true";
-  });
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -44,11 +32,6 @@ export function ChatPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { processQuery } = useChatQuery();
-
-  // Persist open state
-  useEffect(() => {
-    localStorage.setItem(CHAT_OPEN_KEY, String(isOpen));
-  }, [isOpen]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -154,7 +137,7 @@ export function ChatPanel() {
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t border-terminal-green/20">
+      <div className="p-4 border-t border-border">
         <div className="flex gap-2">
           <Input
             ref={inputRef}
@@ -162,7 +145,7 @@ export function ChatPanel() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask about games or odds..."
-            className="flex-1 font-mono text-sm bg-background border-terminal-green/30 focus-visible:ring-terminal-green/50"
+            className="flex-1 font-mono text-sm bg-background border-border focus-visible:ring-terminal-green/50"
             disabled={isLoading}
           />
           <Button
@@ -177,11 +160,11 @@ export function ChatPanel() {
     </div>
   );
 
-  // Mobile: Use Sheet (slide-up modal)
+  // Mobile: Full-screen slide-in panel
   if (isMobile) {
     return (
       <>
-        {/* Floating button when closed */}
+        {/* Floating toggle when closed */}
         <AnimatePresence>
           {!isOpen && (
             <motion.div
@@ -192,7 +175,7 @@ export function ChatPanel() {
               className="fixed bottom-6 right-6 z-50"
             >
               <Button
-                onClick={() => setIsOpen(true)}
+                onClick={toggleChat}
                 className="h-14 px-5 bg-terminal-green hover:bg-terminal-green/90 text-background font-mono rounded-full shadow-lg shadow-terminal-green/20 flex items-center gap-2"
               >
                 <MessageCircle className="w-5 h-5" />
@@ -202,78 +185,106 @@ export function ChatPanel() {
           )}
         </AnimatePresence>
 
-        {/* Mobile Sheet */}
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          <SheetContent 
-            side="bottom" 
-            className="h-[85vh] p-0 bg-card border-terminal-green/30"
-          >
-            <SheetHeader className="p-4 border-b border-terminal-green/20">
-              <SheetTitle className="font-mono font-bold text-foreground text-lg">
-                MGP Analyst
-              </SheetTitle>
-              <SheetDescription className="font-mono text-xs text-muted-foreground">
-                Ask me about upcoming NFL games, odds, or teams
-              </SheetDescription>
-            </SheetHeader>
-            {chatContent}
-          </SheetContent>
-        </Sheet>
+        {/* Full-screen panel */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="fixed inset-0 z-50 bg-card flex flex-col"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <MessageCircle className="w-5 h-5 text-terminal-green" />
+                  <div>
+                    <h2 className="font-mono font-bold text-foreground text-lg">MGP Analyst</h2>
+                    <p className="font-mono text-xs text-muted-foreground">
+                      NFL games, odds & teams
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleChat}
+                  className="h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <PanelRightOpen className="w-5 h-5" />
+                </Button>
+              </div>
+
+              {chatContent}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </>
     );
   }
 
-  // Desktop: Side panel
+  // Desktop: Docked side panel (participates in layout)
   return (
-    <>
-      {/* Collapsed state - toggle button */}
+    <div className="relative flex h-full">
+      {/* Collapsed state - slim vertical tab */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="fixed right-0 top-1/2 -translate-y-1/2 z-40"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="w-12 h-full bg-card border-l border-border flex flex-col items-center py-4"
           >
             <Button
-              onClick={() => setIsOpen(true)}
-              className="h-auto py-4 px-2 bg-terminal-green hover:bg-terminal-green/90 text-background font-mono rounded-l-lg rounded-r-none shadow-lg shadow-terminal-green/20 flex flex-col items-center gap-2"
+              variant="ghost"
+              size="icon"
+              onClick={toggleChat}
+              className="h-10 w-10 text-terminal-green hover:text-terminal-green hover:bg-terminal-green/10 mb-3"
             >
-              <ChevronRight className="w-4 h-4 rotate-180" />
-              <span className="text-xs font-semibold writing-mode-vertical" style={{ writingMode: "vertical-rl" }}>
-                Ask MGP
-              </span>
-              <MessageCircle className="w-4 h-4" />
+              <PanelRightClose className="w-5 h-5" />
             </Button>
+            <div className="flex-1 flex items-center">
+              <span
+                className="text-xs font-mono text-muted-foreground font-semibold tracking-wider"
+                style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+              >
+                MGP ANALYST
+              </span>
+            </div>
+            <MessageCircle className="w-4 h-4 text-terminal-green/60 mt-3" />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Open panel */}
+      {/* Expanded panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 380, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed right-0 top-0 h-full w-[380px] bg-card border-l border-terminal-green/30 shadow-2xl shadow-black/20 z-40 flex flex-col"
+            className="h-full bg-card border-l border-border flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-terminal-green/20">
-              <div>
-                <h2 className="font-mono font-bold text-foreground text-lg">MGP Analyst</h2>
-                <p className="font-mono text-xs text-muted-foreground">
-                  Ask about NFL games, odds, or teams
-                </p>
+            <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
+              <div className="flex items-center gap-3">
+                <MessageCircle className="w-5 h-5 text-terminal-green" />
+                <div>
+                  <h2 className="font-mono font-bold text-foreground">MGP Analyst</h2>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    NFL games, odds & teams
+                  </p>
+                </div>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-terminal-green/10"
+                onClick={toggleChat}
+                className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted"
               >
-                <X className="w-4 h-4" />
+                <PanelRightOpen className="w-5 h-5" />
               </Button>
             </div>
 
@@ -281,6 +292,6 @@ export function ChatPanel() {
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </div>
   );
 }
