@@ -38,18 +38,18 @@ interface AppSidebarProps {
 
 // Primary navigation - New Conversation starts fresh chat
 const primaryMenuItem = {
-  title: "New Conversation ✏️",
+  title: "New Conversation",
   url: "/dashboard",
   icon: PenLine,
 };
 
-// Sports slates - secondary navigation
+// Sports slates - secondary navigation with logos
 const sportsMenuItems = [
-  { title: "NFL 🏈", url: "/dashboard/nfl" },
-  { title: "NBA 🏀", url: "/dashboard/nba" },
-  { title: "MLB ⚾", url: "/dashboard/mlb" },
-  { title: "NCAAF 🏈", url: "/dashboard/ncaaf" },
-  { title: "NCAAB 🏀", url: "/dashboard/ncaab" },
+  { title: "NFL", url: "/dashboard/nfl", logo: "/logos/nfl.png" },
+  { title: "NBA", url: "/dashboard/nba", logo: "/logos/nba.png" },
+  { title: "MLB", url: "/dashboard/mlb", logo: "/logos/mlb.png" },
+  { title: "NCAAF", url: "/dashboard/ncaaf", logo: "/logos/ncaaf.png" },
+  { title: "NCAAB", url: "/dashboard/ncaab", logo: "/logos/ncaab.png" },
 ];
 
 const adminMenuItem = {
@@ -141,6 +141,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                       className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                       activeClassName="bg-sidebar-accent text-terminal-green"
                     >
+                      <img src={item.logo} alt={item.title} className="w-5 h-5 object-contain" />
                       {!collapsed && <span className="text-sm">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
