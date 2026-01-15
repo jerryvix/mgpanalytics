@@ -59,6 +59,101 @@ export type Database = {
         }
         Relationships: []
       }
+      nba_games: {
+        Row: {
+          created_at: string
+          date: string
+          external_id: string | null
+          home_team_id: number | null
+          home_team_name: string
+          id: string
+          season: number | null
+          status: string
+          updated_at: string
+          visitor_team_id: number | null
+          visitor_team_name: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          external_id?: string | null
+          home_team_id?: number | null
+          home_team_name: string
+          id?: string
+          season?: number | null
+          status?: string
+          updated_at?: string
+          visitor_team_id?: number | null
+          visitor_team_name: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          external_id?: string | null
+          home_team_id?: number | null
+          home_team_name?: string
+          id?: string
+          season?: number | null
+          status?: string
+          updated_at?: string
+          visitor_team_id?: number | null
+          visitor_team_name?: string
+        }
+        Relationships: []
+      }
+      nba_odds: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          moneyline_away: number | null
+          moneyline_home: number | null
+          sportsbook: string
+          spread_odds: number | null
+          spread_value: number | null
+          total_over_odds: number | null
+          total_under_odds: number | null
+          total_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
+          sportsbook: string
+          spread_odds?: number | null
+          spread_value?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
+          sportsbook?: string
+          spread_odds?: number | null
+          spread_value?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nba_odds_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "nba_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       odds: {
         Row: {
           created_at: string
