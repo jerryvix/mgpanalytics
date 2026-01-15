@@ -3,16 +3,23 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings, Database, Users, RefreshCw, Loader2 } from "lucide-react";
+import { Settings, Database, Users, RefreshCw, Loader2, Trophy, Dribbble } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 export function AdminPanel() {
   const [isSyncingNFL, setIsSyncingNFL] = useState(false);
+  const [isSyncingNBA, setIsSyncingNBA] = useState(false);
   const [isSyncingOdds, setIsSyncingOdds] = useState(false);
+  
+  // NFL counts
   const [gamesCount, setGamesCount] = useState<number | null>(null);
   const [postseasonCount, setPostseasonCount] = useState<number | null>(null);
   const [oddsCount, setOddsCount] = useState<number | null>(null);
+  
+  // NBA counts
+  const [nbaGamesCount, setNbaGamesCount] = useState<number | null>(null);
+  const [nbaOddsCount, setNbaOddsCount] = useState<number | null>(null);
 
   const fetchGamesCount = async () => {
     // Fetch total NFL games
@@ -47,9 +54,31 @@ export function AdminPanel() {
     }
   };
 
+  const fetchNBAGamesCount = async () => {
+    const { count, error } = await supabase
+      .from("nba_games")
+      .select("*", { count: "exact", head: true });
+    
+    if (!error && count !== null) {
+      setNbaGamesCount(count);
+    }
+  };
+
+  const fetchNBAOddsCount = async () => {
+    const { count, error } = await supabase
+      .from("nba_odds")
+      .select("*", { count: "exact", head: true });
+    
+    if (!error && count !== null) {
+      setNbaOddsCount(count);
+    }
+  };
+
   useEffect(() => {
     fetchGamesCount();
     fetchOddsCount();
+    fetchNBAGamesCount();
+    fetchNBAOddsCount();
   }, []);
 
   const handleSyncNFLGames = async () => {
@@ -66,18 +95,45 @@ export function AdminPanel() {
         description: data.message || `Synced ${data.gamesCount} games with live odds`,
       });
 
-      // Refresh both counts since we now sync games AND odds together
       fetchGamesCount();
       fetchOddsCount();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Sync error:", error);
       toast({
         title: "Sync Failed",
-        description: error.message || "Failed to sync NFL games and odds",
+        description: error instanceof Error ? error.message : "Failed to sync NFL games and odds",
         variant: "destructive",
       });
     } finally {
       setIsSyncingNFL(false);
+    }
+  };
+
+  const handleSyncNBAGames = async () => {
+    setIsSyncingNBA(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-nba-odds");
+      
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "NBA Games & Odds Synced",
+        description: data.message || `Synced ${data.gamesCount} NBA games with live odds`,
+      });
+
+      fetchNBAGamesCount();
+      fetchNBAOddsCount();
+    } catch (error: unknown) {
+      console.error("Sync error:", error);
+      toast({
+        title: "Sync Failed",
+        description: error instanceof Error ? error.message : "Failed to sync NBA games and odds",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingNBA(false);
     }
   };
 
@@ -95,13 +151,12 @@ export function AdminPanel() {
         description: `Successfully synced ${data.count} odds.`,
       });
 
-      // Refresh the odds count
       fetchOddsCount();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Sync error:", error);
       toast({
         title: "Sync Failed",
-        description: error.message || "Failed to sync NFL odds",
+        description: error instanceof Error ? error.message : "Failed to sync NFL odds",
         variant: "destructive",
       });
     } finally {
@@ -200,24 +255,28 @@ export function AdminPanel() {
           </Card>
         </motion.div>
 
+        {/* NFL Sync Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
         >
-          <Card className="bg-card border-border">
+          <Card className="bg-card border-terminal-green/30">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
-                <Settings className="w-4 h-4 text-terminal-amber" />
-                System Settings
+                <Trophy className="w-4 h-4 text-terminal-green" />
+                NFL Data Sync
               </CardTitle>
+              <Badge variant="outline" className="border-terminal-green text-terminal-green text-[10px]">
+                NFL
+              </Badge>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center gap-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="flex-1 justify-start font-mono text-xs"
+                  className="flex-1 justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
                   onClick={handleSyncNFLGames}
                   disabled={isSyncingNFL}
                 >
@@ -228,41 +287,70 @@ export function AdminPanel() {
                   )}
                   Sync NFL Games
                 </Button>
-                <Badge variant="secondary" className="font-mono text-xs whitespace-nowrap">
-                  Postseason: {postseasonCount !== null ? postseasonCount : "..."} | Total: {gamesCount !== null ? gamesCount : "..."}
-                </Badge>
               </div>
-              <Button variant="outline" size="sm" className="w-full justify-start font-mono text-xs">
-                <Database className="w-3 h-3 mr-2" />
-                Clear Cache
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex-1 justify-start font-mono text-xs"
-                  onClick={handleSyncNFLOdds}
-                  disabled={isSyncingOdds}
-                >
-                  {isSyncingOdds ? (
-                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-3 h-3 mr-2" />
-                  )}
-                  Sync NFL Odds
-                </Button>
-                <Badge variant="secondary" className="font-mono text-xs whitespace-nowrap">
-                  Odds in Vault: {oddsCount !== null ? oddsCount : "..."}
-                </Badge>
+              <div className="flex justify-between font-mono text-xs text-muted-foreground">
+                <span>Games in Vault:</span>
+                <span className="text-terminal-green">{postseasonCount !== null ? postseasonCount : "..."}</span>
+              </div>
+              <div className="flex justify-between font-mono text-xs text-muted-foreground">
+                <span>Odds in Vault:</span>
+                <span className="text-terminal-green">{oddsCount !== null ? oddsCount : "..."}</span>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
+        {/* NBA Sync Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
+        >
+          <Card className="bg-card border-terminal-cyan/30">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
+                <Dribbble className="w-4 h-4 text-terminal-cyan" />
+                NBA Data Sync
+              </CardTitle>
+              <Badge variant="outline" className="border-terminal-cyan text-terminal-cyan text-[10px]">
+                NBA
+              </Badge>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 justify-start font-mono text-xs border-terminal-cyan/50 hover:bg-terminal-cyan/10"
+                  onClick={handleSyncNBAGames}
+                  disabled={isSyncingNBA}
+                >
+                  {isSyncingNBA ? (
+                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-3 h-3 mr-2" />
+                  )}
+                  Sync NBA Games
+                </Button>
+              </div>
+              <div className="flex justify-between font-mono text-xs text-muted-foreground">
+                <span>Games in Vault:</span>
+                <span className="text-terminal-cyan">{nbaGamesCount !== null ? nbaGamesCount : "..."}</span>
+              </div>
+              <div className="flex justify-between font-mono text-xs text-muted-foreground">
+                <span>Odds in Vault:</span>
+                <span className="text-terminal-cyan">{nbaOddsCount !== null ? nbaOddsCount : "..."}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* System Health */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="md:col-span-2"
         >
           <Card className="bg-card border-border">
             <CardHeader>
@@ -271,7 +359,7 @@ export function AdminPanel() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 font-mono text-xs">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-mono text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">API Response</span>
                   <span className="text-terminal-green">45ms</span>
