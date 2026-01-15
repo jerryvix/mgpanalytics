@@ -5,6 +5,7 @@ interface ChatContextType {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   toggleChat: () => void;
+  openChat: () => void;
   pendingQuery: string;
   setPendingQuery: (query: string) => void;
   openWithQuery: (query: string) => void;
@@ -48,6 +49,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   }, [isOpen, mounted]);
 
   const toggleChat = () => setIsOpen((prev) => !prev);
+  
+  const openChat = () => setIsOpen(true);
 
   const openWithQuery = (query: string) => {
     setPendingQuery(query);
@@ -55,7 +58,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ChatContext.Provider value={{ isOpen, setIsOpen, toggleChat, pendingQuery, setPendingQuery, openWithQuery }}>
+    <ChatContext.Provider value={{ isOpen, setIsOpen, toggleChat, openChat, pendingQuery, setPendingQuery, openWithQuery }}>
       {children}
     </ChatContext.Provider>
   );
