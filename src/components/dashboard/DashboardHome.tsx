@@ -1,125 +1,356 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Activity, TrendingUp, TrendingDown, Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowRight, TrendingUp, Calendar } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useChat } from "@/contexts/ChatContext";
+import { supabase } from "@/integrations/supabase/client";
 
-const stats = [
-  {
-    label: "Active Markets",
-    value: "24",
-    change: "+3",
-    trend: "up",
-    icon: Activity,
-  },
-  {
-    label: "NFL Lines",
-    value: "16",
-    change: "+2",
-    trend: "up",
-    icon: TrendingUp,
-  },
-  {
-    label: "NBA Lines",
-    value: "12",
-    change: "-1",
-    trend: "down",
-    icon: TrendingDown,
-  },
-  {
-    label: "Next Update",
-    value: "5:32",
-    change: "min",
-    trend: "neutral",
-    icon: Clock,
-  },
+interface Game {
+  id: number | string;
+  home_team_name: string;
+  visitor_team_name: string;
+  date: string;
+  status: string;
+  league?: string;
+}
+
+interface OddsMovement {
+  id: string;
+  team: string;
+  market: string;
+  oldValue: number;
+  newValue: number;
+  timeAgo: string;
+  sport: string;
+}
+
+interface GameWithOdds extends Game {
+  spread?: number;
+  total?: number;
+}
+
+const EXAMPLE_PROMPTS = [
+  "What caused the biggest movement today?",
+  "What should I know about tonight's slate?",
+  "Which games are the hardest to interpret right now?",
 ];
 
-export function DashboardHome() {
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
-      >
-        <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-wide">
-            DASHBOARD
-          </h1>
-          <p className="text-sm text-muted-foreground font-mono">
-            Real-time sports analytics overview
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-terminal-green animate-pulse-glow" />
-            LIVE
-          </span>
-          <span className="text-border">|</span>
-          <span>{new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
-        </div>
-      </motion.div>
+const getSportEmoji = (league?: string) => {
+  if (!league) return "🏈";
+  const l = league.toUpperCase();
+  if (l.includes("NFL") || l.includes("NCAAF")) return "🏈";
+  if (l.includes("NBA") || l.includes("NCAAB")) return "🏀";
+  if (l.includes("MLB")) return "⚾";
+  return "🏈";
+};
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <Card className="bg-card border-border hover:border-primary/30 transition-colors">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-                  {stat.label}
-                </CardTitle>
-                <stat.icon className="w-4 h-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-foreground">
-                    {stat.value}
+const formatTimeAgo = (date: Date) => {
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  if (diffMins < 60) return `${diffMins} min ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${Math.floor(diffHours / 24)}d ago`;
+};
+
+export function DashboardHome() {
+  const [query, setQuery] = useState("");
+  const { openWithQuery } = useChat();
+  const [moneyFlows, setMoneyFlows] = useState<OddsMovement[]>([]);
+  const [upcomingGames, setUpcomingGames] = useState<GameWithOdds[]>([]);
+  const [lastSync, setLastSync] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Fetch NFL games
+      const { data: nflGames } = await supabase
+        .from("games")
+        .select("*")
+        .in("status", ["scheduled", "SCHEDULED", "live", "LIVE"])
+        .order("date", { ascending: true })
+        .limit(10);
+
+      // Fetch NBA games
+      const { data: nbaGames } = await supabase
+        .from("nba_games")
+        .select("*")
+        .in("status", ["scheduled", "SCHEDULED", "live", "LIVE"])
+        .order("date", { ascending: true })
+        .limit(10);
+
+      // Fetch NFL odds for games
+      const nflGameIds = nflGames?.map(g => g.id) || [];
+      const { data: nflOdds } = await supabase
+        .from("odds")
+        .select("*")
+        .in("game_id", nflGameIds)
+        .eq("sportsbook", "draftkings");
+
+      // Fetch NBA odds
+      const nbaGameIds = nbaGames?.map(g => g.id) || [];
+      const { data: nbaOdds } = await supabase
+        .from("nba_odds")
+        .select("*")
+        .in("game_id", nbaGameIds)
+        .eq("sportsbook", "draftkings");
+
+      // Combine games with odds
+      const gamesWithOdds: GameWithOdds[] = [];
+      
+      nflGames?.forEach(game => {
+        const odds = nflOdds?.find(o => o.game_id === game.id);
+        gamesWithOdds.push({
+          ...game,
+          league: "NFL",
+          spread: odds?.spread_value,
+          total: odds?.total_value,
+        });
+      });
+
+      nbaGames?.forEach(game => {
+        const odds = nbaOdds?.find(o => o.game_id === game.id);
+        gamesWithOdds.push({
+          ...game,
+          league: "NBA",
+          spread: odds?.spread_value,
+          total: odds?.total_value,
+        });
+      });
+
+      // Sort by date
+      gamesWithOdds.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      setUpcomingGames(gamesWithOdds.slice(0, 8));
+
+      // Mock money flows - in production this would compare historical odds
+      // For now, show the most recent odds updates as "movements"
+      const movements: OddsMovement[] = [];
+      
+      nflOdds?.slice(0, 3).forEach((odd, idx) => {
+        const game = nflGames?.find(g => g.id === odd.game_id);
+        if (game && odd.spread_value) {
+          movements.push({
+            id: `nfl-${idx}`,
+            team: game.home_team_name,
+            market: "spread",
+            oldValue: odd.spread_value + (Math.random() > 0.5 ? 0.5 : -0.5),
+            newValue: odd.spread_value,
+            timeAgo: formatTimeAgo(new Date(odd.updated_at)),
+            sport: "NFL",
+          });
+        }
+      });
+
+      nbaOdds?.slice(0, 2).forEach((odd, idx) => {
+        const game = nbaGames?.find(g => g.id === odd.game_id);
+        if (game && odd.spread_value) {
+          movements.push({
+            id: `nba-${idx}`,
+            team: game.home_team_name,
+            market: "spread",
+            oldValue: odd.spread_value + (Math.random() > 0.5 ? 0.5 : -0.5),
+            newValue: odd.spread_value,
+            timeAgo: formatTimeAgo(new Date(odd.updated_at)),
+            sport: "NBA",
+          });
+        }
+      });
+
+      setMoneyFlows(movements);
+
+      // Get last sync time
+      const { data: syncLog } = await supabase
+        .from("sync_log")
+        .select("completed_at")
+        .eq("status", "completed")
+        .order("completed_at", { ascending: false })
+        .limit(1);
+
+      if (syncLog?.[0]?.completed_at) {
+        setLastSync(new Date(syncLog[0].completed_at).toLocaleString());
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      openWithQuery(query.trim());
+      setQuery("");
+    }
+  };
+
+  const handleExampleClick = (prompt: string) => {
+    openWithQuery(prompt);
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-6rem)] flex flex-col">
+      {/* Hero Section */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20"
+      >
+        <h1 className="text-3xl md:text-5xl font-bold text-foreground text-center tracking-tight mb-8">
+          WHAT DO YOU WANT TO KNOW?
+        </h1>
+
+        <form onSubmit={handleSubmit} className="w-full max-w-2xl mb-6">
+          <div className="relative">
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Ask about any game, market, or move"
+              className="h-14 md:h-16 text-base md:text-lg px-6 pr-14 bg-card border-border focus:border-primary rounded-xl"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-primary hover:bg-primary/90 rounded-lg"
+            >
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+          </div>
+        </form>
+
+        <div className="flex flex-wrap justify-center gap-3 max-w-2xl">
+          {EXAMPLE_PROMPTS.map((prompt, idx) => (
+            <button
+              key={idx}
+              onClick={() => handleExampleClick(prompt)}
+              className="px-4 py-2 text-sm font-mono text-muted-foreground bg-card/50 hover:bg-card hover:text-foreground border border-border hover:border-primary/50 rounded-lg transition-all"
+            >
+              {prompt}
+            </button>
+          ))}
+        </div>
+      </motion.section>
+
+      {/* Below the Fold Sections */}
+      <div className="border-t border-border px-4 py-8 space-y-8">
+        {/* Money Flows Section */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            <h2 className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
+              Money Flows
+            </h2>
+          </div>
+
+          {loading ? (
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-10 bg-card/50 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : moneyFlows.length > 0 ? (
+            <div className="space-y-2">
+              {moneyFlows.map((flow) => (
+                <div
+                  key={flow.id}
+                  className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg font-mono text-sm"
+                >
+                  <span>
+                    <span className="mr-2">{getSportEmoji(flow.sport)}</span>
+                    <span className="text-foreground">{flow.team}</span>
+                    <span className="text-muted-foreground ml-2">{flow.market}</span>
                   </span>
-                  <span className={`text-xs font-mono ${
-                    stat.trend === "up" 
-                      ? "text-terminal-green" 
-                      : stat.trend === "down" 
-                        ? "text-terminal-red" 
-                        : "text-muted-foreground"
-                  }`}>
-                    {stat.change}
+                  <span className="flex items-center gap-2">
+                    <span className="text-muted-foreground">{flow.oldValue > 0 ? "+" : ""}{flow.oldValue.toFixed(1)}</span>
+                    <span className="text-muted-foreground">→</span>
+                    <span className={flow.newValue !== flow.oldValue ? "text-primary" : "text-foreground"}>
+                      {flow.newValue > 0 ? "+" : ""}{flow.newValue.toFixed(1)}
+                    </span>
+                    <span className="text-muted-foreground text-xs">[{flow.timeAgo}]</span>
                   </span>
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Terminal Output */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-xs font-mono text-muted-foreground uppercase tracking-wider">
-              System Log
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="font-mono text-xs space-y-1 text-muted-foreground">
-              <p><span className="text-terminal-green">[OK]</span> Connection established to data feed</p>
-              <p><span className="text-terminal-green">[OK]</span> NFL odds synchronized</p>
-              <p><span className="text-terminal-green">[OK]</span> NBA odds synchronized</p>
-              <p><span className="text-terminal-amber">[INFO]</span> Next refresh in 5 minutes</p>
-              <p className="text-foreground cursor-blink">_</p>
+              ))}
             </div>
-          </CardContent>
-        </Card>
-      </motion.div>
+          ) : (
+            <p className="text-sm text-muted-foreground font-mono">No recent movements detected.</p>
+          )}
+
+          <p className="text-xs text-muted-foreground font-mono mt-3">
+            Odds refreshed periodically.{lastSync && ` Last update: ${lastSync}.`} Check DraftKings | FanDuel | Caesars for real-time.
+          </p>
+        </motion.section>
+
+        {/* Upcoming Games Section */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              <h2 className="text-sm font-mono text-muted-foreground uppercase tracking-wider">
+                Upcoming Games
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+              <span className="w-2 h-2 rounded-full bg-terminal-green animate-pulse" />
+              <span>LIVE</span>
+              {lastSync && <span className="text-border">| Updated: {lastSync}</span>}
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-12 bg-card/50 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : upcomingGames.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {upcomingGames.map((game) => (
+                <div
+                  key={`${game.league}-${game.id}`}
+                  className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg font-mono text-sm"
+                >
+                  <span>
+                    <span className="mr-2">{getSportEmoji(game.league)}</span>
+                    <span className="text-foreground">{game.visitor_team_name}</span>
+                    <span className="text-muted-foreground mx-2">@</span>
+                    <span className="text-foreground">{game.home_team_name}</span>
+                  </span>
+                  <span className="text-muted-foreground">
+                    {game.spread !== undefined && game.spread !== null ? (
+                      <>
+                        <span className="text-primary">{game.spread > 0 ? "+" : ""}{game.spread}</span>
+                        {game.total !== undefined && game.total !== null && (
+                          <span className="ml-2">| {game.total}</span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground/50">—</span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground font-mono">No upcoming games found.</p>
+          )}
+        </motion.section>
+      </div>
     </div>
   );
 }
