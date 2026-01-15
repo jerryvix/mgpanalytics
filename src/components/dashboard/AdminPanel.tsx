@@ -56,8 +56,9 @@ export function AdminPanel() {
 
   const fetchNBAGamesCount = async () => {
     const { count, error } = await supabase
-      .from("nba_games")
-      .select("*", { count: "exact", head: true });
+      .from("games")
+      .select("*", { count: "exact", head: true })
+      .eq("league", "NBA");
     
     if (!error && count !== null) {
       setNbaGamesCount(count);
@@ -65,12 +66,24 @@ export function AdminPanel() {
   };
 
   const fetchNBAOddsCount = async () => {
-    const { count, error } = await supabase
-      .from("nba_odds")
-      .select("*", { count: "exact", head: true });
+    // Get all NBA game IDs first
+    const { data: nbaGames } = await supabase
+      .from("games")
+      .select("id")
+      .eq("league", "NBA");
     
-    if (!error && count !== null) {
-      setNbaOddsCount(count);
+    if (nbaGames && nbaGames.length > 0) {
+      const nbaGameIds = nbaGames.map(g => g.id);
+      const { count, error } = await supabase
+        .from("odds")
+        .select("*", { count: "exact", head: true })
+        .in("game_id", nbaGameIds);
+      
+      if (!error && count !== null) {
+        setNbaOddsCount(count);
+      }
+    } else {
+      setNbaOddsCount(0);
     }
   };
 

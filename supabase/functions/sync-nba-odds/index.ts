@@ -74,8 +74,8 @@ function normalizeTeamName(name: string): string {
 // Try to match odds game to our database game
 function findMatchingGame(
   oddsGame: OddsAPIGame,
-  games: { id: string; home_team_name: string; visitor_team_name: string }[]
-): { id: string; home_team_name: string; visitor_team_name: string } | null {
+  games: { id: number; home_team_name: string; visitor_team_name: string }[]
+): { id: number; home_team_name: string; visitor_team_name: string } | null {
   const oddsHome = normalizeTeamName(oddsGame.home_team);
   const oddsAway = normalizeTeamName(oddsGame.away_team);
 
@@ -106,14 +106,10 @@ serve(async (req) => {
   try {
     console.log("Starting NBA games and odds sync...");
 
-    const BALLDONTLIE_API_KEY = Deno.env.get("BALLDONTLIE_API_KEY");
     const THE_ODDS_API_KEY = Deno.env.get("THE_ODDS_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!BALLDONTLIE_API_KEY) {
-      throw new Error("BALLDONTLIE_API_KEY not configured");
-    }
     if (!THE_ODDS_API_KEY) {
       throw new Error("THE_ODDS_API_KEY not configured");
     }
@@ -124,14 +120,39 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // =========================
-    // STEP 1: Fetch NBA games from BallDontLie
+    // STEP 1: Prune old NBA games (older than 48 hours)
+    // =========================
+    console.log("Pruning NBA games older than 48 hours...");
+    const cutoffDate = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+    
+    const { error: pruneError } = await supabase
+      .from("games")
+      .delete()
+      .eq("league", "NBA")
+      .lt("date", cutoffDate);
+
+    if (pruneError) {
+      console.error("Error pruning old NBA games:", pruneError);
+    } else {
+      console.log("Pruned old NBA games successfully");
+    }
+
+    // =========================
+    // STEP 2: Fetch NBA games from BallDontLie /nba/v1/games
     // =========================
     console.log("Fetching NBA games from BallDontLie...");
-    const gamesUrl = "https://api.balldontlie.io/v1/games?seasons[]=2024&per_page=100";
+    
+    // Use exact dates as specified
+    const startDate = "2026-01-14";
+    const endDate = "2026-01-21";
+    
+    const gamesUrl = `https://api.balldontlie.io/nba/v1/games?seasons[]=2025&start_date=${startDate}&end_date=${endDate}&per_page=100`;
+    
+    console.log("Fetching from URL:", gamesUrl);
     
     const gamesResponse = await fetch(gamesUrl, {
       headers: {
-        Authorization: BALLDONTLIE_API_KEY,
+        "Authorization": "52aa922d-2187-406d-a52b-3d51c71117f7",
       },
     });
 
@@ -146,37 +167,39 @@ serve(async (req) => {
     console.log(`Fetched ${apiGames.length} NBA games from BallDontLie`);
 
     // =========================
-    // STEP 2: Delete existing NBA games for this season
+    // STEP 3: Delete existing NBA games in this date range
     // =========================
-    console.log("Deleting existing 2025 NBA games...");
+    console.log("Deleting existing NBA games in date range...");
     const { error: deleteGamesError } = await supabase
-      .from("nba_games")
+      .from("games")
       .delete()
-      .eq("season", 2025);
+      .eq("league", "NBA")
+      .gte("date", startDate)
+      .lte("date", endDate + "T23:59:59Z");
 
     if (deleteGamesError) {
       console.error("Error deleting existing games:", deleteGamesError);
     }
 
     // =========================
-    // STEP 3: Insert new games into nba_games table
+    // STEP 4: Insert new games into games table with league='NBA'
     // =========================
     const gamesToInsert = apiGames.map((game) => ({
+      league: "NBA",
       season: 2025,
       date: game.date,
       status: game.status,
       home_team_name: game.home_team.full_name,
       visitor_team_name: game.visitor_team.full_name,
-      home_team_id: game.home_team.id,
-      visitor_team_id: game.visitor_team.id,
+      postseason: game.postseason || false,
       external_id: `nba_${game.id}`,
     }));
 
-    let insertedGames: { id: string; home_team_name: string; visitor_team_name: string }[] = [];
+    let insertedGames: { id: number; home_team_name: string; visitor_team_name: string }[] = [];
 
     if (gamesToInsert.length > 0) {
       const { data: insertedData, error: insertGamesError } = await supabase
-        .from("nba_games")
+        .from("games")
         .upsert(gamesToInsert, { onConflict: "external_id" })
         .select("id, home_team_name, visitor_team_name");
 
@@ -190,7 +213,7 @@ serve(async (req) => {
     }
 
     // =========================
-    // STEP 4: Fetch NBA odds from The Odds API
+    // STEP 5: Fetch NBA odds from The Odds API
     // =========================
     console.log("Fetching NBA odds from The Odds API...");
     const oddsUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds?apiKey=${THE_ODDS_API_KEY}&markets=spreads,h2h,totals&regions=us&oddsFormat=american`;
@@ -215,12 +238,12 @@ serve(async (req) => {
     }
 
     // =========================
-    // STEP 5: Delete existing odds for synced games
+    // STEP 6: Delete existing odds for synced games
     // =========================
     if (insertedGames.length > 0 && !oddsError) {
       const gameIds = insertedGames.map((g) => g.id);
       const { error: deleteOddsError } = await supabase
-        .from("nba_odds")
+        .from("odds")
         .delete()
         .in("game_id", gameIds);
 
@@ -230,10 +253,20 @@ serve(async (req) => {
     }
 
     // =========================
-    // STEP 6: Process and insert odds
+    // STEP 7: Process and insert odds
     // =========================
     let oddsInsertedCount = 0;
-    const oddsToInsert: any[] = [];
+    const oddsToInsert: {
+      game_id: number;
+      sportsbook: string;
+      spread_value: number | null;
+      spread_odds: number | null;
+      moneyline_home: number | null;
+      moneyline_away: number | null;
+      total_value: number | null;
+      total_over_odds: number | null;
+      total_under_odds: number | null;
+    }[] = [];
 
     for (const oddsGame of oddsGames) {
       const matchedGame = findMatchingGame(oddsGame, insertedGames);
@@ -313,7 +346,7 @@ serve(async (req) => {
 
     if (oddsToInsert.length > 0) {
       const { error: insertOddsError } = await supabase
-        .from("nba_odds")
+        .from("odds")
         .upsert(oddsToInsert, { onConflict: "game_id,sportsbook" });
 
       if (insertOddsError) {
@@ -325,7 +358,7 @@ serve(async (req) => {
     }
 
     // =========================
-    // STEP 7: Return success response
+    // STEP 8: Return success response
     // =========================
     const response = {
       success: true,
