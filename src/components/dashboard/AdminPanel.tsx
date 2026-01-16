@@ -262,40 +262,200 @@ export function AdminPanel() {
   const handleSyncNFLSeasonStats = async () => {
     setIsSyncingNFLSeasonStats(true);
     const startTime = Date.now();
+    let edgeFunctionFailed = false;
     
     try {
+      // Try edge function first
       console.log("[Admin] Calling sync-nfl-season-stats edge function...");
       const { data, error } = await supabase.functions.invoke("sync-nfl-season-stats", {
         body: { season: 2024 }
       });
       
       if (error) {
-        console.error("[Admin] Edge function error:", error);
-        throw error;
-      }
-
-      const duration = Math.round((Date.now() - startTime) / 1000);
-      
-      if (data?.success) {
+        console.error("[Admin] Edge function error (will try client-side fallback):", error);
+        edgeFunctionFailed = true;
+      } else if (data?.success) {
+        const duration = Math.round((Date.now() - startTime) / 1000);
         toast({
           title: "NFL Season Stats Synced",
           description: `✓ Synced ${data.statsSync?.toLocaleString() || 0} stats for ${data.season} (${duration}s)`,
         });
         fetchNFLSeasonStatsCount();
+        return;
       } else {
-        throw new Error(data?.error || "Sync failed");
+        edgeFunctionFailed = true;
       }
-    } catch (error: unknown) {
-      console.error("[Admin] Sync error details:", error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      toast({
-        title: "Sync Failed",
-        description: errorMessage.length > 200 ? errorMessage.substring(0, 200) + "..." : errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSyncingNFLSeasonStats(false);
+    } catch {
+      console.error("[Admin] Edge function threw, trying client-side fallback...");
+      edgeFunctionFailed = true;
     }
+
+    // Client-side fallback if edge function failed
+    if (edgeFunctionFailed) {
+      try {
+        console.log("[Admin] Starting client-side season stats sync...");
+        
+        // Fetch season stats directly from Ball Don't Lie API
+        const BDL_API_KEY = "3c736b5d-5ce6-4f05-a2a7-7899aa7cb2c3";
+        const response = await fetch(
+          `https://api.balldontlie.io/nfl/v1/season_stats?season=2024&per_page=100`,
+          {
+            headers: {
+              "Authorization": BDL_API_KEY,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        let allStats = result.data || [];
+        
+        // Fetch additional pages if available
+        let nextCursor = result.meta?.next_cursor;
+        while (nextCursor) {
+          console.log(`[Admin] Fetching next page, cursor: ${nextCursor}`);
+          const nextResponse = await fetch(
+            `https://api.balldontlie.io/nfl/v1/season_stats?season=2024&per_page=100&cursor=${nextCursor}`,
+            {
+              headers: {
+                "Authorization": BDL_API_KEY,
+              },
+            }
+          );
+          
+          if (!nextResponse.ok) break;
+          
+          const nextResult = await nextResponse.json();
+          allStats = [...allStats, ...(nextResult.data || [])];
+          nextCursor = nextResult.meta?.next_cursor;
+          
+          // Rate limit protection
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        console.log(`[Admin] Fetched ${allStats.length} season stats from API`);
+
+        // Get all NFL players from database for mapping
+        const { data: players } = await supabase
+          .from("players")
+          .select("id, external_id")
+          .eq("sport", "NFL");
+
+        const playerMap = new Map(
+          players?.map(p => [String(p.external_id), p.id]) || []
+        );
+
+        // Process and upsert stats
+        let syncedCount = 0;
+        let skippedCount = 0;
+        const batchSize = 50;
+        
+        for (let i = 0; i < allStats.length; i += batchSize) {
+          const batch = allStats.slice(i, i + batchSize);
+          const statsToUpsert = [];
+
+          for (const stat of batch) {
+            const playerId = playerMap.get(String(stat.player?.id));
+            
+            if (!playerId) {
+              skippedCount++;
+              continue;
+            }
+
+            // Calculate fantasy points
+            const passYards = stat.pass_yards || 0;
+            const passTd = stat.pass_touchdowns || 0;
+            const passInt = stat.pass_interceptions || 0;
+            const rushYards = stat.rush_yards || 0;
+            const rushTd = stat.rush_touchdowns || 0;
+            const recYards = stat.receiving_yards || 0;
+            const recTd = stat.receiving_touchdowns || 0;
+            const receptions = stat.receptions || 0;
+
+            const fantasyPoints = 
+              (passYards * 0.04) + 
+              (passTd * 4) - 
+              (passInt * 2) + 
+              (rushYards * 0.1) + 
+              (rushTd * 6) + 
+              (recYards * 0.1) + 
+              (recTd * 6);
+
+            const fantasyPointsPpr = fantasyPoints + receptions;
+
+            statsToUpsert.push({
+              player_id: playerId,
+              sport: "NFL",
+              season: stat.season || 2024,
+              season_type: "regular",
+              games_played: stat.games_played || 0,
+              pass_attempts: stat.pass_attempts || 0,
+              pass_completions: stat.pass_completions || 0,
+              pass_yards: passYards,
+              pass_td: passTd,
+              pass_int: passInt,
+              passer_rating: stat.passer_rating || null,
+              rush_attempts: stat.rush_attempts || 0,
+              rush_yards: rushYards,
+              rush_td: rushTd,
+              receptions: receptions,
+              rec_yards: recYards,
+              rec_td: recTd,
+              targets: stat.targets || 0,
+              fantasy_points: Math.round(fantasyPoints * 100) / 100,
+              fantasy_points_ppr: Math.round(fantasyPointsPpr * 100) / 100,
+              raw_data: stat,
+              updated_at: new Date().toISOString(),
+            });
+          }
+
+          if (statsToUpsert.length > 0) {
+            const { error: upsertError } = await supabase
+              .from("player_season_stats")
+              .upsert(statsToUpsert, {
+                onConflict: "player_id,sport,season,season_type",
+              });
+
+            if (upsertError) {
+              console.error("[Admin] Upsert error:", upsertError);
+            } else {
+              syncedCount += statsToUpsert.length;
+            }
+          }
+        }
+
+        const duration = Math.round((Date.now() - startTime) / 1000);
+        
+        // Check database count
+        const { count: newCount } = await supabase
+          .from("player_season_stats")
+          .select("*", { count: "exact", head: true })
+          .eq("sport", "NFL");
+
+        if (syncedCount > 0 || (newCount && newCount > 0)) {
+          toast({
+            title: "NFL Season Stats Synced",
+            description: `✓ ${syncedCount} stats synced, ${skippedCount} skipped (${duration}s)`,
+          });
+          setNflSeasonStatsCount(newCount || syncedCount);
+        } else {
+          throw new Error("No stats synced - players may need to be synced first");
+        }
+      } catch (clientError: unknown) {
+        console.error("[Admin] Client-side sync error:", clientError);
+        const errorMessage = clientError instanceof Error ? clientError.message : String(clientError);
+        toast({
+          title: "Sync Failed",
+          description: errorMessage.length > 200 ? errorMessage.substring(0, 200) + "..." : errorMessage,
+          variant: "destructive",
+        });
+      }
+    }
+    
+    setIsSyncingNFLSeasonStats(false);
   };
 
   const handleTestAPIConnection = async () => {
