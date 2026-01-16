@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings, Database, Users, RefreshCw, Loader2, Trophy, Dribbble, Zap, CheckCircle, XCircle, UserCircle } from "lucide-react";
+import { Settings, Database, Users, RefreshCw, Loader2, Trophy, Dribbble, Zap, CheckCircle, XCircle, UserCircle, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -12,6 +12,7 @@ export function AdminPanel() {
   const [isSyncingNBA, setIsSyncingNBA] = useState(false);
   const [isSyncingOdds, setIsSyncingOdds] = useState(false);
   const [isSyncingNFLPlayers, setIsSyncingNFLPlayers] = useState(false);
+  const [isSyncingNFLSeasonStats, setIsSyncingNFLSeasonStats] = useState(false);
   const [isTestingAPI, setIsTestingAPI] = useState(false);
   const [apiStatus, setApiStatus] = useState<{ success: boolean; message: string } | null>(null);
   
@@ -26,6 +27,7 @@ export function AdminPanel() {
   
   // Player counts
   const [nflPlayersCount, setNflPlayersCount] = useState<number | null>(null);
+  const [nflSeasonStatsCount, setNflSeasonStatsCount] = useState<number | null>(null);
 
   const fetchGamesCount = async () => {
     // Fetch total NFL games
@@ -104,12 +106,24 @@ export function AdminPanel() {
     }
   };
 
+  const fetchNFLSeasonStatsCount = async () => {
+    const { count, error } = await supabase
+      .from("player_season_stats")
+      .select("*", { count: "exact", head: true })
+      .eq("sport", "NFL");
+    
+    if (!error && count !== null) {
+      setNflSeasonStatsCount(count);
+    }
+  };
+
   useEffect(() => {
     fetchGamesCount();
     fetchOddsCount();
     fetchNBAGamesCount();
     fetchNBAOddsCount();
     fetchNFLPlayersCount();
+    fetchNFLSeasonStatsCount();
   }, []);
 
   const handleSyncNFLGames = async () => {
@@ -242,6 +256,45 @@ export function AdminPanel() {
       });
     } finally {
       setIsSyncingNFLPlayers(false);
+    }
+  };
+
+  const handleSyncNFLSeasonStats = async () => {
+    setIsSyncingNFLSeasonStats(true);
+    const startTime = Date.now();
+    
+    try {
+      console.log("[Admin] Calling sync-nfl-season-stats edge function...");
+      const { data, error } = await supabase.functions.invoke("sync-nfl-season-stats", {
+        body: { season: 2024 }
+      });
+      
+      if (error) {
+        console.error("[Admin] Edge function error:", error);
+        throw error;
+      }
+
+      const duration = Math.round((Date.now() - startTime) / 1000);
+      
+      if (data?.success) {
+        toast({
+          title: "NFL Season Stats Synced",
+          description: `✓ Synced ${data.statsSync?.toLocaleString() || 0} stats for ${data.season} (${duration}s)`,
+        });
+        fetchNFLSeasonStatsCount();
+      } else {
+        throw new Error(data?.error || "Sync failed");
+      }
+    } catch (error: unknown) {
+      console.error("[Admin] Sync error details:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast({
+        title: "Sync Failed",
+        description: errorMessage.length > 200 ? errorMessage.substring(0, 200) + "..." : errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingNFLSeasonStats(false);
     }
   };
 
@@ -417,6 +470,22 @@ export function AdminPanel() {
                   Sync NFL Players
                 </Button>
               </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
+                  onClick={handleSyncNFLSeasonStats}
+                  disabled={isSyncingNFLSeasonStats}
+                >
+                  {isSyncingNFLSeasonStats ? (
+                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                  ) : (
+                    <BarChart3 className="w-3 h-3 mr-2" />
+                  )}
+                  Sync Season Stats
+                </Button>
+              </div>
               <div className="flex justify-between font-mono text-xs text-muted-foreground">
                 <span>Games in Vault:</span>
                 <span className="text-terminal-green">{postseasonCount !== null ? postseasonCount : "..."}</span>
@@ -428,6 +497,10 @@ export function AdminPanel() {
               <div className="flex justify-between font-mono text-xs text-muted-foreground">
                 <span>Players in Vault:</span>
                 <span className="text-terminal-green">{nflPlayersCount !== null ? nflPlayersCount.toLocaleString() : "..."}</span>
+              </div>
+              <div className="flex justify-between font-mono text-xs text-muted-foreground">
+                <span>Season Stats:</span>
+                <span className="text-terminal-green">{nflSeasonStatsCount !== null ? nflSeasonStatsCount.toLocaleString() : "..."}</span>
               </div>
             </CardContent>
           </Card>
