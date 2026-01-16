@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -210,8 +210,8 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Admin */}
-        {effectiveIsAdmin && (
+        {/* Admin - Always show for admins, regardless of preview mode */}
+        {isAdmin && (
           <SidebarGroup className="mt-4">
             {!collapsed && (
               <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
@@ -221,14 +221,17 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <NavLink 
-                    to={adminMenuItem.url} 
-                    className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full"
-                    activeClassName="bg-sidebar-accent text-terminal-green"
+                  <Link 
+                    to="/dashboard/admin"
+                    className={`flex items-center gap-3 px-3 py-2 rounded transition-colors w-full cursor-pointer relative z-10 ${
+                      location.pathname === "/dashboard/admin" 
+                        ? "bg-sidebar-accent text-terminal-green" 
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }`}
                   >
-                    <adminMenuItem.icon className="w-4 h-4" />
-                    {!collapsed && <span className="text-sm">{adminMenuItem.title}</span>}
-                  </NavLink>
+                    <Settings className="w-4 h-4" />
+                    {!collapsed && <span className="text-sm">Admin Panel</span>}
+                  </Link>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
