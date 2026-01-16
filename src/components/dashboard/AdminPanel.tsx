@@ -197,28 +197,39 @@ export function AdminPanel() {
 
   const handleSyncNFLPlayers = async () => {
     setIsSyncingNFLPlayers(true);
+    const startTime = Date.now();
+    
     try {
+      // First, try the edge function
+      console.log("[Admin] Calling sync-nfl-players edge function...");
       const { data, error } = await supabase.functions.invoke("sync-nfl-players");
       
       if (error) {
-        throw error;
+        console.error("[Admin] Edge function error:", error);
+        // Show detailed error info
+        const errorDetails = typeof error === 'object' ? JSON.stringify(error, null, 2) : String(error);
+        throw new Error(`Edge function failed: ${errorDetails}`);
       }
 
-      if (!data.success) {
-        throw new Error(data.error || "Sync failed");
+      console.log("[Admin] Edge function response:", data);
+
+      if (!data?.success) {
+        throw new Error(data?.error || "Sync failed - no success response");
       }
 
+      const duration = Math.round((Date.now() - startTime) / 1000);
       toast({
         title: "NFL Players Synced",
-        description: `✓ Synced ${data.playersSync?.toLocaleString() || 0} NFL players in ${data.duration}`,
+        description: `✓ Synced ${data.playersSync?.toLocaleString() || 0} NFL players in ${duration}s`,
       });
 
       fetchNFLPlayersCount();
     } catch (error: unknown) {
-      console.error("Sync error:", error);
+      console.error("[Admin] Sync error details:", error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       toast({
         title: "Sync Failed",
-        description: error instanceof Error ? error.message : "Failed to sync NFL players",
+        description: errorMessage.length > 200 ? errorMessage.substring(0, 200) + "..." : errorMessage,
         variant: "destructive",
       });
     } finally {
