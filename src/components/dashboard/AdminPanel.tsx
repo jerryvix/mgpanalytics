@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings, Database, Users, RefreshCw, Loader2, Trophy, Dribbble } from "lucide-react";
+import { Settings, Database, Users, RefreshCw, Loader2, Trophy, Dribbble, Zap, CheckCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -11,6 +11,8 @@ export function AdminPanel() {
   const [isSyncingNFL, setIsSyncingNFL] = useState(false);
   const [isSyncingNBA, setIsSyncingNBA] = useState(false);
   const [isSyncingOdds, setIsSyncingOdds] = useState(false);
+  const [isTestingAPI, setIsTestingAPI] = useState(false);
+  const [apiStatus, setApiStatus] = useState<{ success: boolean; message: string } | null>(null);
   
   // NFL counts
   const [gamesCount, setGamesCount] = useState<number | null>(null);
@@ -174,6 +176,38 @@ export function AdminPanel() {
       });
     } finally {
       setIsSyncingOdds(false);
+    }
+  };
+
+  const handleTestAPIConnection = async () => {
+    setIsTestingAPI(true);
+    setApiStatus(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("balldontlie", {
+        body: { action: "test", sport: "nfl" }
+      });
+      
+      if (error) {
+        throw error;
+      }
+
+      setApiStatus(data);
+      toast({
+        title: data.success ? "API Connection Successful" : "API Connection Failed",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+    } catch (error: unknown) {
+      console.error("API test error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to test API connection";
+      setApiStatus({ success: false, message: errorMessage });
+      toast({
+        title: "API Test Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsTestingAPI(false);
     }
   };
 
@@ -358,12 +392,66 @@ export function AdminPanel() {
           </Card>
         </motion.div>
 
-        {/* System Health */}
+        {/* Ball Don't Lie API Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="md:col-span-2"
+        >
+          <Card className="bg-card border-terminal-amber/30">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
+                <Zap className="w-4 h-4 text-terminal-amber" />
+                Ball Don't Lie API
+              </CardTitle>
+              {apiStatus && (
+                <Badge 
+                  variant="outline" 
+                  className={apiStatus.success 
+                    ? "border-terminal-green text-terminal-green text-[10px]" 
+                    : "border-terminal-red text-terminal-red text-[10px]"
+                  }
+                >
+                  {apiStatus.success ? "CONNECTED" : "ERROR"}
+                </Badge>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full justify-start font-mono text-xs border-terminal-amber/50 hover:bg-terminal-amber/10"
+                onClick={handleTestAPIConnection}
+                disabled={isTestingAPI}
+              >
+                {isTestingAPI ? (
+                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                ) : apiStatus?.success ? (
+                  <CheckCircle className="w-3 h-3 mr-2 text-terminal-green" />
+                ) : apiStatus ? (
+                  <XCircle className="w-3 h-3 mr-2 text-terminal-red" />
+                ) : (
+                  <Zap className="w-3 h-3 mr-2" />
+                )}
+                Test API Connection
+              </Button>
+              {apiStatus && (
+                <p className={`font-mono text-xs ${apiStatus.success ? 'text-terminal-green' : 'text-terminal-red'}`}>
+                  {apiStatus.message}
+                </p>
+              )}
+              <div className="font-mono text-xs text-muted-foreground">
+                <p>Endpoints: NFL, NBA, NCAAB</p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* System Health */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
         >
           <Card className="bg-card border-border">
             <CardHeader>
@@ -372,7 +460,7 @@ export function AdminPanel() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-mono text-xs">
+              <div className="grid grid-cols-2 gap-4 font-mono text-xs">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">API Response</span>
                   <span className="text-terminal-green">45ms</span>

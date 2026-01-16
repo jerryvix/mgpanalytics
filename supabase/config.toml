@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.sync-nfl-odds]
 verify_jwt = false
+
+[functions.sync-nba-odds]
+verify_jwt = false
+
+[functions.balldontlie]
+verify_jwt = false
