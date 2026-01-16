@@ -17,6 +17,8 @@ export function AdminPanel() {
   const [gameLogsSyncProgress, setGameLogsSyncProgress] = useState<{ current: number; total: number } | null>(null);
   const [stopGameLogsSync, setStopGameLogsSync] = useState(false);
   const [isSyncingNFLAdvancedStats, setIsSyncingNFLAdvancedStats] = useState(false);
+  const [advancedStatsSyncProgress, setAdvancedStatsSyncProgress] = useState<{ current: number; total: number } | null>(null);
+  const [stopAdvancedStatsSync, setStopAdvancedStatsSync] = useState(false);
   const [isTestingAPI, setIsTestingAPI] = useState(false);
   const [apiStatus, setApiStatus] = useState<{ success: boolean; message: string } | null>(null);
   
@@ -819,8 +821,14 @@ export function AdminPanel() {
 
   const handleSyncNFLAdvancedStats = async () => {
     setIsSyncingNFLAdvancedStats(true);
+    setStopAdvancedStatsSync(false);
+    setAdvancedStatsSyncProgress(null);
+    const startTime = Date.now();
+    
     const BDL_API_KEY = "52aa922d-2187-406d-a52b-3d51c71117f7";
-    const seasons = [2025, 2024];
+    const season = 2025;
+    const BATCH_SIZE = 10;
+    const BATCH_DELAY = 200;
     
     try {
       console.log("[Admin] Checking if advanced stats endpoints exist...");
@@ -832,12 +840,12 @@ export function AdminPanel() {
 
       // Test if advanced stats endpoints exist by trying to fetch one
       const testEndpoints = [
-        { name: "passing", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/passing?season=2024&per_page=1` },
-        { name: "rushing", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/rushing?season=2024&per_page=1` },
-        { name: "receiving", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/receiving?season=2024&per_page=1` },
+        { name: "passing", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/passing?season=2024&per_page=1`, positions: ["QB"] },
+        { name: "rushing", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/rushing?season=2024&per_page=1`, positions: ["RB", "FB"] },
+        { name: "receiving", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/receiving?season=2024&per_page=1`, positions: ["WR", "TE"] },
       ];
 
-      let availableEndpoints: string[] = [];
+      const availableEndpoints: { name: string; positions: string[] }[] = [];
       
       for (const endpoint of testEndpoints) {
         try {
@@ -846,7 +854,7 @@ export function AdminPanel() {
           });
           
           if (response.ok) {
-            availableEndpoints.push(endpoint.name);
+            availableEndpoints.push({ name: endpoint.name, positions: endpoint.positions });
             console.log(`[Admin] ✓ ${endpoint.name} endpoint available`);
           } else if (response.status === 404) {
             console.log(`[Admin] ✗ ${endpoint.name} endpoint not found (404)`);
@@ -867,152 +875,298 @@ export function AdminPanel() {
       }
 
       toast({
-        title: "Syncing advanced stats...",
-        description: `Found ${availableEndpoints.length} endpoints: ${availableEndpoints.join(", ")}`,
+        title: "Fetching players with season stats...",
+        description: "Finding relevant players to sync",
       });
 
-      // Fetch ALL players with pagination for mapping
-      const { count: playerCount } = await supabase
-        .from("players")
-        .select("*", { count: "exact", head: true })
-        .eq("sport", "NFL");
+      // Step 1: Get players who have season stats with position info
+      const { data: playersWithStats, error: playersError } = await supabase
+        .from("player_season_stats")
+        .select(`
+          player_id,
+          players!inner (
+            id,
+            external_id,
+            name,
+            position,
+            team_abbr
+          )
+        `)
+        .eq("sport", "NFL")
+        .eq("season", season);
       
-      if (!playerCount || playerCount === 0) {
-        throw new Error("No NFL players in database - sync players first");
+      if (playersError) {
+        throw new Error(`Failed to fetch players: ${playersError.message}`);
       }
-
-      let allPlayers: { id: string; external_id: string }[] = [];
-      let offset = 0;
-      const pageSize = 1000;
       
-      while (offset < playerCount) {
-        const { data: playerBatch } = await supabase
-          .from("players")
-          .select("id, external_id")
-          .eq("sport", "NFL")
-          .range(offset, offset + pageSize - 1);
-        
-        if (playerBatch) {
-          allPlayers = [...allPlayers, ...playerBatch];
+      if (!playersWithStats || playersWithStats.length === 0) {
+        throw new Error("No players with season stats found - sync season stats first");
+      }
+      
+      // Deduplicate and categorize players by position
+      const uniquePlayersMap = new Map<string, { id: string; external_id: string; name: string; position: string | null; team_abbr: string | null }>();
+      for (const row of playersWithStats) {
+        const player = row.players as unknown as { id: string; external_id: string; name: string; position: string | null; team_abbr: string | null };
+        if (player && player.id && !uniquePlayersMap.has(player.id)) {
+          uniquePlayersMap.set(player.id, player);
         }
-        offset += pageSize;
+      }
+      
+      const uniquePlayers = Array.from(uniquePlayersMap.values());
+      console.log(`[Admin] Found ${uniquePlayers.length} unique players with season stats`);
+
+      // Map players to their appropriate endpoints based on position
+      const playersByEndpoint: Map<string, typeof uniquePlayers> = new Map();
+      
+      for (const endpoint of availableEndpoints) {
+        const matchingPlayers = uniquePlayers.filter(p => 
+          p.position && endpoint.positions.some(pos => p.position?.toUpperCase().includes(pos))
+        );
+        if (matchingPlayers.length > 0) {
+          playersByEndpoint.set(endpoint.name, matchingPlayers);
+          console.log(`[Admin] ${endpoint.name}: ${matchingPlayers.length} players`);
+        }
       }
 
-      const playerMap = new Map(allPlayers.map(p => [String(p.external_id), p.id]));
-      console.log(`[Admin] Loaded ${playerMap.size} players for mapping`);
+      const totalPlayers = Array.from(playersByEndpoint.values()).reduce((sum, arr) => sum + arr.length, 0);
+      
+      if (totalPlayers === 0) {
+        toast({
+          title: "No matching players",
+          description: "No players with matching positions (QB, RB, WR, TE) found",
+        });
+        return;
+      }
+
+      setAdvancedStatsSyncProgress({ current: 0, total: totalPlayers });
+      
+      toast({
+        title: `Syncing advanced stats for ${totalPlayers} players...`,
+        description: `Found ${availableEndpoints.length} endpoints: ${availableEndpoints.map(e => e.name).join(", ")}`,
+      });
 
       let totalSyncedCount = 0;
+      let totalPlayersProcessed = 0;
+      let totalErrors = 0;
 
-      for (const season of seasons) {
-        for (const endpointName of availableEndpoints) {
-          toast({
-            title: `Syncing ${season} ${endpointName}...`,
-            description: `Fetching NFL advanced ${endpointName} stats`,
+      // Process each endpoint
+      for (const [endpointName, players] of playersByEndpoint) {
+        if (stopAdvancedStatsSync) break;
+
+        console.log(`[Admin] Processing ${endpointName} for ${players.length} players...`);
+
+        // Process players in batches
+        for (let i = 0; i < players.length; i += BATCH_SIZE) {
+          if (stopAdvancedStatsSync) {
+            console.log("[Admin] Sync stopped by user");
+            toast({
+              title: "Sync Stopped",
+              description: `Processed ${totalPlayersProcessed} players, synced ${totalSyncedCount} stats before stopping`,
+            });
+            break;
+          }
+
+          const batch = players.slice(i, i + BATCH_SIZE);
+          
+          // Fetch advanced stats for this batch
+          const batchPromises = batch.map(async (player) => {
+            try {
+              const response = await fetch(
+                `https://api.balldontlie.io/nfl/v1/advanced_stats/${endpointName}?player_ids=${player.external_id}&season=${season}&per_page=100`,
+                {
+                  headers: { "Authorization": BDL_API_KEY },
+                }
+              );
+              
+              if (!response.ok) {
+                // Try without player_ids filter as fallback - API might not support it
+                if (response.status === 400) {
+                  return { player, stats: [], error: false, unsupported: true };
+                }
+                return { player, stats: [], error: true, unsupported: false };
+              }
+              
+              const result = await response.json();
+              return { player, stats: result.data || [], error: false, unsupported: false };
+            } catch (err) {
+              return { player, stats: [], error: true, unsupported: false };
+            }
           });
 
-          try {
-            let allStats: any[] = [];
-            let nextCursor: string | undefined = undefined;
-            let pageCount = 0;
+          const batchResults = await Promise.all(batchPromises);
+          
+          // Check if API doesn't support player_ids filter
+          const unsupportedCount = batchResults.filter(r => r.unsupported).length;
+          if (unsupportedCount === batch.length && i === 0) {
+            console.log(`[Admin] ${endpointName} API doesn't support player_ids filter, falling back to bulk fetch`);
+            
+            // Fallback: fetch all data and filter locally
+            try {
+              const allStatsResponse = await fetch(
+                `https://api.balldontlie.io/nfl/v1/advanced_stats/${endpointName}?season=${season}&per_page=100`,
+                { headers: { "Authorization": BDL_API_KEY } }
+              );
+              
+              if (allStatsResponse.ok) {
+                const allStatsResult = await allStatsResponse.json();
+                const allStats = allStatsResult.data || [];
+                
+                // Create a map of external_id to player for all players in this endpoint
+                const playerExternalIds = new Set(players.map(p => String(p.external_id)));
+                const relevantStats = allStats.filter((stat: any) => 
+                  playerExternalIds.has(String(stat.player?.id))
+                );
+                
+                console.log(`[Admin] Bulk fetch: ${allStats.length} total, ${relevantStats.length} matched players`);
+                
+                // Process all relevant stats at once
+                const statsToUpsert = [];
+                for (const stat of relevantStats) {
+                  const player = players.find(p => String(p.external_id) === String(stat.player?.id));
+                  if (!player) continue;
 
-            do {
-              const url = nextCursor
-                ? `https://api.balldontlie.io/nfl/v1/advanced_stats/${endpointName}?season=${season}&per_page=100&cursor=${nextCursor}`
-                : `https://api.balldontlie.io/nfl/v1/advanced_stats/${endpointName}?season=${season}&per_page=100`;
+                  const advancedStat: Record<string, unknown> = {
+                    player_id: player.id,
+                    sport: "NFL",
+                    season: stat.season || season,
+                    raw_data: stat,
+                    updated_at: new Date().toISOString(),
+                  };
 
-              const response = await fetch(url, {
-                headers: { "Authorization": BDL_API_KEY },
+                  // Map fields based on endpoint type
+                  if (endpointName === "passing") {
+                    advancedStat.pass_epa = stat.epa || stat.pass_epa || null;
+                    advancedStat.success_rate = stat.success_rate || null;
+                    advancedStat.air_yards = stat.air_yards || stat.intended_air_yards || null;
+                  }
+                  if (endpointName === "rushing") {
+                    advancedStat.rush_epa = stat.epa || stat.rush_epa || null;
+                    advancedStat.success_rate = stat.success_rate || null;
+                    advancedStat.rush_share = stat.rush_share || stat.carry_share || null;
+                    advancedStat.red_zone_carries = stat.red_zone_carries || stat.rz_attempts || null;
+                  }
+                  if (endpointName === "receiving") {
+                    advancedStat.rec_epa = stat.epa || stat.rec_epa || null;
+                    advancedStat.target_share = stat.target_share || null;
+                    advancedStat.yards_after_catch = stat.yards_after_catch || stat.yac || null;
+                    advancedStat.yards_per_route_run = stat.yards_per_route_run || stat.yprr || null;
+                    advancedStat.catch_rate = stat.catch_rate || null;
+                    advancedStat.separation = stat.separation || stat.avg_separation || null;
+                    advancedStat.contested_catch_rate = stat.contested_catch_rate || null;
+                    advancedStat.red_zone_targets = stat.red_zone_targets || stat.rz_targets || null;
+                  }
+
+                  statsToUpsert.push(advancedStat);
+                }
+
+                if (statsToUpsert.length > 0) {
+                  const { error: upsertError } = await supabase
+                    .from("player_advanced_stats")
+                    .upsert(statsToUpsert, {
+                      onConflict: "player_id,sport,season",
+                    });
+
+                  if (!upsertError) {
+                    totalSyncedCount += statsToUpsert.length;
+                  }
+                }
+
+                totalPlayersProcessed += players.length;
+                setAdvancedStatsSyncProgress({ current: totalPlayersProcessed, total: totalPlayers });
+                
+                // Skip the rest of per-player processing for this endpoint
+                break;
+              }
+            } catch (bulkErr) {
+              console.error(`[Admin] Bulk fetch failed for ${endpointName}:`, bulkErr);
+            }
+            
+            continue;
+          }
+
+          // Process per-player results
+          const statsToUpsert = [];
+          
+          for (const { player, stats, error } of batchResults) {
+            if (error) {
+              totalErrors++;
+              continue;
+            }
+            
+            for (const stat of stats) {
+              const advancedStat: Record<string, unknown> = {
+                player_id: player.id,
+                sport: "NFL",
+                season: stat.season || season,
+                raw_data: stat,
+                updated_at: new Date().toISOString(),
+              };
+
+              // Map fields based on endpoint type
+              if (endpointName === "passing") {
+                advancedStat.pass_epa = stat.epa || stat.pass_epa || null;
+                advancedStat.success_rate = stat.success_rate || null;
+                advancedStat.air_yards = stat.air_yards || stat.intended_air_yards || null;
+              }
+              if (endpointName === "rushing") {
+                advancedStat.rush_epa = stat.epa || stat.rush_epa || null;
+                advancedStat.success_rate = stat.success_rate || null;
+                advancedStat.rush_share = stat.rush_share || stat.carry_share || null;
+                advancedStat.red_zone_carries = stat.red_zone_carries || stat.rz_attempts || null;
+              }
+              if (endpointName === "receiving") {
+                advancedStat.rec_epa = stat.epa || stat.rec_epa || null;
+                advancedStat.target_share = stat.target_share || null;
+                advancedStat.yards_after_catch = stat.yards_after_catch || stat.yac || null;
+                advancedStat.yards_per_route_run = stat.yards_per_route_run || stat.yprr || null;
+                advancedStat.catch_rate = stat.catch_rate || null;
+                advancedStat.separation = stat.separation || stat.avg_separation || null;
+                advancedStat.contested_catch_rate = stat.contested_catch_rate || null;
+                advancedStat.red_zone_targets = stat.red_zone_targets || stat.rz_targets || null;
+              }
+
+              statsToUpsert.push(advancedStat);
+            }
+          }
+
+          if (statsToUpsert.length > 0) {
+            const { error: upsertError } = await supabase
+              .from("player_advanced_stats")
+              .upsert(statsToUpsert, {
+                onConflict: "player_id,sport,season",
               });
 
-              if (!response.ok) break;
-
-              const result = await response.json();
-              allStats = [...allStats, ...(result.data || [])];
-              nextCursor = result.meta?.next_cursor;
-              pageCount++;
-              
-              await new Promise(resolve => setTimeout(resolve, 150));
-            } while (nextCursor);
-
-            console.log(`[Admin] ${season} ${endpointName}: ${allStats.length} records across ${pageCount} pages`);
-
-            // Process and upsert
-            const batchSize = 50;
-            for (let i = 0; i < allStats.length; i += batchSize) {
-              const batch = allStats.slice(i, i + batchSize);
-              const statsToUpsert = [];
-
-              for (const stat of batch) {
-                const externalId = String(stat.player?.id);
-                const playerId = playerMap.get(externalId);
-                if (!playerId) continue;
-
-                // Map fields based on endpoint type
-                const advancedStat: any = {
-                  player_id: playerId,
-                  sport: "NFL",
-                  season: stat.season || season,
-                  raw_data: stat,
-                  updated_at: new Date().toISOString(),
-                };
-
-                // Map common and endpoint-specific fields
-                if (endpointName === "passing") {
-                  advancedStat.pass_epa = stat.epa || stat.pass_epa || null;
-                  advancedStat.success_rate = stat.success_rate || null;
-                  advancedStat.air_yards = stat.air_yards || stat.intended_air_yards || null;
-                }
-                if (endpointName === "rushing") {
-                  advancedStat.rush_epa = stat.epa || stat.rush_epa || null;
-                  advancedStat.success_rate = stat.success_rate || null;
-                  advancedStat.rush_share = stat.rush_share || stat.carry_share || null;
-                  advancedStat.red_zone_carries = stat.red_zone_carries || stat.rz_attempts || null;
-                }
-                if (endpointName === "receiving") {
-                  advancedStat.rec_epa = stat.epa || stat.rec_epa || null;
-                  advancedStat.target_share = stat.target_share || null;
-                  advancedStat.yards_after_catch = stat.yards_after_catch || stat.yac || null;
-                  advancedStat.yards_per_route_run = stat.yards_per_route_run || stat.yprr || null;
-                  advancedStat.catch_rate = stat.catch_rate || null;
-                  advancedStat.separation = stat.separation || stat.avg_separation || null;
-                  advancedStat.contested_catch_rate = stat.contested_catch_rate || null;
-                  advancedStat.red_zone_targets = stat.red_zone_targets || stat.rz_targets || null;
-                }
-
-                statsToUpsert.push(advancedStat);
-              }
-
-              if (statsToUpsert.length > 0) {
-                const { error: upsertError } = await supabase
-                  .from("player_advanced_stats")
-                  .upsert(statsToUpsert, {
-                    onConflict: "player_id,sport,season",
-                  });
-
-                if (upsertError) {
-                  console.error(`[Admin] Upsert error:`, upsertError);
-                } else {
-                  totalSyncedCount += statsToUpsert.length;
-                }
-              }
+            if (!upsertError) {
+              totalSyncedCount += statsToUpsert.length;
             }
-          } catch (err) {
-            console.error(`[Admin] Error syncing ${season} ${endpointName}:`, err);
+          }
+
+          totalPlayersProcessed += batch.length;
+          setAdvancedStatsSyncProgress({ current: totalPlayersProcessed, total: totalPlayers });
+          
+          if (totalPlayersProcessed % 50 === 0 || totalPlayersProcessed === totalPlayers) {
+            console.log(`[Admin] Progress: ${totalPlayersProcessed}/${totalPlayers} players, ${totalSyncedCount} stats synced`);
+          }
+
+          // Rate limit delay between batches
+          if (i + BATCH_SIZE < players.length) {
+            await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
           }
         }
       }
 
+      const duration = Math.round((Date.now() - startTime) / 1000);
       await fetchNFLAdvancedStatsCount();
 
       if (totalSyncedCount > 0) {
         toast({
           title: "✓ NFL Advanced Stats Synced",
-          description: `Synced ${totalSyncedCount.toLocaleString()} advanced stat records`,
+          description: `Synced ${totalSyncedCount.toLocaleString()} stats for ${totalPlayersProcessed} players (${duration}s)${totalErrors > 0 ? ` - ${totalErrors} errors` : ''}`,
         });
-      } else {
+      } else if (!stopAdvancedStatsSync) {
         toast({
           title: "No advanced stats synced",
-          description: "No matching players found or endpoints returned no data",
+          description: "Endpoints returned no data for matching players. This API may not have advanced stats available.",
         });
       }
     } catch (error: unknown) {
@@ -1024,7 +1178,17 @@ export function AdminPanel() {
       });
     } finally {
       setIsSyncingNFLAdvancedStats(false);
+      setAdvancedStatsSyncProgress(null);
+      setStopAdvancedStatsSync(false);
     }
+  };
+
+  const handleStopAdvancedStatsSync = () => {
+    setStopAdvancedStatsSync(true);
+    toast({
+      title: "Stopping sync...",
+      description: "Will stop after current batch completes",
+    });
   };
 
   const handleTestAPIConnection = async () => {
@@ -1258,8 +1422,22 @@ export function AdminPanel() {
                   ) : (
                     <TrendingUp className="w-3 h-3 mr-2" />
                   )}
-                  Sync Advanced Stats
+                  {advancedStatsSyncProgress 
+                    ? `Syncing... ${advancedStatsSyncProgress.current}/${advancedStatsSyncProgress.total}`
+                    : "Sync Advanced Stats"
+                  }
                 </Button>
+                {isSyncingNFLAdvancedStats && (
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="font-mono text-xs"
+                    onClick={handleStopAdvancedStatsSync}
+                  >
+                    <Square className="w-3 h-3 mr-1" />
+                    Stop
+                  </Button>
+                )}
               </div>
               <div className="flex justify-between font-mono text-xs text-muted-foreground">
                 <span>Games in Vault:</span>
