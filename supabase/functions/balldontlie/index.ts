@@ -1,0 +1,226 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+// Base URLs for different sports
+const BASE_URLS: Record<string, string> = {
+  nfl: 'https://api.balldontlie.io/nfl/v1',
+  nba: 'https://api.balldontlie.io/v1',
+  ncaab: 'https://api.balldontlie.io/cbb/v1',
+};
+
+// Rate limiting delay (100ms between calls)
+const RATE_LIMIT_DELAY = 100;
+let lastCallTime = 0;
+
+async function rateLimitedDelay(): Promise<void> {
+  const now = Date.now();
+  const timeSinceLastCall = now - lastCallTime;
+  if (timeSinceLastCall < RATE_LIMIT_DELAY) {
+    await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY - timeSinceLastCall));
+  }
+  lastCallTime = Date.now();
+}
+
+// Generic fetch function for Ball Don't Lie API
+async function bdlFetch(
+  apiKey: string,
+  sport: string,
+  endpoint: string,
+  params?: Record<string, string | number>
+): Promise<{ data: any; meta?: { next_cursor?: string } }> {
+  await rateLimitedDelay();
+  
+  const baseUrl = BASE_URLS[sport.toLowerCase()];
+  if (!baseUrl) {
+    throw new Error(`Unsupported sport: ${sport}. Supported: nfl, nba, ncaab`);
+  }
+
+  const url = new URL(`${baseUrl}${endpoint}`);
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        url.searchParams.append(key, String(value));
+      }
+    });
+  }
+
+  console.log(`[BDL] Fetching: ${url.toString()}`);
+  
+  const response = await fetch(url.toString(), {
+    headers: {
+      'Authorization': apiKey,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error(`[BDL] Error ${response.status}: ${errorText}`);
+    throw new Error(`API Error ${response.status}: ${errorText}`);
+  }
+
+  const json = await response.json();
+  console.log(`[BDL] Success: Got ${json.data?.length || 0} records`);
+  return json;
+}
+
+// Fetch all pages using cursor pagination
+async function fetchAllPages(
+  apiKey: string,
+  sport: string,
+  endpoint: string,
+  params?: Record<string, string | number>
+): Promise<any[]> {
+  const allData: any[] = [];
+  let cursor: string | undefined = undefined;
+  let pageCount = 0;
+  const maxPages = 100; // Safety limit
+
+  do {
+    pageCount++;
+    console.log(`[BDL] Fetching page ${pageCount}...`);
+    
+    const fetchParams: Record<string, string | number> = { ...params };
+    if (cursor) {
+      fetchParams.cursor = cursor;
+    }
+
+    const response = await bdlFetch(apiKey, sport, endpoint, fetchParams);
+    
+    if (response.data && Array.isArray(response.data)) {
+      allData.push(...response.data);
+    }
+
+    cursor = response.meta?.next_cursor;
+    
+    if (pageCount >= maxPages) {
+      console.log(`[BDL] Reached max page limit (${maxPages})`);
+      break;
+    }
+  } while (cursor);
+
+  console.log(`[BDL] Total records fetched: ${allData.length} across ${pageCount} pages`);
+  return allData;
+}
+
+// Test API connection
+async function testConnection(apiKey: string, sport: string = 'nfl'): Promise<{ success: boolean; message: string }> {
+  try {
+    const response = await bdlFetch(apiKey, sport, '/teams');
+    const teamCount = response.data?.length || 0;
+    return {
+      success: true,
+      message: `Connected! Found ${teamCount} ${sport.toUpperCase()} teams`,
+    };
+  } catch (error) {
+    console.error('[BDL] Connection test failed:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
+}
+
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const apiKey = Deno.env.get('BALLDONTLIE_API_KEY');
+    if (!apiKey) {
+      throw new Error('BALLDONTLIE_API_KEY not configured');
+    }
+
+    const url = new URL(req.url);
+    const action = url.searchParams.get('action');
+    
+    // For POST requests, parse the body
+    let body: Record<string, any> = {};
+    if (req.method === 'POST') {
+      body = await req.json();
+    }
+
+    const sport = body.sport || url.searchParams.get('sport') || 'nfl';
+    const endpoint = body.endpoint || url.searchParams.get('endpoint') || '/teams';
+    const params = body.params || {};
+    const fetchAll = body.fetchAll || url.searchParams.get('fetchAll') === 'true';
+
+    console.log(`[BDL] Action: ${action}, Sport: ${sport}, Endpoint: ${endpoint}, FetchAll: ${fetchAll}`);
+
+    let result: any;
+
+    switch (action) {
+      case 'test':
+        result = await testConnection(apiKey, sport);
+        break;
+      
+      case 'fetch':
+        if (fetchAll) {
+          result = { data: await fetchAllPages(apiKey, sport, endpoint, params) };
+        } else {
+          result = await bdlFetch(apiKey, sport, endpoint, params);
+        }
+        break;
+      
+      case 'players':
+        // Convenience endpoint for fetching players
+        const playersEndpoint = sport.toLowerCase() === 'nba' ? '/players' : '/players';
+        if (fetchAll) {
+          result = { data: await fetchAllPages(apiKey, sport, playersEndpoint, params) };
+        } else {
+          result = await bdlFetch(apiKey, sport, playersEndpoint, params);
+        }
+        break;
+      
+      case 'teams':
+        result = await bdlFetch(apiKey, sport, '/teams', params);
+        break;
+      
+      case 'games':
+        const gamesEndpoint = '/games';
+        if (fetchAll) {
+          result = { data: await fetchAllPages(apiKey, sport, gamesEndpoint, params) };
+        } else {
+          result = await bdlFetch(apiKey, sport, gamesEndpoint, params);
+        }
+        break;
+      
+      case 'stats':
+        // Season stats endpoint varies by sport
+        const statsEndpoint = sport.toLowerCase() === 'nba' ? '/season_averages' : '/stats';
+        result = await bdlFetch(apiKey, sport, statsEndpoint, params);
+        break;
+
+      default:
+        // Default: perform a generic fetch
+        if (fetchAll) {
+          result = { data: await fetchAllPages(apiKey, sport, endpoint, params) };
+        } else {
+          result = await bdlFetch(apiKey, sport, endpoint, params);
+        }
+    }
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('[BDL] Error:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  }
+});
