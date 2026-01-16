@@ -265,10 +265,11 @@ export function AdminPanel() {
     
     // Seasons to sync (6 years of historical data)
     const seasons = [2025, 2024, 2023, 2022, 2021, 2020];
-    const BDL_API_KEY = "3c736b5d-5ce6-4f05-a2a7-7899aa7cb2c3";
+    // Use the API key from user's request
+    const BDL_API_KEY = "52aa922d-2187-406d-a52b-3d51c71117f7";
     
     try {
-      console.log("[Admin] Starting multi-season client-side sync...");
+      console.log("[Admin] Starting multi-season CLIENT-SIDE sync (not edge function)...");
       
       // First check total player count
       const { count: playerCount } = await supabase
@@ -286,6 +287,11 @@ export function AdminPanel() {
       let allPlayers: { id: string; external_id: string }[] = [];
       let offset = 0;
       const pageSize = 1000;
+      
+      toast({
+        title: "Loading players...",
+        description: `Fetching ${playerCount.toLocaleString()} NFL players from database`,
+      });
       
       while (offset < playerCount) {
         const { data: playerBatch, error: playerError } = await supabase
@@ -327,10 +333,10 @@ export function AdminPanel() {
           description: `Fetching NFL season stats for ${season}`,
         });
         
-        console.log(`[Admin] Fetching season ${season}...`);
+        console.log(`[Admin] Fetching season ${season} from API...`);
         
         try {
-          // Fetch first page
+          // Fetch first page - DIRECT CLIENT-SIDE CALL
           const response = await fetch(
             `https://api.balldontlie.io/nfl/v1/season_stats?season=${season}&per_page=100`,
             {
@@ -341,19 +347,23 @@ export function AdminPanel() {
           );
 
           if (!response.ok) {
-            console.error(`[Admin] API error for season ${season}: ${response.status}`);
+            console.error(`[Admin] API error for season ${season}: ${response.status} ${response.statusText}`);
             continue; // Skip to next season
           }
 
           const result = await response.json();
           let seasonStats = result.data || [];
           
-          // Fetch additional pages if available
+          console.log(`[Admin] Season ${season} first page: ${seasonStats.length} records`);
+          
+          // Fetch additional pages if available (cursor-based pagination)
           let nextCursor = result.meta?.next_cursor;
           let pageCount = 1;
           
           while (nextCursor) {
             pageCount++;
+            console.log(`[Admin] Season ${season}: Fetching page ${pageCount}...`);
+            
             const nextResponse = await fetch(
               `https://api.balldontlie.io/nfl/v1/season_stats?season=${season}&per_page=100&cursor=${nextCursor}`,
               {
@@ -363,7 +373,10 @@ export function AdminPanel() {
               }
             );
             
-            if (!nextResponse.ok) break;
+            if (!nextResponse.ok) {
+              console.error(`[Admin] Pagination error on page ${pageCount}`);
+              break;
+            }
             
             const nextResult = await nextResponse.json();
             seasonStats = [...seasonStats, ...(nextResult.data || [])];
@@ -373,13 +386,17 @@ export function AdminPanel() {
             await new Promise(resolve => setTimeout(resolve, 150));
           }
 
-          console.log(`[Admin] Season ${season}: Fetched ${seasonStats.length} stats across ${pageCount} pages`);
+          console.log(`[Admin] Season ${season}: Fetched ${seasonStats.length} total stats across ${pageCount} pages`);
 
           // Process and upsert stats for this season
           let seasonSyncedCount = 0;
           let seasonSkippedCount = 0;
           const batchSize = 50;
-          let debugLogCount = 0;
+          
+          // Log first record structure for debugging
+          if (seasonStats.length > 0) {
+            console.log(`[Admin] Sample stat record:`, JSON.stringify(seasonStats[0], null, 2));
+          }
           
           for (let i = 0; i < seasonStats.length; i += batchSize) {
             const batch = seasonStats.slice(i, i + batchSize);
@@ -389,10 +406,9 @@ export function AdminPanel() {
               const externalId = String(stat.player?.id);
               const playerId = playerMap.get(externalId);
               
-              // Log first 5 matches for debugging
-              if (debugLogCount < 5) {
-                console.log(`[Admin] Matching player external_id=${externalId}... ${playerId ? 'FOUND' : 'NOT FOUND'}`);
-                debugLogCount++;
+              // Log first 3 matches per season for debugging
+              if (seasonSyncedCount + seasonSkippedCount < 3) {
+                console.log(`[Admin] Season ${season}: Matching external_id=${externalId}... ${playerId ? 'FOUND -> ' + playerId : 'NOT FOUND'}`);
               }
               
               if (!playerId) {
@@ -400,16 +416,20 @@ export function AdminPanel() {
                 continue;
               }
 
-              // Calculate fantasy points
+              // Map API fields to database columns
+              // API uses: pass_touchdowns, pass_interceptions, rush_touchdowns, receiving_yards, receiving_touchdowns
+              // DB uses: pass_td, pass_int, rush_td, rec_yards, rec_td
               const passYards = stat.pass_yards || 0;
-              const passTd = stat.pass_touchdowns || 0;
-              const passInt = stat.pass_interceptions || 0;
+              const passTd = stat.pass_touchdowns || stat.pass_td || 0;
+              const passInt = stat.pass_interceptions || stat.pass_int || 0;
               const rushYards = stat.rush_yards || 0;
-              const rushTd = stat.rush_touchdowns || 0;
-              const recYards = stat.receiving_yards || 0;
-              const recTd = stat.receiving_touchdowns || 0;
+              const rushTd = stat.rush_touchdowns || stat.rush_td || 0;
+              const recYards = stat.receiving_yards || stat.rec_yards || 0;
+              const recTd = stat.receiving_touchdowns || stat.rec_td || 0;
               const receptions = stat.receptions || 0;
+              const targets = stat.targets || 0;
 
+              // Calculate fantasy points
               const fantasyPoints = 
                 (passYards * 0.04) + 
                 (passTd * 4) - 
@@ -439,7 +459,7 @@ export function AdminPanel() {
                 receptions: receptions,
                 rec_yards: recYards,
                 rec_td: recTd,
-                targets: stat.targets || 0,
+                targets: targets,
                 fantasy_points: Math.round(fantasyPoints * 100) / 100,
                 fantasy_points_ppr: Math.round(fantasyPointsPpr * 100) / 100,
                 raw_data: stat,
@@ -465,9 +485,9 @@ export function AdminPanel() {
           totalSyncedCount += seasonSyncedCount;
           totalSkippedCount += seasonSkippedCount;
           
-          console.log(`[Admin] Season ${season}: Synced ${seasonSyncedCount}, skipped ${seasonSkippedCount}`);
+          console.log(`[Admin] Season ${season}: ✓ Synced ${seasonSyncedCount}, skipped ${seasonSkippedCount}`);
           
-          // Small delay between seasons
+          // Small delay between seasons for rate limiting
           await new Promise(resolve => setTimeout(resolve, 300));
           
         } catch (seasonError) {
@@ -478,20 +498,16 @@ export function AdminPanel() {
 
       const duration = Math.round((Date.now() - startTime) / 1000);
       
-      // Check database count
-      const { count: newCount } = await supabase
-        .from("player_season_stats")
-        .select("*", { count: "exact", head: true })
-        .eq("sport", "NFL");
+      // Update count from database
+      await fetchNFLSeasonStatsCount();
 
-      if (totalSyncedCount > 0 || (newCount && newCount > 0)) {
+      if (totalSyncedCount > 0) {
         toast({
-          title: "NFL Season Stats Synced",
-          description: `✓ ${totalSyncedCount.toLocaleString()} stats synced across ${seasons.length} seasons (${duration}s)`,
+          title: "✓ NFL Season Stats Synced",
+          description: `Synced ${totalSyncedCount.toLocaleString()} stats across ${seasons.length} seasons (${duration}s)`,
         });
-        setNflSeasonStatsCount(newCount || totalSyncedCount);
       } else {
-        throw new Error("No stats synced - players may need to be synced first");
+        throw new Error(`No stats synced - ${totalSkippedCount} records skipped (players not found)`);
       }
     } catch (error: unknown) {
       console.error("[Admin] Sync error:", error);
