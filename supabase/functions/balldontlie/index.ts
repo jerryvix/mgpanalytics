@@ -133,19 +133,29 @@ serve(async (req) => {
 
   try {
     const apiKey = Deno.env.get('BALLDONTLIE_API_KEY');
+    console.log(`[BDL] API Key exists: ${!!apiKey}, length: ${apiKey?.length || 0}`);
+    
     if (!apiKey) {
       throw new Error('BALLDONTLIE_API_KEY not configured');
     }
 
     const url = new URL(req.url);
-    const action = url.searchParams.get('action');
     
-    // For POST requests, parse the body
+    // For POST requests, parse the body first
     let body: Record<string, any> = {};
     if (req.method === 'POST') {
-      body = await req.json();
+      const rawBody = await req.text();
+      console.log(`[BDL] Raw body: ${rawBody}`);
+      try {
+        body = JSON.parse(rawBody);
+      } catch (e) {
+        console.error(`[BDL] Failed to parse body: ${e}`);
+        body = {};
+      }
     }
 
+    // Get action from body first, then URL params
+    const action = body.action || url.searchParams.get('action');
     const sport = body.sport || url.searchParams.get('sport') || 'nfl';
     const endpoint = body.endpoint || url.searchParams.get('endpoint') || '/teams';
     const params = body.params || {};
@@ -157,7 +167,9 @@ serve(async (req) => {
 
     switch (action) {
       case 'test':
+        console.log(`[BDL] Running test connection for ${sport}...`);
         result = await testConnection(apiKey, sport);
+        console.log(`[BDL] Test result: ${JSON.stringify(result)}`);
         break;
       
       case 'fetch':
