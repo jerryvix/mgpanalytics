@@ -221,16 +221,14 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={adminMenuItem.url} 
-                      className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                      activeClassName="bg-sidebar-accent text-terminal-green"
-                    >
-                      <adminMenuItem.icon className="w-4 h-4" />
-                      {!collapsed && <span className="text-sm">{adminMenuItem.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  <NavLink 
+                    to={adminMenuItem.url} 
+                    className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors w-full"
+                    activeClassName="bg-sidebar-accent text-terminal-green"
+                  >
+                    <adminMenuItem.icon className="w-4 h-4" />
+                    {!collapsed && <span className="text-sm">{adminMenuItem.title}</span>}
+                  </NavLink>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
