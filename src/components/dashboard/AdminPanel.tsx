@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings, Database, Users, RefreshCw, Loader2, Trophy, Dribbble, Zap, CheckCircle, XCircle, UserCircle, BarChart3, FileText } from "lucide-react";
+import { Settings, Database, Users, RefreshCw, Loader2, Trophy, Dribbble, Zap, CheckCircle, XCircle, UserCircle, BarChart3, FileText, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -14,6 +14,7 @@ export function AdminPanel() {
   const [isSyncingNFLPlayers, setIsSyncingNFLPlayers] = useState(false);
   const [isSyncingNFLSeasonStats, setIsSyncingNFLSeasonStats] = useState(false);
   const [isSyncingNFLGameLogs, setIsSyncingNFLGameLogs] = useState(false);
+  const [isSyncingNFLAdvancedStats, setIsSyncingNFLAdvancedStats] = useState(false);
   const [isTestingAPI, setIsTestingAPI] = useState(false);
   const [apiStatus, setApiStatus] = useState<{ success: boolean; message: string } | null>(null);
   
@@ -30,6 +31,7 @@ export function AdminPanel() {
   const [nflPlayersCount, setNflPlayersCount] = useState<number | null>(null);
   const [nflSeasonStatsCount, setNflSeasonStatsCount] = useState<number | null>(null);
   const [nflGameLogsCount, setNflGameLogsCount] = useState<number | null>(null);
+  const [nflAdvancedStatsCount, setNflAdvancedStatsCount] = useState<number | null>(null);
 
   const fetchGamesCount = async () => {
     // Fetch total NFL games
@@ -130,6 +132,17 @@ export function AdminPanel() {
     }
   };
 
+  const fetchNFLAdvancedStatsCount = async () => {
+    const { count, error } = await supabase
+      .from("player_advanced_stats")
+      .select("*", { count: "exact", head: true })
+      .eq("sport", "NFL");
+    
+    if (!error && count !== null) {
+      setNflAdvancedStatsCount(count);
+    }
+  };
+
   useEffect(() => {
     fetchGamesCount();
     fetchOddsCount();
@@ -138,6 +151,7 @@ export function AdminPanel() {
     fetchNFLPlayersCount();
     fetchNFLSeasonStatsCount();
     fetchNFLGameLogsCount();
+    fetchNFLAdvancedStatsCount();
   }, []);
 
   const handleSyncNFLGames = async () => {
@@ -821,6 +835,216 @@ export function AdminPanel() {
     }
   };
 
+  const handleSyncNFLAdvancedStats = async () => {
+    setIsSyncingNFLAdvancedStats(true);
+    const BDL_API_KEY = "52aa922d-2187-406d-a52b-3d51c71117f7";
+    const seasons = [2025, 2024];
+    
+    try {
+      console.log("[Admin] Checking if advanced stats endpoints exist...");
+      
+      toast({
+        title: "Checking advanced stats endpoints...",
+        description: "Testing if Ball Don't Lie has advanced stats",
+      });
+
+      // Test if advanced stats endpoints exist by trying to fetch one
+      const testEndpoints = [
+        { name: "passing", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/passing?season=2024&per_page=1` },
+        { name: "rushing", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/rushing?season=2024&per_page=1` },
+        { name: "receiving", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/receiving?season=2024&per_page=1` },
+      ];
+
+      let availableEndpoints: string[] = [];
+      
+      for (const endpoint of testEndpoints) {
+        try {
+          const response = await fetch(endpoint.url, {
+            headers: { "Authorization": BDL_API_KEY },
+          });
+          
+          if (response.ok) {
+            availableEndpoints.push(endpoint.name);
+            console.log(`[Admin] ✓ ${endpoint.name} endpoint available`);
+          } else if (response.status === 404) {
+            console.log(`[Admin] ✗ ${endpoint.name} endpoint not found (404)`);
+          } else {
+            console.log(`[Admin] ✗ ${endpoint.name} returned ${response.status}`);
+          }
+        } catch (err) {
+          console.log(`[Admin] ✗ ${endpoint.name} fetch failed:`, err);
+        }
+      }
+
+      if (availableEndpoints.length === 0) {
+        toast({
+          title: "Advanced stats not available",
+          description: "Ball Don't Lie API doesn't have advanced stats endpoints. Skipping.",
+        });
+        return;
+      }
+
+      toast({
+        title: "Syncing advanced stats...",
+        description: `Found ${availableEndpoints.length} endpoints: ${availableEndpoints.join(", ")}`,
+      });
+
+      // Fetch ALL players with pagination for mapping
+      const { count: playerCount } = await supabase
+        .from("players")
+        .select("*", { count: "exact", head: true })
+        .eq("sport", "NFL");
+      
+      if (!playerCount || playerCount === 0) {
+        throw new Error("No NFL players in database - sync players first");
+      }
+
+      let allPlayers: { id: string; external_id: string }[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      
+      while (offset < playerCount) {
+        const { data: playerBatch } = await supabase
+          .from("players")
+          .select("id, external_id")
+          .eq("sport", "NFL")
+          .range(offset, offset + pageSize - 1);
+        
+        if (playerBatch) {
+          allPlayers = [...allPlayers, ...playerBatch];
+        }
+        offset += pageSize;
+      }
+
+      const playerMap = new Map(allPlayers.map(p => [String(p.external_id), p.id]));
+      console.log(`[Admin] Loaded ${playerMap.size} players for mapping`);
+
+      let totalSyncedCount = 0;
+
+      for (const season of seasons) {
+        for (const endpointName of availableEndpoints) {
+          toast({
+            title: `Syncing ${season} ${endpointName}...`,
+            description: `Fetching NFL advanced ${endpointName} stats`,
+          });
+
+          try {
+            let allStats: any[] = [];
+            let nextCursor: string | undefined = undefined;
+            let pageCount = 0;
+
+            do {
+              const url = nextCursor
+                ? `https://api.balldontlie.io/nfl/v1/advanced_stats/${endpointName}?season=${season}&per_page=100&cursor=${nextCursor}`
+                : `https://api.balldontlie.io/nfl/v1/advanced_stats/${endpointName}?season=${season}&per_page=100`;
+
+              const response = await fetch(url, {
+                headers: { "Authorization": BDL_API_KEY },
+              });
+
+              if (!response.ok) break;
+
+              const result = await response.json();
+              allStats = [...allStats, ...(result.data || [])];
+              nextCursor = result.meta?.next_cursor;
+              pageCount++;
+              
+              await new Promise(resolve => setTimeout(resolve, 150));
+            } while (nextCursor);
+
+            console.log(`[Admin] ${season} ${endpointName}: ${allStats.length} records across ${pageCount} pages`);
+
+            // Process and upsert
+            const batchSize = 50;
+            for (let i = 0; i < allStats.length; i += batchSize) {
+              const batch = allStats.slice(i, i + batchSize);
+              const statsToUpsert = [];
+
+              for (const stat of batch) {
+                const externalId = String(stat.player?.id);
+                const playerId = playerMap.get(externalId);
+                if (!playerId) continue;
+
+                // Map fields based on endpoint type
+                const advancedStat: any = {
+                  player_id: playerId,
+                  sport: "NFL",
+                  season: stat.season || season,
+                  raw_data: stat,
+                  updated_at: new Date().toISOString(),
+                };
+
+                // Map common and endpoint-specific fields
+                if (endpointName === "passing") {
+                  advancedStat.pass_epa = stat.epa || stat.pass_epa || null;
+                  advancedStat.success_rate = stat.success_rate || null;
+                  advancedStat.air_yards = stat.air_yards || stat.intended_air_yards || null;
+                }
+                if (endpointName === "rushing") {
+                  advancedStat.rush_epa = stat.epa || stat.rush_epa || null;
+                  advancedStat.success_rate = stat.success_rate || null;
+                  advancedStat.rush_share = stat.rush_share || stat.carry_share || null;
+                  advancedStat.red_zone_carries = stat.red_zone_carries || stat.rz_attempts || null;
+                }
+                if (endpointName === "receiving") {
+                  advancedStat.rec_epa = stat.epa || stat.rec_epa || null;
+                  advancedStat.target_share = stat.target_share || null;
+                  advancedStat.yards_after_catch = stat.yards_after_catch || stat.yac || null;
+                  advancedStat.yards_per_route_run = stat.yards_per_route_run || stat.yprr || null;
+                  advancedStat.catch_rate = stat.catch_rate || null;
+                  advancedStat.separation = stat.separation || stat.avg_separation || null;
+                  advancedStat.contested_catch_rate = stat.contested_catch_rate || null;
+                  advancedStat.red_zone_targets = stat.red_zone_targets || stat.rz_targets || null;
+                }
+
+                statsToUpsert.push(advancedStat);
+              }
+
+              if (statsToUpsert.length > 0) {
+                const { error: upsertError } = await supabase
+                  .from("player_advanced_stats")
+                  .upsert(statsToUpsert, {
+                    onConflict: "player_id,sport,season",
+                  });
+
+                if (upsertError) {
+                  console.error(`[Admin] Upsert error:`, upsertError);
+                } else {
+                  totalSyncedCount += statsToUpsert.length;
+                }
+              }
+            }
+          } catch (err) {
+            console.error(`[Admin] Error syncing ${season} ${endpointName}:`, err);
+          }
+        }
+      }
+
+      await fetchNFLAdvancedStatsCount();
+
+      if (totalSyncedCount > 0) {
+        toast({
+          title: "✓ NFL Advanced Stats Synced",
+          description: `Synced ${totalSyncedCount.toLocaleString()} advanced stat records`,
+        });
+      } else {
+        toast({
+          title: "No advanced stats synced",
+          description: "No matching players found or endpoints returned no data",
+        });
+      }
+    } catch (error: unknown) {
+      console.error("[Admin] Advanced stats sync error:", error);
+      toast({
+        title: "Advanced Stats Sync Failed",
+        description: error instanceof Error ? error.message : String(error),
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingNFLAdvancedStats(false);
+    }
+  };
+
   const handleTestAPIConnection = async () => {
     setIsTestingAPI(true);
     setApiStatus(null);
@@ -1025,6 +1249,22 @@ export function AdminPanel() {
                   Sync NFL Game Logs
                 </Button>
               </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="flex-1 justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
+                  onClick={handleSyncNFLAdvancedStats}
+                  disabled={isSyncingNFLAdvancedStats}
+                >
+                  {isSyncingNFLAdvancedStats ? (
+                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                  ) : (
+                    <TrendingUp className="w-3 h-3 mr-2" />
+                  )}
+                  Sync Advanced Stats
+                </Button>
+              </div>
               <div className="flex justify-between font-mono text-xs text-muted-foreground">
                 <span>Games in Vault:</span>
                 <span className="text-terminal-green">{postseasonCount !== null ? postseasonCount : "..."}</span>
@@ -1044,6 +1284,10 @@ export function AdminPanel() {
               <div className="flex justify-between font-mono text-xs text-muted-foreground">
                 <span>Game Logs:</span>
                 <span className="text-terminal-green">{nflGameLogsCount !== null ? nflGameLogsCount.toLocaleString() : "..."}</span>
+              </div>
+              <div className="flex justify-between font-mono text-xs text-muted-foreground">
+                <span>Advanced Stats:</span>
+                <span className="text-terminal-green">{nflAdvancedStatsCount !== null ? nflAdvancedStatsCount.toLocaleString() : "..."}</span>
               </div>
             </CardContent>
           </Card>
