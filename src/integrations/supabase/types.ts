@@ -263,6 +263,447 @@ export type Database = {
           },
         ]
       }
+      player_advanced_stats: {
+        Row: {
+          air_yards: number | null
+          assist_rate: number | null
+          catch_rate: number | null
+          contested_catch_rate: number | null
+          created_at: string | null
+          id: string
+          pass_epa: number | null
+          per: number | null
+          player_id: string | null
+          raw_data: Json | null
+          rebound_rate: number | null
+          rec_epa: number | null
+          red_zone_carries: number | null
+          red_zone_targets: number | null
+          rush_epa: number | null
+          rush_share: number | null
+          season: number
+          separation: number | null
+          sport: string
+          success_rate: number | null
+          target_share: number | null
+          true_shooting: number | null
+          updated_at: string | null
+          usage_rate: number | null
+          yards_after_catch: number | null
+          yards_per_route_run: number | null
+        }
+        Insert: {
+          air_yards?: number | null
+          assist_rate?: number | null
+          catch_rate?: number | null
+          contested_catch_rate?: number | null
+          created_at?: string | null
+          id?: string
+          pass_epa?: number | null
+          per?: number | null
+          player_id?: string | null
+          raw_data?: Json | null
+          rebound_rate?: number | null
+          rec_epa?: number | null
+          red_zone_carries?: number | null
+          red_zone_targets?: number | null
+          rush_epa?: number | null
+          rush_share?: number | null
+          season: number
+          separation?: number | null
+          sport: string
+          success_rate?: number | null
+          target_share?: number | null
+          true_shooting?: number | null
+          updated_at?: string | null
+          usage_rate?: number | null
+          yards_after_catch?: number | null
+          yards_per_route_run?: number | null
+        }
+        Update: {
+          air_yards?: number | null
+          assist_rate?: number | null
+          catch_rate?: number | null
+          contested_catch_rate?: number | null
+          created_at?: string | null
+          id?: string
+          pass_epa?: number | null
+          per?: number | null
+          player_id?: string | null
+          raw_data?: Json | null
+          rebound_rate?: number | null
+          rec_epa?: number | null
+          red_zone_carries?: number | null
+          red_zone_targets?: number | null
+          rush_epa?: number | null
+          rush_share?: number | null
+          season?: number
+          separation?: number | null
+          sport?: string
+          success_rate?: number | null
+          target_share?: number | null
+          true_shooting?: number | null
+          updated_at?: string | null
+          usage_rate?: number | null
+          yards_after_catch?: number | null
+          yards_per_route_run?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_advanced_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_game_logs: {
+        Row: {
+          assists: number | null
+          blocks: number | null
+          created_at: string | null
+          fantasy_points: number | null
+          fantasy_points_ppr: number | null
+          fg_attempted: number | null
+          fg_made: number | null
+          game_date: string | null
+          game_id: string | null
+          home_away: string | null
+          id: string
+          minutes: number | null
+          opponent_abbr: string | null
+          opponent_name: string | null
+          opponent_score: number | null
+          pass_attempts: number | null
+          pass_completions: number | null
+          pass_int: number | null
+          pass_td: number | null
+          pass_yards: number | null
+          passer_rating: number | null
+          player_id: string | null
+          points: number | null
+          raw_data: Json | null
+          rebounds: number | null
+          rec_td: number | null
+          rec_yards: number | null
+          receptions: number | null
+          result: string | null
+          rush_attempts: number | null
+          rush_td: number | null
+          rush_yards: number | null
+          season: number
+          sport: string
+          steals: number | null
+          targets: number | null
+          team_score: number | null
+          three_attempted: number | null
+          three_made: number | null
+          turnovers: number | null
+          week: number | null
+        }
+        Insert: {
+          assists?: number | null
+          blocks?: number | null
+          created_at?: string | null
+          fantasy_points?: number | null
+          fantasy_points_ppr?: number | null
+          fg_attempted?: number | null
+          fg_made?: number | null
+          game_date?: string | null
+          game_id?: string | null
+          home_away?: string | null
+          id?: string
+          minutes?: number | null
+          opponent_abbr?: string | null
+          opponent_name?: string | null
+          opponent_score?: number | null
+          pass_attempts?: number | null
+          pass_completions?: number | null
+          pass_int?: number | null
+          pass_td?: number | null
+          pass_yards?: number | null
+          passer_rating?: number | null
+          player_id?: string | null
+          points?: number | null
+          raw_data?: Json | null
+          rebounds?: number | null
+          rec_td?: number | null
+          rec_yards?: number | null
+          receptions?: number | null
+          result?: string | null
+          rush_attempts?: number | null
+          rush_td?: number | null
+          rush_yards?: number | null
+          season: number
+          sport: string
+          steals?: number | null
+          targets?: number | null
+          team_score?: number | null
+          three_attempted?: number | null
+          three_made?: number | null
+          turnovers?: number | null
+          week?: number | null
+        }
+        Update: {
+          assists?: number | null
+          blocks?: number | null
+          created_at?: string | null
+          fantasy_points?: number | null
+          fantasy_points_ppr?: number | null
+          fg_attempted?: number | null
+          fg_made?: number | null
+          game_date?: string | null
+          game_id?: string | null
+          home_away?: string | null
+          id?: string
+          minutes?: number | null
+          opponent_abbr?: string | null
+          opponent_name?: string | null
+          opponent_score?: number | null
+          pass_attempts?: number | null
+          pass_completions?: number | null
+          pass_int?: number | null
+          pass_td?: number | null
+          pass_yards?: number | null
+          passer_rating?: number | null
+          player_id?: string | null
+          points?: number | null
+          raw_data?: Json | null
+          rebounds?: number | null
+          rec_td?: number | null
+          rec_yards?: number | null
+          receptions?: number | null
+          result?: string | null
+          rush_attempts?: number | null
+          rush_td?: number | null
+          rush_yards?: number | null
+          season?: number
+          sport?: string
+          steals?: number | null
+          targets?: number | null
+          team_score?: number | null
+          three_attempted?: number | null
+          three_made?: number | null
+          turnovers?: number | null
+          week?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_game_logs_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_season_stats: {
+        Row: {
+          assists: number | null
+          blocks: number | null
+          created_at: string | null
+          fantasy_points: number | null
+          fantasy_points_ppr: number | null
+          fg_pct: number | null
+          forced_fumbles: number | null
+          ft_pct: number | null
+          games_played: number | null
+          id: string
+          interceptions: number | null
+          minutes_per_game: number | null
+          pass_attempts: number | null
+          pass_completions: number | null
+          pass_int: number | null
+          pass_td: number | null
+          pass_yards: number | null
+          passer_rating: number | null
+          player_id: string | null
+          points: number | null
+          raw_data: Json | null
+          rebounds: number | null
+          rec_td: number | null
+          rec_yards: number | null
+          receptions: number | null
+          rush_attempts: number | null
+          rush_td: number | null
+          rush_yards: number | null
+          sacks: number | null
+          season: number
+          season_type: string | null
+          sport: string
+          steals: number | null
+          tackles: number | null
+          targets: number | null
+          three_pct: number | null
+          turnovers: number | null
+          updated_at: string | null
+          yards_per_carry: number | null
+          yards_per_reception: number | null
+        }
+        Insert: {
+          assists?: number | null
+          blocks?: number | null
+          created_at?: string | null
+          fantasy_points?: number | null
+          fantasy_points_ppr?: number | null
+          fg_pct?: number | null
+          forced_fumbles?: number | null
+          ft_pct?: number | null
+          games_played?: number | null
+          id?: string
+          interceptions?: number | null
+          minutes_per_game?: number | null
+          pass_attempts?: number | null
+          pass_completions?: number | null
+          pass_int?: number | null
+          pass_td?: number | null
+          pass_yards?: number | null
+          passer_rating?: number | null
+          player_id?: string | null
+          points?: number | null
+          raw_data?: Json | null
+          rebounds?: number | null
+          rec_td?: number | null
+          rec_yards?: number | null
+          receptions?: number | null
+          rush_attempts?: number | null
+          rush_td?: number | null
+          rush_yards?: number | null
+          sacks?: number | null
+          season: number
+          season_type?: string | null
+          sport: string
+          steals?: number | null
+          tackles?: number | null
+          targets?: number | null
+          three_pct?: number | null
+          turnovers?: number | null
+          updated_at?: string | null
+          yards_per_carry?: number | null
+          yards_per_reception?: number | null
+        }
+        Update: {
+          assists?: number | null
+          blocks?: number | null
+          created_at?: string | null
+          fantasy_points?: number | null
+          fantasy_points_ppr?: number | null
+          fg_pct?: number | null
+          forced_fumbles?: number | null
+          ft_pct?: number | null
+          games_played?: number | null
+          id?: string
+          interceptions?: number | null
+          minutes_per_game?: number | null
+          pass_attempts?: number | null
+          pass_completions?: number | null
+          pass_int?: number | null
+          pass_td?: number | null
+          pass_yards?: number | null
+          passer_rating?: number | null
+          player_id?: string | null
+          points?: number | null
+          raw_data?: Json | null
+          rebounds?: number | null
+          rec_td?: number | null
+          rec_yards?: number | null
+          receptions?: number | null
+          rush_attempts?: number | null
+          rush_td?: number | null
+          rush_yards?: number | null
+          sacks?: number | null
+          season?: number
+          season_type?: string | null
+          sport?: string
+          steals?: number | null
+          tackles?: number | null
+          targets?: number | null
+          three_pct?: number | null
+          turnovers?: number | null
+          updated_at?: string | null
+          yards_per_carry?: number | null
+          yards_per_reception?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_season_stats_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      players: {
+        Row: {
+          birth_date: string | null
+          college: string | null
+          created_at: string | null
+          experience: number | null
+          external_id: string
+          first_name: string | null
+          headshot_url: string | null
+          height: string | null
+          id: string
+          jersey_number: string | null
+          last_name: string | null
+          name: string
+          position: string | null
+          sport: string
+          status: string | null
+          team_abbr: string | null
+          team_id: string | null
+          team_name: string | null
+          updated_at: string | null
+          weight: number | null
+        }
+        Insert: {
+          birth_date?: string | null
+          college?: string | null
+          created_at?: string | null
+          experience?: number | null
+          external_id: string
+          first_name?: string | null
+          headshot_url?: string | null
+          height?: string | null
+          id?: string
+          jersey_number?: string | null
+          last_name?: string | null
+          name: string
+          position?: string | null
+          sport: string
+          status?: string | null
+          team_abbr?: string | null
+          team_id?: string | null
+          team_name?: string | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Update: {
+          birth_date?: string | null
+          college?: string | null
+          created_at?: string | null
+          experience?: number | null
+          external_id?: string
+          first_name?: string | null
+          headshot_url?: string | null
+          height?: string | null
+          id?: string
+          jersey_number?: string | null
+          last_name?: string | null
+          name?: string
+          position?: string | null
+          sport?: string
+          status?: string | null
+          team_abbr?: string | null
+          team_id?: string | null
+          team_name?: string | null
+          updated_at?: string | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -314,6 +755,42 @@ export type Database = {
           started_at?: string
           status?: string
           sync_type?: string
+        }
+        Relationships: []
+      }
+      sync_schedule: {
+        Row: {
+          created_at: string | null
+          data_type: string
+          error_message: string | null
+          id: string
+          last_sync_at: string | null
+          last_sync_status: string | null
+          next_scheduled_sync: string | null
+          records_synced: number | null
+          sport: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_type: string
+          error_message?: string | null
+          id?: string
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          next_scheduled_sync?: string | null
+          records_synced?: number | null
+          sport: string
+        }
+        Update: {
+          created_at?: string | null
+          data_type?: string
+          error_message?: string | null
+          id?: string
+          last_sync_at?: string | null
+          last_sync_status?: string | null
+          next_scheduled_sync?: string | null
+          records_synced?: number | null
+          sport?: string
         }
         Relationships: []
       }
