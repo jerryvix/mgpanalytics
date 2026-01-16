@@ -94,6 +94,9 @@ Deno.serve(async (req) => {
   try {
     const ballDontLieApiKey = Deno.env.get("BALLDONTLIE_API_KEY");
     const oddsApiKey = Deno.env.get("THE_ODDS_API_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     
     if (!ballDontLieApiKey) {
       throw new Error("BALLDONTLIE_API_KEY not configured");
@@ -101,11 +104,51 @@ Deno.serve(async (req) => {
     if (!oddsApiKey) {
       throw new Error("THE_ODDS_API_KEY not configured");
     }
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      throw new Error("Supabase configuration missing");
+    }
 
-    // Initialize Supabase client with service role for admin operations
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // Authenticate user - require admin role
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized - no token provided" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const token = authHeader.substring(7);
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: claims, error: claimsError } = await authClient.auth.getClaims(token);
+    if (claimsError || !claims?.claims) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Unauthorized - invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = claims.claims.sub;
+    
+    // Check admin role using service client
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { data: roleData, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .single();
+
+    if (roleError || roleData?.role !== "admin") {
+      return new Response(
+        JSON.stringify({ success: false, error: "Forbidden - admin access required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Admin user ${userId} authenticated, proceeding with sync...`);
 
     // ===== STEP 1: Fetch games from BallDontLie =====
     const gamesParams = new URLSearchParams({
