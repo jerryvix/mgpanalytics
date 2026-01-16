@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.balldontlie]
 verify_jwt = false
+
+[functions.sync-nfl-players]
+verify_jwt = false
