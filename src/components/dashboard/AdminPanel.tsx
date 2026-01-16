@@ -554,8 +554,8 @@ export function AdminPanel() {
     setIsSyncingNFLGameLogs(true);
     const startTime = Date.now();
     
-    // Seasons to sync (6 years of historical data)
-    const seasons = [2025, 2024, 2023, 2022, 2021, 2020];
+    // Seasons to sync (testing with 2025 only)
+    const seasons = [2025];
     const BDL_API_KEY = "52aa922d-2187-406d-a52b-3d51c71117f7";
     
     try {
