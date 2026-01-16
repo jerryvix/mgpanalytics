@@ -270,21 +270,52 @@ export function AdminPanel() {
     try {
       console.log("[Admin] Starting multi-season client-side sync...");
       
-      // Get all NFL players from database for mapping (do this once)
-      const { data: players } = await supabase
+      // First check total player count
+      const { count: playerCount } = await supabase
         .from("players")
-        .select("id, external_id")
+        .select("*", { count: "exact", head: true })
         .eq("sport", "NFL");
-
-      if (!players || players.length === 0) {
+      
+      console.log(`[Admin] Total NFL players in database: ${playerCount}`);
+      
+      if (!playerCount || playerCount === 0) {
         throw new Error("No NFL players in database - sync players first");
       }
 
+      // Fetch ALL players with pagination (Supabase default limit is 1000)
+      let allPlayers: { id: string; external_id: string }[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      
+      while (offset < playerCount) {
+        const { data: playerBatch, error: playerError } = await supabase
+          .from("players")
+          .select("id, external_id")
+          .eq("sport", "NFL")
+          .range(offset, offset + pageSize - 1);
+        
+        if (playerError) {
+          console.error("[Admin] Error fetching players:", playerError);
+          break;
+        }
+        
+        if (playerBatch) {
+          allPlayers = [...allPlayers, ...playerBatch];
+        }
+        
+        offset += pageSize;
+        console.log(`[Admin] Fetched ${allPlayers.length}/${playerCount} players...`);
+      }
+
+      if (allPlayers.length === 0) {
+        throw new Error("Failed to fetch NFL players from database");
+      }
+
       const playerMap = new Map(
-        players.map(p => [String(p.external_id), p.id])
+        allPlayers.map(p => [String(p.external_id), p.id])
       );
       
-      console.log(`[Admin] Found ${players.length} NFL players for mapping`);
+      console.log(`[Admin] Loaded ${allPlayers.length} NFL players into mapping (${playerMap.size} unique external_ids)`);
 
       let totalSyncedCount = 0;
       let totalSkippedCount = 0;
@@ -348,13 +379,21 @@ export function AdminPanel() {
           let seasonSyncedCount = 0;
           let seasonSkippedCount = 0;
           const batchSize = 50;
+          let debugLogCount = 0;
           
           for (let i = 0; i < seasonStats.length; i += batchSize) {
             const batch = seasonStats.slice(i, i + batchSize);
             const statsToUpsert = [];
 
             for (const stat of batch) {
-              const playerId = playerMap.get(String(stat.player?.id));
+              const externalId = String(stat.player?.id);
+              const playerId = playerMap.get(externalId);
+              
+              // Log first 5 matches for debugging
+              if (debugLogCount < 5) {
+                console.log(`[Admin] Matching player external_id=${externalId}... ${playerId ? 'FOUND' : 'NOT FOUND'}`);
+                debugLogCount++;
+              }
               
               if (!playerId) {
                 seasonSkippedCount++;
