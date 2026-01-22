@@ -69,10 +69,14 @@ export function PlayersGrid({
     return matchesSearch && matchesTeam && matchesPosition && matchesStatus;
   });
 
-  // Sort: Featured first, then by usage rank
+  // Sort: Injured first, then by usage rank ascending
   const sortedPlayers = [...filteredPlayers].sort((a, b) => {
-    if (a.is_featured && !b.is_featured) return -1;
-    if (!a.is_featured && b.is_featured) return 1;
+    // Injured players first
+    const aInjured = a.injury_status !== "Healthy";
+    const bInjured = b.injury_status !== "Healthy";
+    if (aInjured && !bInjured) return -1;
+    if (!aInjured && bInjured) return 1;
+    // Then by usage rank
     return (a.usage_rank || 999) - (b.usage_rank || 999);
   });
 
@@ -165,7 +169,7 @@ export function PlayersGrid({
             <h3 className="text-lg font-semibold text-foreground mb-2">No Players Found</h3>
             <p className="text-muted-foreground text-sm">
               {players.length === 0
-                ? `No ${sport} games scheduled in the next ${slateWindow}. Sync games first.`
+                ? `No players found for upcoming games. Sync players from Admin Panel.`
                 : "No players match your current filters. Try adjusting your search."}
             </p>
           </CardContent>

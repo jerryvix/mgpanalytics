@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, User, Activity, Calendar, TrendingUp, Target } from "lucide-react";
+import { ArrowLeft, User, Activity, Calendar, TrendingUp, Target, ExternalLink, Clock } from "lucide-react";
+import { format } from "date-fns";
 
 export default function PlayerProfile() {
   const { sport, playerId } = useParams<{ sport: string; playerId: string }>();
@@ -55,7 +56,6 @@ export default function PlayerProfile() {
 
       if (!associations || associations.length === 0) return [];
 
-      // Fetch the actual games based on sport
       const gameIds = associations.map((a) => 
         a.nfl_game_id || a.nba_game_id || a.ncaab_game_id
       ).filter(Boolean) as string[];
@@ -72,7 +72,7 @@ export default function PlayerProfile() {
         .in("id", gameIds)
         .gte("date", new Date().toISOString())
         .order("date", { ascending: true })
-        .limit(3);
+        .limit(5);
 
       return games || [];
     },
@@ -85,7 +85,7 @@ export default function PlayerProfile() {
     switch (status) {
       case "Out":
       case "IR":
-        return "bg-red-500/20 text-red-400 border-red-500/30";
+        return "bg-destructive/20 text-destructive border-destructive/30";
       case "Doubtful":
         return "bg-orange-500/20 text-orange-400 border-orange-500/30";
       case "Questionable":
@@ -97,36 +97,44 @@ export default function PlayerProfile() {
 
   const renderNFLStats = () => {
     if (!stats) return null;
-
     const position = player?.position;
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <StatCard label="Games" value={stats.games_played?.toString() || "0"} />
         {position === "QB" && (
           <>
-            <StatCard label="Pass Yards" value={stats.pass_yards?.toLocaleString() || "0"} />
+            <StatCard label="Pass Yards" value={stats.pass_yards?.toLocaleString() || "0"} highlight />
             <StatCard label="Pass TDs" value={stats.pass_td?.toString() || "0"} />
             <StatCard label="Completions" value={stats.pass_completions?.toString() || "0"} />
+            <StatCard label="Attempts" value={stats.pass_attempts?.toString() || "0"} />
             <StatCard label="Interceptions" value={stats.pass_int?.toString() || "0"} />
+            <StatCard label="Comp %" value={stats.pass_attempts && stats.pass_attempts > 0 
+              ? ((stats.pass_completions || 0) / stats.pass_attempts * 100).toFixed(1) + "%" 
+              : "—"} />
+            <StatCard label="Passer Rating" value={stats.passer_rating?.toFixed(1) || "—"} />
           </>
         )}
         {(position === "RB" || position === "FB") && (
           <>
-            <StatCard label="Rush Yards" value={stats.rush_yards?.toLocaleString() || "0"} />
+            <StatCard label="Rush Yards" value={stats.rush_yards?.toLocaleString() || "0"} highlight />
             <StatCard label="Rush TDs" value={stats.rush_td?.toString() || "0"} />
             <StatCard label="Attempts" value={stats.rush_attempts?.toString() || "0"} />
+            <StatCard label="YPC" value={stats.yards_per_carry?.toFixed(1) || "—"} />
             <StatCard label="Receptions" value={stats.receptions?.toString() || "0"} />
+            <StatCard label="Rec Yards" value={stats.rec_yards?.toLocaleString() || "0"} />
+            <StatCard label="Rec TDs" value={stats.rec_td?.toString() || "0"} />
           </>
         )}
         {(position === "WR" || position === "TE") && (
           <>
-            <StatCard label="Rec Yards" value={stats.rec_yards?.toLocaleString() || "0"} />
+            <StatCard label="Rec Yards" value={stats.rec_yards?.toLocaleString() || "0"} highlight />
             <StatCard label="Rec TDs" value={stats.rec_td?.toString() || "0"} />
             <StatCard label="Receptions" value={stats.receptions?.toString() || "0"} />
             <StatCard label="Targets" value={stats.targets?.toString() || "0"} />
+            <StatCard label="YPR" value={stats.yards_per_reception?.toFixed(1) || "—"} />
           </>
         )}
-        <StatCard label="Games Played" value={stats.games_played?.toString() || "0"} />
       </div>
     );
   };
@@ -135,17 +143,18 @@ export default function PlayerProfile() {
     if (!stats) return null;
 
     return (
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <StatCard label="Games" value={stats.games_played?.toString() || "0"} />
         <StatCard label="PPG" value={stats.points_per_game?.toFixed(1) || "0.0"} highlight />
         <StatCard label="RPG" value={stats.rebounds_per_game?.toFixed(1) || "0.0"} />
         <StatCard label="APG" value={stats.assists_per_game?.toFixed(1) || "0.0"} />
+        <StatCard label="MPG" value={stats.minutes_per_game?.toFixed(1) || "0.0"} />
         <StatCard label="SPG" value={stats.steals_per_game?.toFixed(1) || "0.0"} />
         <StatCard label="BPG" value={stats.blocks_per_game?.toFixed(1) || "0.0"} />
+        <StatCard label="TO" value={stats.turnovers_per_game?.toFixed(1) || "0.0"} />
         <StatCard label="FG%" value={((stats.field_goal_pct || 0) * 100).toFixed(1) + "%"} />
         <StatCard label="3P%" value={((stats.three_point_pct || 0) * 100).toFixed(1) + "%"} />
         <StatCard label="FT%" value={((stats.free_throw_pct || 0) * 100).toFixed(1) + "%"} />
-        <StatCard label="MPG" value={stats.minutes_per_game?.toFixed(1) || "0.0"} />
-        <StatCard label="Games" value={stats.games_played?.toString() || "0"} />
       </div>
     );
   };
@@ -174,6 +183,8 @@ export default function PlayerProfile() {
     );
   }
 
+  const seasonYear = sportUpper === "NBA" ? "2024-25" : "2024";
+
   return (
     <div className="space-y-6">
       {/* Back Button */}
@@ -188,9 +199,16 @@ export default function PlayerProfile() {
       <Card className="bg-card border-border">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-6">
-            {/* Avatar */}
-            <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-              <User className="w-12 h-12 text-muted-foreground" />
+            {/* Avatar with jersey number */}
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                <User className="w-12 h-12 text-muted-foreground" />
+              </div>
+              {player.jersey_number && (
+                <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-terminal-green flex items-center justify-center">
+                  <span className="text-xs font-bold text-background">#{player.jersey_number}</span>
+                </div>
+              )}
             </div>
 
             {/* Info */}
@@ -198,15 +216,9 @@ export default function PlayerProfile() {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">{player.name}</h1>
                 <div className="flex items-center gap-3 text-muted-foreground mt-1">
-                  <span className="font-mono font-bold text-terminal-green">{player.position}</span>
-                  <span>•</span>
-                  <span>{player.team_name}</span>
-                  {player.jersey_number && (
-                    <>
-                      <span>•</span>
-                      <span>#{player.jersey_number}</span>
-                    </>
-                  )}
+                  <span className="font-mono font-bold text-terminal-green text-lg">{player.position}</span>
+                  <span>|</span>
+                  <span className="font-medium">{player.team_name}</span>
                 </div>
               </div>
 
@@ -215,11 +227,15 @@ export default function PlayerProfile() {
                 <Badge className={getInjuryBadgeColor(player.injury_status || "Healthy")}>
                   <Activity className="w-3 h-3 mr-1" />
                   {player.injury_status || "Healthy"}
+                  {player.injury_designation && ` - ${player.injury_designation}`}
                 </Badge>
                 {player.is_featured && (
                   <Badge variant="outline" className="border-terminal-green/50 text-terminal-green">
                     <TrendingUp className="w-3 h-3 mr-1" />
-                    Featured
+                    {player.featured_reason === "high_usage" && "High Usage Player"}
+                    {player.featured_reason === "injured" && "Injury Watch"}
+                    {player.featured_reason === "volume_fallback" && "Volume Candidate"}
+                    {!player.featured_reason && "Featured"}
                   </Badge>
                 )}
                 {player.usage_rank && player.usage_rank <= 5 && (
@@ -230,30 +246,36 @@ export default function PlayerProfile() {
                 )}
               </div>
 
-              {/* Bio */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              {/* Bio Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm pt-2">
                 {player.height && (
-                  <div>
-                    <span className="text-muted-foreground">Height: </span>
-                    <span className="text-foreground">{player.height}</span>
+                  <div className="bg-muted/30 rounded-lg p-2">
+                    <span className="text-muted-foreground block text-xs">Height</span>
+                    <span className="text-foreground font-medium">{player.height}</span>
                   </div>
                 )}
                 {player.weight && (
-                  <div>
-                    <span className="text-muted-foreground">Weight: </span>
-                    <span className="text-foreground">{player.weight} lbs</span>
+                  <div className="bg-muted/30 rounded-lg p-2">
+                    <span className="text-muted-foreground block text-xs">Weight</span>
+                    <span className="text-foreground font-medium">{player.weight} lbs</span>
                   </div>
                 )}
                 {player.age && (
-                  <div>
-                    <span className="text-muted-foreground">Age: </span>
-                    <span className="text-foreground">{player.age}</span>
+                  <div className="bg-muted/30 rounded-lg p-2">
+                    <span className="text-muted-foreground block text-xs">Age</span>
+                    <span className="text-foreground font-medium">{player.age}</span>
                   </div>
                 )}
                 {player.college && (
-                  <div>
-                    <span className="text-muted-foreground">College: </span>
-                    <span className="text-foreground">{player.college}</span>
+                  <div className="bg-muted/30 rounded-lg p-2">
+                    <span className="text-muted-foreground block text-xs">College</span>
+                    <span className="text-foreground font-medium">{player.college}</span>
+                  </div>
+                )}
+                {player.experience !== null && player.experience !== undefined && (
+                  <div className="bg-muted/30 rounded-lg p-2">
+                    <span className="text-muted-foreground block text-xs">Experience</span>
+                    <span className="text-foreground font-medium">{player.experience} yr{player.experience !== 1 ? 's' : ''}</span>
                   </div>
                 )}
               </div>
@@ -264,9 +286,15 @@ export default function PlayerProfile() {
 
       {/* Season Stats */}
       <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">
-            {stats?.season || "2024"} Season Stats
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold flex items-center justify-between">
+            <span>{seasonYear} Season Stats</span>
+            {stats?.updated_at && (
+              <span className="text-xs text-muted-foreground font-normal flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                Updated {format(new Date(stats.updated_at), "MMM d, h:mm a")}
+              </span>
+            )}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -274,48 +302,61 @@ export default function PlayerProfile() {
           {!stats && (
             <p className="text-muted-foreground text-sm">No stats available for this season.</p>
           )}
+          {stats?.source && (
+            <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border">
+              Source: {stats.source === "balldontlie" ? "Ball Don't Lie API" : stats.source}
+            </p>
+          )}
         </CardContent>
       </Card>
 
       {/* Upcoming Games */}
-      {upcomingGames.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Calendar className="w-5 h-5" />
-              Upcoming Games
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Calendar className="w-5 h-5" />
+            Upcoming Games ({upcomingGames.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {upcomingGames.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No upcoming games in the slate window.</p>
+          ) : (
             <div className="space-y-3">
-              {upcomingGames.map((game: any) => (
-                <div
-                  key={game.id}
-                  className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                >
-                  <div>
-                    <div className="font-medium text-foreground">
-                      {game.visitor_team_name} @ {game.home_team_name}
+              {upcomingGames.map((game: any) => {
+                const gameDate = new Date(game.date);
+                const isHome = player?.team_name?.includes(game.home_team_name.split(" ").pop() || "");
+                const opponent = isHome ? game.visitor_team_name : game.home_team_name;
+                const locationPrefix = isHome ? "vs" : "@";
+
+                return (
+                  <div
+                    key={game.id}
+                    className="flex items-center justify-between p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">
+                        {locationPrefix} {opponent}
+                      </div>
+                      <div className="text-sm text-muted-foreground flex items-center gap-2">
+                        <span>{format(gameDate, "EEE, MMM d")}</span>
+                        <span>•</span>
+                        <span>{format(gameDate, "h:mm a")} EST</span>
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {new Date(game.date).toLocaleDateString("en-US", {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        hour: "numeric",
-                        minute: "2-digit",
-                      })}
-                    </div>
+                    <Link to={`/dashboard/${sport}`}>
+                      <Button variant="ghost" size="sm" className="text-terminal-green hover:text-terminal-green/80">
+                        View Game
+                        <ExternalLink className="w-3 h-3 ml-1" />
+                      </Button>
+                    </Link>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    {game.status}
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

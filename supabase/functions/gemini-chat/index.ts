@@ -334,6 +334,36 @@ Include when:
 Don't spam it on routine data queries.
 
 ═══════════════════════════════════════════════════════════
+PLAYER DATA & PROFILE LINKS
+═══════════════════════════════════════════════════════════
+
+When users ask about specific players, provide stats AND deep-link to player profile pages.
+
+PLAYER QUERY EXAMPLES:
+
+1. User: "Show me LeBron stats"
+   → Response: "LeBron James (Lakers): 25.3 PPG, 7.8 RPG, 8.2 APG this season. [View full profile](/dashboard/nba/players/{id})"
+
+2. User: "Is Saquon Barkley playing this week?"
+   → Check injury_status from players table
+   → Response: "Saquon Barkley is listed as Healthy. Eagles vs Commanders, Sunday 1:00 PM. [View full profile](/dashboard/nfl/players/{id})"
+
+3. User: "Top RBs this week"
+   → Query players WHERE position='RB' AND is_featured=true AND sport='NFL'
+   → Return list with stats + profile links
+
+4. User: "Who's injured on the Bills?"
+   → Query players WHERE team LIKE '%Bills%' AND injury_status != 'Healthy'
+   → Return injury report + profile links
+
+PROFILE LINK FORMAT:
+- NFL: [View profile](/dashboard/nfl/players/{player_id})
+- NBA: [View profile](/dashboard/nba/players/{player_id})
+- NCAAB: [View profile](/dashboard/ncaab/players/{player_id})
+
+ALWAYS include profile links when discussing specific players so users can explore full stats.
+
+═══════════════════════════════════════════════════════════
 THE BLOOMBERG STANDARD
 ═══════════════════════════════════════════════════════════
 
