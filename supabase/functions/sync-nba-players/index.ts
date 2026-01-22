@@ -164,11 +164,11 @@ Deno.serve(async (req) => {
         const teamName = players[0]?.team?.full_name || `Team ${teamId}`;
         teamsProcessed.push(teamName);
 
-        // Fetch season averages for all players
+        // Fetch season averages for all players (2025 = 2024-25 NBA season)
         const playerIds = players.map(p => p.id);
         const seasonAvgResponse = await bdlFetch(
           BDL_API_KEY, 
-          `/season_averages?season=2024&player_ids[]=${playerIds.join("&player_ids[]=")}`
+          `/season_averages?season=2025&player_ids[]=${playerIds.join("&player_ids[]=")}`
         );
         const seasonAverages: SeasonAverage[] = seasonAvgResponse.data || [];
 
@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
             const seasonStats = {
               player_id: upsertedPlayer.id,
               sport: "NBA",
-              season: 2024,
+              season: 2025,
               season_type: "regular",
               games_played: stats.games_played || 0,
               points_per_game: stats.pts || 0,
