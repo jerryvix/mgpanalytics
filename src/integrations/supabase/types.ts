@@ -1177,6 +1177,7 @@ export type Database = {
           name: string
           position: string | null
           position_type: string | null
+          raw_data: Json | null
           slate_window_end: string | null
           slate_window_start: string | null
           sport: string
@@ -1209,6 +1210,7 @@ export type Database = {
           name: string
           position?: string | null
           position_type?: string | null
+          raw_data?: Json | null
           slate_window_end?: string | null
           slate_window_start?: string | null
           sport: string
@@ -1241,6 +1243,7 @@ export type Database = {
           name?: string
           position?: string | null
           position_type?: string | null
+          raw_data?: Json | null
           slate_window_end?: string | null
           slate_window_start?: string | null
           sport?: string
