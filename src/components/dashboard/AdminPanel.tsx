@@ -1333,7 +1333,7 @@ export function AdminPanel() {
                 disabled={isSyncingNBA}
               >
                 {isSyncingNBA ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-2" />}
-                Sync NBA Games
+                Sync NBA Games (48h)
               </Button>
               <div className="flex justify-between font-mono text-xs text-muted-foreground">
                 <span>Games in Vault:</span>

@@ -56,10 +56,16 @@ export function NBASlate() {
   const fetchGames = async () => {
     setLoading(true);
 
-    // Fetch all NBA games
+    // Get current time and 48 hours from now
+    const now = new Date();
+    const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+    // Fetch NBA games within 48-hour window
     const { data: gamesData, error: gamesError } = await supabase
       .from("nba_games")
       .select("*")
+      .gte("date", now.toISOString())
+      .lte("date", in48Hours.toISOString())
       .order("date", { ascending: true });
 
     if (gamesError) {
@@ -72,8 +78,8 @@ export function NBASlate() {
     const upcomingGames = (gamesData || []).filter(
       (game) => !game.status.toLowerCase().startsWith("final")
     );
-    console.log("All NBA games:", gamesData);
-    console.log("Upcoming NBA games (non-Final):", upcomingGames);
+    console.log("NBA games in 48h window:", gamesData?.length);
+    console.log("Upcoming NBA games (non-Final):", upcomingGames.length);
     setGames(upcomingGames);
 
     // Fetch DraftKings odds for all upcoming games to display on cards
@@ -178,11 +184,11 @@ export function NBASlate() {
             NBA SLATE
           </h1>
           <p className="text-sm text-muted-foreground font-mono">
-            Upcoming Games with Live Odds
+            Games in the Next 48 Hours
           </p>
         </div>
         <Badge variant="outline" className="border-terminal-cyan text-terminal-cyan font-mono">
-          {scheduledGamesCount} UPCOMING
+          {scheduledGamesCount} GAMES
         </Badge>
       </motion.div>
 
@@ -196,8 +202,8 @@ export function NBASlate() {
         <Card className="bg-card border-terminal-cyan/30">
           <CardContent className="py-12 text-center font-mono">
             <Signal className="w-8 h-8 mx-auto mb-4 text-terminal-amber" />
-            <p className="text-muted-foreground">No upcoming NBA games scheduled</p>
-            <p className="text-xs text-muted-foreground mt-1">Check back later for new matchups</p>
+            <p className="text-foreground">No games scheduled in the next 48 hours</p>
+            <p className="text-xs text-muted-foreground mt-2">Check back later for new matchups</p>
           </CardContent>
         </Card>
       ) : (

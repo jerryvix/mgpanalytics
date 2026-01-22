@@ -9,6 +9,15 @@ verify_jwt = false
 [functions.sync-nba-odds]
 verify_jwt = false
 
+[functions.sync-nba-games]
+verify_jwt = false
+
+[functions.sync-ncaab-games]
+verify_jwt = false
+
+[functions.sync-odds-snapshot]
+verify_jwt = false
+
 [functions.balldontlie]
 verify_jwt = false
 
