@@ -1,16 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { DashboardContent } from "@/components/DashboardContent";
 import { ChatPanel } from "@/components/chatbot";
 import { User } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -19,7 +16,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isPreviewingAsUser, setIsPreviewingAsUser] = useState(false);
   const { role, isAdmin, loading: roleLoading } = useUserRole(user);
-  const isMobile = useIsMobile();
 
   const handleTogglePreview = useCallback(() => {
     setIsPreviewingAsUser(prev => {
@@ -93,13 +89,6 @@ const Dashboard = () => {
           onTogglePreview={handleTogglePreview}
         />
         <main className="flex-1 overflow-auto">
-          {/* Mobile header with sidebar trigger */}
-          {isMobile && (
-            <div className="sticky top-0 z-40 flex items-center gap-3 p-4 border-b border-border bg-background">
-              <SidebarTrigger className="h-9 w-9" />
-              <span className="font-bold text-terminal-green">MGP</span>
-            </div>
-          )}
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
         <ChatPanel />

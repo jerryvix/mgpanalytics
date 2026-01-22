@@ -433,13 +433,13 @@ export function DashboardHome() {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-12 bg-card/50 rounded animate-pulse" />
               ))}
             </div>
           ) : upcomingGames.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {upcomingGames.map((game) => (
                 <div
                   key={`${game.league}-${game.id}`}
