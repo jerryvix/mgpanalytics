@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGeminiChat } from "@/hooks/useGeminiChat";
 import { useChat } from "@/contexts/ChatContext";
-import { useIsMobile } from "@/hooks/use-mobile";
+
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
 import {
@@ -46,7 +46,7 @@ export function ChatPanel() {
     setActiveConversationId,
     refreshConversations
   } = useChat();
-  const isMobile = useIsMobile();
+  
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -455,74 +455,7 @@ export function ChatPanel() {
     </div>
   );
 
-  // Mobile: Full-screen slide-in panel
-  if (isMobile) {
-    return (
-      <>
-        {/* Floating toggle when closed */}
-        <AnimatePresence>
-          {!isOpen && (
-            <motion.div
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              className="fixed bottom-6 right-6 z-50"
-            >
-              <Button
-                onClick={toggleChat}
-                className="h-14 px-5 bg-terminal-green hover:bg-terminal-green/90 text-background font-mono rounded-full shadow-lg shadow-terminal-green/20 flex items-center gap-2"
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span className="text-sm font-semibold">Ask MGP</span>
-              </Button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Full-screen panel */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed inset-0 z-50 bg-card flex flex-col"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <div className="flex items-center gap-3">
-                  <MessageCircle className="w-5 h-5 text-terminal-green" />
-                  <div>
-                    <h2 className="font-mono font-bold text-foreground text-lg">MGP Analyst</h2>
-                    <p className="font-mono text-xs text-muted-foreground">
-                      Games, odds & insights
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <ClearChatButton />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggleChat}
-                    className="h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-muted"
-                  >
-                    <PanelRightOpen className="w-5 h-5" />
-                  </Button>
-                </div>
-              </div>
-
-              {chatContent}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </>
-    );
-  }
-
-  // Desktop: Docked side panel (participates in layout)
+  // Always use desktop/tablet docked side panel layout
   return (
     <div className="relative flex h-full">
       {/* Collapsed state - slim vertical tab */}

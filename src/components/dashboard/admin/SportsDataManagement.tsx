@@ -361,93 +361,43 @@ export function SportsDataManagement() {
           </div>
         )}
 
-        {/* Sport Cards Grid - Mobile responsive */}
-        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-between h-6 text-[10px] font-mono text-muted-foreground hover:text-foreground md:hidden">
-              <span>Individual Sports</span>
-              <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-            </Button>
-          </CollapsibleTrigger>
-          
-          {/* Always show on desktop, collapsible on mobile */}
-          <div className="hidden md:grid grid-cols-5 gap-2">
-            {sportConfig.map(({ key, label, Icon, color, window }) => (
-              <div key={key} className={`rounded p-2 border transition-colors ${getCardBorderClass(key, counts[key].lastSync)}`}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1">
-                    <Icon className={`w-3 h-3 text-${color}`} />
-                    <span className="font-mono text-[10px] font-medium">{label}</span>
-                  </div>
-                  {getStatusDisplay(key, counts[key].lastSync)}
+        {/* Sport Cards Grid - Always show tablet layout */}
+        <div className="grid grid-cols-5 gap-2">
+          {sportConfig.map(({ key, label, Icon, color, window }) => (
+            <div key={key} className={`rounded p-2 border transition-colors ${getCardBorderClass(key, counts[key].lastSync)}`}>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1">
+                  <Icon className={`w-3 h-3 text-${color}`} />
+                  <span className="font-mono text-[10px] font-medium">{label}</span>
                 </div>
-                <div className="flex items-center justify-between mb-1">
-                  <Badge variant="outline" className={`border-${color}/50 text-${color} text-[8px] px-1 py-0`}>
-                    {key === "ncaab" || key === "ncaaf" ? counts[key].ranked ?? "—" : counts[key].games ?? "—"}
-                  </Badge>
-                  {isOffSeason(key) && (
-                    <Badge variant="outline" className="border-terminal-amber/50 text-terminal-amber text-[7px] px-0.5 py-0">
-                      OFF
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
-                  <Clock className="w-2 h-2" />
-                  <span className="truncate">{counts[key].lastSync || "Never"}</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={`w-full font-mono text-[9px] h-5 border-${color}/50 hover:bg-${color}/10`}
-                  onClick={() => handleIndividualSync(key)}
-                  disabled={syncStatus[key] === "syncing" || isAllSyncing}
-                >
-                  {syncStatus[key] === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : window}
-                </Button>
+                {getStatusDisplay(key, counts[key].lastSync)}
               </div>
-            ))}
-          </div>
-          
-          {/* Mobile collapsed view */}
-          <CollapsibleContent className="md:hidden">
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {sportConfig.map(({ key, label, Icon, color, window }) => (
-                <div key={key} className={`rounded p-2 border transition-colors ${getCardBorderClass(key, counts[key].lastSync)}`}>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1">
-                      <Icon className={`w-3 h-3 text-${color}`} />
-                      <span className="font-mono text-[10px] font-medium">{label}</span>
-                    </div>
-                    {getStatusDisplay(key, counts[key].lastSync)}
-                  </div>
-                  <div className="flex items-center justify-between mb-1">
-                    <Badge variant="outline" className={`border-${color}/50 text-${color} text-[8px] px-1 py-0`}>
-                      {key === "ncaab" || key === "ncaaf" ? counts[key].ranked ?? "—" : counts[key].games ?? "—"}
-                    </Badge>
-                    {isOffSeason(key) && (
-                      <Badge variant="outline" className="border-terminal-amber/50 text-terminal-amber text-[7px] px-0.5 py-0">
-                        OFF
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
-                    <Clock className="w-2 h-2" />
-                    <span className="truncate">{counts[key].lastSync || "Never"}</span>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={`w-full font-mono text-[9px] h-5 border-${color}/50 hover:bg-${color}/10`}
-                    onClick={() => handleIndividualSync(key)}
-                    disabled={syncStatus[key] === "syncing" || isAllSyncing}
-                  >
-                    {syncStatus[key] === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : window}
-                  </Button>
-                </div>
-              ))}
+              <div className="flex items-center justify-between mb-1">
+                <Badge variant="outline" className={`border-${color}/50 text-${color} text-[8px] px-1 py-0`}>
+                  {key === "ncaab" || key === "ncaaf" ? counts[key].ranked ?? "—" : counts[key].games ?? "—"}
+                </Badge>
+                {isOffSeason(key) && (
+                  <Badge variant="outline" className="border-terminal-amber/50 text-terminal-amber text-[7px] px-0.5 py-0">
+                    OFF
+                  </Badge>
+                )}
+              </div>
+              <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
+                <Clock className="w-2 h-2" />
+                <span className="truncate">{counts[key].lastSync || "Never"}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className={`w-full font-mono text-[9px] h-5 border-${color}/50 hover:bg-${color}/10`}
+                onClick={() => handleIndividualSync(key)}
+                disabled={syncStatus[key] === "syncing" || isAllSyncing}
+              >
+                {syncStatus[key] === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : window}
+              </Button>
             </div>
-          </CollapsibleContent>
-        </Collapsible>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );

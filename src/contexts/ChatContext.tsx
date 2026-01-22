@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Conversation {
@@ -32,7 +31,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const CHAT_OPEN_KEY = "mgp-chat-open";
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const isMobile = useIsMobile();
+  
   const [pendingQuery, setPendingQuery] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
@@ -77,16 +76,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     refreshConversations();
   }, [refreshConversations]);
 
-  // Set initial state based on device after mount
+  // Set initial state after mount - always default to open (tablet/desktop behavior)
   useEffect(() => {
     if (!mounted) {
       const stored = localStorage.getItem(CHAT_OPEN_KEY);
       if (stored === null) {
-        setIsOpen(!isMobile);
+        setIsOpen(true);
       }
       setMounted(true);
     }
-  }, [isMobile, mounted]);
+  }, [mounted]);
 
   // Persist state
   useEffect(() => {
