@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DataInspector } from "./DataInspector";
 import { 
   Settings, 
   Database, 
@@ -1213,6 +1214,9 @@ export function AdminPanel() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Data Inspector */}
+        <DataInspector />
       </div>
     </div>
   );
