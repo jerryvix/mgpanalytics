@@ -32,6 +32,17 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat } from "@/contexts/ChatContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface AppSidebarProps {
   user: User;
@@ -65,7 +76,8 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
     conversationsLoading, 
     activeConversationId,
     startNewConversation,
-    loadConversation 
+    loadConversation,
+    refreshConversations 
   } = useChat();
   
   // Use preview mode to show user view when testing
@@ -80,6 +92,43 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
         description: "Session terminated",
       });
       navigate("/");
+    }
+  };
+
+  const handleClearAllConversations = async () => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) return;
+
+      // Delete all conversations for this user (messages will be cascade deleted or handled by RLS)
+      // First delete all messages for user's conversations
+      const { data: userConvs } = await supabase
+        .from("conversations")
+        .select("id")
+        .eq("user_id", currentUser.id);
+
+      if (userConvs && userConvs.length > 0) {
+        const convIds = userConvs.map(c => c.id);
+        
+        // Delete messages first
+        await supabase
+          .from("messages")
+          .delete()
+          .in("conversation_id", convIds);
+
+        // Then delete conversations
+        await supabase
+          .from("conversations")
+          .delete()
+          .eq("user_id", currentUser.id);
+      }
+
+      // Refresh the list
+      refreshConversations();
+      toast.success("All conversations cleared");
+    } catch (error) {
+      console.error("Error clearing conversations:", error);
+      toast.error("Failed to clear conversations");
     }
   };
 
@@ -144,9 +193,40 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
         {/* Chat History */}
         {!collapsed && (
           <SidebarGroup className="mt-4">
-            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
-              Recent Chats
-            </SidebarGroupLabel>
+            <div className="flex items-center justify-between px-2 mb-2">
+              <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest p-0">
+                Recent Chats
+              </SidebarGroupLabel>
+              {conversations.length > 0 && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      className="p-1 text-sidebar-foreground/40 hover:text-destructive transition-colors"
+                      title="Clear all conversations"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="bg-card border-border">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="text-foreground">Clear all conversations?</AlertDialogTitle>
+                      <AlertDialogDescription className="text-muted-foreground">
+                        This will permanently delete all your chat history. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel className="bg-muted text-foreground hover:bg-muted/80">Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleClearAllConversations}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Clear
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
             <SidebarGroupContent>
               <ScrollArea className="max-h-40">
                 <SidebarMenu>

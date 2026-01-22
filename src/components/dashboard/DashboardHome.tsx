@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, TrendingUp, Calendar } from "lucide-react";
+import { ArrowRight, TrendingUp, Calendar, RefreshCw, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useChat } from "@/contexts/ChatContext";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Game {
   id: number | string;
@@ -12,22 +13,27 @@ interface Game {
   visitor_team_name: string;
   date: string;
   status: string;
-  league?: string;
+  league: string;
 }
 
 interface OddsMovement {
   id: string;
+  gameId: string;
   team: string;
+  opponent: string;
   market: string;
-  oldValue: number;
-  newValue: number;
-  timeAgo: string;
+  openValue: number | null;
+  currentValue: number | null;
+  movement: number | null;
+  lastUpdated: string;
   sport: string;
+  hasMovement: boolean;
 }
 
 interface GameWithOdds extends Game {
-  spread?: number;
-  total?: number;
+  spread?: number | null;
+  total?: number | null;
+  hasOdds: boolean;
 }
 
 const EXAMPLE_PROMPTS = [
@@ -45,14 +51,16 @@ const getSportEmoji = (league?: string) => {
   return "🏈";
 };
 
-const formatTimeAgo = (date: Date) => {
+const formatGameTime = (dateStr: string) => {
+  const date = new Date(dateStr);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  if (diffMins < 60) return `${diffMins} min ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${Math.floor(diffHours / 24)}d ago`;
+  const diffMs = date.getTime() - now.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  
+  if (diffHours < 0) return "Now";
+  if (diffHours < 1) return `${Math.floor(diffMs / (1000 * 60))}m`;
+  if (diffHours < 24) return `${diffHours}h`;
+  return date.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 };
 
 export function DashboardHome() {
@@ -60,8 +68,9 @@ export function DashboardHome() {
   const { openWithQuery } = useChat();
   const [moneyFlows, setMoneyFlows] = useState<OddsMovement[]>([]);
   const [upcomingGames, setUpcomingGames] = useState<GameWithOdds[]>([]);
-  const [lastSync, setLastSync] = useState<string>("");
+  const [lastRefresh, setLastRefresh] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -70,118 +79,190 @@ export function DashboardHome() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Fetch NFL games - not final and in the future
+      const now = new Date();
+      const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+      
+      // Fetch NFL games in next 48 hours
       const { data: nflGames } = await supabase
         .from("games")
         .select("*")
         .not("status", "ilike", "%final%")
-        .gte("date", new Date().toISOString())
+        .gte("date", now.toISOString())
+        .lte("date", in48Hours.toISOString())
         .order("date", { ascending: true })
         .limit(10);
 
-      // Fetch NBA games - not final and in the future
+      // Fetch NBA games in next 48 hours
       const { data: nbaGames } = await supabase
         .from("nba_games")
         .select("*")
         .not("status", "ilike", "%final%")
-        .gte("date", new Date().toISOString())
+        .gte("date", now.toISOString())
+        .lte("date", in48Hours.toISOString())
         .order("date", { ascending: true })
         .limit(10);
 
       // Fetch NFL odds for games
       const nflGameIds = nflGames?.map(g => g.id) || [];
-      const { data: nflOdds } = await supabase
-        .from("odds")
-        .select("*")
-        .in("game_id", nflGameIds)
-        .eq("sportsbook", "draftkings");
+      const { data: nflOdds } = nflGameIds.length > 0 
+        ? await supabase
+            .from("odds")
+            .select("*")
+            .in("game_id", nflGameIds)
+            .eq("sportsbook", "draftkings")
+        : { data: [] };
 
       // Fetch NBA odds
       const nbaGameIds = nbaGames?.map(g => g.id) || [];
-      const { data: nbaOdds } = await supabase
-        .from("nba_odds")
-        .select("*")
-        .in("game_id", nbaGameIds)
-        .eq("sportsbook", "draftkings");
+      const { data: nbaOdds } = nbaGameIds.length > 0
+        ? await supabase
+            .from("nba_odds")
+            .select("*")
+            .in("game_id", nbaGameIds)
+            .eq("sportsbook", "draftkings")
+        : { data: [] };
 
-      // Combine games with odds
+      // Combine games with odds - mark which have odds
       const gamesWithOdds: GameWithOdds[] = [];
       
       nflGames?.forEach(game => {
         const odds = nflOdds?.find(o => o.game_id === game.id);
         gamesWithOdds.push({
-          ...game,
+          id: game.id,
+          home_team_name: game.home_team_name,
+          visitor_team_name: game.visitor_team_name,
+          date: game.date,
+          status: game.status,
           league: "NFL",
-          spread: odds?.spread_value,
-          total: odds?.total_value,
+          spread: odds?.spread_value ?? null,
+          total: odds?.total_value ?? null,
+          hasOdds: !!odds,
         });
       });
 
       nbaGames?.forEach(game => {
         const odds = nbaOdds?.find(o => o.game_id === game.id);
         gamesWithOdds.push({
-          ...game,
+          id: game.id,
+          home_team_name: game.home_team_name,
+          visitor_team_name: game.visitor_team_name,
+          date: game.date,
+          status: game.status,
           league: "NBA",
-          spread: odds?.spread_value,
-          total: odds?.total_value,
+          spread: odds?.spread_value ?? null,
+          total: odds?.total_value ?? null,
+          hasOdds: !!odds,
         });
       });
 
-      // Sort by date
-      gamesWithOdds.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      setUpcomingGames(gamesWithOdds.slice(0, 8));
+      // Sort: games with odds first, then by date
+      gamesWithOdds.sort((a, b) => {
+        if (a.hasOdds && !b.hasOdds) return -1;
+        if (!a.hasOdds && b.hasOdds) return 1;
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
 
-      // Mock money flows - in production this would compare historical odds
-      // For now, show the most recent odds updates as "movements"
-      const movements: OddsMovement[] = [];
+      setUpcomingGames(gamesWithOdds.slice(0, 4));
+
+      // Fetch Money Flows from odds_snapshots
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const allGameIds = [...nflGameIds.map(id => String(id)), ...nbaGameIds.map(id => String(id))];
       
-      nflOdds?.slice(0, 3).forEach((odd, idx) => {
-        const game = nflGames?.find(g => g.id === odd.game_id);
-        if (game && odd.spread_value) {
-          movements.push({
-            id: `nfl-${idx}`,
-            team: game.home_team_name,
-            market: "spread",
-            oldValue: odd.spread_value + (Math.random() > 0.5 ? 0.5 : -0.5),
-            newValue: odd.spread_value,
-            timeAgo: formatTimeAgo(new Date(odd.updated_at)),
-            sport: "NFL",
+      let movements: OddsMovement[] = [];
+
+      if (allGameIds.length > 0) {
+        const { data: snapshots } = await supabase
+          .from("odds_snapshots")
+          .select("*")
+          .in("game_id", allGameIds)
+          .eq("market_type", "spread")
+          .gte("pulled_at", sevenDaysAgo.toISOString())
+          .order("pulled_at", { ascending: true });
+
+        if (snapshots && snapshots.length > 0) {
+          // Group snapshots by game_id
+          const snapshotsByGame: Record<string, typeof snapshots> = {};
+          snapshots.forEach(s => {
+            if (!snapshotsByGame[s.game_id]) {
+              snapshotsByGame[s.game_id] = [];
+            }
+            snapshotsByGame[s.game_id].push(s);
+          });
+
+          // Calculate movement for each game
+          Object.entries(snapshotsByGame).forEach(([gameId, gameSnapshots]) => {
+            if (gameSnapshots.length < 2) return;
+
+            const openSnapshot = gameSnapshots[0];
+            const currentSnapshot = gameSnapshots[gameSnapshots.length - 1];
+            const movement = (currentSnapshot.line_value ?? 0) - (openSnapshot.line_value ?? 0);
+
+            // Find the game details
+            const nflGame = nflGames?.find(g => String(g.id) === gameId);
+            const nbaGame = nbaGames?.find(g => String(g.id) === gameId);
+            const game = nflGame || nbaGame;
+
+            if (game && Math.abs(movement) >= 0.5) {
+              movements.push({
+                id: gameId,
+                gameId: gameId,
+                team: game.home_team_name,
+                opponent: game.visitor_team_name,
+                market: "spread",
+                openValue: openSnapshot.line_value,
+                currentValue: currentSnapshot.line_value,
+                movement: movement,
+                lastUpdated: new Date(currentSnapshot.pulled_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+                sport: nflGame ? "NFL" : "NBA",
+                hasMovement: true,
+              });
+            }
           });
         }
-      });
-
-      nbaOdds?.slice(0, 2).forEach((odd, idx) => {
-        const game = nbaGames?.find(g => g.id === odd.game_id);
-        if (game && odd.spread_value) {
-          movements.push({
-            id: `nba-${idx}`,
-            team: game.home_team_name,
-            market: "spread",
-            oldValue: odd.spread_value + (Math.random() > 0.5 ? 0.5 : -0.5),
-            newValue: odd.spread_value,
-            timeAgo: formatTimeAgo(new Date(odd.updated_at)),
-            sport: "NBA",
-          });
-        }
-      });
-
-      setMoneyFlows(movements);
-
-      // Get last sync time
-      const { data: syncLog } = await supabase
-        .from("sync_log")
-        .select("completed_at")
-        .eq("status", "completed")
-        .order("completed_at", { ascending: false })
-        .limit(1);
-
-      if (syncLog?.[0]?.completed_at) {
-        setLastSync(new Date(syncLog[0].completed_at).toLocaleString());
       }
+
+      // If no movements from snapshots, show current odds as "no movement yet"
+      if (movements.length === 0) {
+        gamesWithOdds.slice(0, 4).forEach(game => {
+          if (game.spread !== null) {
+            movements.push({
+              id: String(game.id),
+              gameId: String(game.id),
+              team: game.home_team_name,
+              opponent: game.visitor_team_name,
+              market: "spread",
+              openValue: game.spread,
+              currentValue: game.spread,
+              movement: null,
+              lastUpdated: "now",
+              sport: game.league,
+              hasMovement: false,
+            });
+          }
+        });
+      }
+
+      // Sort by absolute movement (biggest moves first)
+      movements.sort((a, b) => Math.abs(b.movement || 0) - Math.abs(a.movement || 0));
+      setMoneyFlows(movements.slice(0, 4));
+
+      setLastRefresh(new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchData();
+      toast.success("Data refreshed");
+    } catch (error) {
+      toast.error("Failed to refresh data");
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -195,6 +276,11 @@ export function DashboardHome() {
 
   const handleExampleClick = (prompt: string) => {
     openWithQuery(prompt);
+  };
+
+  const formatLine = (value: number | null) => {
+    if (value === null || value === undefined) return "—";
+    return value > 0 ? `+${value}` : String(value);
   };
 
   return (
@@ -243,17 +329,38 @@ export function DashboardHome() {
 
       {/* Below the Fold Sections */}
       <div className="border-t border-border px-4 py-8 space-y-8">
+        {/* Refresh Button */}
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh Data
+          </Button>
+        </div>
+
         {/* Money Flows Section */}
         <motion.section
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <h2 className="text-sm text-foreground uppercase tracking-wider font-medium">
-              Money Flows
-            </h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              <h2 className="text-sm text-foreground uppercase tracking-wider font-medium">
+                Money Flows
+              </h2>
+            </div>
+            {lastRefresh && (
+              <span className="text-xs text-muted-foreground">
+                Last refreshed: {lastRefresh}
+              </span>
+            )}
           </div>
 
           {loading ? (
@@ -269,29 +376,44 @@ export function DashboardHome() {
                   key={flow.id}
                   className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg text-sm"
                 >
-                  <span>
-                    <span className="mr-2">{getSportEmoji(flow.sport)}</span>
-                    <span className="text-foreground">{flow.team}</span>
-                    <span className="text-muted-foreground ml-2">{flow.market}</span>
+                  <span className="flex items-center gap-2">
+                    <span>{getSportEmoji(flow.sport)}</span>
+                    <span className="text-foreground font-medium">{flow.team}</span>
+                    <span className="text-muted-foreground">vs</span>
+                    <span className="text-muted-foreground">{flow.opponent}</span>
                   </span>
                   <span className="flex items-center gap-2">
-                    <span className="text-muted-foreground">{flow.oldValue > 0 ? "+" : ""}{flow.oldValue.toFixed(1)}</span>
-                    <span className="text-muted-foreground">→</span>
-                    <span className={flow.newValue !== flow.oldValue ? "text-primary" : "text-foreground"}>
-                      {flow.newValue > 0 ? "+" : ""}{flow.newValue.toFixed(1)}
-                    </span>
-                    <span className="text-muted-foreground text-xs">[{flow.timeAgo}]</span>
+                    {flow.hasMovement && flow.movement !== null ? (
+                      <>
+                        <span className="text-muted-foreground">{formatLine(flow.openValue)}</span>
+                        <span className="text-muted-foreground">→</span>
+                        <span className={flow.movement > 0 ? "text-terminal-green" : "text-destructive"}>
+                          {formatLine(flow.currentValue)}
+                        </span>
+                        {flow.movement > 0 ? (
+                          <ArrowUpRight className="w-4 h-4 text-terminal-green" />
+                        ) : (
+                          <ArrowDownRight className="w-4 h-4 text-destructive" />
+                        )}
+                        <span className="text-muted-foreground text-xs">[{flow.lastUpdated}]</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">
+                        {flow.currentValue !== null 
+                          ? `${formatLine(flow.currentValue)} — no movement yet`
+                          : "Odds not available"
+                        }
+                      </span>
+                    )}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No recent movements detected.</p>
+            <p className="text-sm text-muted-foreground px-4 py-3 bg-card/50 border border-border rounded-lg">
+              No movement data yet — needs at least 2 snapshots.
+            </p>
           )}
-
-          <p className="text-xs text-muted-foreground mt-3">
-            Odds refreshed periodically.{lastSync && ` Last update: ${lastSync}.`} Check DraftKings | FanDuel | Caesars for real-time.
-          </p>
         </motion.section>
 
         {/* Upcoming Games Section */}
@@ -306,11 +428,7 @@ export function DashboardHome() {
               <h2 className="text-sm text-foreground uppercase tracking-wider font-medium">
                 Upcoming Games
               </h2>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-terminal-green animate-pulse" />
-              <span>LIVE</span>
-              {lastSync && <span className="text-border">| Updated: {lastSync}</span>}
+              <span className="text-xs text-muted-foreground">(next 48 hours)</span>
             </div>
           </div>
 
@@ -327,18 +445,19 @@ export function DashboardHome() {
                   key={`${game.league}-${game.id}`}
                   className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg text-sm"
                 >
-                  <span>
-                    <span className="mr-2">{getSportEmoji(game.league)}</span>
+                  <span className="flex items-center gap-2">
+                    <span>{getSportEmoji(game.league)}</span>
                     <span className="text-foreground">{game.visitor_team_name}</span>
-                    <span className="text-muted-foreground mx-2">@</span>
+                    <span className="text-muted-foreground">@</span>
                     <span className="text-foreground">{game.home_team_name}</span>
                   </span>
-                  <span className="text-muted-foreground">
-                    {game.spread !== undefined && game.spread !== null ? (
+                  <span className="flex items-center gap-2 text-muted-foreground">
+                    <span className="text-xs">{formatGameTime(game.date)}</span>
+                    {game.hasOdds && game.spread !== null ? (
                       <>
-                        <span className="text-primary">{game.spread > 0 ? "+" : ""}{game.spread}</span>
-                        {game.total !== undefined && game.total !== null && (
-                          <span className="ml-2">| {game.total}</span>
+                        <span className="text-primary">{formatLine(game.spread)}</span>
+                        {game.total !== null && (
+                          <span>| {game.total}</span>
                         )}
                       </>
                     ) : (
@@ -349,7 +468,9 @@ export function DashboardHome() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">No upcoming games found.</p>
+            <p className="text-sm text-muted-foreground px-4 py-3 bg-card/50 border border-border rounded-lg">
+              No upcoming games in the next 48 hours.
+            </p>
           )}
         </motion.section>
       </div>

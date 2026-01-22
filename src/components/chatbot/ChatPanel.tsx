@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, ExternalLink, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,6 +9,17 @@ import { useChat } from "@/contexts/ChatContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface Source {
   title: string;
@@ -22,6 +33,8 @@ interface Message {
   timestamp: Date;
   sources?: Source[];
 }
+
+const WELCOME_MESSAGE = "Hey! I'm your MGP Analyst. Ask me about upcoming games, odds, line movement, or teams across NFL, NBA, NCAAB, and more. 🏈🏀";
 
 export function ChatPanel() {
   const { 
@@ -39,7 +52,7 @@ export function ChatPanel() {
     {
       id: "welcome",
       role: "bot",
-      content: "Hey! I'm your MGP Analyst. Ask me about upcoming NFL/NBA games, odds, or teams. 🏈🏀",
+      content: WELCOME_MESSAGE,
       timestamp: new Date(),
     },
   ]);
@@ -64,7 +77,7 @@ export function ChatPanel() {
         {
           id: "welcome",
           role: "bot",
-          content: "Hey! I'm your MGP Analyst. Ask me about upcoming NFL/NBA games, odds, or teams. 🏈🏀",
+          content: WELCOME_MESSAGE,
           timestamp: new Date(),
         },
       ]);
@@ -162,6 +175,42 @@ export function ChatPanel() {
     }
   };
 
+  const handleClearChat = async () => {
+    // Delete messages from DB if we have a current conversation
+    if (currentConversationId) {
+      try {
+        await supabase
+          .from("messages")
+          .delete()
+          .eq("conversation_id", currentConversationId);
+        
+        // Also delete the conversation itself
+        await supabase
+          .from("conversations")
+          .delete()
+          .eq("id", currentConversationId);
+        
+        refreshConversations();
+      } catch (error) {
+        console.error("Error deleting messages:", error);
+      }
+    }
+
+    // Reset local state
+    setMessages([
+      {
+        id: "welcome",
+        role: "bot",
+        content: WELCOME_MESSAGE,
+        timestamp: new Date(),
+      },
+    ]);
+    setCurrentConversationId(null);
+    setActiveConversationId(null);
+    setConversationHistory([]);
+    setExpandedSources(new Set());
+  };
+
   const handleSendWithQuery = async (query: string) => {
     if (!query.trim() || isLoading) return;
 
@@ -256,6 +305,38 @@ export function ChatPanel() {
       return newSet;
     });
   };
+
+  const ClearChatButton = () => (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+          title="Clear chat"
+        >
+          <Trash2 className="w-4 h-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent className="bg-card border-border">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-foreground">Clear this chat?</AlertDialogTitle>
+          <AlertDialogDescription className="text-muted-foreground">
+            This will remove all messages from the current conversation. This action cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel className="bg-muted text-foreground hover:bg-muted/80">Cancel</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleClearChat}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Clear
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   const chatContent = (
     <div className="flex flex-col h-full">
@@ -358,7 +439,7 @@ export function ChatPanel() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about games or odds..."
+            placeholder="Ask about games, odds, or teams..."
             className="flex-1 font-mono text-sm bg-background border-border focus-visible:ring-terminal-green/50"
             disabled={isLoading}
           />
@@ -416,18 +497,21 @@ export function ChatPanel() {
                   <div>
                     <h2 className="font-mono font-bold text-foreground text-lg">MGP Analyst</h2>
                     <p className="font-mono text-xs text-muted-foreground">
-                      NFL games, odds & teams
+                      Games, odds & insights
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleChat}
-                  className="h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-muted"
-                >
-                  <PanelRightOpen className="w-5 h-5" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <ClearChatButton />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleChat}
+                    className="h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-muted"
+                  >
+                    <PanelRightOpen className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
 
               {chatContent}
@@ -489,19 +573,22 @@ export function ChatPanel() {
                 <MessageCircle className="w-5 h-5 text-terminal-green" />
                 <div>
                   <h2 className="font-mono font-bold text-foreground">MGP Analyst</h2>
-                  <p className="font-mono text-xs text-muted-foreground">
-                    NFL games, odds & teams
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    Games, odds & insights
                   </p>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleChat}
-                className="h-9 w-9 text-muted-foreground hover:text-foreground hover:bg-muted"
-              >
-                <PanelRightOpen className="w-5 h-5" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <ClearChatButton />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleChat}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <PanelRightOpen className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
             {chatContent}
