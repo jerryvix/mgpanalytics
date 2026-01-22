@@ -43,6 +43,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AppSidebarProps {
   user: User;
@@ -146,22 +151,25 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
 
   return (
     <Sidebar 
-      className={`${collapsed ? "w-14" : "w-60"} border-r border-sidebar-border bg-sidebar transition-all duration-200`}
+      className="border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out"
       collapsible="icon"
     >
-      <SidebarHeader className="border-b border-sidebar-border p-4">
+      <SidebarHeader className="border-b border-sidebar-border p-3">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center">
-            <Activity className="w-4 h-4 text-terminal-green" />
-          </div>
+          <SidebarTrigger className="text-sidebar-foreground hover:text-terminal-green hover:bg-sidebar-accent" />
           {!collapsed && (
-            <div>
-              <h2 className="text-lg font-bold text-terminal-green glow-green tracking-wider">
-                MGP
-              </h2>
-              <p className="text-[10px] text-sidebar-foreground tracking-widest uppercase">
-                Analytics
-              </p>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded bg-primary/20 flex items-center justify-center">
+                <Activity className="w-3.5 h-3.5 text-terminal-green" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-terminal-green glow-green tracking-wider">
+                  MGP
+                </h2>
+                <p className="text-[9px] text-sidebar-foreground tracking-widest uppercase">
+                  Analytics
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -173,18 +181,25 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild>
-                  <button 
-                    onClick={() => {
-                      navigate("/dashboard");
-                      startNewConversation();
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded text-terminal-green hover:bg-terminal-green/10 transition-colors font-medium"
-                  >
-                    <PenLine className="w-4 h-4" />
-                    {!collapsed && <span className="text-sm">New Conversation</span>}
-                  </button>
-                </SidebarMenuButton>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SidebarMenuButton asChild>
+                      <button 
+                        onClick={() => {
+                          navigate("/dashboard");
+                          startNewConversation();
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded text-terminal-green hover:bg-terminal-green/10 transition-colors font-medium"
+                      >
+                        <PenLine className="w-4 h-4 shrink-0" />
+                        {!collapsed && <span className="text-sm">New Conversation</span>}
+                      </button>
+                    </SidebarMenuButton>
+                  </TooltipTrigger>
+                  {collapsed && (
+                    <TooltipContent side="right">New Conversation</TooltipContent>
+                  )}
+                </Tooltip>
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
@@ -274,16 +289,23 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
             <SidebarMenu>
               {sportsMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <NavLink 
-                      to={item.url} 
-                      className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                      activeClassName="bg-sidebar-accent text-terminal-green"
-                    >
-                      <img src={item.logo} alt={item.title} className="w-5 h-5 object-contain" />
-                      {!collapsed && <span className="text-sm">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SidebarMenuButton asChild>
+                        <NavLink 
+                          to={item.url} 
+                          className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                          activeClassName="bg-sidebar-accent text-terminal-green"
+                        >
+                          <img src={item.logo} alt={item.title} className="w-5 h-5 object-contain shrink-0" />
+                          {!collapsed && <span className="text-sm">{item.title}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </TooltipTrigger>
+                    {collapsed && (
+                      <TooltipContent side="right">{item.title}</TooltipContent>
+                    )}
+                  </Tooltip>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -301,17 +323,24 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <Link 
-                    to="/dashboard/admin"
-                    className={`flex items-center gap-3 px-3 py-2 rounded transition-colors w-full cursor-pointer relative z-10 ${
-                      location.pathname === "/dashboard/admin" 
-                        ? "bg-sidebar-accent text-terminal-green" 
-                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                    }`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    {!collapsed && <span className="text-sm">Admin Panel</span>}
-                  </Link>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Link 
+                        to="/dashboard/admin"
+                        className={`flex items-center gap-3 px-3 py-2 rounded transition-colors w-full cursor-pointer relative z-10 ${
+                          location.pathname === "/dashboard/admin" 
+                            ? "bg-sidebar-accent text-terminal-green" 
+                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                        }`}
+                      >
+                        <Settings className="w-4 h-4 shrink-0" />
+                        {!collapsed && <span className="text-sm">Admin Panel</span>}
+                      </Link>
+                    </TooltipTrigger>
+                    {collapsed && (
+                      <TooltipContent side="right">Admin Panel</TooltipContent>
+                    )}
+                  </Tooltip>
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
@@ -319,16 +348,16 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-4">
+      <SidebarFooter className="border-t border-sidebar-border p-3">
         {!collapsed && (
-          <div className="mb-3 text-[10px] text-sidebar-foreground/60 font-mono truncate">
+          <div className="mb-2 text-[10px] text-sidebar-foreground/60 font-mono truncate">
             {user.email}
           </div>
         )}
         
         {/* Admin Preview Toggle - only show for actual admins */}
         {isAdmin && !collapsed && onTogglePreview && (
-          <div className="mb-3 flex items-center justify-between gap-2 p-2 rounded bg-sidebar-accent/50 border border-dashed border-terminal-green/30">
+          <div className="mb-2 flex items-center justify-between gap-2 p-2 rounded bg-sidebar-accent/50 border border-dashed border-terminal-green/30">
             <div className="flex items-center gap-2">
               {isPreviewingAsUser ? (
                 <EyeOff className="w-3 h-3 text-terminal-green" />
@@ -348,16 +377,22 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
           </div>
         )}
         
-        <Button
-          variant="ghost"
-          size={collapsed ? "icon" : "sm"}
-          onClick={handleLogout}
-          className="w-full text-sidebar-foreground hover:text-destructive hover:bg-destructive/10 justify-start"
-        >
-          <LogOut className="w-4 h-4" />
-          {!collapsed && <span className="ml-2">Logout</span>}
-        </Button>
-        <SidebarTrigger className="w-full mt-2" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size={collapsed ? "icon" : "sm"}
+              onClick={handleLogout}
+              className="w-full text-sidebar-foreground hover:text-destructive hover:bg-destructive/10 justify-start"
+            >
+              <LogOut className="w-4 h-4 shrink-0" />
+              {!collapsed && <span className="ml-2">Logout</span>}
+            </Button>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right">Logout</TooltipContent>
+          )}
+        </Tooltip>
       </SidebarFooter>
     </Sidebar>
   );
