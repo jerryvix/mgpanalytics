@@ -340,13 +340,14 @@ export function AdminPanel() {
           const playerId = playerMap.get(String(stat.player?.id));
           if (!playerId) continue;
 
-          const passYards = stat.pass_yards || 0;
-          const passTd = stat.pass_touchdowns || stat.pass_td || 0;
-          const passInt = stat.pass_interceptions || stat.pass_int || 0;
-          const rushYards = stat.rush_yards || 0;
-          const rushTd = stat.rush_touchdowns || stat.rush_td || 0;
+          // API uses "passing_yards", "rushing_yards" - not "pass_yards", "rush_yards"
+          const passYards = stat.passing_yards || stat.pass_yards || 0;
+          const passTd = stat.passing_touchdowns || stat.pass_touchdowns || 0;
+          const passInt = stat.passing_interceptions || stat.pass_interceptions || 0;
+          const rushYards = stat.rushing_yards || stat.rush_yards || 0;
+          const rushTd = stat.rushing_touchdowns || stat.rush_touchdowns || 0;
           const recYards = stat.receiving_yards || stat.rec_yards || 0;
-          const recTd = stat.receiving_touchdowns || stat.rec_td || 0;
+          const recTd = stat.receiving_touchdowns || stat.rec_touchdowns || 0;
           const receptions = stat.receptions || 0;
 
           const fantasyPoints = (passYards * 0.04) + (passTd * 4) - (passInt * 2) + 
@@ -358,19 +359,19 @@ export function AdminPanel() {
             season: stat.season || season,
             season_type: "regular",
             games_played: stat.games_played || 0,
-            pass_attempts: stat.pass_attempts || 0,
-            pass_completions: stat.pass_completions || 0,
+            pass_attempts: stat.passing_attempts || stat.pass_attempts || 0,
+            pass_completions: stat.passing_completions || stat.pass_completions || 0,
             pass_yards: passYards,
             pass_td: passTd,
             pass_int: passInt,
-            passer_rating: stat.passer_rating || null,
-            rush_attempts: stat.rush_attempts || 0,
+            passer_rating: stat.qbr || stat.passer_rating || null,
+            rush_attempts: stat.rushing_attempts || stat.rush_attempts || 0,
             rush_yards: rushYards,
             rush_td: rushTd,
             receptions: receptions,
             rec_yards: recYards,
             rec_td: recTd,
-            targets: stat.targets || 0,
+            targets: stat.receiving_targets || stat.targets || 0,
             fantasy_points: Math.round(fantasyPoints * 100) / 100,
             fantasy_points_ppr: Math.round((fantasyPoints + receptions) * 100) / 100,
             raw_data: stat,
