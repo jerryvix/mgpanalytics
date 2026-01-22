@@ -15,22 +15,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { 
-  Settings, 
-  Database, 
   RefreshCw, 
   Loader2, 
   Trophy, 
-  Dribbble, 
   Zap, 
-  CheckCircle, 
-  XCircle, 
   UserCircle, 
   BarChart3, 
   FileText, 
   TrendingUp, 
   Square,
   Play,
-  Clock
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -38,12 +32,8 @@ import { formatDistanceToNow } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
 import { 
   TheOddsApiCard, 
-  NCAABSyncCard,
-  NCAAFSyncCard,
-  MLBSyncCard, 
   LineMovementDashboard, 
   SteamMoveAlerts, 
-  OddsSyncControls,
   SportsDataManagement
 } from "./admin";
 
@@ -1062,7 +1052,7 @@ export function AdminPanel() {
     isSyncingNFLSeasonStats || isSyncingNFLGameLogs || isSyncingNFLAdvancedStats || isFullSyncing;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -1070,362 +1060,166 @@ export function AdminPanel() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-wide">ADMIN PANEL</h1>
-          <p className="text-sm text-muted-foreground font-mono">System configuration and management</p>
+          <h1 className="text-xl font-bold text-foreground tracking-wide">ADMIN PANEL</h1>
         </div>
-        <Badge variant="outline" className="border-terminal-red text-terminal-red">ADMIN ACCESS</Badge>
+        <Badge variant="outline" className="border-terminal-red text-terminal-red text-[10px]">ADMIN ACCESS</Badge>
       </motion.div>
 
-      {/* Admin Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* System Health - First */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <Card className="bg-card border-border">
-            <CardHeader>
-              <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
-                <Settings className="w-4 h-4 text-muted-foreground" />
-                System Health
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3 font-mono text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Database</span>
-                  <span className="text-terminal-green">Connected</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Edge Functions</span>
-                  <span className="text-terminal-green">Active</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Ball Don't Lie API</span>
-                  <span className={apiStatus?.success ? "text-terminal-green" : "text-muted-foreground"}>
-                    {apiStatus?.success ? "OK" : "—"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">The Odds API</span>
-                  <span className="text-muted-foreground">—</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Odds Sync</span>
-                  <span className="text-terminal-green">Active</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Uptime</span>
-                  <span className="text-foreground">99.9%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+      {/* Compact Status Bars */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+        <div className="bg-muted/30 rounded-lg p-2 flex items-center justify-between font-mono text-[10px] border border-border">
+          <div className="flex items-center gap-3">
+            <span className="text-muted-foreground">System:</span>
+            <span className="text-terminal-green">DB ✓</span>
+            <span className="text-terminal-green">Edge ✓</span>
+            <span className={apiStatus?.success ? "text-terminal-green" : "text-muted-foreground"}>BDL {apiStatus?.success ? "✓" : "—"}</span>
+            <span className="text-terminal-green">Odds ✓</span>
+          </div>
+          <span className="text-muted-foreground">Uptime <span className="text-foreground">99.9%</span></span>
+        </div>
+      </motion.div>
 
-        {/* Database Status */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <Card className="bg-card border-border">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
-                <Database className="w-4 h-4 text-terminal-green" />
-                Database Status
-              </CardTitle>
-              <Badge variant="outline" className="border-terminal-green text-terminal-green text-[10px]">CONNECTED</Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>NFL Games</span>
-                  <span className="text-foreground">{gamesCount?.toLocaleString() ?? "..."}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>NFL Odds</span>
-                  <span className="text-foreground">{oddsCount?.toLocaleString() ?? "..."}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>NBA Games</span>
-                  <span className="text-foreground">{nbaGamesCount?.toLocaleString() ?? "..."}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>NCAAB Games</span>
-                  <span className="text-foreground">{ncaabGamesCount?.toLocaleString() ?? "..."}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Odds History</span>
-                  <span className="text-foreground">{oddsHistoryCount?.toLocaleString() ?? "..."}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Moves Today</span>
-                  <span className="text-terminal-cyan">{lineMovementsTodayCount?.toLocaleString() ?? "..."}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+        <div className="bg-muted/30 rounded-lg p-2 flex items-center justify-between font-mono text-[10px] border border-border">
+          <div className="flex items-center gap-4">
+            <span className="text-muted-foreground">Data:</span>
+            <span>NFL: <span className="text-terminal-green">{gamesCount ?? "—"}</span></span>
+            <span>NBA: <span className="text-terminal-cyan">{nbaGamesCount ?? "—"}</span></span>
+            <span>NCAAB: <span className="text-terminal-amber">{ncaabGamesCount ?? "—"}</span></span>
+            <span>Odds: <span className="text-foreground">{oddsCount ?? "—"}</span></span>
+          </div>
+          <span>Moves: <span className="text-terminal-cyan">{lineMovementsTodayCount ?? 0}</span></span>
+        </div>
+      </motion.div>
 
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Sports Data Management - Consolidated */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="md:col-span-2">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="md:col-span-2">
           <SportsDataManagement />
         </motion.div>
 
         {/* Line Movement Dashboard */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="md:col-span-2">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }} className="md:col-span-2">
           <LineMovementDashboard />
         </motion.div>
 
-        {/* Steam Move Alerts */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+        {/* Steam Move Alerts + The Odds API */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
           <SteamMoveAlerts />
         </motion.div>
 
-        {/* The Odds API */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
+        {/* The Odds API - Merged with Sync Controls */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
           <TheOddsApiCard onSyncComplete={fetchAllCounts} />
         </motion.div>
-
-        {/* Odds Sync Controls */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <OddsSyncControls onSyncComplete={fetchAllCounts} />
-        </motion.div>
-        {/* NFL Data Sync - Main Card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="md:col-span-2">
+        {/* NFL Stats Sync - Compact */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="md:col-span-2">
           <Card className="bg-card border-terminal-green/30">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-terminal-green" />
-                NFL Data Sync
+            <CardHeader className="py-2 px-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-xs font-mono text-foreground flex items-center gap-2">
+                <Trophy className="w-3 h-3 text-terminal-green" />
+                NFL Stats Sync (Ball Don't Lie)
               </CardTitle>
-              <Badge variant="outline" className="border-terminal-green text-terminal-green text-[10px]">NFL</Badge>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Full Sync Button */}
               <div className="flex items-center gap-2">
+                {isFullSyncing && (
+                  <Button variant="destructive" size="sm" className="font-mono text-[10px] h-6 px-2" onClick={() => openStopModal("fullSync")}>
+                    <Square className="w-2 h-2 mr-1" />Stop
+                  </Button>
+                )}
                 <Button 
-                  variant="default"
-                  size="sm" 
-                  className="flex-1 justify-start font-mono text-xs bg-terminal-green hover:bg-terminal-green/80 text-background"
+                  size="sm"
+                  className="font-mono text-[10px] h-6 bg-terminal-green hover:bg-terminal-green/80 text-background"
                   onClick={handleFullNFLSync}
                   disabled={isSyncing}
                 >
                   {isFullSyncing ? (
-                    <>
-                      <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                      {fullSyncStep || "Running Full Sync..."}
-                    </>
+                    <><Loader2 className="w-2 h-2 mr-1 animate-spin" />{fullSyncStep || "Syncing..."}</>
                   ) : (
-                    <>
-                      <Play className="w-3 h-3 mr-2" />
-                      Full NFL Sync (3-5 min)
-                    </>
+                    <><Play className="w-2 h-2 mr-1" />Full Sync (3-5 min)</>
                   )}
                 </Button>
-                {isFullSyncing && (
-                  <Button variant="destructive" size="sm" className="font-mono text-xs" onClick={() => openStopModal("fullSync")}>
-                    <Square className="w-3 h-3 mr-1" />
-                    Stop
-                  </Button>
-                )}
+              </div>
+            </CardHeader>
+            <CardContent className="py-2 px-4 space-y-2">
+              {/* Compact Stats Row */}
+              <div className="flex items-center justify-between font-mono text-[10px] bg-muted/30 rounded px-2 py-1">
+                <div className="flex items-center gap-4">
+                  <span>{(nflPlayersCount ?? 0) >= 1000 ? `${((nflPlayersCount ?? 0) / 1000).toFixed(1)}K` : nflPlayersCount ?? "—"} Players</span>
+                  <span>{(nflSeasonStatsCount ?? 0) >= 1000 ? `${((nflSeasonStatsCount ?? 0) / 1000).toFixed(1)}K` : nflSeasonStatsCount ?? "—"} Stats</span>
+                  <span>{(nflGameLogsCount ?? 0) >= 1000 ? `${((nflGameLogsCount ?? 0) / 1000).toFixed(1)}K` : nflGameLogsCount ?? "—"} Logs</span>
+                  <span>{nflAdvancedStatsCount ?? "N/A"} Adv</span>
+                </div>
+                <span className="text-muted-foreground">Last: {getLastSyncTime("NFL", "players")}</span>
               </div>
 
-              {/* Data Counters */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-terminal-green">{nflPlayersCount?.toLocaleString() ?? "—"}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono">Players in Vault</div>
-                  <div className="text-[9px] text-muted-foreground/60 font-mono flex items-center justify-center gap-1 mt-1">
-                    <Clock className="w-2 h-2" />
-                    {getLastSyncTime("NFL", "players")}
-                  </div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-terminal-green">{nflSeasonStatsCount?.toLocaleString() ?? "—"}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono">Season Stats</div>
-                  <div className="text-[9px] text-muted-foreground/60 font-mono flex items-center justify-center gap-1 mt-1">
-                    <Clock className="w-2 h-2" />
-                    {getLastSyncTime("NFL", "season_stats")}
-                  </div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-terminal-green">{nflGameLogsCount?.toLocaleString() ?? "—"}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono">Game Logs</div>
-                  <div className="text-[9px] text-muted-foreground/60 font-mono flex items-center justify-center gap-1 mt-1">
-                    <Clock className="w-2 h-2" />
-                    {getLastSyncTime("NFL", "game_logs")}
-                  </div>
-                </div>
-                <div className="bg-muted/50 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-terminal-green">{nflAdvancedStatsCount?.toLocaleString() ?? "N/A"}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono">Advanced Stats</div>
-                  <div className="text-[9px] text-muted-foreground/60 font-mono flex items-center justify-center gap-1 mt-1">
-                    <Clock className="w-2 h-2" />
-                    {getLastSyncTime("NFL", "advanced_stats")}
-                  </div>
-                </div>
-              </div>
-
-              {/* Individual Sync Buttons */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {/* Players */}
+              {/* Compact Sync Buttons */}
+              <div className="grid grid-cols-4 gap-1">
                 {isSyncingNFLPlayers ? (
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    className="justify-start font-mono text-xs"
-                    onClick={() => openStopModal("players")}
-                  >
-                    <Square className="w-3 h-3 mr-2" />
-                    Stop Players
+                  <Button variant="destructive" size="sm" className="font-mono text-[10px] h-6" onClick={() => openStopModal("players")}>
+                    <Square className="w-2 h-2 mr-1" />Stop
                   </Button>
                 ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
-                    onClick={handleSyncNFLPlayers}
-                    disabled={isSyncing}
-                  >
-                    <UserCircle className="w-3 h-3 mr-2" />
-                    Players
+                  <Button variant="outline" size="sm" className="font-mono text-[10px] h-6 border-terminal-green/50 hover:bg-terminal-green/10" onClick={handleSyncNFLPlayers} disabled={isSyncing}>
+                    <UserCircle className="w-2 h-2 mr-1" />Players
                   </Button>
                 )}
-
-                {/* Season Stats */}
                 {isSyncingNFLSeasonStats ? (
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    className="justify-start font-mono text-xs"
-                    onClick={() => openStopModal("seasonStats")}
-                  >
-                    <Square className="w-3 h-3 mr-2" />
-                    Stop Stats
+                  <Button variant="destructive" size="sm" className="font-mono text-[10px] h-6" onClick={() => openStopModal("seasonStats")}>
+                    <Square className="w-2 h-2 mr-1" />Stop
                   </Button>
                 ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
-                    onClick={handleSyncNFLSeasonStats}
-                    disabled={isSyncing}
-                  >
-                    <BarChart3 className="w-3 h-3 mr-2" />
-                    Season Stats
+                  <Button variant="outline" size="sm" className="font-mono text-[10px] h-6 border-terminal-green/50 hover:bg-terminal-green/10" onClick={handleSyncNFLSeasonStats} disabled={isSyncing}>
+                    <BarChart3 className="w-2 h-2 mr-1" />Stats
                   </Button>
                 )}
-
-                {/* Game Logs */}
                 {isSyncingNFLGameLogs ? (
-                  <div className="flex flex-col gap-1">
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      className="justify-start font-mono text-xs"
-                      onClick={() => openStopModal("gameLogs")}
-                    >
-                      <Square className="w-3 h-3 mr-2" />
-                      Stop Logs
-                    </Button>
-                    {gameLogsSyncInfo && (
-                      <span className="text-[9px] text-muted-foreground font-mono pl-1">
-                        Game {gameLogsSyncInfo.current}/{gameLogsSyncInfo.total}
-                        {gameLogsSyncInfo.week ? ` (Wk ${gameLogsSyncInfo.week})` : ''}
-                      </span>
-                    )}
-                  </div>
+                  <Button variant="destructive" size="sm" className="font-mono text-[10px] h-6" onClick={() => openStopModal("gameLogs")}>
+                    <Square className="w-2 h-2 mr-1" />Stop {gameLogsSyncInfo ? `${gameLogsSyncInfo.current}/${gameLogsSyncInfo.total}` : ""}
+                  </Button>
                 ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
-                    onClick={handleSyncNFLGameLogs}
-                    disabled={isSyncing}
-                  >
-                    <FileText className="w-3 h-3 mr-2" />
-                    Game Logs
+                  <Button variant="outline" size="sm" className="font-mono text-[10px] h-6 border-terminal-green/50 hover:bg-terminal-green/10" onClick={handleSyncNFLGameLogs} disabled={isSyncing}>
+                    <FileText className="w-2 h-2 mr-1" />Logs
                   </Button>
                 )}
-
-                {/* Advanced Stats */}
                 {isSyncingNFLAdvancedStats ? (
-                  <Button 
-                    variant="destructive" 
-                    size="sm" 
-                    className="justify-start font-mono text-xs"
-                    onClick={() => openStopModal("advancedStats")}
-                  >
-                    <Square className="w-3 h-3 mr-2" />
-                    Stop Adv
+                  <Button variant="destructive" size="sm" className="font-mono text-[10px] h-6" onClick={() => openStopModal("advancedStats")}>
+                    <Square className="w-2 h-2 mr-1" />Stop
                   </Button>
                 ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
-                    onClick={handleSyncNFLAdvancedStats}
-                    disabled={isSyncing}
-                  >
-                    <TrendingUp className="w-3 h-3 mr-2" />
-                    Advanced
+                  <Button variant="outline" size="sm" className="font-mono text-[10px] h-6 border-terminal-green/50 hover:bg-terminal-green/10" onClick={handleSyncNFLAdvancedStats} disabled={isSyncing}>
+                    <TrendingUp className="w-2 h-2 mr-1" />Adv
                   </Button>
                 )}
-              </div>
-
-              {/* Games Sync */}
-              <div className="pt-2 border-t border-border">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
-                  onClick={handleSyncNFLGames}
-                  disabled={isSyncing}
-                >
-                  {isSyncingNFL ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-2" />}
-                  Sync NFL Games & Odds
-                </Button>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
 
-        {/* Ball Don't Lie API */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+        {/* Ball Don't Lie API - Compact */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
           <Card className="bg-card border-terminal-amber/30">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
-                <Zap className="w-4 h-4 text-terminal-amber" />
-                Ball Don't Lie API
-              </CardTitle>
-              {apiStatus && (
-                <Badge 
+            <CardContent className="py-2 px-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-3 h-3 text-terminal-amber" />
+                  <span className="font-mono text-xs">Ball Don't Lie API</span>
+                  {apiStatus && (
+                    <Badge variant="outline" className={`text-[9px] ${apiStatus.success ? "border-terminal-green text-terminal-green" : "border-terminal-red text-terminal-red"}`}>
+                      {apiStatus.success ? "✓" : "✗"}
+                    </Badge>
+                  )}
+                </div>
+                <Button 
                   variant="outline" 
-                  className={apiStatus.success 
-                    ? "border-terminal-green text-terminal-green text-[10px]" 
-                    : "border-terminal-red text-terminal-red text-[10px]"}
+                  size="sm"
+                  className="font-mono text-[10px] h-6 border-terminal-amber/50 hover:bg-terminal-amber/10"
+                  onClick={handleTestAPIConnection}
+                  disabled={isTestingAPI}
                 >
-                  {apiStatus.success ? "CONNECTED" : "ERROR"}
-                </Badge>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full justify-start font-mono text-xs border-terminal-amber/50 hover:bg-terminal-amber/10"
-                onClick={handleTestAPIConnection}
-                disabled={isTestingAPI}
-              >
-                {isTestingAPI ? (
-                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                ) : apiStatus?.success ? (
-                  <CheckCircle className="w-3 h-3 mr-2 text-terminal-green" />
-                ) : apiStatus ? (
-                  <XCircle className="w-3 h-3 mr-2 text-terminal-red" />
-                ) : (
-                  <Zap className="w-3 h-3 mr-2" />
-                )}
-                Test API Connection
-              </Button>
-              <div className="font-mono text-xs text-muted-foreground">
-                <p>Endpoints: NFL, NBA, NCAAB</p>
+                  {isTestingAPI ? <Loader2 className="w-2 h-2 animate-spin" /> : "Test"}
+                </Button>
               </div>
             </CardContent>
           </Card>
