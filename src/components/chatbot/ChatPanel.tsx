@@ -8,6 +8,7 @@ import { useGeminiChat } from "@/hooks/useGeminiChat";
 import { useChat } from "@/contexts/ChatContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import ReactMarkdown from "react-markdown";
 
 interface Source {
   title: string;
@@ -273,15 +274,21 @@ export function ChatPanel() {
                     : "bg-terminal-green/10 border border-terminal-green/20"
                 }`}
               >
-                <p
-                  className={message.role === "bot" ? "text-foreground whitespace-pre-wrap" : ""}
-                  dangerouslySetInnerHTML={{
-                    __html: message.content.replace(
-                      /(\+?\-?\d+\.?\d*)/g,
-                      '<span class="text-terminal-green font-semibold">$1</span>'
-                    ),
-                  }}
-                />
+                {message.role === "user" ? (
+                  <p className="text-foreground">{message.content}</p>
+                ) : (
+                  <div className="text-foreground prose prose-sm prose-invert max-w-none 
+                    prose-headings:text-terminal-green prose-headings:font-mono prose-headings:font-semibold prose-headings:text-sm prose-headings:mb-2 prose-headings:mt-3 first:prose-headings:mt-0
+                    prose-p:text-foreground prose-p:my-1 prose-p:leading-relaxed
+                    prose-strong:text-terminal-green prose-strong:font-semibold
+                    prose-ul:my-1 prose-ul:pl-0 prose-li:text-foreground prose-li:my-0.5 prose-li:pl-0
+                    prose-li:marker:text-terminal-green/60
+                    [&_ul]:list-disc [&_ul]:ml-4
+                    [&_em]:text-muted-foreground [&_em]:not-italic [&_em]:text-xs
+                  ">
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                  </div>
+                )}
                 {/* Sources section for bot messages */}
                 {message.role === "bot" && message.sources && message.sources.length > 0 && (
                   <div className="mt-2 pt-2 border-t border-terminal-green/20">

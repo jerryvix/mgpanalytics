@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatQuery } from "@/hooks/useChatQuery";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -139,19 +140,25 @@ export function ChatModal({ onClose }: ChatModalProps) {
                       : "bg-terminal-green/10 border border-terminal-green/20"
                   }`}
                 >
-                  <p
-                    className={message.role === "bot" ? "text-foreground" : ""}
-                    dangerouslySetInnerHTML={{
-                      __html: message.content.replace(
-                        /(\+?\-?\d+\.?\d*)/g,
-                        '<span class="text-terminal-green font-semibold">$1</span>'
-                      ),
-                    }}
-                  />
-                  {message.role === "bot" && (
-                    <p className="text-[10px] text-muted-foreground mt-1.5">
-                      {formatTime(message.timestamp)}
-                    </p>
+                  {message.role === "user" ? (
+                    <p className="text-foreground">{message.content}</p>
+                  ) : (
+                    <>
+                      <div className="text-foreground prose prose-sm prose-invert max-w-none 
+                        prose-headings:text-terminal-green prose-headings:font-mono prose-headings:font-semibold prose-headings:text-sm prose-headings:mb-2 prose-headings:mt-3 first:prose-headings:mt-0
+                        prose-p:text-foreground prose-p:my-1 prose-p:leading-relaxed
+                        prose-strong:text-terminal-green prose-strong:font-semibold
+                        prose-ul:my-1 prose-ul:pl-0 prose-li:text-foreground prose-li:my-0.5 prose-li:pl-0
+                        prose-li:marker:text-terminal-green/60
+                        [&_ul]:list-disc [&_ul]:ml-4
+                        [&_em]:text-muted-foreground [&_em]:not-italic [&_em]:text-xs
+                      ">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        {formatTime(message.timestamp)}
+                      </p>
+                    </>
                   )}
                 </div>
               </div>
