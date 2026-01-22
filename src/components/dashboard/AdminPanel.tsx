@@ -4,6 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataInspector } from "./DataInspector";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Settings, 
   Database, 
@@ -36,6 +46,9 @@ interface SyncTimestamp {
   last_sync_status: string | null;
 }
 
+// Stop sync confirmation modal type
+type StopSyncModule = "players" | "seasonStats" | "gameLogs" | "advancedStats" | "fullSync" | null;
+
 export function AdminPanel() {
   // Sync states
   const [isSyncingNFL, setIsSyncingNFL] = useState(false);
@@ -52,7 +65,17 @@ export function AdminPanel() {
   // Full sync state
   const [isFullSyncing, setIsFullSyncing] = useState(false);
   const [fullSyncStep, setFullSyncStep] = useState<string>("");
+  
+  // Stop sync confirmation modal
+  const [stopSyncModalOpen, setStopSyncModalOpen] = useState(false);
+  const [stopSyncModule, setStopSyncModule] = useState<StopSyncModule>(null);
+  
+  // Individual stop refs for each sync module
   const stopSyncRef = useRef(false);
+  const stopPlayersSyncRef = useRef(false);
+  const stopSeasonStatsSyncRef = useRef(false);
+  const stopGameLogsSyncRef = useRef(false);
+  const stopAdvancedStatsSyncRef = useRef(false);
   
   // Data counts
   const [gamesCount, setGamesCount] = useState<number | null>(null);
@@ -245,9 +268,23 @@ export function AdminPanel() {
 
   const handleSyncNFLPlayers = async (): Promise<boolean> => {
     setIsSyncingNFLPlayers(true);
+    stopPlayersSyncRef.current = false;
     try {
+      // Check if stopped before starting
+      if (stopPlayersSyncRef.current) {
+        await updateSyncTimestamp("NFL", "players", "stopped");
+        toast({ title: "Players Sync Stopped", description: "Sync stopped by admin" });
+        return false;
+      }
+      
       // Call edge function (don't show error if it fails)
       await supabase.functions.invoke("sync-nfl-players").catch(() => null);
+      
+      if (stopPlayersSyncRef.current) {
+        await updateSyncTimestamp("NFL", "players", "stopped");
+        toast({ title: "Players Sync Stopped", description: "Sync stopped by admin" });
+        return false;
+      }
 
       const { count: newCount } = await supabase
         .from("players")
@@ -272,11 +309,13 @@ export function AdminPanel() {
       return false;
     } finally {
       setIsSyncingNFLPlayers(false);
+      stopPlayersSyncRef.current = false;
     }
   };
 
   const handleSyncNFLSeasonStats = async (): Promise<boolean> => {
     setIsSyncingNFLSeasonStats(true);
+    stopSeasonStatsSyncRef.current = false;
     const seasons = [2025, 2024, 2023, 2022, 2021, 2020];
     
     try {
@@ -309,7 +348,7 @@ export function AdminPanel() {
       let totalSynced = 0;
 
       for (const season of seasons) {
-        if (stopSyncRef.current) break;
+        if (stopSyncRef.current || stopSeasonStatsSyncRef.current) break;
 
         const response = await fetch(
           `https://api.balldontlie.io/nfl/v1/season_stats?season=${season}&per_page=100`,
@@ -322,7 +361,7 @@ export function AdminPanel() {
         let seasonStats = result.data || [];
         let nextCursor = result.meta?.next_cursor;
 
-        while (nextCursor && !stopSyncRef.current) {
+        while (nextCursor && !stopSyncRef.current && !stopSeasonStatsSyncRef.current) {
           const nextResponse = await fetch(
             `https://api.balldontlie.io/nfl/v1/season_stats?season=${season}&per_page=100&cursor=${nextCursor}`,
             { headers: { "Authorization": BDL_API_KEY } }
@@ -333,6 +372,9 @@ export function AdminPanel() {
           nextCursor = nextResult.meta?.next_cursor;
           await new Promise(r => setTimeout(r, 150));
         }
+        
+        // Check if stopped mid-season
+        if (stopSeasonStatsSyncRef.current) break;
 
         // Process stats
         const statsToUpsert = [];
@@ -391,6 +433,16 @@ export function AdminPanel() {
         await new Promise(r => setTimeout(r, 300));
       }
 
+      // Check if we were stopped
+      if (stopSeasonStatsSyncRef.current) {
+        await updateSyncTimestamp("NFL", "season_stats", "stopped");
+        toast({
+          title: "Season Stats Sync Stopped",
+          description: `Stopped by admin. ${totalSynced.toLocaleString()} stats saved.`,
+        });
+        return totalSynced > 0;
+      }
+
       await fetchNFLSeasonStatsCount();
       await updateSyncTimestamp("NFL", "season_stats", "success");
 
@@ -407,6 +459,7 @@ export function AdminPanel() {
       return false;
     } finally {
       setIsSyncingNFLSeasonStats(false);
+      stopSeasonStatsSyncRef.current = false;
     }
   };
 
@@ -417,6 +470,7 @@ export function AdminPanel() {
     setIsSyncingNFLGameLogs(true);
     setGameLogsSyncProgress(null);
     setGameLogsSyncInfo(null);
+    stopGameLogsSyncRef.current = false;
     const season = 2025;
     const GAME_BATCH_SIZE = 5;
     const BATCH_DELAY = 500;
@@ -495,8 +549,9 @@ export function AdminPanel() {
 
       // Step 3: Process games in batches
       for (let i = 0; i < allGames.length; i += GAME_BATCH_SIZE) {
-        if (stopSyncRef.current) {
-          toast({ title: "Sync Stopped", description: `Processed ${gamesProcessed} games, synced ${totalSynced} logs` });
+        if (stopSyncRef.current || stopGameLogsSyncRef.current) {
+          await updateSyncTimestamp("NFL", "game_logs", "stopped");
+          toast({ title: "Game Logs Sync Stopped", description: `Stopped by admin. ${totalSynced} logs saved from ${gamesProcessed} games.` });
           break;
         }
 
@@ -695,12 +750,14 @@ export function AdminPanel() {
     } finally {
       setIsSyncingNFLGameLogs(false);
       setGameLogsSyncProgress(null);
+      stopGameLogsSyncRef.current = false;
     }
   };
 
   const handleSyncNFLAdvancedStats = async (): Promise<boolean> => {
     setIsSyncingNFLAdvancedStats(true);
     setAdvancedStatsSyncProgress(null);
+    stopAdvancedStatsSyncRef.current = false;
     const season = 2025;
     
     try {
@@ -752,7 +809,7 @@ export function AdminPanel() {
 
       // For each endpoint, try bulk fetch
       for (const endpoint of availableEndpoints) {
-        if (stopSyncRef.current) break;
+        if (stopSyncRef.current || stopAdvancedStatsSyncRef.current) break;
 
         try {
           const response = await fetch(
@@ -813,6 +870,16 @@ export function AdminPanel() {
         }
       }
 
+      // Check if we were stopped
+      if (stopAdvancedStatsSyncRef.current) {
+        await updateSyncTimestamp("NFL", "advanced_stats", "stopped");
+        toast({
+          title: "Advanced Stats Sync Stopped",
+          description: `Stopped by admin. ${totalSynced.toLocaleString()} stats saved.`,
+        });
+        return totalSynced > 0;
+      }
+
       await fetchNFLAdvancedStatsCount();
       await updateSyncTimestamp("NFL", "advanced_stats", "success");
 
@@ -830,6 +897,7 @@ export function AdminPanel() {
     } finally {
       setIsSyncingNFLAdvancedStats(false);
       setAdvancedStatsSyncProgress(null);
+      stopAdvancedStatsSyncRef.current = false;
     }
   };
 
@@ -884,6 +952,38 @@ export function AdminPanel() {
     toast({ title: "Stopping sync...", description: "Will stop after current operation" });
   };
 
+  // Individual stop handlers for confirmation modal
+  const openStopModal = (module: StopSyncModule) => {
+    setStopSyncModule(module);
+    setStopSyncModalOpen(true);
+  };
+
+  const confirmStopSync = () => {
+    switch (stopSyncModule) {
+      case "players":
+        stopPlayersSyncRef.current = true;
+        toast({ title: "Stopping Players Sync...", description: "Will stop after current operation" });
+        break;
+      case "seasonStats":
+        stopSeasonStatsSyncRef.current = true;
+        toast({ title: "Stopping Season Stats Sync...", description: "Will stop after current operation" });
+        break;
+      case "gameLogs":
+        stopGameLogsSyncRef.current = true;
+        toast({ title: "Stopping Game Logs Sync...", description: "Will stop after current operation" });
+        break;
+      case "advancedStats":
+        stopAdvancedStatsSyncRef.current = true;
+        toast({ title: "Stopping Advanced Stats Sync...", description: "Will stop after current operation" });
+        break;
+      case "fullSync":
+        handleStopSync();
+        break;
+    }
+    setStopSyncModalOpen(false);
+    setStopSyncModule(null);
+  };
+
   const handleTestAPIConnection = async () => {
     setIsTestingAPI(true);
     setApiStatus(null);
@@ -906,6 +1006,17 @@ export function AdminPanel() {
       toast({ title: "API Error", description: msg, variant: "destructive" });
     } finally {
       setIsTestingAPI(false);
+    }
+  };
+
+  const getStopModalTitle = () => {
+    switch (stopSyncModule) {
+      case "players": return "Stop Players Sync?";
+      case "seasonStats": return "Stop Season Stats Sync?";
+      case "gameLogs": return "Stop Game Logs Sync?";
+      case "advancedStats": return "Stop Advanced Stats Sync?";
+      case "fullSync": return "Stop Full NFL Sync?";
+      default: return "Stop Sync?";
     }
   };
 
@@ -1036,7 +1147,7 @@ export function AdminPanel() {
                   )}
                 </Button>
                 {isFullSyncing && (
-                  <Button variant="destructive" size="sm" className="font-mono text-xs" onClick={handleStopSync}>
+                  <Button variant="destructive" size="sm" className="font-mono text-xs" onClick={() => openStopModal("fullSync")}>
                     <Square className="w-3 h-3 mr-1" />
                     Stop
                   </Button>
@@ -1081,57 +1192,109 @@ export function AdminPanel() {
 
               {/* Individual Sync Buttons */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
-                  onClick={handleSyncNFLPlayers}
-                  disabled={isSyncing}
-                >
-                  {isSyncingNFLPlayers ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <UserCircle className="w-3 h-3 mr-2" />}
-                  Players
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
-                  onClick={handleSyncNFLSeasonStats}
-                  disabled={isSyncing}
-                >
-                  {isSyncingNFLSeasonStats ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <BarChart3 className="w-3 h-3 mr-2" />}
-                  Season Stats
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
-                  onClick={handleSyncNFLGameLogs}
-                  disabled={isSyncing}
-                >
-                  {isSyncingNFLGameLogs ? (
-                    <>
-                      <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                      {gameLogsSyncInfo 
-                        ? `Game ${gameLogsSyncInfo.current}/${gameLogsSyncInfo.total}${gameLogsSyncInfo.week ? ` (Wk ${gameLogsSyncInfo.week})` : ''}`
-                        : "..."}
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-3 h-3 mr-2" />
-                      Game Logs
-                    </>
-                  )}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
-                  onClick={handleSyncNFLAdvancedStats}
-                  disabled={isSyncing}
-                >
-                  {isSyncingNFLAdvancedStats ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <TrendingUp className="w-3 h-3 mr-2" />}
-                  Advanced
-                </Button>
+                {/* Players */}
+                {isSyncingNFLPlayers ? (
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="justify-start font-mono text-xs"
+                    onClick={() => openStopModal("players")}
+                  >
+                    <Square className="w-3 h-3 mr-2" />
+                    Stop Players
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
+                    onClick={handleSyncNFLPlayers}
+                    disabled={isSyncing}
+                  >
+                    <UserCircle className="w-3 h-3 mr-2" />
+                    Players
+                  </Button>
+                )}
+
+                {/* Season Stats */}
+                {isSyncingNFLSeasonStats ? (
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="justify-start font-mono text-xs"
+                    onClick={() => openStopModal("seasonStats")}
+                  >
+                    <Square className="w-3 h-3 mr-2" />
+                    Stop Stats
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
+                    onClick={handleSyncNFLSeasonStats}
+                    disabled={isSyncing}
+                  >
+                    <BarChart3 className="w-3 h-3 mr-2" />
+                    Season Stats
+                  </Button>
+                )}
+
+                {/* Game Logs */}
+                {isSyncingNFLGameLogs ? (
+                  <div className="flex flex-col gap-1">
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="justify-start font-mono text-xs"
+                      onClick={() => openStopModal("gameLogs")}
+                    >
+                      <Square className="w-3 h-3 mr-2" />
+                      Stop Logs
+                    </Button>
+                    {gameLogsSyncInfo && (
+                      <span className="text-[9px] text-muted-foreground font-mono pl-1">
+                        Game {gameLogsSyncInfo.current}/{gameLogsSyncInfo.total}
+                        {gameLogsSyncInfo.week ? ` (Wk ${gameLogsSyncInfo.week})` : ''}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
+                    onClick={handleSyncNFLGameLogs}
+                    disabled={isSyncing}
+                  >
+                    <FileText className="w-3 h-3 mr-2" />
+                    Game Logs
+                  </Button>
+                )}
+
+                {/* Advanced Stats */}
+                {isSyncingNFLAdvancedStats ? (
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    className="justify-start font-mono text-xs"
+                    onClick={() => openStopModal("advancedStats")}
+                  >
+                    <Square className="w-3 h-3 mr-2" />
+                    Stop Adv
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="justify-start font-mono text-xs border-terminal-green/50 hover:bg-terminal-green/10"
+                    onClick={handleSyncNFLAdvancedStats}
+                    disabled={isSyncing}
+                  >
+                    <TrendingUp className="w-3 h-3 mr-2" />
+                    Advanced
+                  </Button>
+                )}
               </div>
 
               {/* Games Sync */}
@@ -1219,6 +1382,27 @@ export function AdminPanel() {
         {/* Data Inspector */}
         <DataInspector />
       </div>
+
+      {/* Stop Sync Confirmation Modal */}
+      <AlertDialog open={stopSyncModalOpen} onOpenChange={setStopSyncModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{getStopModalTitle()}</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will halt the current sync for this module but keep any data already saved. The sync will stop after the current operation completes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmStopSync}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Stop Sync
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
