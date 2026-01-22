@@ -99,15 +99,16 @@ async function fetchAllPages(
   return allData;
 }
 
-// Calculate fantasy points
+// Calculate fantasy points - using correct API field names (passing_yards, rushing_yards, etc.)
 function calculateFantasyPoints(stat: any): { fantasy_points: number; fantasy_points_ppr: number } {
-  const passYards = stat.pass_yards || 0;
-  const passTd = stat.pass_touchdowns || 0;
-  const passInt = stat.pass_interceptions || 0;
-  const rushYards = stat.rush_yards || 0;
-  const rushTd = stat.rush_touchdowns || 0;
-  const recYards = stat.receiving_yards || 0;
-  const recTd = stat.receiving_touchdowns || 0;
+  // API uses "passing_yards", "rushing_yards", etc. - not "pass_yards", "rush_yards"
+  const passYards = stat.passing_yards || stat.pass_yards || 0;
+  const passTd = stat.passing_touchdowns || stat.pass_touchdowns || 0;
+  const passInt = stat.passing_interceptions || stat.pass_interceptions || 0;
+  const rushYards = stat.rushing_yards || stat.rush_yards || 0;
+  const rushTd = stat.rushing_touchdowns || stat.rush_touchdowns || 0;
+  const recYards = stat.receiving_yards || stat.rec_yards || 0;
+  const recTd = stat.receiving_touchdowns || stat.rec_touchdowns || 0;
   const receptions = stat.receptions || 0;
 
   // Standard fantasy scoring
@@ -129,6 +130,7 @@ function calculateFantasyPoints(stat: any): { fantasy_points: number; fantasy_po
   };
 }
 
+// API response uses "passing_yards", "rushing_yards", etc.
 interface NFLSeasonStat {
   id: number;
   player: {
@@ -139,19 +141,22 @@ interface NFLSeasonStat {
   };
   season: number;
   games_played?: number;
-  pass_attempts?: number;
-  pass_completions?: number;
-  pass_yards?: number;
-  pass_touchdowns?: number;
-  pass_interceptions?: number;
-  passer_rating?: number;
-  rush_attempts?: number;
-  rush_yards?: number;
-  rush_touchdowns?: number;
+  // Passing stats (API uses "passing_" prefix)
+  passing_attempts?: number;
+  passing_completions?: number;
+  passing_yards?: number;
+  passing_touchdowns?: number;
+  passing_interceptions?: number;
+  qbr?: number;
+  // Rushing stats (API uses "rushing_" prefix)
+  rushing_attempts?: number;
+  rushing_yards?: number;
+  rushing_touchdowns?: number;
+  // Receiving stats (API uses "receiving_" prefix)
   receptions?: number;
   receiving_yards?: number;
   receiving_touchdowns?: number;
-  targets?: number;
+  receiving_targets?: number;
 }
 
 Deno.serve(async (req) => {
@@ -255,25 +260,26 @@ Deno.serve(async (req) => {
 
       const fantasyPoints = calculateFantasyPoints(stat);
 
+      // Map API fields (passing_yards, rushing_yards) to our DB columns (pass_yards, rush_yards)
       statsToUpsert.push({
         player_id: playerId,
         sport: "NFL",
         season: stat.season,
         season_type: "regular",
         games_played: stat.games_played || 0,
-        pass_attempts: stat.pass_attempts || 0,
-        pass_completions: stat.pass_completions || 0,
-        pass_yards: stat.pass_yards || 0,
-        pass_td: stat.pass_touchdowns || 0,
-        pass_int: stat.pass_interceptions || 0,
-        passer_rating: stat.passer_rating || null,
-        rush_attempts: stat.rush_attempts || 0,
-        rush_yards: stat.rush_yards || 0,
-        rush_td: stat.rush_touchdowns || 0,
+        pass_attempts: stat.passing_attempts || 0,
+        pass_completions: stat.passing_completions || 0,
+        pass_yards: stat.passing_yards || 0,
+        pass_td: stat.passing_touchdowns || 0,
+        pass_int: stat.passing_interceptions || 0,
+        passer_rating: stat.qbr || null,
+        rush_attempts: stat.rushing_attempts || 0,
+        rush_yards: stat.rushing_yards || 0,
+        rush_td: stat.rushing_touchdowns || 0,
         receptions: stat.receptions || 0,
         rec_yards: stat.receiving_yards || 0,
         rec_td: stat.receiving_touchdowns || 0,
-        targets: stat.targets || 0,
+        targets: stat.receiving_targets || 0,
         fantasy_points: fantasyPoints.fantasy_points,
         fantasy_points_ppr: fantasyPoints.fantasy_points_ppr,
         raw_data: stat,
