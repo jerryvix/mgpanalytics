@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { 
   Loader2, 
   RefreshCw, 
@@ -10,7 +11,9 @@ import {
   GraduationCap, 
   Clock,
   CheckCircle,
-  Play
+  XCircle,
+  Play,
+  ChevronDown
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -27,12 +30,14 @@ function BaseballIcon({ className }: { className?: string }) {
   );
 }
 
+type SyncState = "idle" | "syncing" | "done" | "error" | "offseason" | "never";
+
 interface SyncStatus {
-  nfl: "idle" | "syncing" | "done" | "error";
-  nba: "idle" | "syncing" | "done" | "error";
-  ncaab: "idle" | "syncing" | "done" | "error";
-  ncaaf: "idle" | "syncing" | "done" | "error";
-  mlb: "idle" | "syncing" | "done" | "error";
+  nfl: SyncState;
+  nba: SyncState;
+  ncaab: SyncState;
+  ncaaf: SyncState;
+  mlb: SyncState;
 }
 
 interface SportCounts {
@@ -42,6 +47,19 @@ interface SportCounts {
   ncaaf: { games: number | null; ranked: number | null; odds: number | null; lastSync: string | null };
   mlb: { games: number | null; odds: number | null; lastSync: string | null };
 }
+
+// Determine if sport is off-season (simplified logic)
+const isOffSeason = (sport: string): boolean => {
+  const month = new Date().getMonth(); // 0-11
+  switch (sport) {
+    case "nfl": return month >= 2 && month <= 7; // Mar-Aug off
+    case "nba": return month >= 6 && month <= 9; // Jul-Oct off
+    case "ncaab": return month >= 3 && month <= 9; // Apr-Oct off
+    case "ncaaf": return month >= 0 && month <= 7; // Jan-Aug off
+    case "mlb": return month >= 10 || month <= 2; // Nov-Mar off
+    default: return false;
+  }
+};
 
 export function SportsDataManagement() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
@@ -53,7 +71,9 @@ export function SportsDataManagement() {
   });
   
   const [isAllSyncing, setIsAllSyncing] = useState(false);
-  const [syncResults, setSyncResults] = useState<{sport: string; count: number}[]>([]);
+  const [syncStartTime, setSyncStartTime] = useState<number | null>(null);
+  const [syncResults, setSyncResults] = useState<{sport: string; count: number; status: "done" | "error"}[]>([]);
+  const [isExpanded, setIsExpanded] = useState(true);
   
   const [counts, setCounts] = useState<SportCounts>({
     nfl: { games: null, odds: null, lastSync: null },
@@ -127,10 +147,10 @@ export function SportsDataManagement() {
       const { data } = await supabase.functions.invoke("sync-nfl-games");
       await updateSyncSchedule("NFL");
       setSyncStatus(prev => ({ ...prev, nfl: "done" }));
-      return data?.gamesCount || 0;
+      return { count: data?.gamesCount || 0, status: "done" as const };
     } catch {
       setSyncStatus(prev => ({ ...prev, nfl: "error" }));
-      return 0;
+      return { count: 0, status: "error" as const };
     }
   };
 
@@ -140,10 +160,10 @@ export function SportsDataManagement() {
       const { data } = await supabase.functions.invoke("sync-nba-games");
       await updateSyncSchedule("NBA");
       setSyncStatus(prev => ({ ...prev, nba: "done" }));
-      return data?.gamesCount || 0;
+      return { count: data?.gamesCount || 0, status: "done" as const };
     } catch {
       setSyncStatus(prev => ({ ...prev, nba: "error" }));
-      return 0;
+      return { count: 0, status: "error" as const };
     }
   };
 
@@ -153,10 +173,10 @@ export function SportsDataManagement() {
       const { data } = await supabase.functions.invoke("sync-ncaab-games");
       await updateSyncSchedule("NCAAB");
       setSyncStatus(prev => ({ ...prev, ncaab: "done" }));
-      return data?.gamesCount || 0;
+      return { count: data?.gamesCount || 0, status: "done" as const };
     } catch {
       setSyncStatus(prev => ({ ...prev, ncaab: "error" }));
-      return 0;
+      return { count: 0, status: "error" as const };
     }
   };
 
@@ -166,10 +186,10 @@ export function SportsDataManagement() {
       const { data } = await supabase.functions.invoke("sync-ncaaf-games");
       await updateSyncSchedule("NCAAF");
       setSyncStatus(prev => ({ ...prev, ncaaf: "done" }));
-      return data?.gamesCount || 0;
+      return { count: data?.gamesCount || 0, status: "done" as const };
     } catch {
       setSyncStatus(prev => ({ ...prev, ncaaf: "error" }));
-      return 0;
+      return { count: 0, status: "error" as const };
     }
   };
 
@@ -179,228 +199,255 @@ export function SportsDataManagement() {
       const { data } = await supabase.functions.invoke("sync-mlb-games");
       await updateSyncSchedule("MLB");
       setSyncStatus(prev => ({ ...prev, mlb: "done" }));
-      return data?.gamesCount || 0;
+      return { count: data?.gamesCount || 0, status: "done" as const };
     } catch {
       setSyncStatus(prev => ({ ...prev, mlb: "error" }));
-      return 0;
+      return { count: 0, status: "error" as const };
     }
   };
 
   const handleSyncAll = async () => {
     setIsAllSyncing(true);
     setSyncResults([]);
+    setSyncStartTime(Date.now());
     setSyncStatus({ nfl: "syncing", nba: "syncing", ncaab: "syncing", ncaaf: "syncing", mlb: "syncing" });
 
     try {
       const results = await Promise.all([
-        syncNFL().then(count => ({ sport: "NFL", count })),
-        syncNBA().then(count => ({ sport: "NBA", count })),
-        syncNCAAB().then(count => ({ sport: "NCAAB", count })),
-        syncNCAAF().then(count => ({ sport: "NCAAF", count })),
-        syncMLB().then(count => ({ sport: "MLB", count })),
+        syncNFL().then(r => ({ sport: "NFL", ...r })),
+        syncNBA().then(r => ({ sport: "NBA", ...r })),
+        syncNCAAB().then(r => ({ sport: "NCAAB", ...r })),
+        syncNCAAF().then(r => ({ sport: "NCAAF", ...r })),
+        syncMLB().then(r => ({ sport: "MLB", ...r })),
       ]);
 
+      const duration = Math.round((Date.now() - (syncStartTime || Date.now())) / 1000);
       setSyncResults(results);
       await fetchAllCounts();
 
-      const totalGames = results.reduce((sum, r) => sum + r.count, 0);
-      toast({ title: "All Sports Synced", description: `${totalGames} total games synced` });
+      const totalGames = results.filter(r => r.status === "done").reduce((sum, r) => sum + r.count, 0);
+      const errorCount = results.filter(r => r.status === "error").length;
+      
+      toast({ 
+        title: errorCount > 0 ? "Sync Complete (with errors)" : "All Sports Synced", 
+        description: `${totalGames} games synced in ${duration}s${errorCount > 0 ? ` (${errorCount} failed)` : ""}`,
+        variant: errorCount > 0 ? "destructive" : "default"
+      });
     } catch (error) {
       console.error("Sync all error:", error);
       toast({ title: "Sync Error", description: "Some sports failed to sync", variant: "destructive" });
     } finally {
       setIsAllSyncing(false);
+      setSyncStartTime(null);
       setTimeout(() => {
         setSyncStatus({ nfl: "idle", nba: "idle", ncaab: "idle", ncaaf: "idle", mlb: "idle" });
         setSyncResults([]);
-      }, 3000);
+      }, 5000);
     }
   };
 
   const handleIndividualSync = async (sport: "nfl" | "nba" | "ncaab" | "ncaaf" | "mlb") => {
     const syncFn = { nfl: syncNFL, nba: syncNBA, ncaab: syncNCAAB, ncaaf: syncNCAAF, mlb: syncMLB }[sport];
-    const count = await syncFn();
+    const result = await syncFn();
     await fetchAllCounts();
-    toast({ title: `${sport.toUpperCase()} Synced`, description: `Synced ${count} games` });
-    setTimeout(() => setSyncStatus(prev => ({ ...prev, [sport]: "idle" })), 2000);
+    toast({ 
+      title: result.status === "done" ? `${sport.toUpperCase()} Synced` : `${sport.toUpperCase()} Failed`, 
+      description: result.status === "done" ? `Synced ${result.count} games` : "Sync failed",
+      variant: result.status === "error" ? "destructive" : "default"
+    });
+    setTimeout(() => setSyncStatus(prev => ({ ...prev, [sport]: "idle" })), 3000);
   };
 
-  const getStatusIcon = (status: "idle" | "syncing" | "done" | "error") => {
-    switch (status) {
-      case "syncing": return <Loader2 className="w-2 h-2 animate-spin" />;
-      case "done": return <CheckCircle className="w-2 h-2 text-terminal-green" />;
-      case "error": return <span className="text-destructive text-[8px]">✗</span>;
-      default: return null;
+  // Color-coded status indicator
+  const getStatusDisplay = (sport: keyof SyncStatus, lastSync: string | null) => {
+    const status = syncStatus[sport];
+    const offSeason = isOffSeason(sport);
+    
+    if (status === "syncing") {
+      return <Loader2 className="w-3 h-3 animate-spin text-blue-500" />;
     }
+    if (status === "done") {
+      return <CheckCircle className="w-3 h-3 text-terminal-green" />;
+    }
+    if (status === "error") {
+      return <XCircle className="w-3 h-3 text-destructive" />;
+    }
+    if (!lastSync) {
+      return <span className="w-2 h-2 rounded-full bg-muted-foreground" />;
+    }
+    if (offSeason) {
+      return <span className="w-2 h-2 rounded-full bg-terminal-amber" />;
+    }
+    return <span className="w-2 h-2 rounded-full bg-terminal-green" />;
+  };
+
+  // Get card border color based on status
+  const getCardBorderClass = (sport: keyof SyncStatus, lastSync: string | null) => {
+    const status = syncStatus[sport];
+    if (status === "syncing") return "border-blue-500/50 bg-blue-500/5";
+    if (status === "done") return "border-terminal-green/50 bg-terminal-green/5";
+    if (status === "error") return "border-destructive/50 bg-destructive/5";
+    if (!lastSync) return "border-muted-foreground/30";
+    if (isOffSeason(sport)) return "border-terminal-amber/30";
+    return "border-terminal-green/20";
   };
 
   const isSyncing = Object.values(syncStatus).some(s => s === "syncing");
 
+  // Sync progress display during sync all
+  const getSyncProgressText = () => {
+    const sports = ["nfl", "nba", "ncaab", "ncaaf", "mlb"] as const;
+    const parts = sports.map(s => {
+      const status = syncStatus[s];
+      if (status === "done") return `${s.toUpperCase()} ✓`;
+      if (status === "error") return `${s.toUpperCase()} ✗`;
+      if (status === "syncing") return `${s.toUpperCase()} ⏳`;
+      return null;
+    }).filter(Boolean);
+    return parts.join(" | ");
+  };
+
+  const sportConfig = [
+    { key: "nfl" as const, label: "NFL", Icon: Trophy, color: "terminal-green", window: "7 Days" },
+    { key: "nba" as const, label: "NBA", Icon: Dribbble, color: "terminal-cyan", window: "48h" },
+    { key: "ncaab" as const, label: "NCAAB", Icon: GraduationCap, color: "terminal-amber", window: "24h" },
+    { key: "ncaaf" as const, label: "NCAAF", Icon: Trophy, color: "orange-500", window: "7 Days" },
+    { key: "mlb" as const, label: "MLB", Icon: BaseballIcon, color: "red-500", window: "24h" },
+  ];
+
   return (
     <Card className="bg-card border-primary/30">
-      <CardHeader className="py-2 px-4">
-        <div className="flex items-center justify-between">
+      <CardHeader className="py-2 px-3">
+        <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-xs font-mono text-foreground flex items-center gap-2">
             <RefreshCw className="w-3 h-3 text-primary" />
-            Sports Data Management
+            Sports Data
           </CardTitle>
+          
+          {/* Big Green Sync All Button */}
           <Button
             size="sm"
-            className="bg-terminal-green hover:bg-terminal-green/80 text-background font-mono text-[10px] h-7"
+            className="bg-terminal-green hover:bg-terminal-green/80 text-background font-mono text-xs h-8 px-4 shadow-lg shadow-terminal-green/20"
             onClick={handleSyncAll}
             disabled={isSyncing}
           >
             {isAllSyncing ? (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <Loader2 className="w-3 h-3 animate-spin" />
                 <span>Syncing...</span>
-                <span className="flex gap-0.5 ml-1">
-                  {getStatusIcon(syncStatus.nfl)}
-                  {getStatusIcon(syncStatus.nba)}
-                  {getStatusIcon(syncStatus.ncaab)}
-                </span>
               </div>
             ) : (
-              <><Play className="w-3 h-3 mr-1" />Sync All Sports</>
+              <><Play className="w-3 h-3 mr-1" />Sync All</>
             )}
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="py-2 px-4 space-y-2">
-        {/* Success message */}
-        {syncResults.length > 0 && !isAllSyncing && (
-          <div className="bg-terminal-green/10 border border-terminal-green/30 rounded px-2 py-1 font-mono text-[9px] text-terminal-green">
-            ✓ {syncResults.map(r => `${r.count} ${r.sport}`).join(", ")}
+      <CardContent className="py-2 px-3 space-y-2">
+        {/* Sync Progress Bar - shown during sync all */}
+        {isAllSyncing && (
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded px-2 py-1.5 font-mono text-[10px] text-blue-400 animate-pulse">
+            {getSyncProgressText()}
           </div>
         )}
 
-        {/* Compact Sport Cards Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-          {/* NFL */}
-          <div className="bg-muted/30 rounded p-2 border border-terminal-green/20">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1">
-                <Trophy className="w-3 h-3 text-terminal-green" />
-                <span className="font-mono text-[10px] font-medium">NFL</span>
-              </div>
-              <Badge variant="outline" className="border-terminal-green/50 text-terminal-green text-[8px] px-1 py-0">
-                {counts.nfl.games ?? "—"}
-              </Badge>
-            </div>
-            <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
-              <Clock className="w-2 h-2" />{counts.nfl.lastSync || "Never"}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full font-mono text-[9px] h-5 border-terminal-green/50 hover:bg-terminal-green/10"
-              onClick={() => handleIndividualSync("nfl")}
-              disabled={syncStatus.nfl === "syncing"}
-            >
-              {syncStatus.nfl === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : "7 Days"}
-            </Button>
+        {/* Success Summary - shown after sync all */}
+        {syncResults.length > 0 && !isAllSyncing && (
+          <div className={`rounded px-2 py-1.5 font-mono text-[10px] ${
+            syncResults.some(r => r.status === "error") 
+              ? "bg-terminal-amber/10 border border-terminal-amber/30 text-terminal-amber"
+              : "bg-terminal-green/10 border border-terminal-green/30 text-terminal-green"
+          }`}>
+            ✓ {syncResults.map(r => `${r.count} ${r.sport}${r.status === "error" ? " ✗" : ""}`).join(", ")}
           </div>
+        )}
 
-          {/* NBA */}
-          <div className="bg-muted/30 rounded p-2 border border-terminal-cyan/20">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1">
-                <Dribbble className="w-3 h-3 text-terminal-cyan" />
-                <span className="font-mono text-[10px] font-medium">NBA</span>
-              </div>
-              <Badge variant="outline" className="border-terminal-cyan/50 text-terminal-cyan text-[8px] px-1 py-0">
-                {counts.nba.games ?? "—"}
-              </Badge>
-            </div>
-            <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
-              <Clock className="w-2 h-2" />{counts.nba.lastSync || "Never"}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full font-mono text-[9px] h-5 border-terminal-cyan/50 hover:bg-terminal-cyan/10"
-              onClick={() => handleIndividualSync("nba")}
-              disabled={syncStatus.nba === "syncing"}
-            >
-              {syncStatus.nba === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : "48h"}
+        {/* Sport Cards Grid - Mobile responsive */}
+        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between h-6 text-[10px] font-mono text-muted-foreground hover:text-foreground md:hidden">
+              <span>Individual Sports</span>
+              <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
             </Button>
-          </div>
-
-          {/* NCAAB */}
-          <div className="bg-muted/30 rounded p-2 border border-terminal-amber/20">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1">
-                <GraduationCap className="w-3 h-3 text-terminal-amber" />
-                <span className="font-mono text-[10px] font-medium">NCAAB</span>
+          </CollapsibleTrigger>
+          
+          {/* Always show on desktop, collapsible on mobile */}
+          <div className="hidden md:grid grid-cols-5 gap-2">
+            {sportConfig.map(({ key, label, Icon, color, window }) => (
+              <div key={key} className={`rounded p-2 border transition-colors ${getCardBorderClass(key, counts[key].lastSync)}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1">
+                    <Icon className={`w-3 h-3 text-${color}`} />
+                    <span className="font-mono text-[10px] font-medium">{label}</span>
+                  </div>
+                  {getStatusDisplay(key, counts[key].lastSync)}
+                </div>
+                <div className="flex items-center justify-between mb-1">
+                  <Badge variant="outline" className={`border-${color}/50 text-${color} text-[8px] px-1 py-0`}>
+                    {key === "ncaab" || key === "ncaaf" ? counts[key].ranked ?? "—" : counts[key].games ?? "—"}
+                  </Badge>
+                  {isOffSeason(key) && (
+                    <Badge variant="outline" className="border-terminal-amber/50 text-terminal-amber text-[7px] px-0.5 py-0">
+                      OFF
+                    </Badge>
+                  )}
+                </div>
+                <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
+                  <Clock className="w-2 h-2" />
+                  <span className="truncate">{counts[key].lastSync || "Never"}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`w-full font-mono text-[9px] h-5 border-${color}/50 hover:bg-${color}/10`}
+                  onClick={() => handleIndividualSync(key)}
+                  disabled={syncStatus[key] === "syncing" || isAllSyncing}
+                >
+                  {syncStatus[key] === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : window}
+                </Button>
               </div>
-              <Badge variant="outline" className="border-terminal-amber/50 text-terminal-amber text-[8px] px-1 py-0">
-                {counts.ncaab.ranked ?? "—"}
-              </Badge>
-            </div>
-            <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
-              <Clock className="w-2 h-2" />{counts.ncaab.lastSync || "Never"}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full font-mono text-[9px] h-5 border-terminal-amber/50 hover:bg-terminal-amber/10"
-              onClick={() => handleIndividualSync("ncaab")}
-              disabled={syncStatus.ncaab === "syncing"}
-            >
-              {syncStatus.ncaab === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : "24h"}
-            </Button>
+            ))}
           </div>
-
-          {/* NCAAF */}
-          <div className="bg-muted/30 rounded p-2 border border-orange-500/20">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1">
-                <Trophy className="w-3 h-3 text-orange-500" />
-                <span className="font-mono text-[10px] font-medium">NCAAF</span>
-              </div>
-              <Badge variant="outline" className="border-orange-500/50 text-orange-500 text-[8px] px-1 py-0">
-                {counts.ncaaf.ranked ?? "—"}
-              </Badge>
+          
+          {/* Mobile collapsed view */}
+          <CollapsibleContent className="md:hidden">
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {sportConfig.map(({ key, label, Icon, color, window }) => (
+                <div key={key} className={`rounded p-2 border transition-colors ${getCardBorderClass(key, counts[key].lastSync)}`}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1">
+                      <Icon className={`w-3 h-3 text-${color}`} />
+                      <span className="font-mono text-[10px] font-medium">{label}</span>
+                    </div>
+                    {getStatusDisplay(key, counts[key].lastSync)}
+                  </div>
+                  <div className="flex items-center justify-between mb-1">
+                    <Badge variant="outline" className={`border-${color}/50 text-${color} text-[8px] px-1 py-0`}>
+                      {key === "ncaab" || key === "ncaaf" ? counts[key].ranked ?? "—" : counts[key].games ?? "—"}
+                    </Badge>
+                    {isOffSeason(key) && (
+                      <Badge variant="outline" className="border-terminal-amber/50 text-terminal-amber text-[7px] px-0.5 py-0">
+                        OFF
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
+                    <Clock className="w-2 h-2" />
+                    <span className="truncate">{counts[key].lastSync || "Never"}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`w-full font-mono text-[9px] h-5 border-${color}/50 hover:bg-${color}/10`}
+                    onClick={() => handleIndividualSync(key)}
+                    disabled={syncStatus[key] === "syncing" || isAllSyncing}
+                  >
+                    {syncStatus[key] === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : window}
+                  </Button>
+                </div>
+              ))}
             </div>
-            <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
-              <Clock className="w-2 h-2" />{counts.ncaaf.lastSync || "Never"}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full font-mono text-[9px] h-5 border-orange-500/50 hover:bg-orange-500/10"
-              onClick={() => handleIndividualSync("ncaaf")}
-              disabled={syncStatus.ncaaf === "syncing"}
-            >
-              {syncStatus.ncaaf === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : "7 Days"}
-            </Button>
-          </div>
-
-          {/* MLB */}
-          <div className="bg-muted/30 rounded p-2 border border-red-500/20">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-1">
-                <BaseballIcon className="w-3 h-3 text-red-500" />
-                <span className="font-mono text-[10px] font-medium">MLB</span>
-              </div>
-              <Badge variant="outline" className="border-red-500/50 text-red-500 text-[8px] px-1 py-0">
-                {counts.mlb.games ?? "—"}
-              </Badge>
-            </div>
-            <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1">
-              <Clock className="w-2 h-2" />{counts.mlb.lastSync || "Never"}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full font-mono text-[9px] h-5 border-red-500/50 hover:bg-red-500/10"
-              onClick={() => handleIndividualSync("mlb")}
-              disabled={syncStatus.mlb === "syncing"}
-            >
-              {syncStatus.mlb === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : "24h"}
-            </Button>
-          </div>
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );
