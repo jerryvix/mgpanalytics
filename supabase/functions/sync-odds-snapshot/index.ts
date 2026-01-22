@@ -27,7 +27,16 @@ serve(async (req) => {
   }
 
   try {
-    console.log("Starting odds snapshot sync...");
+    // Parse request body for test mode
+    let testOnly = false;
+    try {
+      const body = await req.json();
+      testOnly = body?.testOnly === true;
+    } catch {
+      // No body or invalid JSON, continue with full sync
+    }
+
+    console.log(`Starting odds snapshot sync... (testOnly: ${testOnly})`);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -38,7 +47,33 @@ serve(async (req) => {
     }
 
     if (!THE_ODDS_API_KEY) {
-      throw new Error("THE_ODDS_API_KEY not configured");
+      throw new Error("THE_ODDS_API_KEY not configured - please add it in Lovable Cloud secrets");
+    }
+
+    // Test mode - just verify API connection
+    if (testOnly) {
+      const testUrl = `https://api.the-odds-api.com/v4/sports?apiKey=${THE_ODDS_API_KEY}`;
+      const testResponse = await fetch(testUrl);
+      
+      if (!testResponse.ok) {
+        throw new Error(`The Odds API returned ${testResponse.status}`);
+      }
+
+      // Get usage info from headers
+      const requestsUsed = parseInt(testResponse.headers.get("x-requests-used") || "0");
+      const requestsRemaining = parseInt(testResponse.headers.get("x-requests-remaining") || "0");
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "The Odds API connection successful",
+          usage: {
+            requests_used: requestsUsed,
+            requests_remaining: requestsRemaining,
+          },
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -201,14 +236,14 @@ serve(async (req) => {
 
     console.log(`Inserted ${allSnapshots.length} odds history records`);
 
-    const response = {
+    const result = {
       success: true,
-      snapshotsCount: allSnapshots.length,
+      snapshotsCreated: allSnapshots.length,
       gamesProcessed: totalProcessed,
       message: `Created ${allSnapshots.length} odds snapshots from ${totalProcessed} games`,
     };
 
-    return new Response(JSON.stringify(response), {
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {

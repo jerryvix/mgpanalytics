@@ -17,7 +17,6 @@ import {
 import { 
   Settings, 
   Database, 
-  Users, 
   RefreshCw, 
   Loader2, 
   Trophy, 
@@ -37,6 +36,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
+import { 
+  TheOddsApiCard, 
+  NCAABSyncCard, 
+  LineMovementDashboard, 
+  SteamMoveAlerts, 
+  OddsSyncControls 
+} from "./admin";
 
 // Types for sync schedule
 interface SyncTimestamp {
@@ -86,6 +92,9 @@ export function AdminPanel() {
   const [nflSeasonStatsCount, setNflSeasonStatsCount] = useState<number | null>(null);
   const [nflGameLogsCount, setNflGameLogsCount] = useState<number | null>(null);
   const [nflAdvancedStatsCount, setNflAdvancedStatsCount] = useState<number | null>(null);
+  const [ncaabGamesCount, setNcaabGamesCount] = useState<number | null>(null);
+  const [oddsHistoryCount, setOddsHistoryCount] = useState<number | null>(null);
+  const [lineMovementsTodayCount, setLineMovementsTodayCount] = useState<number | null>(null);
   
   // Sync timestamps
   const [syncTimestamps, setSyncTimestamps] = useState<SyncTimestamp[]>([]);
@@ -104,9 +113,35 @@ export function AdminPanel() {
       fetchNFLSeasonStatsCount(),
       fetchNFLGameLogsCount(),
       fetchNFLAdvancedStatsCount(),
+      fetchNCAABGamesCount(),
+      fetchOddsHistoryCount(),
+      fetchLineMovementsTodayCount(),
       fetchSyncTimestamps(),
     ];
     await Promise.all(promises);
+  };
+
+  const fetchNCAABGamesCount = async () => {
+    const { count } = await supabase
+      .from("ncaab_games")
+      .select("*", { count: "exact", head: true });
+    if (count !== null) setNcaabGamesCount(count);
+  };
+
+  const fetchOddsHistoryCount = async () => {
+    const { count } = await supabase
+      .from("odds_history")
+      .select("*", { count: "exact", head: true });
+    if (count !== null) setOddsHistoryCount(count);
+  };
+
+  const fetchLineMovementsTodayCount = async () => {
+    const today = new Date().toISOString().split("T")[0];
+    const { count } = await supabase
+      .from("odds_history")
+      .select("*", { count: "exact", head: true })
+      .gte("timestamp", today);
+    if (count !== null) setLineMovementsTodayCount(count);
   };
 
   const fetchGamesCount = async () => {
@@ -1040,6 +1075,48 @@ export function AdminPanel() {
 
       {/* Admin Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* System Health - First */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <Card className="bg-card border-border">
+            <CardHeader>
+              <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
+                <Settings className="w-4 h-4 text-muted-foreground" />
+                System Health
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3 font-mono text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Database</span>
+                  <span className="text-terminal-green">Connected</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Edge Functions</span>
+                  <span className="text-terminal-green">Active</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Ball Don't Lie API</span>
+                  <span className={apiStatus?.success ? "text-terminal-green" : "text-muted-foreground"}>
+                    {apiStatus?.success ? "OK" : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">The Odds API</span>
+                  <span className="text-muted-foreground">—</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Odds Sync</span>
+                  <span className="text-terminal-green">Active</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Uptime</span>
+                  <span className="text-foreground">99.9%</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Database Status */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card className="bg-card border-border">
@@ -1051,7 +1128,7 @@ export function AdminPanel() {
               <Badge variant="outline" className="border-terminal-green text-terminal-green text-[10px]">CONNECTED</Badge>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 font-mono text-xs text-muted-foreground">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-muted-foreground">
                 <div className="flex justify-between">
                   <span>NFL Games</span>
                   <span className="text-foreground">{gamesCount?.toLocaleString() ?? "..."}</span>
@@ -1064,56 +1141,42 @@ export function AdminPanel() {
                   <span>NBA Games</span>
                   <span className="text-foreground">{nbaGamesCount?.toLocaleString() ?? "..."}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span>NCAAB Games</span>
+                  <span className="text-foreground">{ncaabGamesCount?.toLocaleString() ?? "..."}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Odds History</span>
+                  <span className="text-foreground">{oddsHistoryCount?.toLocaleString() ?? "..."}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Moves Today</span>
+                  <span className="text-terminal-cyan">{lineMovementsTodayCount?.toLocaleString() ?? "..."}</span>
+                </div>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Ball Don't Lie API */}
+        {/* Line Movement Dashboard - Prominent */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="md:col-span-2">
+          <LineMovementDashboard />
+        </motion.div>
+
+        {/* Steam Move Alerts */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+          <SteamMoveAlerts />
+        </motion.div>
+
+        {/* The Odds API */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <Card className="bg-card border-terminal-amber/30">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
-                <Zap className="w-4 h-4 text-terminal-amber" />
-                Ball Don't Lie API
-              </CardTitle>
-              {apiStatus && (
-                <Badge 
-                  variant="outline" 
-                  className={apiStatus.success 
-                    ? "border-terminal-green text-terminal-green text-[10px]" 
-                    : "border-terminal-red text-terminal-red text-[10px]"}
-                >
-                  {apiStatus.success ? "CONNECTED" : "ERROR"}
-                </Badge>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full justify-start font-mono text-xs border-terminal-amber/50 hover:bg-terminal-amber/10"
-                onClick={handleTestAPIConnection}
-                disabled={isTestingAPI}
-              >
-                {isTestingAPI ? (
-                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                ) : apiStatus?.success ? (
-                  <CheckCircle className="w-3 h-3 mr-2 text-terminal-green" />
-                ) : apiStatus ? (
-                  <XCircle className="w-3 h-3 mr-2 text-terminal-red" />
-                ) : (
-                  <Zap className="w-3 h-3 mr-2" />
-                )}
-                Test API Connection
-              </Button>
-              <div className="font-mono text-xs text-muted-foreground">
-                <p>Endpoints: NFL, NBA, NCAAB</p>
-              </div>
-            </CardContent>
-          </Card>
+          <TheOddsApiCard onSyncComplete={fetchAllCounts} />
         </motion.div>
 
+        {/* Odds Sync Controls */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+          <OddsSyncControls onSyncComplete={fetchAllCounts} />
+        </motion.div>
         {/* NFL Data Sync - Main Card */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="md:col-span-2">
           <Card className="bg-card border-terminal-green/30">
@@ -1347,39 +1410,57 @@ export function AdminPanel() {
           </Card>
         </motion.div>
 
-        {/* System Health */}
+        {/* NCAAB Data Sync */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-          <Card className="bg-card border-border">
-            <CardHeader>
+          <NCAABSyncCard />
+        </motion.div>
+
+        {/* Ball Don't Lie API */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
+          <Card className="bg-card border-terminal-amber/30">
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
-                <Settings className="w-4 h-4 text-muted-foreground" />
-                System Health
+                <Zap className="w-4 h-4 text-terminal-amber" />
+                Ball Don't Lie API
               </CardTitle>
+              {apiStatus && (
+                <Badge 
+                  variant="outline" 
+                  className={apiStatus.success 
+                    ? "border-terminal-green text-terminal-green text-[10px]" 
+                    : "border-terminal-red text-terminal-red text-[10px]"}
+                >
+                  {apiStatus.success ? "CONNECTED" : "ERROR"}
+                </Badge>
+              )}
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4 font-mono text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">API Response</span>
-                  <span className="text-terminal-green">OK</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Database</span>
-                  <span className="text-terminal-green">Connected</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Edge Functions</span>
-                  <span className="text-terminal-green">Active</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Uptime</span>
-                  <span className="text-foreground">99.9%</span>
-                </div>
+            <CardContent className="space-y-3">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full justify-start font-mono text-xs border-terminal-amber/50 hover:bg-terminal-amber/10"
+                onClick={handleTestAPIConnection}
+                disabled={isTestingAPI}
+              >
+                {isTestingAPI ? (
+                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                ) : apiStatus?.success ? (
+                  <CheckCircle className="w-3 h-3 mr-2 text-terminal-green" />
+                ) : apiStatus ? (
+                  <XCircle className="w-3 h-3 mr-2 text-terminal-red" />
+                ) : (
+                  <Zap className="w-3 h-3 mr-2" />
+                )}
+                Test API Connection
+              </Button>
+              <div className="font-mono text-xs text-muted-foreground">
+                <p>Endpoints: NFL, NBA, NCAAB</p>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Data Inspector */}
+        {/* Data Inspector - Bottom */}
         <DataInspector />
       </div>
 
