@@ -210,6 +210,116 @@ export type Database = {
           },
         ]
       }
+      ncaab_games: {
+        Row: {
+          created_at: string | null
+          date: string
+          external_id: string | null
+          home_team_conference: string | null
+          home_team_id: string | null
+          home_team_name: string
+          home_team_rank: number | null
+          id: string
+          is_featured: boolean | null
+          season: number | null
+          status: string
+          updated_at: string | null
+          visitor_team_conference: string | null
+          visitor_team_id: string | null
+          visitor_team_name: string
+          visitor_team_rank: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          external_id?: string | null
+          home_team_conference?: string | null
+          home_team_id?: string | null
+          home_team_name: string
+          home_team_rank?: number | null
+          id?: string
+          is_featured?: boolean | null
+          season?: number | null
+          status?: string
+          updated_at?: string | null
+          visitor_team_conference?: string | null
+          visitor_team_id?: string | null
+          visitor_team_name: string
+          visitor_team_rank?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          external_id?: string | null
+          home_team_conference?: string | null
+          home_team_id?: string | null
+          home_team_name?: string
+          home_team_rank?: number | null
+          id?: string
+          is_featured?: boolean | null
+          season?: number | null
+          status?: string
+          updated_at?: string | null
+          visitor_team_conference?: string | null
+          visitor_team_id?: string | null
+          visitor_team_name?: string
+          visitor_team_rank?: number | null
+        }
+        Relationships: []
+      }
+      ncaab_odds: {
+        Row: {
+          created_at: string | null
+          game_id: string
+          id: string
+          moneyline_away: number | null
+          moneyline_home: number | null
+          sportsbook: string
+          spread_odds: number | null
+          spread_value: number | null
+          total_over_odds: number | null
+          total_under_odds: number | null
+          total_value: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          game_id: string
+          id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
+          sportsbook: string
+          spread_odds?: number | null
+          spread_value?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
+          sportsbook?: string
+          spread_odds?: number | null
+          spread_value?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ncaab_odds_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ncaab_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       odds: {
         Row: {
           created_at: string
@@ -262,6 +372,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      odds_history: {
+        Row: {
+          bookmaker: string
+          created_at: string | null
+          current_line: number | null
+          current_price: number | null
+          game_id: string
+          id: string
+          line_movement: string | null
+          odds_type: string
+          opening_line: number | null
+          previous_line: number | null
+          previous_price: number | null
+          sport: string
+          team: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          bookmaker: string
+          created_at?: string | null
+          current_line?: number | null
+          current_price?: number | null
+          game_id: string
+          id?: string
+          line_movement?: string | null
+          odds_type: string
+          opening_line?: number | null
+          previous_line?: number | null
+          previous_price?: number | null
+          sport: string
+          team?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          bookmaker?: string
+          created_at?: string | null
+          current_line?: number | null
+          current_price?: number | null
+          game_id?: string
+          id?: string
+          line_movement?: string | null
+          odds_type?: string
+          opening_line?: number | null
+          previous_line?: number | null
+          previous_price?: number | null
+          sport?: string
+          team?: string | null
+          timestamp?: string | null
+        }
+        Relationships: []
       }
       odds_snapshots: {
         Row: {
