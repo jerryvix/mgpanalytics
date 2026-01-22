@@ -115,6 +115,116 @@ export type Database = {
           },
         ]
       }
+      mlb_games: {
+        Row: {
+          created_at: string | null
+          date: string
+          external_id: string | null
+          home_team_id: string | null
+          home_team_name: string
+          id: string
+          is_featured: boolean | null
+          season: number | null
+          starting_pitcher_away: string | null
+          starting_pitcher_home: string | null
+          status: string
+          updated_at: string | null
+          venue: string | null
+          visitor_team_id: string | null
+          visitor_team_name: string
+          weather: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          external_id?: string | null
+          home_team_id?: string | null
+          home_team_name: string
+          id?: string
+          is_featured?: boolean | null
+          season?: number | null
+          starting_pitcher_away?: string | null
+          starting_pitcher_home?: string | null
+          status?: string
+          updated_at?: string | null
+          venue?: string | null
+          visitor_team_id?: string | null
+          visitor_team_name: string
+          weather?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          external_id?: string | null
+          home_team_id?: string | null
+          home_team_name?: string
+          id?: string
+          is_featured?: boolean | null
+          season?: number | null
+          starting_pitcher_away?: string | null
+          starting_pitcher_home?: string | null
+          status?: string
+          updated_at?: string | null
+          venue?: string | null
+          visitor_team_id?: string | null
+          visitor_team_name?: string
+          weather?: string | null
+        }
+        Relationships: []
+      }
+      mlb_odds: {
+        Row: {
+          created_at: string | null
+          game_id: string
+          id: string
+          moneyline_away: number | null
+          moneyline_home: number | null
+          sportsbook: string
+          spread_odds: number | null
+          spread_value: number | null
+          total_over_odds: number | null
+          total_under_odds: number | null
+          total_value: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          game_id: string
+          id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
+          sportsbook: string
+          spread_odds?: number | null
+          spread_value?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
+          sportsbook?: string
+          spread_odds?: number | null
+          spread_value?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mlb_odds_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "mlb_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       nba_games: {
         Row: {
           created_at: string
@@ -316,6 +426,122 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "ncaab_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ncaaf_games: {
+        Row: {
+          created_at: string | null
+          date: string
+          external_id: string | null
+          home_team_conference: string | null
+          home_team_id: string | null
+          home_team_name: string
+          home_team_rank: number | null
+          id: string
+          is_featured: boolean | null
+          season: number | null
+          status: string
+          updated_at: string | null
+          venue: string | null
+          visitor_team_conference: string | null
+          visitor_team_id: string | null
+          visitor_team_name: string
+          visitor_team_rank: number | null
+          weather: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          date: string
+          external_id?: string | null
+          home_team_conference?: string | null
+          home_team_id?: string | null
+          home_team_name: string
+          home_team_rank?: number | null
+          id?: string
+          is_featured?: boolean | null
+          season?: number | null
+          status?: string
+          updated_at?: string | null
+          venue?: string | null
+          visitor_team_conference?: string | null
+          visitor_team_id?: string | null
+          visitor_team_name: string
+          visitor_team_rank?: number | null
+          weather?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          external_id?: string | null
+          home_team_conference?: string | null
+          home_team_id?: string | null
+          home_team_name?: string
+          home_team_rank?: number | null
+          id?: string
+          is_featured?: boolean | null
+          season?: number | null
+          status?: string
+          updated_at?: string | null
+          venue?: string | null
+          visitor_team_conference?: string | null
+          visitor_team_id?: string | null
+          visitor_team_name?: string
+          visitor_team_rank?: number | null
+          weather?: string | null
+        }
+        Relationships: []
+      }
+      ncaaf_odds: {
+        Row: {
+          created_at: string | null
+          game_id: string
+          id: string
+          moneyline_away: number | null
+          moneyline_home: number | null
+          sportsbook: string
+          spread_odds: number | null
+          spread_value: number | null
+          total_over_odds: number | null
+          total_under_odds: number | null
+          total_value: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          game_id: string
+          id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
+          sportsbook: string
+          spread_odds?: number | null
+          spread_value?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          game_id?: string
+          id?: string
+          moneyline_away?: number | null
+          moneyline_home?: number | null
+          sportsbook?: string
+          spread_odds?: number | null
+          spread_value?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          total_value?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ncaaf_odds_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "ncaaf_games"
             referencedColumns: ["id"]
           },
         ]

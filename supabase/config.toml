@@ -15,6 +15,12 @@ verify_jwt = false
 [functions.sync-ncaab-games]
 verify_jwt = false
 
+[functions.sync-ncaaf-games]
+verify_jwt = false
+
+[functions.sync-mlb-games]
+verify_jwt = false
+
 [functions.sync-odds-snapshot]
 verify_jwt = false
 
