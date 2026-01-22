@@ -52,6 +52,30 @@ interface PlayerSeasonStats {
   targets: number | null;
   fantasy_points: number | null;
   fantasy_points_ppr: number | null;
+  raw_data?: Record<string, unknown> | null;
+}
+
+// Position mapping: DB stores full names, queries use abbreviations
+const POSITION_MAP: Record<string, string> = {
+  "QB": "Quarterback",
+  "RB": "Running Back", 
+  "WR": "Wide Receiver",
+  "TE": "Tight End",
+  "K": "Place Kicker",
+  "DEF": "Defensive",
+};
+
+// Helper to extract stats from raw_data or use column value
+function getStatValue(stats: PlayerSeasonStats, columnKey: keyof PlayerSeasonStats, rawKey: string): number {
+  const columnValue = stats[columnKey] as number | null;
+  if (columnValue && columnValue > 0) return columnValue;
+  
+  const rawData = stats.raw_data;
+  if (rawData && typeof rawData === 'object' && rawKey in rawData) {
+    const rawValue = rawData[rawKey];
+    if (typeof rawValue === 'number') return rawValue;
+  }
+  return 0;
 }
 
 // Common NFL player names for quick detection
@@ -240,7 +264,7 @@ export function useChatQuery() {
   const getPlayerStats = async (playerId: string): Promise<PlayerSeasonStats | null> => {
     const { data } = await supabase
       .from("player_season_stats")
-      .select("*")
+      .select("*, raw_data")
       .eq("player_id", playerId)
       .eq("sport", "NFL")
       .order("season", { ascending: false })
@@ -269,40 +293,53 @@ export function useChatQuery() {
       return `🏈 ${displayName} (${position}, ${team})\n\nI found the player but don't have their stats yet. Stats data is being synced.`;
     }
     
-    // Build response based on position
+    // Extract stats from raw_data or columns
+    const passYards = getStatValue(stats, 'pass_yards', 'passing_yards');
+    const passTd = getStatValue(stats, 'pass_td', 'passing_touchdowns');
+    const passInt = getStatValue(stats, 'pass_int', 'passing_interceptions');
+    const rushYards = getStatValue(stats, 'rush_yards', 'rushing_yards');
+    const rushTd = getStatValue(stats, 'rush_td', 'rushing_touchdowns');
+    const rushAttempts = getStatValue(stats, 'rush_attempts', 'rushing_attempts');
+    const receptions = getStatValue(stats, 'receptions', 'receptions');
+    const recYards = getStatValue(stats, 'rec_yards', 'receiving_yards');
+    const recTd = getStatValue(stats, 'rec_td', 'receiving_touchdowns');
+    const targets = getStatValue(stats, 'targets', 'receiving_targets');
+    const gamesPlayed = getStatValue(stats, 'games_played', 'games_played');
+    
+    // Build response based on position (full names from DB)
     let response = `🏈 ${displayName} (${position}, ${team}) - ${stats.season} Season:\n\n`;
     
-    if (position === "QB") {
-      response += `Passing: ${formatNumber(stats.pass_yards)} yards, ${stats.pass_td || 0} TDs, ${stats.pass_int || 0} INTs\n`;
-      if (stats.rush_yards && stats.rush_yards > 0) {
-        response += `Rushing: ${formatNumber(stats.rush_yards)} yards, ${stats.rush_td || 0} TDs\n`;
+    if (position === "Quarterback") {
+      response += `Passing: ${formatNumber(passYards)} yards, ${passTd} TDs, ${passInt} INTs\n`;
+      if (rushYards > 0) {
+        response += `Rushing: ${formatNumber(rushYards)} yards, ${rushTd} TDs\n`;
       }
-    } else if (position === "RB") {
-      response += `Rushing: ${formatNumber(stats.rush_yards)} yards, ${stats.rush_td || 0} TDs (${stats.rush_attempts || 0} carries)\n`;
-      if (stats.receptions && stats.receptions > 0) {
-        response += `Receiving: ${stats.receptions} rec, ${formatNumber(stats.rec_yards)} yards, ${stats.rec_td || 0} TDs\n`;
+    } else if (position === "Running Back") {
+      response += `Rushing: ${formatNumber(rushYards)} yards, ${rushTd} TDs (${rushAttempts} carries)\n`;
+      if (receptions > 0) {
+        response += `Receiving: ${receptions} rec, ${formatNumber(recYards)} yards, ${recTd} TDs\n`;
       }
-    } else if (position === "WR" || position === "TE") {
-      response += `Receiving: ${stats.receptions || 0} rec, ${formatNumber(stats.rec_yards)} yards, ${stats.rec_td || 0} TDs\n`;
-      if (stats.targets) {
-        response += `Targets: ${stats.targets}\n`;
+    } else if (position === "Wide Receiver" || position === "Tight End") {
+      response += `Receiving: ${receptions} rec, ${formatNumber(recYards)} yards, ${recTd} TDs\n`;
+      if (targets > 0) {
+        response += `Targets: ${targets}\n`;
       }
     } else {
       // Generic stats
-      if (stats.pass_yards && stats.pass_yards > 0) {
-        response += `Passing: ${formatNumber(stats.pass_yards)} yards, ${stats.pass_td || 0} TDs\n`;
+      if (passYards > 0) {
+        response += `Passing: ${formatNumber(passYards)} yards, ${passTd} TDs\n`;
       }
-      if (stats.rush_yards && stats.rush_yards > 0) {
-        response += `Rushing: ${formatNumber(stats.rush_yards)} yards, ${stats.rush_td || 0} TDs\n`;
+      if (rushYards > 0) {
+        response += `Rushing: ${formatNumber(rushYards)} yards, ${rushTd} TDs\n`;
       }
-      if (stats.rec_yards && stats.rec_yards > 0) {
-        response += `Receiving: ${stats.receptions || 0} rec, ${formatNumber(stats.rec_yards)} yards\n`;
+      if (recYards > 0) {
+        response += `Receiving: ${receptions} rec, ${formatNumber(recYards)} yards\n`;
       }
     }
     
-    response += `Games: ${stats.games_played || 0}`;
+    response += `Games: ${gamesPlayed}`;
     
-    if (stats.fantasy_points_ppr) {
+    if (stats.fantasy_points_ppr && stats.fantasy_points_ppr > 0) {
       response += ` | Fantasy (PPR): ${stats.fantasy_points_ppr.toFixed(1)}`;
     }
     
@@ -310,67 +347,104 @@ export function useChatQuery() {
   };
 
   // Handle leaderboard queries
-  const handleLeaderboardQuery = async (position: string, limit: number): Promise<string> => {
-    let orderBy = "fantasy_points_ppr";
-    let statLabel = "Fantasy PPR";
+  const handleLeaderboardQuery = async (positionAbbr: string, limit: number): Promise<string> => {
+    // Map abbreviation to full position name in DB
+    const positionFull = POSITION_MAP[positionAbbr] || positionAbbr;
     
-    if (position === "QB") {
-      orderBy = "pass_yards";
+    let statLabel = "Fantasy PPR";
+    let rawStatKey = "fantasy_points_ppr";
+    
+    if (positionAbbr === "QB") {
       statLabel = "Pass Yards";
-    } else if (position === "RB") {
-      orderBy = "rush_yards";
+      rawStatKey = "passing_yards";
+    } else if (positionAbbr === "RB") {
       statLabel = "Rush Yards";
-    } else if (position === "WR" || position === "TE") {
-      orderBy = "rec_yards";
+      rawStatKey = "rushing_yards";
+    } else if (positionAbbr === "WR" || positionAbbr === "TE") {
       statLabel = "Rec Yards";
+      rawStatKey = "receiving_yards";
     }
     
-    // Get player IDs for position
+    // Get player IDs for position (using full name from DB)
     const { data: players } = await supabase
       .from("players")
       .select("id, name, first_name, last_name, team_abbr")
       .eq("sport", "NFL")
-      .eq("position", position);
+      .eq("position", positionFull);
     
     if (!players || players.length === 0) {
-      return `No ${position}s found in the database.`;
+      return `No ${positionAbbr}s found in the database.`;
     }
     
     const playerIds = players.map(p => p.id);
     
-    // Get stats ordered by the relevant stat
+    // Get stats with raw_data
     const { data: stats } = await supabase
       .from("player_season_stats")
-      .select("*")
+      .select("*, raw_data")
       .in("player_id", playerIds)
       .eq("sport", "NFL")
-      .eq("season", 2025)
-      .order(orderBy, { ascending: false, nullsFirst: false })
-      .limit(limit);
+      .order("season", { ascending: false })
+      .limit(500);
     
     if (!stats || stats.length === 0) {
-      return `No ${position} stats found for 2025 season.`;
+      return `No ${positionAbbr} stats found.`;
+    }
+    
+    // Get most recent season per player and extract stat from raw_data
+    const playerBestStats = new Map<string, { stat: number; data: typeof stats[0] }>();
+    
+    for (const s of stats) {
+      if (!s.player_id) continue;
+      
+      // Extract stat from raw_data
+      let statValue = 0;
+      if (s.raw_data && typeof s.raw_data === 'object' && rawStatKey in s.raw_data) {
+        const rawValue = (s.raw_data as Record<string, unknown>)[rawStatKey];
+        if (typeof rawValue === 'number') statValue = rawValue;
+      }
+      
+      // Keep best stat per player
+      const existing = playerBestStats.get(s.player_id);
+      if (!existing || statValue > existing.stat) {
+        playerBestStats.set(s.player_id, { stat: statValue, data: s });
+      }
+    }
+    
+    // Sort by stat value
+    const sorted = Array.from(playerBestStats.entries())
+      .filter(([_, v]) => v.stat > 0)
+      .sort((a, b) => b[1].stat - a[1].stat)
+      .slice(0, limit);
+    
+    if (sorted.length === 0) {
+      return `No ${positionAbbr} stats found with data.`;
     }
     
     const playerMap = new Map(players.map(p => [p.id, p]));
     
-    let response = `🏈 Top ${limit} ${position}s (${statLabel}):\n\n`;
+    let response = `🏈 Top ${limit} ${positionAbbr}s (${statLabel}):\n\n`;
     
-    stats.forEach((s, i) => {
-      const player = playerMap.get(s.player_id);
+    sorted.forEach(([playerId, { stat, data }], i) => {
+      const player = playerMap.get(playerId);
       const name = player?.name || `${player?.first_name} ${player?.last_name}` || "Unknown";
       const team = player?.team_abbr || "";
       
-      let statValue = "";
-      if (position === "QB") {
-        statValue = `${formatNumber(s.pass_yards)} yds, ${s.pass_td} TD`;
-      } else if (position === "RB") {
-        statValue = `${formatNumber(s.rush_yards)} yds, ${s.rush_td} TD`;
+      let statDisplay = "";
+      const raw = data.raw_data as Record<string, unknown> | null;
+      
+      if (positionAbbr === "QB") {
+        const tds = raw?.passing_touchdowns ?? 0;
+        statDisplay = `${formatNumber(stat)} yds, ${tds} TD`;
+      } else if (positionAbbr === "RB") {
+        const tds = raw?.rushing_touchdowns ?? 0;
+        statDisplay = `${formatNumber(stat)} yds, ${tds} TD`;
       } else {
-        statValue = `${formatNumber(s.rec_yards)} yds, ${s.rec_td} TD`;
+        const tds = raw?.receiving_touchdowns ?? 0;
+        statDisplay = `${formatNumber(stat)} yds, ${tds} TD`;
       }
       
-      response += `${i + 1}. ${name} (${team}): ${statValue}\n`;
+      response += `${i + 1}. ${name} (${team}): ${statDisplay}\n`;
     });
     
     return response;
