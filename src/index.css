@@ -106,11 +106,14 @@
 
   html {
     font-family: 'Space Grotesk', sans-serif;
+    min-width: 768px;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Space Grotesk', sans-serif;
+    min-width: 768px;
+    overflow-x: auto;
   }
 
   /* Custom scrollbar for terminal feel */
