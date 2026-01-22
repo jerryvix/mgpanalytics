@@ -43,7 +43,8 @@ import {
   MLBSyncCard, 
   LineMovementDashboard, 
   SteamMoveAlerts, 
-  OddsSyncControls 
+  OddsSyncControls,
+  SportsDataManagement
 } from "./admin";
 
 // Types for sync schedule
@@ -1160,23 +1161,28 @@ export function AdminPanel() {
           </Card>
         </motion.div>
 
-        {/* Line Movement Dashboard - Prominent */}
+        {/* Sports Data Management - Consolidated */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="md:col-span-2">
+          <SportsDataManagement />
+        </motion.div>
+
+        {/* Line Movement Dashboard */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="md:col-span-2">
           <LineMovementDashboard />
         </motion.div>
 
         {/* Steam Move Alerts */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
           <SteamMoveAlerts />
         </motion.div>
 
         {/* The Odds API */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.28 }}>
           <TheOddsApiCard onSyncComplete={fetchAllCounts} />
         </motion.div>
 
         {/* Odds Sync Controls */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <OddsSyncControls onSyncComplete={fetchAllCounts} />
         </motion.div>
         {/* NFL Data Sync - Main Card */}
@@ -1379,53 +1385,6 @@ export function AdminPanel() {
           </Card>
         </motion.div>
 
-        {/* NBA Sync Card */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-          <Card className="bg-card border-terminal-cyan/30">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
-                <Dribbble className="w-4 h-4 text-terminal-cyan" />
-                NBA Data Sync
-              </CardTitle>
-              <Badge variant="outline" className="border-terminal-cyan text-terminal-cyan text-[10px]">NBA</Badge>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full justify-start font-mono text-xs border-terminal-cyan/50 hover:bg-terminal-cyan/10"
-                onClick={handleSyncNBAGames}
-                disabled={isSyncingNBA}
-              >
-                {isSyncingNBA ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-2" />}
-                Sync NBA Games (48h)
-              </Button>
-              <div className="flex justify-between font-mono text-xs text-muted-foreground">
-                <span>Games in Vault:</span>
-                <span className="text-terminal-cyan">{nbaGamesCount ?? "..."}</span>
-              </div>
-              <div className="flex justify-between font-mono text-xs text-muted-foreground">
-                <span>Odds in Vault:</span>
-                <span className="text-terminal-cyan">{nbaOddsCount ?? "..."}</span>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* NCAAB Data Sync */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-          <NCAABSyncCard />
-        </motion.div>
-
-        {/* NCAAF Data Sync */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.52 }}>
-          <NCAAFSyncCard />
-        </motion.div>
-
-        {/* MLB Data Sync */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.54 }}>
-          <MLBSyncCard />
-        </motion.div>
 
         {/* Ball Don't Lie API */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}>
