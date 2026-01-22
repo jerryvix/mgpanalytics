@@ -6,6 +6,10 @@ import { NCAABSlate } from "@/components/dashboard/NCAABSlate";
 import { AdminPanel } from "@/components/dashboard/AdminPanel";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
 import Analyst from "@/pages/Analyst";
+import NFLPlayers from "@/pages/NFLPlayers";
+import NBAPlayers from "@/pages/NBAPlayers";
+import NCAABPlayers from "@/pages/NCAABPlayers";
+import PlayerProfile from "@/pages/PlayerProfile";
 
 interface DashboardContentProps {
   isAdmin: boolean;
@@ -18,10 +22,16 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route index element={<DashboardHome />} />
         <Route path="analyst" element={<Analyst />} />
         <Route path="nfl" element={<NFLSlate />} />
+        <Route path="nfl/players" element={<NFLPlayers />} />
+        <Route path="nfl/players/:playerId" element={<PlayerProfile />} />
         <Route path="nba" element={<NBASlate />} />
+        <Route path="nba/players" element={<NBAPlayers />} />
+        <Route path="nba/players/:playerId" element={<PlayerProfile />} />
         <Route path="mlb" element={<ComingSoon sport="MLB" emoji="⚾" />} />
         <Route path="ncaaf" element={<ComingSoon sport="NCAAF" emoji="🏈" />} />
         <Route path="ncaab" element={<NCAABSlate />} />
+        <Route path="ncaab/players" element={<NCAABPlayers />} />
+        <Route path="ncaab/players/:playerId" element={<PlayerProfile />} />
         <Route 
           path="admin" 
           element={isAdmin ? <AdminPanel /> : <Navigate to="/dashboard" replace />} 

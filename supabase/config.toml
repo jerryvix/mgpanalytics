@@ -35,3 +35,12 @@ verify_jwt = false
 
 [functions.gemini-chat]
 verify_jwt = false
+
+[functions.sync-nba-players]
+verify_jwt = false
+
+[functions.sync-nfl-players-slate]
+verify_jwt = false
+
+[functions.sync-ncaab-players]
+verify_jwt = false

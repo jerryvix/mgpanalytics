@@ -781,6 +781,71 @@ export type Database = {
           },
         ]
       }
+      player_game_associations: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_starter: boolean | null
+          nba_game_id: string | null
+          ncaab_game_id: string | null
+          nfl_game_id: number | null
+          player_id: string | null
+          sport: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_starter?: boolean | null
+          nba_game_id?: string | null
+          ncaab_game_id?: string | null
+          nfl_game_id?: number | null
+          player_id?: string | null
+          sport: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_starter?: boolean | null
+          nba_game_id?: string | null
+          ncaab_game_id?: string | null
+          nfl_game_id?: number | null
+          player_id?: string | null
+          sport?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_game_associations_nba_game_id_fkey"
+            columns: ["nba_game_id"]
+            isOneToOne: false
+            referencedRelation: "nba_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_game_associations_ncaab_game_id_fkey"
+            columns: ["ncaab_game_id"]
+            isOneToOne: false
+            referencedRelation: "ncaab_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_game_associations_nfl_game_id_fkey"
+            columns: ["nfl_game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "player_game_associations_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_game_logs: {
         Row: {
           assists: number | null
@@ -924,14 +989,19 @@ export type Database = {
       player_season_stats: {
         Row: {
           assists: number | null
+          assists_per_game: number | null
           blocks: number | null
+          blocks_per_game: number | null
           created_at: string | null
           fantasy_points: number | null
           fantasy_points_ppr: number | null
           fg_pct: number | null
+          field_goal_pct: number | null
           forced_fumbles: number | null
+          free_throw_pct: number | null
           ft_pct: number | null
           games_played: number | null
+          games_started: number | null
           id: string
           interceptions: number | null
           minutes_per_game: number | null
@@ -943,8 +1013,10 @@ export type Database = {
           passer_rating: number | null
           player_id: string | null
           points: number | null
+          points_per_game: number | null
           raw_data: Json | null
           rebounds: number | null
+          rebounds_per_game: number | null
           rec_td: number | null
           rec_yards: number | null
           receptions: number | null
@@ -954,26 +1026,35 @@ export type Database = {
           sacks: number | null
           season: number
           season_type: string | null
+          source: string | null
           sport: string
           steals: number | null
+          steals_per_game: number | null
           tackles: number | null
           targets: number | null
           three_pct: number | null
+          three_point_pct: number | null
           turnovers: number | null
+          turnovers_per_game: number | null
           updated_at: string | null
           yards_per_carry: number | null
           yards_per_reception: number | null
         }
         Insert: {
           assists?: number | null
+          assists_per_game?: number | null
           blocks?: number | null
+          blocks_per_game?: number | null
           created_at?: string | null
           fantasy_points?: number | null
           fantasy_points_ppr?: number | null
           fg_pct?: number | null
+          field_goal_pct?: number | null
           forced_fumbles?: number | null
+          free_throw_pct?: number | null
           ft_pct?: number | null
           games_played?: number | null
+          games_started?: number | null
           id?: string
           interceptions?: number | null
           minutes_per_game?: number | null
@@ -985,8 +1066,10 @@ export type Database = {
           passer_rating?: number | null
           player_id?: string | null
           points?: number | null
+          points_per_game?: number | null
           raw_data?: Json | null
           rebounds?: number | null
+          rebounds_per_game?: number | null
           rec_td?: number | null
           rec_yards?: number | null
           receptions?: number | null
@@ -996,26 +1079,35 @@ export type Database = {
           sacks?: number | null
           season: number
           season_type?: string | null
+          source?: string | null
           sport: string
           steals?: number | null
+          steals_per_game?: number | null
           tackles?: number | null
           targets?: number | null
           three_pct?: number | null
+          three_point_pct?: number | null
           turnovers?: number | null
+          turnovers_per_game?: number | null
           updated_at?: string | null
           yards_per_carry?: number | null
           yards_per_reception?: number | null
         }
         Update: {
           assists?: number | null
+          assists_per_game?: number | null
           blocks?: number | null
+          blocks_per_game?: number | null
           created_at?: string | null
           fantasy_points?: number | null
           fantasy_points_ppr?: number | null
           fg_pct?: number | null
+          field_goal_pct?: number | null
           forced_fumbles?: number | null
+          free_throw_pct?: number | null
           ft_pct?: number | null
           games_played?: number | null
+          games_started?: number | null
           id?: string
           interceptions?: number | null
           minutes_per_game?: number | null
@@ -1027,8 +1119,10 @@ export type Database = {
           passer_rating?: number | null
           player_id?: string | null
           points?: number | null
+          points_per_game?: number | null
           raw_data?: Json | null
           rebounds?: number | null
+          rebounds_per_game?: number | null
           rec_td?: number | null
           rec_yards?: number | null
           receptions?: number | null
@@ -1038,12 +1132,16 @@ export type Database = {
           sacks?: number | null
           season?: number
           season_type?: string | null
+          source?: string | null
           sport?: string
           steals?: number | null
+          steals_per_game?: number | null
           tackles?: number | null
           targets?: number | null
           three_pct?: number | null
+          three_point_pct?: number | null
           turnovers?: number | null
+          turnovers_per_game?: number | null
           updated_at?: string | null
           yards_per_carry?: number | null
           yards_per_reception?: number | null
@@ -1060,69 +1158,99 @@ export type Database = {
       }
       players: {
         Row: {
+          age: number | null
           birth_date: string | null
           college: string | null
           created_at: string | null
           experience: number | null
           external_id: string
+          featured_reason: string | null
           first_name: string | null
           headshot_url: string | null
           height: string | null
           id: string
+          injury_designation: string | null
+          injury_status: string | null
+          is_featured: boolean | null
           jersey_number: string | null
           last_name: string | null
           name: string
           position: string | null
+          position_type: string | null
+          slate_window_end: string | null
+          slate_window_start: string | null
           sport: string
           status: string | null
           team_abbr: string | null
           team_id: string | null
           team_name: string | null
           updated_at: string | null
+          usage_metric: number | null
+          usage_rank: number | null
           weight: number | null
         }
         Insert: {
+          age?: number | null
           birth_date?: string | null
           college?: string | null
           created_at?: string | null
           experience?: number | null
           external_id: string
+          featured_reason?: string | null
           first_name?: string | null
           headshot_url?: string | null
           height?: string | null
           id?: string
+          injury_designation?: string | null
+          injury_status?: string | null
+          is_featured?: boolean | null
           jersey_number?: string | null
           last_name?: string | null
           name: string
           position?: string | null
+          position_type?: string | null
+          slate_window_end?: string | null
+          slate_window_start?: string | null
           sport: string
           status?: string | null
           team_abbr?: string | null
           team_id?: string | null
           team_name?: string | null
           updated_at?: string | null
+          usage_metric?: number | null
+          usage_rank?: number | null
           weight?: number | null
         }
         Update: {
+          age?: number | null
           birth_date?: string | null
           college?: string | null
           created_at?: string | null
           experience?: number | null
           external_id?: string
+          featured_reason?: string | null
           first_name?: string | null
           headshot_url?: string | null
           height?: string | null
           id?: string
+          injury_designation?: string | null
+          injury_status?: string | null
+          is_featured?: boolean | null
           jersey_number?: string | null
           last_name?: string | null
           name?: string
           position?: string | null
+          position_type?: string | null
+          slate_window_end?: string | null
+          slate_window_start?: string | null
           sport?: string
           status?: string | null
           team_abbr?: string | null
           team_id?: string | null
           team_name?: string | null
           updated_at?: string | null
+          usage_metric?: number | null
+          usage_rank?: number | null
           weight?: number | null
         }
         Relationships: []
