@@ -57,11 +57,16 @@ export function NFLSlate() {
   const fetchGames = async () => {
     setLoading(true);
     
-    // Fetch all NFL games
+    // Get current date at start of day for comparison
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    
+    // Fetch only future NFL games (date >= today AND not final)
     const { data: gamesData, error: gamesError } = await supabase
       .from("games")
       .select("*")
       .eq("league", "NFL")
+      .gte("date", todayStart)
       .order("date", { ascending: true });
 
     if (gamesError) {
@@ -70,12 +75,12 @@ export function NFLSlate() {
       return;
     }
 
-    // Filter out completed games
+    // Filter out completed games (status contains "final")
     const upcomingGames = (gamesData || []).filter(
-      (game) => !game.status.toLowerCase().startsWith("final")
+      (game) => !game.status.toLowerCase().includes("final")
     );
-    console.log("All NFL games:", gamesData);
-    console.log("Upcoming games (non-Final):", upcomingGames);
+    console.log("Future NFL games:", gamesData?.length || 0);
+    console.log("Upcoming games (non-Final):", upcomingGames.length);
     setGames(upcomingGames);
 
     // Fetch DraftKings odds for all upcoming games to display on cards
@@ -194,8 +199,8 @@ export function NFLSlate() {
         <Card className="bg-card border-terminal-green/30">
           <CardContent className="py-12 text-center font-mono">
             <Signal className="w-8 h-8 mx-auto mb-4 text-terminal-amber" />
-            <p className="text-muted-foreground">No upcoming games scheduled</p>
-            <p className="text-xs text-muted-foreground mt-1">Check back later for new matchups</p>
+            <p className="text-foreground">No upcoming games available right now.</p>
+            <p className="text-xs text-muted-foreground mt-2">The next slate will appear once games are scheduled.</p>
           </CardContent>
         </Card>
       ) : (
