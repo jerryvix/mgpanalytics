@@ -263,6 +263,42 @@ export type Database = {
           },
         ]
       }
+      odds_snapshots: {
+        Row: {
+          created_at: string
+          game_id: string
+          game_type: string
+          id: string
+          line_value: number | null
+          market_type: string
+          price: number | null
+          pulled_at: string
+          sportsbook: string
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          game_type?: string
+          id?: string
+          line_value?: number | null
+          market_type: string
+          price?: number | null
+          pulled_at?: string
+          sportsbook: string
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          game_type?: string
+          id?: string
+          line_value?: number | null
+          market_type?: string
+          price?: number | null
+          pulled_at?: string
+          sportsbook?: string
+        }
+        Relationships: []
+      }
       player_advanced_stats: {
         Row: {
           air_yards: number | null
