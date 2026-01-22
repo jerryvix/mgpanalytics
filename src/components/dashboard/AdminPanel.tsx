@@ -38,7 +38,9 @@ import { formatDistanceToNow } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
 import { 
   TheOddsApiCard, 
-  NCAABSyncCard, 
+  NCAABSyncCard,
+  NCAAFSyncCard,
+  MLBSyncCard, 
   LineMovementDashboard, 
   SteamMoveAlerts, 
   OddsSyncControls 
@@ -1413,6 +1415,16 @@ export function AdminPanel() {
         {/* NCAAB Data Sync */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
           <NCAABSyncCard />
+        </motion.div>
+
+        {/* NCAAF Data Sync */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.52 }}>
+          <NCAAFSyncCard />
+        </motion.div>
+
+        {/* MLB Data Sync */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.54 }}>
+          <MLBSyncCard />
         </motion.div>
 
         {/* Ball Don't Lie API */}
