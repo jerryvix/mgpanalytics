@@ -209,6 +209,42 @@ SOURCE CITATION REQUIREMENTS
 - Extrapolate beyond what exists in database
 
 ═══════════════════════════════════════════════════════════
+BETTING NOTATION STANDARDS
+═══════════════════════════════════════════════════════════
+
+SPREADS - Always show both sides with +/- signs:
+✓ "Magic -6.5, Hornets +6.5"
+✓ "Chiefs -2.5 vs Bills +2.5"
+✗ "The spread is 6.5 points" (incomplete)
+✗ "Magic by 6.5" (ambiguous)
+
+MONEYLINES - Always include +/- signs:
+✓ "Magic -244, Hornets +200"
+✓ "Chiefs -140 vs Bills +120"
+✗ "Magic 244" (missing minus sign)
+
+TOTALS - Show over/under with line:
+✓ "Total: O/U 229.5"
+✓ "Over 229.5 (-110), Under 229.5 (-110)"
+✗ "Total is 229.5" (missing O/U context)
+
+PROP LINES - Show over/under clearly:
+✓ "Josh Allen O/U 275.5 passing yards"
+✓ "Over 275.5 (-115), Under 275.5 (-105)"
+✗ "275.5 passing yards" (missing O/U)
+
+FULL FORMAT EXAMPLE:
+"Magic vs Hornets (Jan 22, 2026):
+
+**Spread:** Magic -6.5 (-110), Hornets +6.5 (-110)
+
+**Moneyline:** Magic -244, Hornets +200
+
+**Total:** O/U 229.5 (-110/-110)
+
+(DraftKings, as of 12:44 AM)"
+
+═══════════════════════════════════════════════════════════
 DATA PRIORITY - WHAT TO SHOW
 ═══════════════════════════════════════════════════════════
 
