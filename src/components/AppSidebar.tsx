@@ -58,9 +58,33 @@ interface AppSidebarProps {
 
 // Sports slates - secondary navigation with logos
 const sportsMenuItems = [
-  { title: "NFL", url: "/dashboard/nfl", logo: "/logos/nfl.png" },
-  { title: "NBA", url: "/dashboard/nba", logo: "/logos/nba.png" },
-  { title: "NCAAB", url: "/dashboard/ncaab", logo: "/logos/ncaa.png" },
+  { 
+    title: "NFL", 
+    url: "/dashboard/nfl", 
+    logo: "/logos/nfl.png",
+    subItems: [
+      { title: "Games", url: "/dashboard/nfl" },
+      { title: "Players", url: "/dashboard/nfl/players" },
+    ]
+  },
+  { 
+    title: "NBA", 
+    url: "/dashboard/nba", 
+    logo: "/logos/nba.png",
+    subItems: [
+      { title: "Games", url: "/dashboard/nba" },
+      { title: "Players", url: "/dashboard/nba/players" },
+    ]
+  },
+  { 
+    title: "NCAAB", 
+    url: "/dashboard/ncaab", 
+    logo: "/logos/ncaa.png",
+    subItems: [
+      { title: "Games", url: "/dashboard/ncaab" },
+      { title: "Players", url: "/dashboard/ncaab/players" },
+    ]
+  },
   { title: "NCAAF", url: "/dashboard/ncaaf", logo: "/logos/ncaa.png" },
   { title: "MLB", url: "/dashboard/mlb", logo: "/logos/mlb.png" },
 ];
@@ -288,25 +312,45 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
           <SidebarGroupContent>
             <SidebarMenu>
               {sportsMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={item.url} 
-                          className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                          activeClassName="bg-sidebar-accent text-terminal-green"
-                        >
-                          <img src={item.logo} alt={item.title} className="w-5 h-5 object-contain shrink-0" />
-                          {!collapsed && <span className="text-sm">{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </TooltipTrigger>
-                    {collapsed && (
-                      <TooltipContent side="right">{item.title}</TooltipContent>
-                    )}
-                  </Tooltip>
-                </SidebarMenuItem>
+                <div key={item.title}>
+                  <SidebarMenuItem>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton asChild>
+                          <NavLink 
+                            to={item.url} 
+                            className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                            activeClassName="bg-sidebar-accent text-terminal-green"
+                          >
+                            <img src={item.logo} alt={item.title} className="w-5 h-5 object-contain shrink-0" />
+                            {!collapsed && <span className="text-sm">{item.title}</span>}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      {collapsed && (
+                        <TooltipContent side="right">{item.title}</TooltipContent>
+                      )}
+                    </Tooltip>
+                  </SidebarMenuItem>
+                  {/* Sub-items for sports with players */}
+                  {!collapsed && item.subItems && (
+                    <div className="ml-8 space-y-1 mt-1">
+                      {item.subItems.map((sub) => (
+                        <SidebarMenuItem key={sub.url}>
+                          <SidebarMenuButton asChild>
+                            <NavLink 
+                              to={sub.url} 
+                              className="flex items-center gap-2 px-3 py-1.5 rounded text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                              activeClassName="bg-sidebar-accent/50 text-terminal-green"
+                            >
+                              <span>{sub.title}</span>
+                            </NavLink>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>

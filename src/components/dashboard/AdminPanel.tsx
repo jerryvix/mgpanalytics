@@ -34,7 +34,8 @@ import {
   TheOddsApiCard, 
   LineMovementDashboard, 
   SteamMoveAlerts, 
-  SportsDataManagement
+  SportsDataManagement,
+  PlayerSyncCard
 } from "./admin";
 
 // Types for sync schedule
@@ -1097,6 +1098,11 @@ export function AdminPanel() {
         {/* Sports Data Management - Consolidated */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="md:col-span-2">
           <SportsDataManagement />
+        </motion.div>
+
+        {/* Player Sync */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.11 }} className="md:col-span-2">
+          <PlayerSyncCard />
         </motion.div>
 
         {/* Line Movement Dashboard */}
