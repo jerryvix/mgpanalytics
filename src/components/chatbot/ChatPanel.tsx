@@ -1,19 +1,25 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen } from "lucide-react";
+import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useChatQuery } from "@/hooks/useChatQuery";
+import { useGeminiChat } from "@/hooks/useGeminiChat";
 import { useChat } from "@/contexts/ChatContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+
+interface Source {
+  title: string;
+  url: string;
+}
 
 interface Message {
   id: string;
   role: "user" | "bot";
   content: string;
   timestamp: Date;
+  sources?: Source[];
 }
 
 export function ChatPanel() {
@@ -32,16 +38,20 @@ export function ChatPanel() {
     {
       id: "welcome",
       role: "bot",
-      content: "Hey! I'm your MGP Analyst. Ask me about upcoming NFL games, odds, or teams. 🏈",
+      content: "Hey! I'm your MGP Analyst. Ask me about upcoming NFL/NBA games, odds, or teams. 🏈🏀",
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { processQuery } = useChatQuery();
+  const { sendMessage: sendGeminiMessage } = useGeminiChat();
+  
+  // Track conversation history for Gemini
+  const [conversationHistory, setConversationHistory] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
 
   // Load messages when activeConversationId changes
   useEffect(() => {
@@ -53,11 +63,12 @@ export function ChatPanel() {
         {
           id: "welcome",
           role: "bot",
-          content: "Hey! I'm your MGP Analyst. Ask me about upcoming NFL games, odds, or teams. 🏈",
+          content: "Hey! I'm your MGP Analyst. Ask me about upcoming NFL/NBA games, odds, or teams. 🏈🏀",
           timestamp: new Date(),
         },
       ]);
       setCurrentConversationId(null);
+      setConversationHistory([]); // Reset Gemini history for new conversation
     }
   }, [activeConversationId]);
 
@@ -179,26 +190,37 @@ export function ChatPanel() {
       await saveMessage(convId, "user", query.trim());
     }
 
+    // Update conversation history for Gemini
+    const newHistory = [...conversationHistory, { role: "user" as const, content: query.trim() }];
+    setConversationHistory(newHistory);
+
     try {
-      const response = await processQuery(query.trim());
+      // Call Gemini with conversation history
+      const response = await sendGeminiMessage(newHistory);
+      
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "bot",
-        content: response,
+        content: response.content,
         timestamp: new Date(),
+        sources: response.sources,
       };
       setMessages((prev) => [...prev, botMessage]);
+      
+      // Update history with assistant response
+      setConversationHistory([...newHistory, { role: "assistant", content: response.content }]);
 
       // Save bot response
       if (convId) {
-        await saveMessage(convId, "bot", response);
+        await saveMessage(convId, "bot", response.content);
         refreshConversations();
       }
     } catch (error) {
+      console.error("Gemini chat error:", error);
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "bot",
-        content: "Oops, having trouble connecting. Try again in a moment.",
+        content: "Oops, having trouble connecting to the AI. Try again in a moment.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -220,6 +242,18 @@ export function ChatPanel() {
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  };
+
+  const toggleSources = (messageId: string) => {
+    setExpandedSources((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(messageId)) {
+        newSet.delete(messageId);
+      } else {
+        newSet.add(messageId);
+      }
+      return newSet;
+    });
   };
 
   const chatContent = (
@@ -248,6 +282,49 @@ export function ChatPanel() {
                     ),
                   }}
                 />
+                {/* Sources section for bot messages */}
+                {message.role === "bot" && message.sources && message.sources.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-terminal-green/20">
+                    <button
+                      onClick={() => toggleSources(message.id)}
+                      className="flex items-center gap-1 text-[10px] text-terminal-green hover:text-terminal-green/80 transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Sources ({message.sources.length})</span>
+                      {expandedSources.has(message.id) ? (
+                        <ChevronUp className="w-3 h-3" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3" />
+                      )}
+                    </button>
+                    <AnimatePresence>
+                      {expandedSources.has(message.id) && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="mt-2 space-y-1">
+                            {message.sources.map((source, idx) => (
+                              <a
+                                key={idx}
+                                href={source.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block text-[10px] text-muted-foreground hover:text-terminal-green transition-colors truncate"
+                                title={source.title}
+                              >
+                                {idx + 1}. {source.title}
+                              </a>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
                 {message.role === "bot" && (
                   <p className="text-[10px] text-muted-foreground mt-1.5">
                     {formatTime(message.timestamp)}
