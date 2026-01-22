@@ -96,11 +96,7 @@ const Dashboard = () => {
           {/* Mobile header with sidebar trigger */}
           {isMobile && (
             <div className="sticky top-0 z-40 flex items-center gap-3 p-4 border-b border-border bg-background">
-              <SidebarTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SidebarTrigger>
+              <SidebarTrigger className="h-9 w-9" />
               <span className="font-bold text-terminal-green">MGP</span>
             </div>
           )}
