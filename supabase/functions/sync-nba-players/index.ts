@@ -5,72 +5,83 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const BDL_BASE_URL = "https://api.balldontlie.io/v1";
+// ESPN Team ID mapping
+const ESPN_TEAM_IDS: Record<string, number> = {
+  "Atlanta Hawks": 1,
+  "Boston Celtics": 2,
+  "New Orleans Pelicans": 3,
+  "Chicago Bulls": 4,
+  "Cleveland Cavaliers": 5,
+  "Dallas Mavericks": 6,
+  "Denver Nuggets": 7,
+  "Detroit Pistons": 8,
+  "Golden State Warriors": 9,
+  "Houston Rockets": 10,
+  "Indiana Pacers": 11,
+  "LA Clippers": 12,
+  "Los Angeles Clippers": 12,
+  "Los Angeles Lakers": 13,
+  "LA Lakers": 13,
+  "Miami Heat": 14,
+  "Milwaukee Bucks": 15,
+  "Minnesota Timberwolves": 16,
+  "Brooklyn Nets": 17,
+  "New York Knicks": 18,
+  "Orlando Magic": 19,
+  "Philadelphia 76ers": 20,
+  "Phoenix Suns": 21,
+  "Portland Trail Blazers": 22,
+  "Sacramento Kings": 23,
+  "San Antonio Spurs": 24,
+  "Oklahoma City Thunder": 25,
+  "Utah Jazz": 26,
+  "Washington Wizards": 27,
+  "Toronto Raptors": 28,
+  "Memphis Grizzlies": 29,
+  "Charlotte Hornets": 30,
+};
 
-interface BDLPlayer {
-  id: number;
-  first_name: string;
-  last_name: string;
-  position: string;
-  height: string;
-  weight: string;
-  jersey_number: string;
-  college: string;
-  country: string;
-  draft_year: number;
-  draft_round: number;
-  draft_number: number;
-  team: {
-    id: number;
-    conference: string;
-    division: string;
-    city: string;
+interface ESPNAthlete {
+  id: string;
+  displayName: string;
+  firstName: string;
+  lastName: string;
+  position: { abbreviation: string; name: string };
+  jersey?: string;
+  age?: number;
+  height?: number;
+  weight?: number;
+  experience?: { years: number };
+  college?: { name: string };
+  injuries?: Array<{ status: string; details?: { type: string } }>;
+}
+
+interface ESPNStatCategory {
+  name: string;
+  displayName: string;
+  stats: Array<{
     name: string;
-    full_name: string;
-    abbreviation: string;
-  };
+    displayName: string;
+    value: number;
+    displayValue: string;
+  }>;
 }
 
-interface SeasonAverage {
-  player_id: number;
-  season: number;
-  games_played: number;
-  pts: number;
-  ast: number;
-  reb: number;
-  stl: number;
-  blk: number;
-  turnover: number;
-  min: string;
-  fg_pct: number;
-  fg3_pct: number;
-  ft_pct: number;
-}
-
-async function bdlFetch(apiKey: string, endpoint: string): Promise<any> {
-  const url = `${BDL_BASE_URL}${endpoint}`;
-  console.log(`[sync-nba-players] Fetching: ${url}`);
-  
-  const response = await fetch(url, {
-    headers: {
-      "Authorization": apiKey,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[sync-nba-players] API error ${response.status}: ${errorText}`);
-    throw new Error(`API Error ${response.status}: ${errorText}`);
+function getEspnTeamId(teamName: string): number | null {
+  // Try exact match first
+  if (ESPN_TEAM_IDS[teamName]) {
+    return ESPN_TEAM_IDS[teamName];
   }
-
-  return response.json();
-}
-
-function parseMinutes(minStr: string): number {
-  if (!minStr) return 0;
-  const parts = minStr.split(":");
-  return parts.length === 2 ? parseInt(parts[0]) + parseInt(parts[1]) / 60 : parseFloat(minStr) || 0;
+  
+  // Try partial match
+  const lowerName = teamName.toLowerCase();
+  for (const [key, id] of Object.entries(ESPN_TEAM_IDS)) {
+    if (key.toLowerCase().includes(lowerName) || lowerName.includes(key.toLowerCase().split(' ').pop()!)) {
+      return id;
+    }
+  }
+  
+  return null;
 }
 
 function getPositionType(position: string): string {
@@ -79,7 +90,68 @@ function getPositionType(position: string): string {
   if (guards.includes(position)) return "GUARD";
   if (forwards.includes(position)) return "FORWARD";
   if (position === "C") return "CENTER";
-  return "GUARD"; // Default for G-F type positions
+  return "GUARD"; // Default
+}
+
+async function fetchEspnRoster(teamId: number): Promise<ESPNAthlete[]> {
+  const url = `https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster`;
+  console.log(`[sync-nba-players] Fetching ESPN roster: ${url}`);
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error(`[sync-nba-players] ESPN roster API error: ${response.status}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    return data.athletes || [];
+  } catch (error) {
+    console.error(`[sync-nba-players] ESPN roster fetch error:`, error);
+    return [];
+  }
+}
+
+async function fetchEspnPlayerStats(athleteId: string): Promise<Record<string, number>> {
+  const url = `https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/athletes/${athleteId}/statistics`;
+  
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.log(`[sync-nba-players] No stats for athlete ${athleteId}: ${response.status}`);
+      return {};
+    }
+    
+    const data = await response.json();
+    const stats: Record<string, number> = {};
+    
+    // Parse statistics from ESPN response
+    if (data.statistics && Array.isArray(data.statistics)) {
+      for (const category of data.statistics as ESPNStatCategory[]) {
+        if (category.stats) {
+          for (const stat of category.stats) {
+            stats[stat.name] = stat.value;
+          }
+        }
+      }
+    }
+    
+    // Also check splits format
+    if (data.splits && data.splits.categories) {
+      for (const category of data.splits.categories) {
+        if (category.stats) {
+          for (const stat of category.stats) {
+            stats[stat.name] = stat.value;
+          }
+        }
+      }
+    }
+    
+    return stats;
+  } catch (error) {
+    console.log(`[sync-nba-players] Stats fetch error for ${athleteId}:`, error);
+    return {};
+  }
 }
 
 Deno.serve(async (req) => {
@@ -88,15 +160,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log("[sync-nba-players] Starting NBA players sync...");
+    console.log("[sync-nba-players] Starting NBA players sync using ESPN API...");
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const BDL_API_KEY = Deno.env.get("BALLDONTLIE_API_KEY");
-
-    if (!BDL_API_KEY) {
-      throw new Error("BALLDONTLIE_API_KEY not configured");
-    }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -104,11 +171,11 @@ Deno.serve(async (req) => {
     const now = new Date();
     const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
-    console.log(`[sync-nba-players] Fetching games from ${now.toISOString()} to ${in48Hours.toISOString()}`);
+    console.log(`[sync-nba-players] Step 1: Querying games from ${now.toISOString()} to ${in48Hours.toISOString()}`);
 
     const { data: games, error: gamesError } = await supabase
       .from("nba_games")
-      .select("id, home_team_name, visitor_team_name, home_team_id, visitor_team_id, date")
+      .select("id, home_team_name, visitor_team_name, date")
       .gte("date", now.toISOString())
       .lte("date", in48Hours.toISOString());
 
@@ -119,177 +186,202 @@ Deno.serve(async (req) => {
     if (!games || games.length === 0) {
       console.log("[sync-nba-players] No games in slate window");
       return new Response(
-        JSON.stringify({ success: true, message: "No games in slate window", playersAdded: 0 }),
+        JSON.stringify({ 
+          success: true, 
+          message: "No NBA games in next 48 hours. Sync games first.", 
+          playersAdded: 0 
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[sync-nba-players] Found ${games.length} games in slate window`);
+    console.log(`[sync-nba-players] Found ${games.length} NBA games in slate window`);
 
-    // Step 2: Extract unique team IDs
-    const teamIds = new Set<number>();
-    const teamIdToGames: Record<number, typeof games> = {};
+    // Step 2: Extract unique teams and map to ESPN IDs
+    const teamToGames: Record<string, typeof games> = {};
+    const teamNames = new Set<string>();
 
     for (const game of games) {
-      if (game.home_team_id) {
-        teamIds.add(game.home_team_id);
-        if (!teamIdToGames[game.home_team_id]) teamIdToGames[game.home_team_id] = [];
-        teamIdToGames[game.home_team_id].push(game);
-      }
-      if (game.visitor_team_id) {
-        teamIds.add(game.visitor_team_id);
-        if (!teamIdToGames[game.visitor_team_id]) teamIdToGames[game.visitor_team_id] = [];
-        teamIdToGames[game.visitor_team_id].push(game);
-      }
+      teamNames.add(game.home_team_name);
+      teamNames.add(game.visitor_team_name);
+      
+      if (!teamToGames[game.home_team_name]) teamToGames[game.home_team_name] = [];
+      if (!teamToGames[game.visitor_team_name]) teamToGames[game.visitor_team_name] = [];
+      teamToGames[game.home_team_name].push(game);
+      teamToGames[game.visitor_team_name].push(game);
     }
 
-    console.log(`[sync-nba-players] Processing ${teamIds.size} teams`);
+    console.log(`[sync-nba-players] Processing ${teamNames.size} teams: ${Array.from(teamNames).join(', ')}`);
 
     let playersAdded = 0;
-    let playersUpdated = 0;
+    let featuredCount = 0;
     const teamsProcessed: string[] = [];
+    const errors: string[] = [];
 
-    // Step 3: For each team, fetch players and season averages
-    for (const teamId of Array.from(teamIds)) {
-      try {
-        // Fetch players for team
-        const playersResponse = await bdlFetch(BDL_API_KEY, `/players?team_ids[]=${teamId}&per_page=100`);
-        const players: BDLPlayer[] = playersResponse.data || [];
+    // Step 3: For each team, fetch roster and stats from ESPN
+    for (const teamName of Array.from(teamNames)) {
+      const espnTeamId = getEspnTeamId(teamName);
+      
+      if (!espnTeamId) {
+        console.error(`[sync-nba-players] Could not map team "${teamName}" to ESPN ID`);
+        errors.push(`Unknown team: ${teamName}`);
+        continue;
+      }
 
-        if (players.length === 0) {
-          console.log(`[sync-nba-players] No players found for team ${teamId}`);
+      console.log(`[sync-nba-players] Step 2: Fetching roster for ${teamName} (ESPN ID: ${espnTeamId})`);
+
+      const athletes = await fetchEspnRoster(espnTeamId);
+      
+      if (athletes.length === 0) {
+        console.log(`[sync-nba-players] No players found for ${teamName}`);
+        continue;
+      }
+
+      console.log(`[sync-nba-players] Found ${athletes.length} players on ${teamName} roster`);
+      teamsProcessed.push(teamName);
+
+      // Fetch stats for each player and collect for ranking
+      const playersWithStats: Array<{
+        athlete: ESPNAthlete;
+        stats: Record<string, number>;
+        mpg: number;
+      }> = [];
+
+      for (const athlete of athletes) {
+        console.log(`[sync-nba-players] Step 3: Fetching stats for ${athlete.displayName} (${athlete.id})`);
+        const stats = await fetchEspnPlayerStats(athlete.id);
+        const mpg = stats['MIN'] || stats['MPG'] || stats['minutes'] || 0;
+        playersWithStats.push({ athlete, stats, mpg });
+        
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+
+      // Sort by MPG for featured calculation
+      playersWithStats.sort((a, b) => b.mpg - a.mpg);
+
+      console.log(`[sync-nba-players] Step 4: Calculating featured players for ${teamName}`);
+
+      const slateStart = now;
+      const slateEnd = in48Hours;
+      const teamGames = teamToGames[teamName] || [];
+
+      // Step 4: Upsert players
+      for (let i = 0; i < playersWithStats.length; i++) {
+        const { athlete, stats, mpg } = playersWithStats[i];
+        
+        // Check injury status from ESPN
+        const injuryStatus = athlete.injuries && athlete.injuries.length > 0 
+          ? athlete.injuries[0].status || "Questionable"
+          : "Healthy";
+        
+        const isInjured = injuryStatus !== "Healthy";
+        const isTopUsage = i < 8;
+        const isFeatured = isTopUsage || isInjured;
+        
+        let featuredReason: string | null = null;
+        if (isInjured) featuredReason = "injured";
+        else if (isTopUsage) featuredReason = "high_usage";
+
+        if (isFeatured) featuredCount++;
+
+        const playerRecord = {
+          external_id: athlete.id,
+          sport: "NBA",
+          name: athlete.displayName,
+          first_name: athlete.firstName,
+          last_name: athlete.lastName,
+          position: athlete.position?.abbreviation || "G",
+          position_type: getPositionType(athlete.position?.abbreviation || "G"),
+          team_name: teamName,
+          team_abbr: teamName.split(' ').pop() || "",
+          team_id: String(espnTeamId),
+          jersey_number: athlete.jersey || null,
+          height: athlete.height ? `${Math.floor(athlete.height / 12)}'${athlete.height % 12}"` : null,
+          weight: athlete.weight || null,
+          age: athlete.age || null,
+          college: athlete.college?.name || null,
+          experience: athlete.experience?.years || null,
+          is_featured: isFeatured,
+          featured_reason: featuredReason,
+          slate_window_start: slateStart.toISOString(),
+          slate_window_end: slateEnd.toISOString(),
+          injury_status: injuryStatus,
+          usage_rank: i + 1,
+          usage_metric: mpg,
+          raw_data: athlete,
+          updated_at: new Date().toISOString(),
+        };
+
+        console.log(`[sync-nba-players] Step 5: Upserting player ${athlete.displayName}`);
+
+        const { data: upsertedPlayer, error: upsertError } = await supabase
+          .from("players")
+          .upsert(playerRecord, { onConflict: "external_id,sport" })
+          .select("id")
+          .single();
+
+        if (upsertError) {
+          console.error(`[sync-nba-players] Error upserting player ${athlete.displayName}:`, upsertError);
+          errors.push(`Failed to insert ${athlete.displayName}: ${upsertError.message}`);
           continue;
         }
 
-        const teamName = players[0]?.team?.full_name || `Team ${teamId}`;
-        teamsProcessed.push(teamName);
+        playersAdded++;
 
-        // Fetch season averages for all players (2025 = 2024-25 NBA season)
-        const playerIds = players.map(p => p.id);
-        const seasonAvgResponse = await bdlFetch(
-          BDL_API_KEY, 
-          `/season_averages?season=2025&player_ids[]=${playerIds.join("&player_ids[]=")}`
-        );
-        const seasonAverages: SeasonAverage[] = seasonAvgResponse.data || [];
-
-        // Create a map for quick lookup
-        const statsMap = new Map<number, SeasonAverage>();
-        for (const avg of seasonAverages) {
-          statsMap.set(avg.player_id, avg);
-        }
-
-        // Sort players by minutes per game
-        const playersWithStats = players.map(p => ({
-          player: p,
-          stats: statsMap.get(p.id),
-          mpg: statsMap.get(p.id) ? parseMinutes(statsMap.get(p.id)!.min) : 0
-        })).sort((a, b) => b.mpg - a.mpg);
-
-        // Get games for this team
-        const teamGames = teamIdToGames[teamId] || [];
-        const slateStart = now;
-        const slateEnd = in48Hours;
-
-        // Step 4: Upsert players
-        for (let i = 0; i < playersWithStats.length; i++) {
-          const { player, stats, mpg } = playersWithStats[i];
-          const isFeatured = i < 8; // Top 8 by MPG
-          const featuredReason = isFeatured ? "high_usage" : null;
-
-          const playerRecord = {
-            external_id: String(player.id),
+        // Step 5: Insert season stats if available
+        if (upsertedPlayer && Object.keys(stats).length > 0) {
+          const gamesPlayed = stats['GP'] || stats['gamesPlayed'] || 0;
+          
+          const seasonStats = {
+            player_id: upsertedPlayer.id,
             sport: "NBA",
-            name: `${player.first_name} ${player.last_name}`,
-            first_name: player.first_name,
-            last_name: player.last_name,
-            position: player.position || "G",
-            position_type: getPositionType(player.position || "G"),
-            team_name: player.team?.full_name || teamName,
-            team_abbr: player.team?.abbreviation || "",
-            team_id: String(player.team?.id || teamId),
-            jersey_number: player.jersey_number || null,
-            height: player.height || null,
-            weight: player.weight ? parseInt(player.weight) : null,
-            college: player.college || null,
-            is_featured: isFeatured,
-            featured_reason: featuredReason,
-            slate_window_start: slateStart.toISOString(),
-            slate_window_end: slateEnd.toISOString(),
-            injury_status: "Healthy",
-            usage_rank: i + 1,
-            usage_metric: mpg,
-            raw_data: player,
+            season: 2025,
+            season_type: "regular",
+            games_played: gamesPlayed,
+            points_per_game: stats['PTS'] || stats['avgPoints'] || 0,
+            rebounds_per_game: stats['REB'] || stats['avgRebounds'] || 0,
+            assists_per_game: stats['AST'] || stats['avgAssists'] || 0,
+            steals_per_game: stats['STL'] || stats['avgSteals'] || 0,
+            blocks_per_game: stats['BLK'] || stats['avgBlocks'] || 0,
+            turnovers_per_game: stats['TO'] || stats['avgTurnovers'] || 0,
+            minutes_per_game: mpg,
+            field_goal_pct: stats['FG%'] || stats['fieldGoalPct'] || 0,
+            three_point_pct: stats['3P%'] || stats['threePointPct'] || 0,
+            free_throw_pct: stats['FT%'] || stats['freeThrowPct'] || 0,
+            source: "espn",
+            raw_data: stats,
             updated_at: new Date().toISOString(),
           };
 
-          const { data: upsertedPlayer, error: upsertError } = await supabase
-            .from("players")
-            .upsert(playerRecord, { onConflict: "external_id,sport" })
-            .select("id")
-            .single();
+          await supabase
+            .from("player_season_stats")
+            .upsert(seasonStats, { onConflict: "player_id,season,season_type" });
+        }
 
-          if (upsertError) {
-            console.error(`[sync-nba-players] Error upserting player ${player.id}:`, upsertError);
-            continue;
-          }
-
-          playersAdded++;
-
-          // Step 5: Insert season stats if available
-          if (stats && upsertedPlayer) {
-            const seasonStats = {
+        // Step 6: Create game associations
+        if (upsertedPlayer && teamGames.length > 0) {
+          for (const game of teamGames) {
+            const association = {
               player_id: upsertedPlayer.id,
+              nba_game_id: game.id,
               sport: "NBA",
-              season: 2025,
-              season_type: "regular",
-              games_played: stats.games_played || 0,
-              points_per_game: stats.pts || 0,
-              rebounds_per_game: stats.reb || 0,
-              assists_per_game: stats.ast || 0,
-              steals_per_game: stats.stl || 0,
-              blocks_per_game: stats.blk || 0,
-              turnovers_per_game: stats.turnover || 0,
-              minutes_per_game: mpg,
-              field_goal_pct: stats.fg_pct || 0,
-              three_point_pct: stats.fg3_pct || 0,
-              free_throw_pct: stats.ft_pct || 0,
-              source: "balldontlie",
-              raw_data: stats,
-              updated_at: new Date().toISOString(),
+              status: "active",
+              is_starter: i < 5,
             };
 
             await supabase
-              .from("player_season_stats")
-              .upsert(seasonStats, { onConflict: "player_id,season,season_type" });
-          }
-
-          // Step 6: Create game associations
-          if (upsertedPlayer && teamGames.length > 0) {
-            for (const game of teamGames) {
-              const association = {
-                player_id: upsertedPlayer.id,
-                nba_game_id: game.id,
-                sport: "NBA",
-                status: "active",
-                is_starter: i < 5,
-              };
-
-              await supabase
-                .from("player_game_associations")
-                .upsert(association, { onConflict: "player_id,nba_game_id" })
-                .select();
-            }
+              .from("player_game_associations")
+              .upsert(association, { onConflict: "player_id,nba_game_id" })
+              .select();
           }
         }
-
-        console.log(`[sync-nba-players] Processed ${playersWithStats.length} players for ${teamName}`);
-
-        // Rate limiting - 100ms between teams
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-      } catch (teamError) {
-        console.error(`[sync-nba-players] Error processing team ${teamId}:`, teamError);
       }
+
+      console.log(`[sync-nba-players] Processed ${playersWithStats.length} players for ${teamName}`);
+
+      // Rate limiting between teams
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
 
     // Update sync schedule
@@ -306,9 +398,15 @@ Deno.serve(async (req) => {
     const response = {
       success: true,
       playersAdded,
-      playersUpdated,
+      featuredPlayers: featuredCount,
       teamsProcessed,
-      message: `Synced ${playersAdded} NBA players from ${teamsProcessed.length} teams`,
+      gamesInSlate: games.length,
+      slateWindow: {
+        start: now.toISOString(),
+        end: in48Hours.toISOString(),
+      },
+      errors: errors.length > 0 ? errors : undefined,
+      message: `Synced ${playersAdded} NBA players from ${teamsProcessed.length} teams using ESPN API`,
     };
 
     console.log("[sync-nba-players] Sync completed:", response);
