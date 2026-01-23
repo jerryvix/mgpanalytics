@@ -1434,6 +1434,81 @@ export type Database = {
         }
         Relationships: []
       }
+      user_x_connections: {
+        Row: {
+          access_token: string
+          connected_at: string
+          id: string
+          refresh_token: string | null
+          scopes: string[] | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+          x_display_name: string | null
+          x_profile_image: string | null
+          x_user_id: string
+          x_username: string
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string
+          id?: string
+          refresh_token?: string | null
+          scopes?: string[] | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+          x_display_name?: string | null
+          x_profile_image?: string | null
+          x_user_id: string
+          x_username: string
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string
+          id?: string
+          refresh_token?: string | null
+          scopes?: string[] | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+          x_display_name?: string | null
+          x_profile_image?: string | null
+          x_user_id?: string
+          x_username?: string
+        }
+        Relationships: []
+      }
+      x_oauth_states: {
+        Row: {
+          code_verifier: string
+          created_at: string
+          expires_at: string
+          id: string
+          redirect_uri: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          code_verifier: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          redirect_uri: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          code_verifier?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          redirect_uri?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
