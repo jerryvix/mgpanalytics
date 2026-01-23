@@ -4,7 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, User } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, User, TrendingUp, Zap, Calendar, Target } from "lucide-react";
 import { 
   getNFLPlayer, 
   getNFLPlayerStats, 
@@ -13,6 +14,7 @@ import {
 } from "@/services/balldontlie/nflPlayers";
 import { NFLPlayerStatsCard } from "@/components/players/NFLPlayerStatsCard";
 import { NFLGameLog } from "@/components/players/NFLGameLog";
+import { NFLAdvancedStats } from "@/components/players/NFLAdvancedStats";
 
 export default function NFLPlayerDetail() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -219,20 +221,70 @@ export default function NFLPlayerDetail() {
         </CardContent>
       </Card>
 
-      {/* Season Stats */}
-      <NFLPlayerStatsCard 
-        stats={stats} 
-        position={posAbbr} 
-        isLoading={statsLoading} 
-      />
-
-      {/* Game Log */}
-      <NFLGameLog 
-        gameLogs={gameLogs} 
-        position={posAbbr} 
-        seasonAverages={seasonAverages}
-        isLoading={gameLogsLoading} 
-      />
+      {/* Stats Tabs */}
+      <Tabs defaultValue="traditional" className="w-full">
+        <TabsList className="grid w-full grid-cols-4 mb-4">
+          <TabsTrigger value="traditional" className="text-xs sm:text-sm">
+            <TrendingUp className="w-4 h-4 mr-1.5 hidden sm:inline" />
+            Traditional
+          </TabsTrigger>
+          <TabsTrigger value="advanced" className="text-xs sm:text-sm">
+            <Zap className="w-4 h-4 mr-1.5 hidden sm:inline" />
+            Advanced
+          </TabsTrigger>
+          <TabsTrigger value="gamelog" className="text-xs sm:text-sm">
+            <Calendar className="w-4 h-4 mr-1.5 hidden sm:inline" />
+            Game Log
+          </TabsTrigger>
+          <TabsTrigger value="betting" className="text-xs sm:text-sm">
+            <Target className="w-4 h-4 mr-1.5 hidden sm:inline" />
+            Betting
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="traditional">
+          <NFLPlayerStatsCard 
+            stats={stats} 
+            position={posAbbr} 
+            isLoading={statsLoading} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="advanced">
+          <NFLAdvancedStats 
+            stats={stats}
+            gameLogs={gameLogs}
+            position={posAbbr}
+            isLoading={statsLoading || gameLogsLoading}
+          />
+        </TabsContent>
+        
+        <TabsContent value="gamelog">
+          <NFLGameLog 
+            gameLogs={gameLogs} 
+            position={posAbbr} 
+            seasonAverages={seasonAverages}
+            isLoading={gameLogsLoading} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="betting">
+          <Card className="bg-card border-border">
+            <CardContent className="p-6">
+              <div className="text-center py-8">
+                <Target className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Betting Trends Coming Soon
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  Player prop betting history, line movements, and performance 
+                  against closing lines will be available here.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
