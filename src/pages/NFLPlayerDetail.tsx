@@ -1,22 +1,18 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, User, Activity, Calendar, TrendingUp, ExternalLink } from "lucide-react";
-import { getNFLPlayer, getNFLPlayerStats, NFLPlayer, NFLPlayerStats } from "@/services/balldontlie/nflPlayers";
-
-function StatCard({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className="bg-muted/30 rounded-lg p-3 text-center">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-      <div className={`text-xl font-bold ${highlight ? "text-terminal-green" : "text-foreground"}`}>
-        {value}
-      </div>
-    </div>
-  );
-}
+import { ArrowLeft, User } from "lucide-react";
+import { 
+  getNFLPlayer, 
+  getNFLPlayerStats, 
+  getNFLPlayerGameLogs,
+  NFLPlayer 
+} from "@/services/balldontlie/nflPlayers";
+import { NFLPlayerStatsCard } from "@/components/players/NFLPlayerStatsCard";
+import { NFLGameLog } from "@/components/players/NFLGameLog";
 
 export default function NFLPlayerDetail() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -31,7 +27,7 @@ export default function NFLPlayerDetail() {
       return getNFLPlayer(bdlId);
     },
     enabled: !!bdlId,
-    staleTime: 60000, // Cache for 1 minute
+    staleTime: 60000,
   });
 
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -44,7 +40,17 @@ export default function NFLPlayerDetail() {
     staleTime: 60000,
   });
 
-  const isLoading = playerLoading || statsLoading;
+  const { data: gameLogs = [], isLoading: gameLogsLoading } = useQuery({
+    queryKey: ["bdl-nfl-player-game-logs", bdlId],
+    queryFn: async () => {
+      if (!bdlId) return [];
+      return getNFLPlayerGameLogs(bdlId, 2024, 17);
+    },
+    enabled: !!bdlId,
+    staleTime: 60000,
+  });
+
+  const isLoading = playerLoading;
 
   const getPositionColor = (pos: string) => {
     switch (pos) {
@@ -60,66 +66,6 @@ export default function NFLPlayerDetail() {
       default:
         return "bg-terminal-green/20 text-terminal-green border-terminal-green/30";
     }
-  };
-
-  const renderStats = () => {
-    if (!stats) return null;
-    const position = player?.position_abbreviation || player?.position;
-
-    return (
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        <StatCard label="Games" value={stats.games_played?.toString() || "0"} />
-        
-        {(position === "QB") && (
-          <>
-            <StatCard label="Pass Yards" value={stats.pass_yards?.toLocaleString() || "0"} highlight />
-            <StatCard label="Pass TDs" value={stats.pass_td?.toString() || "0"} />
-            <StatCard label="Completions" value={stats.pass_completions?.toString() || "0"} />
-            <StatCard label="Attempts" value={stats.pass_attempts?.toString() || "0"} />
-            <StatCard label="Interceptions" value={stats.interceptions?.toString() || "0"} />
-            <StatCard 
-              label="Comp %" 
-              value={stats.pass_attempts && stats.pass_attempts > 0 
-                ? ((stats.pass_completions || 0) / stats.pass_attempts * 100).toFixed(1) + "%" 
-                : "—"
-              } 
-            />
-            <StatCard label="Passer Rating" value={stats.passer_rating?.toFixed(1) || "—"} />
-          </>
-        )}
-        
-        {(position === "RB" || position === "FB") && (
-          <>
-            <StatCard label="Rush Yards" value={stats.rush_yards?.toLocaleString() || "0"} highlight />
-            <StatCard label="Rush TDs" value={stats.rush_td?.toString() || "0"} />
-            <StatCard label="Attempts" value={stats.rush_attempts?.toString() || "0"} />
-            <StatCard label="YPC" value={stats.yards_per_carry?.toFixed(1) || "—"} />
-            <StatCard label="Receptions" value={stats.receptions?.toString() || "0"} />
-            <StatCard label="Rec Yards" value={stats.rec_yards?.toLocaleString() || "0"} />
-            <StatCard label="Rec TDs" value={stats.rec_td?.toString() || "0"} />
-          </>
-        )}
-        
-        {(position === "WR" || position === "TE") && (
-          <>
-            <StatCard label="Rec Yards" value={stats.rec_yards?.toLocaleString() || "0"} highlight />
-            <StatCard label="Rec TDs" value={stats.rec_td?.toString() || "0"} />
-            <StatCard label="Receptions" value={stats.receptions?.toString() || "0"} />
-            <StatCard label="Targets" value={stats.targets?.toString() || "0"} />
-            <StatCard label="YPR" value={stats.yards_per_reception?.toFixed(1) || "—"} />
-          </>
-        )}
-
-        {/* Fallback for other positions - show whatever stats we have */}
-        {!["QB", "RB", "FB", "WR", "TE"].includes(position || "") && (
-          <>
-            {stats.pass_yards && <StatCard label="Pass Yards" value={stats.pass_yards.toLocaleString()} />}
-            {stats.rush_yards && <StatCard label="Rush Yards" value={stats.rush_yards.toLocaleString()} />}
-            {stats.rec_yards && <StatCard label="Rec Yards" value={stats.rec_yards.toLocaleString()} />}
-          </>
-        )}
-      </div>
-    );
   };
 
   if (!bdlId) {
@@ -141,7 +87,8 @@ export default function NFLPlayerDetail() {
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-64 w-full" />
       </div>
     );
   }
@@ -165,6 +112,14 @@ export default function NFLPlayerDetail() {
 
   const fullName = `${player.first_name} ${player.last_name}`;
   const posAbbr = player.position_abbreviation || player.position;
+
+  // Calculate season averages for highlighting in game log
+  const seasonAverages = stats ? {
+    pass_yards: stats.games_played && stats.pass_yards ? stats.pass_yards / stats.games_played : undefined,
+    rush_yards: stats.games_played && stats.rush_yards ? stats.rush_yards / stats.games_played : undefined,
+    rec_yards: stats.games_played && stats.rec_yards ? stats.rec_yards / stats.games_played : undefined,
+    receptions: stats.games_played && stats.receptions ? stats.receptions / stats.games_played : undefined,
+  } : undefined;
 
   return (
     <div className="space-y-6">
@@ -241,11 +196,8 @@ export default function NFLPlayerDetail() {
                   <div className="bg-muted/30 rounded-lg p-2">
                     <span className="text-muted-foreground block text-xs">Experience</span>
                     <span className="text-foreground font-medium">
-                      {typeof player.experience === 'string' 
-                        ? player.experience 
-                        : player.experience === 0 
-                          ? "Rookie" 
-                          : `${player.experience} yr${player.experience !== 1 ? "s" : ""}`}
+                      {typeof player.experience === 'string' ? player.experience : 
+                        player.experience === 0 ? "Rookie" : `${player.experience} yr${player.experience !== 1 ? "s" : ""}`}
                     </span>
                   </div>
                 )}
@@ -268,25 +220,19 @@ export default function NFLPlayerDetail() {
       </Card>
 
       {/* Season Stats */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="w-5 h-5" />
-            2024 Season Stats
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {renderStats()}
-          {!stats && (
-            <p className="text-muted-foreground text-sm">
-              No stats available for the 2024 season.
-            </p>
-          )}
-          <p className="text-xs text-muted-foreground mt-4 pt-3 border-t border-border">
-            Source: Ball Don't Lie API
-          </p>
-        </CardContent>
-      </Card>
+      <NFLPlayerStatsCard 
+        stats={stats} 
+        position={posAbbr} 
+        isLoading={statsLoading} 
+      />
+
+      {/* Game Log */}
+      <NFLGameLog 
+        gameLogs={gameLogs} 
+        position={posAbbr} 
+        seasonAverages={seasonAverages}
+        isLoading={gameLogsLoading} 
+      />
     </div>
   );
 }

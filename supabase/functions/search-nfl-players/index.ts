@@ -121,6 +121,45 @@ serve(async (req) => {
         break;
       }
       
+      case 'game_logs': {
+        // Get player game-by-game stats
+        const playerId = url.searchParams.get('player_id');
+        const season = url.searchParams.get('season') || '2024';
+        const perPage = url.searchParams.get('per_page') || '17'; // Full season
+        
+        if (!playerId) {
+          return new Response(
+            JSON.stringify({ error: 'Player ID required' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        // BDL NFL uses player_ids[] for array format
+        await rateLimitedDelay();
+        const statsUrl = new URL(`${BDL_NFL_BASE_URL}/stats`);
+        statsUrl.searchParams.append('player_ids[]', playerId);
+        statsUrl.searchParams.append('season', season);
+        statsUrl.searchParams.append('per_page', perPage);
+        
+        console.log(`[NFL-Search] Fetching game logs: ${statsUrl.toString()}`);
+        
+        const statsResponse = await fetch(statsUrl.toString(), {
+          headers: {
+            'Authorization': apiKey,
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!statsResponse.ok) {
+          const errorText = await statsResponse.text();
+          console.error(`[NFL-Search] Game logs error ${statsResponse.status}: ${errorText}`);
+          throw new Error(`API Error ${statsResponse.status}`);
+        }
+        
+        result = await statsResponse.json();
+        break;
+      }
+      
       case 'teams': {
         // Get all teams
         result = await bdlFetch(apiKey, '/teams');
