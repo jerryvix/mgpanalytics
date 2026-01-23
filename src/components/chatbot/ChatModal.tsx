@@ -6,12 +6,21 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatQuery } from "@/hooks/useChatQuery";
 import ReactMarkdown from "react-markdown";
+import { FollowUpSuggestions } from "./FollowUpSuggestions";
+import { generateFollowUpSuggestions } from "@/utils/generateFollowUpSuggestions";
+
+interface Suggestion {
+  text: string;
+  query: string;
+}
 
 interface Message {
   id: string;
   role: "user" | "bot";
   content: string;
   timestamp: Date;
+  originalQuery?: string;
+  suggestions?: Suggestion[];
 }
 
 interface ChatModalProps {
@@ -60,12 +69,16 @@ export function ChatModal({ onClose }: ChatModalProps) {
     setIsLoading(true);
 
     try {
-      const response = await processQuery(input.trim());
+      const userQuery = input.trim();
+      const response = await processQuery(userQuery);
+      const suggestions = generateFollowUpSuggestions(userQuery, response);
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "bot",
         content: response,
         timestamp: new Date(),
+        originalQuery: userQuery,
+        suggestions: suggestions,
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
@@ -86,6 +99,48 @@ export function ChatModal({ onClose }: ChatModalProps) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleSuggestionClick = (query: string) => {
+    setInput(query);
+    // Auto-submit after a brief delay
+    setTimeout(() => {
+      setInput("");
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: "user",
+        content: query,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, userMessage]);
+      setIsLoading(true);
+      
+      processQuery(query)
+        .then((response) => {
+          const suggestions = generateFollowUpSuggestions(query, response);
+          const botMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: "bot",
+            content: response,
+            timestamp: new Date(),
+            originalQuery: query,
+            suggestions: suggestions,
+          };
+          setMessages((prev) => [...prev, botMessage]);
+        })
+        .catch(() => {
+          const errorMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            role: "bot",
+            content: "Oops, having trouble connecting. Try again in a moment.",
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, errorMessage]);
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    }, 50);
   };
 
   const formatTime = (date: Date) => {
@@ -158,6 +213,12 @@ export function ChatModal({ onClose }: ChatModalProps) {
                       <p className="text-[10px] text-muted-foreground mt-1.5">
                         {formatTime(message.timestamp)}
                       </p>
+                      {message.suggestions && message.suggestions.length > 0 && (
+                        <FollowUpSuggestions 
+                          suggestions={message.suggestions} 
+                          onSuggestionClick={handleSuggestionClick}
+                        />
+                      )}
                     </>
                   )}
                 </div>
