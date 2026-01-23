@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatQuery } from "@/hooks/useChatQuery";
 import ReactMarkdown from "react-markdown";
 import { FollowUpSuggestions } from "./FollowUpSuggestions";
+import { WelcomeSuggestions } from "./WelcomeSuggestions";
 import { generateFollowUpSuggestions } from "@/utils/generateFollowUpSuggestions";
 
 interface Suggestion {
@@ -213,7 +214,12 @@ export function ChatModal({ onClose }: ChatModalProps) {
                       <p className="text-[10px] text-muted-foreground mt-1.5">
                         {formatTime(message.timestamp)}
                       </p>
-                      {message.suggestions && message.suggestions.length > 0 && (
+                      {/* Show welcome suggestions only for the welcome message */}
+                      {message.id === "welcome" && (
+                        <WelcomeSuggestions onSuggestionClick={handleSuggestionClick} />
+                      )}
+                      {/* Show follow-up suggestions for other messages */}
+                      {message.id !== "welcome" && message.suggestions && message.suggestions.length > 0 && (
                         <FollowUpSuggestions 
                           suggestions={message.suggestions} 
                           onSuggestionClick={handleSuggestionClick}
