@@ -11,8 +11,8 @@ const NFL_SUGGESTIONS = {
         query: `${player} last 5 games`
       });
       suggestions.push({
-        text: `Season stats?`,
-        query: `${player} this season stats`
+        text: `EPA & advanced stats?`,
+        query: `${player} advanced stats`
       });
       suggestions.push({
         text: `Red zone efficiency?`,
@@ -24,12 +24,12 @@ const NFL_SUGGESTIONS = {
         query: `${player} last 5 games`
       });
       suggestions.push({
-        text: `Goal-line carries?`,
-        query: `What are ${player}'s carries inside the 10 this season?`
+        text: `Yards after contact?`,
+        query: `${player} yards after contact`
       });
       suggestions.push({
-        text: `Receiving work?`,
-        query: `How many targets is ${player} getting out of the backfield?`
+        text: `Target share?`,
+        query: `What's ${player}'s target share this season?`
       });
     } else if (position === "wr" || position === "wide receiver" || position === "te" || position === "tight end") {
       suggestions.push({
@@ -37,12 +37,12 @@ const NFL_SUGGESTIONS = {
         query: `${player} last 5 games`
       });
       suggestions.push({
-        text: `Red zone targets?`,
-        query: `How many red zone targets does ${player} have this season?`
+        text: `Target share?`,
+        query: `What's ${player}'s target share this season?`
       });
       suggestions.push({
-        text: `Target share trend?`,
-        query: `What's ${player}'s target share in the last 5 games?`
+        text: `Catch rate & YAC?`,
+        query: `${player} catch rate and yards after catch`
       });
     } else {
       suggestions.push({
@@ -50,8 +50,8 @@ const NFL_SUGGESTIONS = {
         query: `${player} last 5 games`
       });
       suggestions.push({
-        text: `This season stats?`,
-        query: `${player} this season`
+        text: `Advanced stats?`,
+        query: `${player} advanced stats`
       });
       suggestions.push({
         text: `Fantasy outlook?`,
@@ -67,12 +67,12 @@ const NFL_SUGGESTIONS = {
       query: `${player} season stats`
     },
     {
-      text: `Prop lines next game?`,
-      query: `What are ${player}'s prop lines for the next game?`
+      text: `Advanced metrics?`,
+      query: `${player} advanced stats`
     },
     {
-      text: `Fantasy projection?`,
-      query: `What's ${player}'s fantasy outlook this week?`
+      text: `Prop lines next game?`,
+      query: `What are ${player}'s prop lines for the next game?`
     }
   ],
   prop: (player: string) => [
