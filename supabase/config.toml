@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.sync-ncaab-players]
 verify_jwt = false
+
+[functions.search-nfl-players]
+verify_jwt = false
