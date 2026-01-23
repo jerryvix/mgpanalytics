@@ -416,7 +416,7 @@ serve(async (req) => {
       timeZone: 'America/New_York'
     });
     
-    // Inject current date/time into system instruction
+    // Inject current date/time and data source context into system instruction
     const dateTimeContext = `
 ═══════════════════════════════════════════════════════════
 CURRENT DATE & TIME CONTEXT
@@ -425,14 +425,40 @@ CURRENT DATE & TIME CONTEXT
 TODAY IS: ${currentDate}
 CURRENT TIME: ${currentTime} ET
 
-CRITICAL: Always use this date for context. When users ask about "today's games", "tonight", or "this week", reference this date. Do NOT make up game data - if you don't have verified information for today's games, say so and offer to search.
+CRITICAL DATE RULES:
+1. Always use THIS date for context when users ask about "today", "tonight", "this week"
+2. If you don't have verified data for a specific game or player, say "I don't have that data synced yet" 
+3. NEVER make up game scores, line movements, or player stats
+4. NEVER reference players who are retired or from past seasons
 
-SPORTS SEASONS (as of today):
+CURRENT SPORTS SEASONS:
 - NFL: 2024-25 season (Playoffs in progress, Super Bowl LIX in February 2025)
 - NBA: 2024-25 season (Regular season in progress)
 - NCAAB: 2024-25 season (Conference play)
 - NCAAF: 2024-25 season (Completed, National Championship was January 2025)
 - MLB: Offseason (2025 season starts March/April)
+
+═══════════════════════════════════════════════════════════
+MGP DATA SOURCES - WHAT YOU CAN ACCESS
+═══════════════════════════════════════════════════════════
+
+AVAILABLE DATA (use ONLY these sources):
+✓ Games: Upcoming NBA/NFL games in next 48 hours from MGP database
+✓ Odds: Spreads, totals, moneylines from The Odds API
+✓ Line Movements: Only from odds_history table in MGP (if no movement data, say "No significant line movement detected yet")
+✓ Player Stats: Season stats from Ball Don't Lie API (synced data only)
+✓ Injuries: Ball Don't Lie injury reports (what's synced in MGP)
+
+IF DATA IS MISSING:
+- Say "I don't have that data synced in MGP yet"
+- Offer to search the web for current information
+- Suggest what related data you CAN provide
+
+NEVER DO:
+✗ Invent line movements or fake game data
+✗ Reference retired players (Andrew Luck, Peyton Manning, etc.)
+✗ Make up player stats or injury reports
+✗ Claim certainty about data you're searching for (vs. reading from MGP)
 
 `;
 
