@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isToday, isTomorrow, startOfWeek, endOfWeek } from "date-fns";
+import { handleNFLStatsQuery, shouldHandleNFLStats } from "@/services/chatbot/nflStatsHandler";
+import { isGameLogQuery, isVsTeamQuery } from "@/utils/playerNameMatcher";
 
 interface Game {
   id: number;
@@ -454,13 +456,30 @@ export function useChatQuery() {
     const lowerQuery = query.toLowerCase().trim();
     
     try {
+      // PRIORITY 0: Game log queries ("last 5 games", "vs team", etc.)
+      // These need the enhanced NFL stats handler for detailed responses
+      if (isGameLogQuery(lowerQuery) || isVsTeamQuery(lowerQuery)) {
+        const statsResponse = await handleNFLStatsQuery(query);
+        if (statsResponse) {
+          return statsResponse;
+        }
+      }
+      
       // PRIORITY 1: Leaderboard queries (top QBs, best RBs, etc.)
       const positionQuery = detectPositionQuery(lowerQuery);
       if (positionQuery && (lowerQuery.includes("top") || lowerQuery.includes("best") || lowerQuery.includes("leading"))) {
         return await handleLeaderboardQuery(positionQuery.position, positionQuery.limit);
       }
       
-      // PRIORITY 2: Player-specific queries
+      // PRIORITY 2: Player-specific queries with enhanced handler
+      if (shouldHandleNFLStats(lowerQuery)) {
+        const statsResponse = await handleNFLStatsQuery(query);
+        if (statsResponse) {
+          return statsResponse;
+        }
+      }
+      
+      // PRIORITY 2B: Fallback to basic player query
       const playerName = detectPlayerName(lowerQuery);
       if (playerName) {
         return await handlePlayerQuery(playerName);
@@ -535,13 +554,19 @@ export function useChatQuery() {
         return "I'm not wired into predictions yet. Once that layer is live, it will help with matchup-level analysis. For now, I can walk you through the current odds and line movement. Want to see odds for a specific team?";
       }
       
+      // History/record queries - try NFL stats handler first
       if (
         lowerQuery.includes("history") ||
         lowerQuery.includes("record") ||
         lowerQuery.includes("past games") ||
         lowerQuery.includes("last game")
       ) {
-        return "Historical data isn't active yet, but it's planned. Once available, it will add context for trends and patterns. I can show you the current upcoming schedule and odds though!";
+        // Try enhanced handler for player-specific history
+        const statsResponse = await handleNFLStatsQuery(query);
+        if (statsResponse) {
+          return statsResponse;
+        }
+        return "I can show player game logs! Try asking for a specific player like \"Josh Allen last 5 games\" or \"Derrick Henry this season\".";
       }
       
       // General fallback

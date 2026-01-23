@@ -7,8 +7,12 @@ const NFL_SUGGESTIONS = {
     
     if (position === "qb" || position === "quarterback") {
       suggestions.push({
-        text: `${player}'s yards per attempt?`,
-        query: `What's ${player}'s yards per attempt in the last 5 games?`
+        text: `${player}'s last 5 games?`,
+        query: `${player} last 5 games`
+      });
+      suggestions.push({
+        text: `Season stats?`,
+        query: `${player} this season stats`
       });
       suggestions.push({
         text: `Red zone efficiency?`,
@@ -16,7 +20,11 @@ const NFL_SUGGESTIONS = {
       });
     } else if (position === "rb" || position === "running back") {
       suggestions.push({
-        text: `${player}'s goal-line carries?`,
+        text: `${player}'s last 5 games?`,
+        query: `${player} last 5 games`
+      });
+      suggestions.push({
+        text: `Goal-line carries?`,
         query: `What are ${player}'s carries inside the 10 this season?`
       });
       suggestions.push({
@@ -25,7 +33,11 @@ const NFL_SUGGESTIONS = {
       });
     } else if (position === "wr" || position === "wide receiver" || position === "te" || position === "tight end") {
       suggestions.push({
-        text: `${player}'s red zone targets?`,
+        text: `${player}'s last 5 games?`,
+        query: `${player} last 5 games`
+      });
+      suggestions.push({
+        text: `Red zone targets?`,
         query: `How many red zone targets does ${player} have this season?`
       });
       suggestions.push({
@@ -34,8 +46,12 @@ const NFL_SUGGESTIONS = {
       });
     } else {
       suggestions.push({
-        text: `${player}'s recent form?`,
-        query: `How has ${player} performed in the last 5 games?`
+        text: `${player}'s last 5 games?`,
+        query: `${player} last 5 games`
+      });
+      suggestions.push({
+        text: `This season stats?`,
+        query: `${player} this season`
       });
       suggestions.push({
         text: `Fantasy outlook?`,
@@ -45,6 +61,20 @@ const NFL_SUGGESTIONS = {
     
     return suggestions;
   },
+  gameLog: (player: string) => [
+    {
+      text: `Compare to season avg?`,
+      query: `${player} season stats`
+    },
+    {
+      text: `Prop lines next game?`,
+      query: `What are ${player}'s prop lines for the next game?`
+    },
+    {
+      text: `Fantasy projection?`,
+      query: `What's ${player}'s fantasy outlook this week?`
+    }
+  ],
   prop: (player: string) => [
     {
       text: `Home/away splits?`,
@@ -331,7 +361,12 @@ export function getSportSpecificSuggestions(context: QueryContext): Suggestion[]
   switch (sport) {
     case "NFL":
       if (queryType === "player" && playerName) {
-        suggestions = NFL_SUGGESTIONS.player(playerName, position);
+        // Check if query was about game logs - provide post-gamelog suggestions
+        if (context.queryType === "player" && statType === "historical") {
+          suggestions = NFL_SUGGESTIONS.gameLog(playerName);
+        } else {
+          suggestions = NFL_SUGGESTIONS.player(playerName, position);
+        }
       } else if (queryType === "prop" && playerName) {
         suggestions = NFL_SUGGESTIONS.prop(playerName);
       } else if (queryType === "game" && teams.length > 0) {
