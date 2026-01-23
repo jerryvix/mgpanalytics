@@ -26,7 +26,8 @@ export default function NBAPlayers() {
           injury_status,
           is_featured,
           featured_reason,
-          usage_rank
+          usage_rank,
+          headshot_url
         `)
         .eq("sport", "NBA")
         .eq("is_featured", true)
@@ -46,7 +47,7 @@ export default function NBAPlayers() {
           .select("player_id, points_per_game, rebounds_per_game, assists_per_game, minutes_per_game")
           .in("player_id", playerIds)
           .eq("sport", "NBA")
-          .eq("season", 2024);
+          .eq("season", 2025);
 
         const statsMap = new Map();
         for (const stat of statsData || []) {

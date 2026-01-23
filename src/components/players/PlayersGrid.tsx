@@ -20,6 +20,7 @@ interface Player {
   is_featured: boolean;
   featured_reason: string | null;
   usage_rank: number | null;
+  headshot_url?: string | null;
 }
 
 interface PlayerWithStats extends Player {
@@ -188,6 +189,7 @@ export function PlayersGrid({
               isFeatured={player.is_featured}
               featuredReason={player.featured_reason || undefined}
               usageRank={player.usage_rank || undefined}
+              headshotUrl={player.headshot_url || undefined}
               passYards={player.stats?.pass_yards}
               rushYards={player.stats?.rush_yards}
               recYards={player.stats?.rec_yards}
