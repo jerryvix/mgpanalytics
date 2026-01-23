@@ -986,6 +986,71 @@ export type Database = {
           },
         ]
       }
+      player_props: {
+        Row: {
+          created_at: string | null
+          external_game_id: string | null
+          external_player_id: string | null
+          game_date: string | null
+          game_id: string | null
+          id: string
+          is_active: boolean | null
+          line: number
+          opponent_team: string | null
+          over_odds: number | null
+          player_id: string | null
+          prop_type: string
+          sport: string
+          sportsbook: string
+          under_odds: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          external_game_id?: string | null
+          external_player_id?: string | null
+          game_date?: string | null
+          game_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          line: number
+          opponent_team?: string | null
+          over_odds?: number | null
+          player_id?: string | null
+          prop_type: string
+          sport?: string
+          sportsbook: string
+          under_odds?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          external_game_id?: string | null
+          external_player_id?: string | null
+          game_date?: string | null
+          game_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          line?: number
+          opponent_team?: string | null
+          over_odds?: number | null
+          player_id?: string | null
+          prop_type?: string
+          sport?: string
+          sportsbook?: string
+          under_odds?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_props_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_season_stats: {
         Row: {
           assists: number | null

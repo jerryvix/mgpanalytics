@@ -7,3 +7,4 @@ export { SteamMoveAlerts } from "./SteamMoveAlerts";
 export { OddsSyncControls } from "./OddsSyncControls";
 export { SportsDataManagement } from "./SportsDataManagement";
 export { PlayerSyncCard } from "./PlayerSyncCard";
+export { PropsSyncCard } from "./PropsSyncCard";

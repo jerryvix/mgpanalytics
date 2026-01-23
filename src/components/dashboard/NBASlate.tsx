@@ -8,6 +8,7 @@ import { Loader2, Signal, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
+import { GamePropsPreview } from "@/components/props/GamePropsPreview";
 
 interface Game {
   id: string;
@@ -314,6 +315,13 @@ export function NBASlate() {
                       awayTeam={game.visitor_team_name}
                       gameId={game.id}
                       sport="NBA"
+                    />
+
+                    {/* Top Props Preview */}
+                    <GamePropsPreview
+                      gameId={game.id}
+                      homeTeam={game.home_team_name}
+                      awayTeam={game.visitor_team_name}
                     />
 
                     {/* View All Odds Button */}

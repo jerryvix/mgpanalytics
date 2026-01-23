@@ -5,6 +5,7 @@ import { isGameLogQuery, isVsTeamQuery } from "@/utils/playerNameMatcher";
 import { isPublicBettingQuery, handlePublicBettingQuery } from "@/services/chatbot/publicBettingHandler";
 import { handleAdvancedStatsQuery, shouldHandleAdvancedStats } from "@/services/chatbot/advancedStatsHandler";
 import { handlePropAnalysisQuery, shouldHandlePropAnalysis } from "@/services/chatbot/propAnalysisHandler";
+import { handleNbaPropsQuery, shouldHandleNbaPropsQuery } from "@/services/chatbot/nbaPropsHandler";
 interface Game {
   id: number;
   home_team_name: string;
