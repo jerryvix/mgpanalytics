@@ -1,61 +1,64 @@
 import { Sport, Suggestion, QueryContext } from "./types";
 
-// Sport-specific suggestion templates
+// Sport-specific suggestion templates - aligned with actual MGP data availability
+// Data available: Games, odds (spread/ML/total), player rosters, season stats (NFL)
+// Limited: Props, game logs, advanced stats require sync
+
 const NFL_SUGGESTIONS = {
   player: (player: string, position: string | null) => {
     const suggestions: Suggestion[] = [];
     
     if (position === "qb" || position === "quarterback") {
       suggestions.push({
-        text: `${player}'s last 5 games?`,
-        query: `${player} last 5 games`
+        text: `${player}'s season stats?`,
+        query: `${player} season stats`
       });
       suggestions.push({
-        text: `EPA & advanced stats?`,
-        query: `${player} advanced stats`
+        text: `${player}'s next game?`,
+        query: `When does ${player} play next?`
       });
       suggestions.push({
-        text: `Red zone efficiency?`,
-        query: `How efficient is ${player} in the red zone this season?`
+        text: `Passing yards this season?`,
+        query: `How many passing yards does ${player} have this season?`
       });
     } else if (position === "rb" || position === "running back") {
       suggestions.push({
-        text: `${player}'s last 5 games?`,
-        query: `${player} last 5 games`
+        text: `${player}'s rushing stats?`,
+        query: `${player} rushing yards this season`
       });
       suggestions.push({
-        text: `Yards after contact?`,
-        query: `${player} yards after contact`
+        text: `${player}'s TDs?`,
+        query: `How many touchdowns does ${player} have this season?`
       });
       suggestions.push({
-        text: `Target share?`,
-        query: `What's ${player}'s target share this season?`
+        text: `${player}'s next game?`,
+        query: `When does ${player} play next?`
       });
     } else if (position === "wr" || position === "wide receiver" || position === "te" || position === "tight end") {
       suggestions.push({
-        text: `${player}'s last 5 games?`,
-        query: `${player} last 5 games`
+        text: `${player}'s receiving stats?`,
+        query: `${player} receiving yards this season`
       });
       suggestions.push({
-        text: `Target share?`,
-        query: `What's ${player}'s target share this season?`
+        text: `Receptions & targets?`,
+        query: `How many receptions does ${player} have this season?`
       });
       suggestions.push({
-        text: `Catch rate & YAC?`,
-        query: `${player} catch rate and yards after catch`
+        text: `${player}'s TDs?`,
+        query: `How many touchdowns does ${player} have?`
       });
     } else {
       suggestions.push({
-        text: `${player}'s last 5 games?`,
-        query: `${player} last 5 games`
+        text: `${player}'s stats?`,
+        query: `${player} season stats`
       });
       suggestions.push({
-        text: `Advanced stats?`,
-        query: `${player} advanced stats`
+        text: `${player}'s team?`,
+        query: `What team does ${player} play for?`
       });
       suggestions.push({
-        text: `Fantasy outlook?`,
-        query: `What's ${player}'s fantasy outlook for this week?`
+        text: `${player}'s next game?`,
+        query: `When does ${player} play next?`
       });
     }
     
@@ -63,58 +66,58 @@ const NFL_SUGGESTIONS = {
   },
   gameLog: (player: string) => [
     {
-      text: `Compare to season avg?`,
+      text: `Season averages?`,
       query: `${player} season stats`
     },
     {
-      text: `Advanced metrics?`,
-      query: `${player} advanced stats`
+      text: `Next game odds?`,
+      query: `What are the odds for ${player}'s next game?`
     },
     {
-      text: `Prop lines next game?`,
-      query: `What are ${player}'s prop lines for the next game?`
+      text: `Team schedule?`,
+      query: `What's the schedule for ${player}'s team?`
     }
   ],
   prop: (player: string) => [
     {
-      text: `Analyze with advanced stats?`,
-      query: `Analyze ${player} prop with advanced stats`
+      text: `Season average?`,
+      query: `What's ${player}'s season average for this stat?`
     },
     {
-      text: `Hit rate this season?`,
-      query: `What's ${player}'s hit rate for this prop line this season?`
+      text: `Compare to line?`,
+      query: `How does ${player}'s average compare to this line?`
     },
     {
-      text: `Home/away splits?`,
-      query: `Does ${player} typically go over or under this line at home vs away?`
+      text: `Game matchup?`,
+      query: `Who does ${player} play next?`
     }
   ],
   game: (teams: string[]) => [
     {
-      text: "Public betting?",
-      query: `Public betting ${teams.join(" vs ")}`
+      text: "What's the spread?",
+      query: `What's the spread for ${teams.join(" vs ")}?`
     },
     {
-      text: "Key injuries?",
-      query: `What are the key injuries to watch for ${teams.join(" vs ")}?`
+      text: "What's the total?",
+      query: `What's the over/under for ${teams.join(" vs ")}?`
     },
     {
-      text: "Weather impact?",
-      query: `How might the weather affect the ${teams.join(" vs ")} game?`
+      text: "Moneyline?",
+      query: `What are the moneyline odds for ${teams.join(" vs ")}?`
     }
   ],
   odds: (teams: string[]) => [
     {
-      text: "Sharp money?",
-      query: `Where is the sharp money on ${teams.join(" vs ")}?`
+      text: "Spread both sides?",
+      query: `What's the full spread for ${teams.join(" vs ")}?`
     },
     {
-      text: "Public betting?",
-      query: `Public betting percentages ${teams.join(" vs ")}`
+      text: "Total O/U?",
+      query: `What's the over/under total for ${teams.join(" vs ")}?`
     },
     {
-      text: "Line movement?",
-      query: `How has the line moved for ${teams.join(" vs ")}?`
+      text: "Game time?",
+      query: `When is ${teams.join(" vs ")}?`
     }
   ]
 };
@@ -125,35 +128,35 @@ const NBA_SUGGESTIONS = {
     
     if (statType === "scoring") {
       suggestions.push({
-        text: `${player} on back-to-backs?`,
-        query: `How does ${player} perform on back-to-back games?`
+        text: `${player}'s PPG?`,
+        query: `What's ${player}'s points per game this season?`
       });
       suggestions.push({
-        text: `Usage rate trend?`,
-        query: `What's ${player}'s usage rate in the last 10 games?`
+        text: `Next game odds?`,
+        query: `What are the odds for ${player}'s next game?`
       });
     } else if (statType === "rebounding") {
       suggestions.push({
-        text: `${player}'s rebounding lately?`,
-        query: `How are ${player}'s rebounds trending in the last 5 games?`
+        text: `${player}'s RPG?`,
+        query: `What's ${player}'s rebounds per game this season?`
       });
       suggestions.push({
-        text: `Matchup impact?`,
-        query: `How does ${player} rebound against top frontcourts?`
+        text: `Game schedule?`,
+        query: `When does ${player} play next?`
       });
     } else if (statType === "playmaking") {
       suggestions.push({
-        text: `${player} without key teammates?`,
-        query: `How does ${player}'s assist rate change when key teammates are out?`
+        text: `${player}'s APG?`,
+        query: `What's ${player}'s assists per game this season?`
       });
     } else {
       suggestions.push({
-        text: `${player} on back-to-backs?`,
-        query: `How does ${player} perform on back-to-back games?`
+        text: `${player}'s stats?`,
+        query: `What are ${player}'s stats this season?`
       });
       suggestions.push({
-        text: `${player}'s minutes lately?`,
-        query: `What's ${player}'s minutes trend in the last 5 games?`
+        text: `Next game?`,
+        query: `When does ${player} play next?`
       });
     }
     
@@ -161,22 +164,26 @@ const NBA_SUGGESTIONS = {
   },
   prop: (player: string) => [
     {
-      text: `Hit rate last 10?`,
-      query: `What's the hit rate for this prop over ${player}'s last 10 games?`
+      text: `Season average?`,
+      query: `What's ${player}'s season average for this stat?`
     },
     {
-      text: `Home vs away?`,
-      query: `Does ${player} typically hit this prop better at home or away?`
+      text: `Next game matchup?`,
+      query: `Who does ${player} play next?`
     }
   ],
   game: (teams: string[]) => [
     {
-      text: "Pace factor?",
-      query: `How does the pace factor affect the ${teams.join(" vs ")} matchup?`
+      text: "What's the spread?",
+      query: `What's the spread for ${teams.join(" vs ")}?`
     },
     {
-      text: "Rest advantage?",
-      query: `Is there a rest advantage for either team in ${teams.join(" vs ")}?`
+      text: "What's the total?",
+      query: `What's the over/under for ${teams.join(" vs ")}?`
+    },
+    {
+      text: "Game time?",
+      query: `When is ${teams.join(" vs ")}?`
     }
   ]
 };
@@ -317,60 +324,62 @@ const MLB_SUGGESTIONS = {
   ]
 };
 
-// General fallback suggestions
+// General fallback suggestions - aligned with actual MGP data availability
+// Available: Game schedules, game odds (spread/ML/total), player rosters
+// Limited: Props, game logs, advanced stats (sync dependent)
 const GENERAL_SUGGESTIONS = {
   player: (player: string) => [
     {
-      text: `${player}'s recent form?`,
-      query: `How has ${player} performed in the last 5 games?`
+      text: `${player}'s season stats?`,
+      query: `What are ${player}'s season stats?`
     },
     {
       text: `${player}'s next game?`,
-      query: `When is ${player}'s next game and who do they play?`
+      query: `When is ${player}'s next game?`
     }
   ],
   game: () => [
     {
-      text: "Current odds?",
-      query: "What are the current odds for this game?"
+      text: "What's the spread?",
+      query: "What's the spread for this game?"
     },
     {
-      text: "Over/under line?",
+      text: "What's the total?",
       query: "What's the over/under total for this game?"
     }
   ],
   prop: () => [
     {
-      text: "Best sportsbook line?",
-      query: "Which sportsbook has the best line for this prop?"
+      text: "Compare sportsbooks?",
+      query: "Compare the odds across sportsbooks for this prop"
     },
     {
-      text: "Line movement?",
-      query: "Has this line moved since opening?"
+      text: "Recent performance?",
+      query: "How has this player performed recently for this stat?"
     }
   ],
   odds: () => [
     {
-      text: "Sharp action?",
-      query: "Where is the sharp money on this game?"
+      text: "Line movement?",
+      query: "Has the line moved from the opener?"
     },
     {
-      text: "Best sportsbook?",
-      query: "Which sportsbook has the best line?"
+      text: "Moneyline odds?",
+      query: "What are the moneyline odds for this game?"
     }
   ],
   default: () => [
     {
-      text: "Today's games?",
-      query: "What games are happening today?"
+      text: "NBA games today?",
+      query: "What NBA games are on today?"
     },
     {
-      text: "Best betting values?",
-      query: "What are the best betting values for today?"
+      text: "NFL playoff schedule?",
+      query: "What are the NFL playoff games this week?"
     },
     {
-      text: "Line movements?",
-      query: "Which lines have moved the most today?"
+      text: "Tonight's odds?",
+      query: "What are the odds for tonight's games?"
     }
   ]
 };
