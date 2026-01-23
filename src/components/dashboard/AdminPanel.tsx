@@ -36,7 +36,8 @@ import {
   SteamMoveAlerts, 
   SportsDataManagement,
   PlayerSyncCard,
-  PropsSyncCard
+  PropsSyncCard,
+  NBASyncCard
 } from "./admin";
 
 // Types for sync schedule
@@ -1109,6 +1110,11 @@ export function AdminPanel() {
         {/* Props Sync */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.115 }}>
           <PropsSyncCard />
+        </motion.div>
+
+        {/* NBA Stats Sync - Comprehensive */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.118 }} className="md:col-span-2">
+          <NBASyncCard />
         </motion.div>
 
         {/* Line Movement Dashboard */}
