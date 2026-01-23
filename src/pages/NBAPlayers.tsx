@@ -44,20 +44,27 @@ export default function NBAPlayers() {
         const playerIds = data.map((p) => p.id);
         const { data: statsData } = await supabase
           .from("player_season_stats")
-          .select("player_id, points_per_game, rebounds_per_game, assists_per_game, minutes_per_game")
+          .select("player_id, points_per_game, rebounds_per_game, assists_per_game, minutes_per_game, games_played")
           .in("player_id", playerIds)
           .eq("sport", "NBA")
           .eq("season", 2025);
 
         const statsMap = new Map();
         for (const stat of statsData || []) {
-          statsMap.set(stat.player_id, stat);
+          // Only include stats if they have actual data
+          if (stat.points_per_game !== null || stat.games_played !== null) {
+            statsMap.set(stat.player_id, stat);
+          }
         }
 
-        return data.map((player) => ({
-          ...player,
-          stats: statsMap.get(player.id),
-        }));
+        return data.map((player) => {
+          const playerStats = statsMap.get(player.id);
+          return {
+            ...player,
+            stats: playerStats,
+            hasStats: !!playerStats,
+          };
+        });
       }
 
       return data || [];
