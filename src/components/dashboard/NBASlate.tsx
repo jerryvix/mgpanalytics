@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Loader2, Signal, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
+import { PublicBettingPreview } from "@/components/PublicBettingPreview";
 
 interface Game {
   id: string;
@@ -307,10 +308,18 @@ export function NBASlate() {
                       <p className="text-[10px] text-muted-foreground italic mb-3">*odds pending</p>
                     )}
 
+                    {/* Public Betting Preview */}
+                    <PublicBettingPreview
+                      homeTeam={game.home_team_name}
+                      awayTeam={game.visitor_team_name}
+                      gameId={game.id}
+                      sport="NBA"
+                    />
+
                     {/* View All Odds Button */}
                     <Button
                       onClick={(e) => handleViewAllOdds(game, e)}
-                      className="w-full bg-terminal-cyan/20 hover:bg-terminal-cyan/30 text-terminal-cyan border border-terminal-cyan/50 font-mono text-sm"
+                      className="w-full bg-terminal-cyan/20 hover:bg-terminal-cyan/30 text-terminal-cyan border border-terminal-cyan/50 font-mono text-sm mt-2"
                       variant="outline"
                     >
                       <TrendingUp className="w-4 h-4 mr-2" />
