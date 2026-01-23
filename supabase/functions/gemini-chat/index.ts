@@ -401,6 +401,43 @@ serve(async (req) => {
 
     console.log("Processing chat request with", messages.length, "messages");
 
+    // Get current date/time for context
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      timeZone: 'America/New_York'
+    });
+    const currentTime = now.toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      timeZone: 'America/New_York'
+    });
+    
+    // Inject current date/time into system instruction
+    const dateTimeContext = `
+═══════════════════════════════════════════════════════════
+CURRENT DATE & TIME CONTEXT
+═══════════════════════════════════════════════════════════
+
+TODAY IS: ${currentDate}
+CURRENT TIME: ${currentTime} ET
+
+CRITICAL: Always use this date for context. When users ask about "today's games", "tonight", or "this week", reference this date. Do NOT make up game data - if you don't have verified information for today's games, say so and offer to search.
+
+SPORTS SEASONS (as of today):
+- NFL: 2024-25 season (Playoffs in progress, Super Bowl LIX in February 2025)
+- NBA: 2024-25 season (Regular season in progress)
+- NCAAB: 2024-25 season (Conference play)
+- NCAAF: 2024-25 season (Completed, National Championship was January 2025)
+- MLB: Offseason (2025 season starts March/April)
+
+`;
+
+    const fullSystemInstruction = dateTimeContext + SYSTEM_INSTRUCTION;
+
     // Build conversation history for Gemini
     const contents = messages.map((msg) => ({
       role: msg.role === "assistant" ? "model" : "user",
@@ -416,7 +453,7 @@ serve(async (req) => {
         body: JSON.stringify({
           contents,
           systemInstruction: {
-            parts: [{ text: SYSTEM_INSTRUCTION }],
+            parts: [{ text: fullSystemInstruction }],
           },
           tools: [
             {
