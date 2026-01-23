@@ -14,6 +14,21 @@ export type { Suggestion };
 // Betting keywords for query type detection
 const BETTING_KEYWORDS = ["odds", "spread", "line", "moneyline", "over", "under", "total", "prop", "bet", "betting"];
 
+// Game log / historical query patterns
+const GAME_LOG_PATTERNS = [
+  /last\s*\d*\s*games?/i,
+  /past\s*\d*\s*games?/i,
+  /recent\s*\d*\s*games?/i,
+  /game\s*log/i,
+  /vs\s+\w+/i,
+  /against\s+\w+/i,
+  /game[- ]by[- ]game/i,
+];
+
+function isGameLogQuery(query: string): boolean {
+  return GAME_LOG_PATTERNS.some(pattern => pattern.test(query));
+}
+
 function detectQueryType(query: string, hasPlayer: boolean, teamCount: number): QueryType {
   const lowerQuery = query.toLowerCase();
   
@@ -46,9 +61,14 @@ function buildQueryContext(query: string): QueryContext {
   const sport = detectSport(query);
   const playerName = detectPlayerName(query);
   const teams = detectTeamNames(query);
-  const statType = detectStatType(query);
+  let statType = detectStatType(query);
   const position = detectPosition(query, sport);
   const queryType = detectQueryType(query, !!playerName, teams.length);
+  
+  // If this is a game log query, mark statType as historical for better suggestions
+  if (isGameLogQuery(query) && playerName) {
+    statType = "historical";
+  }
   
   return {
     sport,
