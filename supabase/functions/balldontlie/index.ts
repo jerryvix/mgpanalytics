@@ -272,11 +272,18 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('[BDL] Error:', error);
+    // Log detailed error server-side only
+    console.error('[BDL] Error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Return generic error to client
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+        error: 'An error occurred while processing your request. Please try again.' 
       }),
       { 
         status: 500,
