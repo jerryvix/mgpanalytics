@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isToday, isTomorrow, startOfWeek, endOfWeek } from "date-fns";
 import { handleNFLStatsQuery, shouldHandleNFLStats } from "@/services/chatbot/nflStatsHandler";
 import { isGameLogQuery, isVsTeamQuery } from "@/utils/playerNameMatcher";
+import { isPublicBettingQuery, handlePublicBettingQuery } from "@/services/chatbot/publicBettingHandler";
 
 interface Game {
   id: number;
@@ -463,6 +464,11 @@ export function useChatQuery() {
         if (statsResponse) {
           return statsResponse;
         }
+      }
+      
+      // PRIORITY 0.5: Public betting / sharp money queries
+      if (isPublicBettingQuery(lowerQuery)) {
+        return await handlePublicBettingQuery(query);
       }
       
       // PRIORITY 1: Leaderboard queries (top QBs, best RBs, etc.)

@@ -87,12 +87,30 @@ const NFL_SUGGESTIONS = {
   ],
   game: (teams: string[]) => [
     {
+      text: "Public betting?",
+      query: `Public betting ${teams.join(" vs ")}`
+    },
+    {
       text: "Key injuries?",
       query: `What are the key injuries to watch for ${teams.join(" vs ")}?`
     },
     {
       text: "Weather impact?",
       query: `How might the weather affect the ${teams.join(" vs ")} game?`
+    }
+  ],
+  odds: (teams: string[]) => [
+    {
+      text: "Sharp money?",
+      query: `Where is the sharp money on ${teams.join(" vs ")}?`
+    },
+    {
+      text: "Public betting?",
+      query: `Public betting percentages ${teams.join(" vs ")}`
+    },
+    {
+      text: "Line movement?",
+      query: `How has the line moved for ${teams.join(" vs ")}?`
     }
   ]
 };
