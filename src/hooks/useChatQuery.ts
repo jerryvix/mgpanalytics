@@ -4,6 +4,7 @@ import { handleNFLStatsQuery, shouldHandleNFLStats } from "@/services/chatbot/nf
 import { isGameLogQuery, isVsTeamQuery } from "@/utils/playerNameMatcher";
 import { isPublicBettingQuery, handlePublicBettingQuery } from "@/services/chatbot/publicBettingHandler";
 import { handleAdvancedStatsQuery, shouldHandleAdvancedStats } from "@/services/chatbot/advancedStatsHandler";
+import { handlePropAnalysisQuery, shouldHandlePropAnalysis } from "@/services/chatbot/propAnalysisHandler";
 interface Game {
   id: number;
   home_team_name: string;
@@ -476,6 +477,14 @@ export function useChatQuery() {
         const advancedResponse = await handleAdvancedStatsQuery(query);
         if (advancedResponse) {
           return advancedResponse;
+        }
+      }
+      
+      // PRIORITY 0.85: Prop analysis queries (e.g., "Josh Allen 275.5 passing yards")
+      if (shouldHandlePropAnalysis(lowerQuery)) {
+        const propResponse = await handlePropAnalysisQuery(query);
+        if (propResponse) {
+          return propResponse;
         }
       }
       

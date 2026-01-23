@@ -77,12 +77,16 @@ const NFL_SUGGESTIONS = {
   ],
   prop: (player: string) => [
     {
-      text: `Home/away splits?`,
-      query: `Does ${player} typically go over or under this line at home vs away?`
+      text: `Analyze with advanced stats?`,
+      query: `Analyze ${player} prop with advanced stats`
     },
     {
       text: `Hit rate this season?`,
       query: `What's ${player}'s hit rate for this prop line this season?`
+    },
+    {
+      text: `Home/away splits?`,
+      query: `Does ${player} typically go over or under this line at home vs away?`
     }
   ],
   game: (teams: string[]) => [
