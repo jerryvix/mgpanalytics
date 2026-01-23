@@ -13,6 +13,7 @@ interface PlayerCardProps {
   isFeatured?: boolean;
   featuredReason?: string;
   usageRank?: number;
+  headshotUrl?: string;
   // NFL stats
   passYards?: number;
   rushYards?: number;
@@ -41,8 +42,18 @@ export function PlayerCard({
   reboundsPerGame,
   assistsPerGame,
   minutesPerGame,
+  headshotUrl,
 }: PlayerCardProps) {
   const isInjured = injuryStatus !== "Healthy";
+  
+  // Get initials for fallback avatar
+  const getInitials = () => {
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   const getInjuryBadgeColor = () => {
     switch (injuryStatus) {
@@ -140,8 +151,23 @@ export function PlayerCard({
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
-                <User className="w-5 h-5 text-muted-foreground" />
+              <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                {headshotUrl ? (
+                  <img 
+                    src={headshotUrl} 
+                    alt={name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to initials on image load error
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      target.nextElementSibling?.classList.remove('hidden');
+                    }}
+                  />
+                ) : null}
+                <span className={`text-xs font-bold text-muted-foreground ${headshotUrl ? 'hidden' : ''}`}>
+                  {getInitials()}
+                </span>
               </div>
               <div>
                 <h3 className="font-semibold text-foreground group-hover:text-terminal-green transition-colors">
