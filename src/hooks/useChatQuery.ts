@@ -6,6 +6,7 @@ import { isPublicBettingQuery, handlePublicBettingQuery } from "@/services/chatb
 import { handleAdvancedStatsQuery, shouldHandleAdvancedStats } from "@/services/chatbot/advancedStatsHandler";
 import { handlePropAnalysisQuery, shouldHandlePropAnalysis } from "@/services/chatbot/propAnalysisHandler";
 import { handleNbaPropsQuery, shouldHandleNbaPropsQuery } from "@/services/chatbot/nbaPropsHandler";
+import { handleNbaQuery, isNbaQuery, shouldExtractSpecificStat, handleSpecificStatQuery } from "@/services/chatbot/nbaQueryHandler";
 interface Game {
   id: number;
   home_team_name: string;
@@ -459,7 +460,27 @@ export function useChatQuery() {
     const lowerQuery = query.toLowerCase().trim();
     
     try {
-      // PRIORITY 0: Game log queries ("last 5 games", "vs team", etc.)
+      // PRIORITY 0: NBA-specific queries (player stats, game logs, props)
+      if (isNbaQuery(lowerQuery)) {
+        // Check for specific stat extraction (e.g., "how many 3s does curry average")
+        const specificStat = shouldExtractSpecificStat(query);
+        if (specificStat) {
+          const statResponse = await handleSpecificStatQuery(specificStat.stat, specificStat.playerName);
+          if (statResponse) return statResponse;
+        }
+        
+        // Check for NBA props queries
+        if (shouldHandleNbaPropsQuery(query)) {
+          const propsResponse = await handleNbaPropsQuery(query);
+          if (propsResponse) return propsResponse;
+        }
+        
+        // General NBA query handler (stats, game logs, games)
+        const nbaResponse = await handleNbaQuery(query);
+        if (nbaResponse) return nbaResponse;
+      }
+      
+      // PRIORITY 0.5: Game log queries ("last 5 games", "vs team", etc.) - NFL
       // These need the enhanced NFL stats handler for detailed responses
       if (isGameLogQuery(lowerQuery) || isVsTeamQuery(lowerQuery)) {
         const statsResponse = await handleNFLStatsQuery(query);
@@ -468,12 +489,12 @@ export function useChatQuery() {
         }
       }
       
-      // PRIORITY 0.5: Public betting / sharp money queries
+      // PRIORITY 0.75: Public betting / sharp money queries
       if (isPublicBettingQuery(lowerQuery)) {
         return await handlePublicBettingQuery(query);
       }
       
-      // PRIORITY 0.75: Advanced stats queries (EPA, CPOE, target share, etc.)
+      // PRIORITY 1: Advanced stats queries (EPA, CPOE, target share, etc.)
       if (shouldHandleAdvancedStats(lowerQuery)) {
         const advancedResponse = await handleAdvancedStatsQuery(query);
         if (advancedResponse) {
@@ -481,7 +502,7 @@ export function useChatQuery() {
         }
       }
       
-      // PRIORITY 0.85: Prop analysis queries (e.g., "Josh Allen 275.5 passing yards")
+      // PRIORITY 1.5: Prop analysis queries (e.g., "Josh Allen 275.5 passing yards")
       if (shouldHandlePropAnalysis(lowerQuery)) {
         const propResponse = await handlePropAnalysisQuery(query);
         if (propResponse) {
