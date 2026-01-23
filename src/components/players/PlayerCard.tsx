@@ -121,24 +121,38 @@ export function PlayerCard({
       );
     }
 
-    // NBA/NCAAB stats
+    // NBA/NCAAB stats - show N/A if no stats loaded yet
+    const hasAnyStats = pointsPerGame !== undefined && pointsPerGame !== null;
+    const formatStat = (val: number | undefined, decimals: number = 1) => {
+      if (val === undefined || val === null) return hasAnyStats ? "0.0" : "N/A";
+      return val.toFixed(decimals);
+    };
+
     return (
       <div className="grid grid-cols-4 gap-1.5 text-center">
         <div className="bg-muted/30 rounded p-1.5">
           <div className="text-[10px] text-muted-foreground">PPG</div>
-          <div className="text-sm font-bold text-terminal-green">{pointsPerGame?.toFixed(1) || "—"}</div>
+          <div className={`text-sm font-bold ${hasAnyStats ? "text-terminal-green" : "text-muted-foreground"}`}>
+            {formatStat(pointsPerGame)}
+          </div>
         </div>
         <div className="bg-muted/30 rounded p-1.5">
           <div className="text-[10px] text-muted-foreground">RPG</div>
-          <div className="text-sm font-bold text-foreground">{reboundsPerGame?.toFixed(1) || "—"}</div>
+          <div className={`text-sm font-bold ${hasAnyStats ? "text-foreground" : "text-muted-foreground"}`}>
+            {formatStat(reboundsPerGame)}
+          </div>
         </div>
         <div className="bg-muted/30 rounded p-1.5">
           <div className="text-[10px] text-muted-foreground">APG</div>
-          <div className="text-sm font-bold text-foreground">{assistsPerGame?.toFixed(1) || "—"}</div>
+          <div className={`text-sm font-bold ${hasAnyStats ? "text-foreground" : "text-muted-foreground"}`}>
+            {formatStat(assistsPerGame)}
+          </div>
         </div>
         <div className="bg-muted/30 rounded p-1.5">
           <div className="text-[10px] text-muted-foreground">MPG</div>
-          <div className="text-sm font-bold text-muted-foreground">{minutesPerGame?.toFixed(1) || "—"}</div>
+          <div className="text-sm font-bold text-muted-foreground">
+            {formatStat(minutesPerGame)}
+          </div>
         </div>
       </div>
     );
