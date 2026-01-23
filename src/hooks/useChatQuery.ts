@@ -3,7 +3,7 @@ import { format, parseISO, isToday, isTomorrow, startOfWeek, endOfWeek } from "d
 import { handleNFLStatsQuery, shouldHandleNFLStats } from "@/services/chatbot/nflStatsHandler";
 import { isGameLogQuery, isVsTeamQuery } from "@/utils/playerNameMatcher";
 import { isPublicBettingQuery, handlePublicBettingQuery } from "@/services/chatbot/publicBettingHandler";
-
+import { handleAdvancedStatsQuery, shouldHandleAdvancedStats } from "@/services/chatbot/advancedStatsHandler";
 interface Game {
   id: number;
   home_team_name: string;
@@ -469,6 +469,14 @@ export function useChatQuery() {
       // PRIORITY 0.5: Public betting / sharp money queries
       if (isPublicBettingQuery(lowerQuery)) {
         return await handlePublicBettingQuery(query);
+      }
+      
+      // PRIORITY 0.75: Advanced stats queries (EPA, CPOE, target share, etc.)
+      if (shouldHandleAdvancedStats(lowerQuery)) {
+        const advancedResponse = await handleAdvancedStatsQuery(query);
+        if (advancedResponse) {
+          return advancedResponse;
+        }
       }
       
       // PRIORITY 1: Leaderboard queries (top QBs, best RBs, etc.)
