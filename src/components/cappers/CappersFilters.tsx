@@ -20,7 +20,7 @@ interface CappersFiltersProps {
 }
 
 const SPORTS: (Sport | 'all')[] = ['all', 'NFL', 'NBA', 'MLB', 'NHL', 'NCAAB', 'NCAAF'];
-const CATEGORIES: (CapperCategory | 'all')[] = ['all', 'sharp_bettor', 'analyst', 'media', 'insider', 'odds_provider', 'community'];
+const CATEGORIES: (CapperCategory | 'all')[] = ['all', 'sharp_bettor', 'analyst', 'pop_culture', 'media', 'insider', 'odds_provider', 'community'];
 
 export function CappersFilters({
   search,

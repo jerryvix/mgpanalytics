@@ -3,9 +3,9 @@ import { CappersCategoryPage } from "./CappersCategoryPage";
 export default function PopCulturePage() {
   return (
     <CappersCategoryPage
-      category="media"
+      category="pop_culture"
       title="Pop Culture & Entertainment"
-      description="Entertainment and pop culture betting personalities"
+      description="Entertainment personalities in the betting space - follow for vibes, not picks"
       icon="🎬"
     />
   );

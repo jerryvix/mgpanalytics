@@ -27,8 +27,7 @@ import {
   MessageSquare,
   Trash2,
   Newspaper,
-  Users,
-  Trophy
+  Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -96,7 +95,6 @@ const sportsMenuItems = [
 const communityMenuItems = [
   { title: "Feed", url: "/community/feed", icon: Newspaper },
   { title: "Cappers", url: "/community/cappers", icon: Users },
-  { title: "Leaderboard", url: "/community/leaderboard", icon: Trophy },
 ];
 
 const adminMenuItem = {
