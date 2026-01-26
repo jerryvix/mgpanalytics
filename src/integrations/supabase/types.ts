@@ -1621,6 +1621,7 @@ export type Database = {
         | "insider"
         | "odds_provider"
         | "community"
+        | "pop_culture"
       capper_tier: "elite" | "popular" | "rising"
     }
     CompositeTypes: {
@@ -1757,6 +1758,7 @@ export const Constants = {
         "insider",
         "odds_provider",
         "community",
+        "pop_culture",
       ],
       capper_tier: ["elite", "popular", "rising"],
     },

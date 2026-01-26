@@ -2,9 +2,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ExternalLink, UserPlus, UserMinus, CheckCircle, Star, Users } from "lucide-react";
+import { ExternalLink, UserPlus, UserMinus, CheckCircle, Star, Users, AlertTriangle } from "lucide-react";
 import type { Capper } from "@/types/capper";
-import { CAPPER_CATEGORY_LABELS, CAPPER_CATEGORY_ICONS, CAPPER_TIER_COLORS } from "@/types/capper";
+import { CAPPER_CATEGORY_LABELS, CAPPER_CATEGORY_ICONS, CAPPER_TIER_COLORS, CATEGORY_CONFIG } from "@/types/capper";
 import { cn } from "@/lib/utils";
 
 interface CapperCardProps {
@@ -29,6 +29,8 @@ export function CapperCard({ capper, isFollowing, onFollow, onUnfollow, isLoadin
   const categoryIcon = CAPPER_CATEGORY_ICONS[capper.category];
   const categoryLabel = CAPPER_CATEGORY_LABELS[capper.category];
   const tierColor = CAPPER_TIER_COLORS[capper.tier];
+  const categoryConfig = CATEGORY_CONFIG[capper.category];
+  const isEntertainment = categoryConfig?.isEntertainment;
 
   return (
     <Card className="group hover:border-primary/50 transition-colors">
@@ -66,7 +68,7 @@ export function CapperCard({ capper, isFollowing, onFollow, onUnfollow, isLoadin
             </p>
 
             <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className={cn("text-xs", categoryConfig?.color)}>
                 {categoryIcon} {categoryLabel}
               </Badge>
               {capper.sports.slice(0, 3).map((sport) => (
@@ -81,18 +83,26 @@ export function CapperCard({ capper, isFollowing, onFollow, onUnfollow, isLoadin
               )}
             </div>
 
+            {/* Entertainment disclaimer */}
+            {isEntertainment && (
+              <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                <AlertTriangle className="h-3 w-3 text-primary" />
+                <span>Entertainment personality</span>
+              </div>
+            )}
+
             {capper.description && (
               <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
                 {capper.description}
               </p>
             )}
 
-            {capper.specialty.length > 0 && (
+            {capper.specialty && capper.specialty.length > 0 && (
               <div className="flex items-center gap-1 mt-2 flex-wrap">
                 <span className="text-xs text-muted-foreground">Specialty:</span>
-                {capper.specialty.slice(0, 3).map((spec) => (
+                {capper.specialty.slice(0, 3).map((spec, idx) => (
                   <span key={spec} className="text-xs text-primary">
-                    {spec}{capper.specialty.indexOf(spec) < Math.min(2, capper.specialty.length - 1) ? ',' : ''}
+                    {spec}{idx < Math.min(2, capper.specialty.length - 1) ? ',' : ''}
                   </span>
                 ))}
               </div>

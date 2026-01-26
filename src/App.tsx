@@ -15,7 +15,7 @@ import {
   InsidersPage,
   CapperProfilePage 
 } from "./pages/cappers";
-import { FeedPage, LeaderboardPage } from "./pages/community";
+import { FeedPage } from "./pages/community";
 import NotFound from "./pages/NotFound";
 import { ChatProvider } from "./contexts/ChatContext";
 
@@ -42,7 +42,6 @@ const App = () => (
             <Route path="/dashboard/*" element={<Dashboard />} />
             {/* Community Routes */}
             <Route path="/community/feed" element={<FeedPage />} />
-            <Route path="/community/leaderboard" element={<LeaderboardPage />} />
             <Route path="/community/cappers" element={<CappersDirectory />} />
             <Route path="/community/cappers/sharps" element={<SharpsPage />} />
             <Route path="/community/cappers/analysts" element={<AnalystsPage />} />
