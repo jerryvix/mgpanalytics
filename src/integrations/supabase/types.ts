@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      cappers: {
+        Row: {
+          added_at: string
+          category: Database["public"]["Enums"]["capper_category"]
+          description: string | null
+          featured: boolean | null
+          id: string
+          mgp_followers: number | null
+          mgp_verified: boolean | null
+          specialty: string[] | null
+          sports: string[] | null
+          tier: Database["public"]["Enums"]["capper_tier"]
+          updated_at: string
+          x_display_name: string
+          x_followers_count: number | null
+          x_profile_image: string | null
+          x_user_id: string
+          x_username: string
+          x_verified: boolean | null
+        }
+        Insert: {
+          added_at?: string
+          category?: Database["public"]["Enums"]["capper_category"]
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          mgp_followers?: number | null
+          mgp_verified?: boolean | null
+          specialty?: string[] | null
+          sports?: string[] | null
+          tier?: Database["public"]["Enums"]["capper_tier"]
+          updated_at?: string
+          x_display_name: string
+          x_followers_count?: number | null
+          x_profile_image?: string | null
+          x_user_id: string
+          x_username: string
+          x_verified?: boolean | null
+        }
+        Update: {
+          added_at?: string
+          category?: Database["public"]["Enums"]["capper_category"]
+          description?: string | null
+          featured?: boolean | null
+          id?: string
+          mgp_followers?: number | null
+          mgp_verified?: boolean | null
+          specialty?: string[] | null
+          sports?: string[] | null
+          tier?: Database["public"]["Enums"]["capper_tier"]
+          updated_at?: string
+          x_display_name?: string
+          x_followers_count?: number | null
+          x_profile_image?: string | null
+          x_user_id?: string
+          x_username?: string
+          x_verified?: boolean | null
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -1413,6 +1473,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_capper_follows: {
+        Row: {
+          capper_id: string
+          followed_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          capper_id: string
+          followed_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          capper_id?: string
+          followed_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_capper_follows_capper_id_fkey"
+            columns: ["capper_id"]
+            isOneToOne: false
+            referencedRelation: "cappers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1525,6 +1614,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      capper_category:
+        | "sharp_bettor"
+        | "analyst"
+        | "media"
+        | "insider"
+        | "odds_provider"
+        | "community"
+      capper_tier: "elite" | "popular" | "rising"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1653,6 +1750,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      capper_category: [
+        "sharp_bettor",
+        "analyst",
+        "media",
+        "insider",
+        "odds_provider",
+        "community",
+      ],
+      capper_tier: ["elite", "popular", "rising"],
     },
   },
 } as const
