@@ -25,7 +25,10 @@ import {
   EyeOff,
   PenLine,
   MessageSquare,
-  Trash2
+  Trash2,
+  Newspaper,
+  Users,
+  Trophy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -87,6 +90,13 @@ const sportsMenuItems = [
   },
   { title: "NCAAF", url: "/dashboard/ncaaf", logo: "/logos/ncaa.png" },
   { title: "MLB", url: "/dashboard/mlb", logo: "/logos/mlb.png" },
+];
+
+// Community menu items
+const communityMenuItems = [
+  { title: "Feed", url: "/community/feed", icon: Newspaper },
+  { title: "Cappers", url: "/community/cappers", icon: Users },
+  { title: "Leaderboard", url: "/community/leaderboard", icon: Trophy },
 ];
 
 const adminMenuItem = {
@@ -351,6 +361,40 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                     </div>
                   )}
                 </div>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Community */}
+        <SidebarGroup className="mt-4">
+          {!collapsed && (
+            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
+              Community
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {communityMenuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SidebarMenuButton asChild>
+                        <NavLink 
+                          to={item.url} 
+                          className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                          activeClassName="bg-sidebar-accent text-terminal-green"
+                        >
+                          <item.icon className="w-4 h-4 shrink-0" />
+                          {!collapsed && <span className="text-sm">{item.title}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </TooltipTrigger>
+                    {collapsed && (
+                      <TooltipContent side="right">{item.title}</TooltipContent>
+                    )}
+                  </Tooltip>
+                </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
