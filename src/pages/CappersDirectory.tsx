@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Users, Target, BarChart3, User } from "lucide-react";
+import { Users } from "lucide-react";
 import { CappersFilters, CappersGrid, FeaturedCappers } from "@/components/cappers";
 import { useCappers, useFeaturedCappers, useUserCapperFollows, useFollowCapper, useUnfollowCapper } from "@/hooks/useCappers";
 import type { CapperCategory, Sport } from "@/types/capper";
@@ -51,9 +51,11 @@ export default function CappersDirectory() {
   const showFeatured = !debouncedSearch && sport === 'all' && category === 'all';
 
   const categoryLinks = [
-    { to: "/community/cappers/sharps", icon: Target, label: "Sharp Bettors", description: "Proven winners", color: "text-yellow-500" },
-    { to: "/community/cappers/analysts", icon: BarChart3, label: "Data & Analytics", description: "Number crunchers", color: "text-blue-500" },
-    { to: "/community/cappers/props", icon: User, label: "Props Experts", description: "Player specialists", color: "text-green-500" },
+    { to: "/community/cappers/sharps", emoji: "🎯", label: "Sharp Bettors", description: "Proven winners" },
+    { to: "/community/cappers/analysts", emoji: "📊", label: "Analysts", description: "Data experts" },
+    { to: "/community/cappers/pop-culture", emoji: "🎬", label: "Pop Culture", description: "Entertainment" },
+    { to: "/community/cappers/media", emoji: "📰", label: "Media", description: "Betting media" },
+    { to: "/community/cappers/insiders", emoji: "🔔", label: "Insiders", description: "Team intel" },
   ];
 
   return (
@@ -71,17 +73,15 @@ export default function CappersDirectory() {
         </div>
 
         {/* Category Quick Links */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="flex flex-wrap gap-3 mb-8">
           {categoryLinks.map((cat) => (
             <Link key={cat.to} to={cat.to}>
-              <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
-                <CardContent className="p-4 flex items-center gap-4">
-                  <div className={`p-3 rounded-lg bg-muted ${cat.color}`}>
-                    <cat.icon className="h-6 w-6" />
-                  </div>
+              <Card className="hover:border-primary/50 hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardContent className="px-4 py-3 flex items-center gap-3">
+                  <span className="text-2xl">{cat.emoji}</span>
                   <div>
-                    <h3 className="font-semibold">{cat.label}</h3>
-                    <p className="text-sm text-muted-foreground">{cat.description}</p>
+                    <h3 className="font-semibold text-sm">{cat.label}</h3>
+                    <p className="text-xs text-muted-foreground">{cat.description}</p>
                   </div>
                 </CardContent>
               </Card>

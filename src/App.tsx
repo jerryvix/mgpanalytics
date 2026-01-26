@@ -6,7 +6,16 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import CappersDirectory from "./pages/CappersDirectory";
-import { SharpsPage, AnalystsPage, PropsPage } from "./pages/cappers";
+import { 
+  SharpsPage, 
+  AnalystsPage, 
+  PropsPage, 
+  PopCulturePage, 
+  MediaPage, 
+  InsidersPage,
+  CapperProfilePage 
+} from "./pages/cappers";
+import { FeedPage, LeaderboardPage } from "./pages/community";
 import NotFound from "./pages/NotFound";
 import { ChatProvider } from "./contexts/ChatContext";
 
@@ -31,10 +40,17 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
+            {/* Community Routes */}
+            <Route path="/community/feed" element={<FeedPage />} />
+            <Route path="/community/leaderboard" element={<LeaderboardPage />} />
             <Route path="/community/cappers" element={<CappersDirectory />} />
             <Route path="/community/cappers/sharps" element={<SharpsPage />} />
             <Route path="/community/cappers/analysts" element={<AnalystsPage />} />
             <Route path="/community/cappers/props" element={<PropsPage />} />
+            <Route path="/community/cappers/pop-culture" element={<PopCulturePage />} />
+            <Route path="/community/cappers/media" element={<MediaPage />} />
+            <Route path="/community/cappers/insiders" element={<InsidersPage />} />
+            <Route path="/community/cappers/:username" element={<CapperProfilePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
