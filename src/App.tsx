@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import CappersDirectory from "./pages/CappersDirectory";
+import { SharpsPage, AnalystsPage, PropsPage } from "./pages/cappers";
 import NotFound from "./pages/NotFound";
 import { ChatProvider } from "./contexts/ChatContext";
 
@@ -31,6 +32,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
             <Route path="/community/cappers" element={<CappersDirectory />} />
+            <Route path="/community/cappers/sharps" element={<SharpsPage />} />
+            <Route path="/community/cappers/analysts" element={<AnalystsPage />} />
+            <Route path="/community/cappers/props" element={<PropsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

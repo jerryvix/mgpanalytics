@@ -16,6 +16,7 @@ interface CappersFiltersProps {
   onSortChange: (value: 'mgp_followers' | 'x_followers_count' | 'added_at') => void;
   viewMode: 'grid' | 'list';
   onViewModeChange: (value: 'grid' | 'list') => void;
+  hideCategory?: boolean;
 }
 
 const SPORTS: (Sport | 'all')[] = ['all', 'NFL', 'NBA', 'MLB', 'NHL', 'NCAAB', 'NCAAF'];
@@ -32,6 +33,7 @@ export function CappersFilters({
   onSortChange,
   viewMode,
   onViewModeChange,
+  hideCategory = false,
 }: CappersFiltersProps) {
   return (
     <div className="space-y-4">
@@ -63,18 +65,20 @@ export function CappersFilters({
         </Select>
 
         {/* Category Filter */}
-        <Select value={category} onValueChange={(v) => onCategoryChange(v as CapperCategory | 'all')}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            {CATEGORIES.map((c) => (
-              <SelectItem key={c} value={c}>
-                {c === 'all' ? 'All Categories' : CAPPER_CATEGORY_LABELS[c]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {!hideCategory && (
+          <Select value={category} onValueChange={(v) => onCategoryChange(v as CapperCategory | 'all')}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              {CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c === 'all' ? 'All Categories' : CAPPER_CATEGORY_LABELS[c]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         {/* Sort By */}
         <Select value={sortBy} onValueChange={(v) => onSortChange(v as 'mgp_followers' | 'x_followers_count' | 'added_at')}>
