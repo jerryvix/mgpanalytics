@@ -5,4 +5,6 @@ export { NBAGameLog } from "./NBAGameLog";
 export { NBAAdvancedStats } from "./NBAAdvancedStats";
 export { NBASplits } from "./NBASplits";
 export { NBAPlayerDetail } from "./NBAPlayerDetail";
+export { NBASlatePlayersGrid } from "./NBASlatePlayersGrid";
+export { NBASlatePlayerCard } from "./NBASlatePlayerCard";
 export type { SortOption, FilterOption } from "./NBASlateFilters";
