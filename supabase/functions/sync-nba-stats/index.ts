@@ -59,32 +59,70 @@ async function bdlFetch(
   return await response.json();
 }
 
-// Search for a player by name in BDL
+// Cache for active players to avoid repeated API calls
+let activePlayersCache: Map<string, number> | null = null;
+
+// Get all active players from BDL (GOAT tier endpoint)
+async function loadActivePlayersCache(apiKey: string): Promise<Map<string, number>> {
+  if (activePlayersCache) return activePlayersCache;
+  
+  const playerMap = new Map<string, number>();
+  let cursor: string | undefined;
+  let pageCount = 0;
+  const MAX_PAGES = 10; // Safety limit
+  
+  console.log(`[sync-nba-stats] Loading all active players from BDL...`);
+  
+  do {
+    const params: Record<string, string | number> = { per_page: 100 };
+    if (cursor) params.cursor = cursor;
+    
+    const result = await bdlFetch(apiKey, "/players/active", params);
+    
+    if (result.data && Array.isArray(result.data)) {
+      for (const player of result.data) {
+        const fullName = `${player.first_name} ${player.last_name}`.toLowerCase().trim();
+        playerMap.set(fullName, player.id);
+        // Also store by last name for partial matching
+        playerMap.set(`lastname:${player.last_name.toLowerCase()}`, player.id);
+      }
+    }
+    
+    cursor = result.meta?.next_cursor;
+    pageCount++;
+    console.log(`[sync-nba-stats] Loaded page ${pageCount}, total players: ${playerMap.size / 2}`);
+  } while (cursor && pageCount < MAX_PAGES);
+  
+  console.log(`[sync-nba-stats] Active players cache loaded: ${playerMap.size / 2} players`);
+  activePlayersCache = playerMap;
+  return playerMap;
+}
+
+// Search for a player by name in the active players cache
 async function findBdlPlayerId(
   apiKey: string,
   playerName: string
 ): Promise<number | null> {
   try {
-    const result = await bdlFetch(apiKey, "/players", {
-      search: playerName,
-      per_page: 5,
-    });
-
-    if (!result.data || result.data.length === 0) {
-      return null;
-    }
-
+    const cache = await loadActivePlayersCache(apiKey);
+    const normalizedName = playerName.toLowerCase().trim();
+    
     // Try exact match first
-    const normalizedSearch = playerName.toLowerCase().trim();
-    for (const player of result.data) {
-      const fullName = `${player.first_name} ${player.last_name}`.toLowerCase();
-      if (fullName === normalizedSearch) {
-        return player.id;
+    if (cache.has(normalizedName)) {
+      return cache.get(normalizedName)!;
+    }
+    
+    // Try partial match by last name
+    const nameParts = normalizedName.split(" ");
+    if (nameParts.length >= 2) {
+      const lastName = nameParts[nameParts.length - 1];
+      const lastNameKey = `lastname:${lastName}`;
+      if (cache.has(lastNameKey)) {
+        return cache.get(lastNameKey)!;
       }
     }
-
-    // If no exact match, return first result
-    return result.data[0].id;
+    
+    return null;
   } catch (error) {
     console.error(`[sync-nba-stats] Error finding player ${playerName}:`, error);
     return null;

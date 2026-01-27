@@ -54,6 +54,23 @@ Deno.serve(async (req) => {
 
     const teamsData = JSON.parse(teamsText);
 
+    // Test 1.5: GOAT tier test - Active Players endpoint
+    const activeUrl = "https://api.balldontlie.io/v1/players/active?per_page=5";
+    console.log(`[test-bdl] Testing GOAT-tier active players: ${activeUrl}`);
+    
+    const activeResponse = await fetch(activeUrl, {
+      headers: {
+        "Authorization": BDL_API_KEY,
+        "Content-Type": "application/json",
+      },
+    });
+
+    console.log(`[test-bdl] Active players response status: ${activeResponse.status}`);
+    const activeText = await activeResponse.text();
+    console.log(`[test-bdl] Active players response: ${activeText}`);
+    
+    const activeData = activeResponse.ok ? JSON.parse(activeText) : null;
+
     // Test 2: Search for a well-known player
     const searchUrl = "https://api.balldontlie.io/v1/players?search=LeBron%20James&per_page=5";
     console.log(`[test-bdl] Testing player search: ${searchUrl}`);
@@ -107,6 +124,12 @@ Deno.serve(async (req) => {
             status: teamsResponse.status,
             teamsCount: teamsData?.data?.length || 0,
             firstTeam: teamsData?.data?.[0]?.full_name || null,
+          },
+          activePlayersEndpoint: {
+            status: activeResponse.status,
+            isGoatTier: activeResponse.ok,
+            playersCount: activeData?.data?.length || 0,
+            samplePlayers: activeData?.data?.map((p: any) => `${p.first_name} ${p.last_name} (ID: ${p.id}, Team: ${p.team?.abbreviation})`) || [],
           },
           playerSearch: {
             status: searchResponse.status,
