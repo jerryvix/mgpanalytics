@@ -23,7 +23,7 @@ async function bdlFetch(apiKey: string, endpoint: string, params?: Record<string
     });
   }
 
-  console.log(`[NFL-Slate] Fetching: ${url.toString().substring(0, 120)}...`);
+  console.log(`[NFL-Slate] Fetching: ${url.toString().substring(0, 150)}...`);
   
   const response = await fetch(url.toString(), {
     headers: {
@@ -134,11 +134,21 @@ interface EnhancedLeaderPlayer {
   };
 }
 
-// Known starter overrides for depth chart accuracy
-// This ensures starters like Drake Maye are prioritized over backups
-const STARTER_OVERRIDES: Record<string, string[]> = {
-  'Patriots': ['Drake Maye', 'Rhamondre Stevenson', 'Ja\'Lynn Polk', 'Hunter Henry'],
-  'Seahawks': ['Sam Darnold', 'Kenneth Walker III', 'Jaxon Smith-Njigba', 'DK Metcalf'],
+// Explicit starter mapping with BDL player IDs for depth chart accuracy
+// This ensures the correct starter is used regardless of what the /players endpoint returns
+const STARTER_PLAYER_IDS: Record<string, { name: string; id: number; position: string }[]> = {
+  'Patriots': [
+    { name: 'Drake Maye', id: 2437, position: 'QB' },
+    { name: 'Rhamondre Stevenson', id: 761, position: 'RB' },
+    { name: 'Ja\'Lynn Polk', id: 2439, position: 'WR' },
+    { name: 'Hunter Henry', id: 911, position: 'TE' },
+  ],
+  'Seahawks': [
+    { name: 'Sam Darnold', id: 70, position: 'QB' },
+    { name: 'Kenneth Walker III', id: 713, position: 'RB' },
+    { name: 'Jaxon Smith-Njigba', id: 869, position: 'WR' },
+    { name: 'DK Metcalf', id: 129, position: 'WR' },
+  ],
 };
 
 // Players to exclude (backups who shouldn't appear as leaders)
@@ -147,12 +157,15 @@ const EXCLUDED_PLAYERS: string[] = [
   'Bailey Zappe',
   'Drew Lock',
   'Geno Smith',
+  'Joe Milton III',
+  'Jacob Eason',
+  'Tommy DeVito',
 ];
 
 function isKnownStarter(playerName: string, teamName: string): boolean {
-  for (const [team, starters] of Object.entries(STARTER_OVERRIDES)) {
+  for (const [team, starters] of Object.entries(STARTER_PLAYER_IDS)) {
     if (teamName.toLowerCase().includes(team.toLowerCase())) {
-      return starters.some(s => playerName.toLowerCase().includes(s.toLowerCase()));
+      return starters.some(s => playerName.toLowerCase().includes(s.name.toLowerCase()));
     }
   }
   return false;
@@ -167,22 +180,18 @@ function isExcludedPlayer(playerName: string): boolean {
 // Find BDL team by name search
 async function findTeamByName(apiKey: string, teamName: string): Promise<BDLTeam | null> {
   try {
-    // Extract key words from team name for matching
     const keywords = teamName.toLowerCase().split(' ');
     const result = await bdlFetch(apiKey, '/teams');
     const teams: BDLTeam[] = result.data || [];
     
-    // Find best match
     for (const team of teams) {
       const fullNameLower = team.full_name.toLowerCase();
       const nameLower = team.name.toLowerCase();
       
-      // Exact match check
       if (fullNameLower === teamName.toLowerCase()) {
         return team;
       }
       
-      // Check if team name or full name contains key words
       const matchCount = keywords.filter(kw => 
         fullNameLower.includes(kw) || nameLower.includes(kw)
       ).length;
@@ -196,6 +205,79 @@ async function findTeamByName(apiKey: string, teamName: string): Promise<BDLTeam
     return null;
   } catch (error) {
     console.error(`[NFL-Slate] Error finding team ${teamName}:`, error);
+    return null;
+  }
+}
+
+// Parse BDL NFL season stats - handles both flat and nested structures
+function parseSeasonStats(stat: Record<string, unknown>): PlayerSeasonStats | null {
+  // BDL NFL API returns nested structures like: { passing: { yards: 4048, touchdowns: 25 }, rushing: { yards: 95 } }
+  const passing = (stat.passing || {}) as Record<string, unknown>;
+  const rushing = (stat.rushing || {}) as Record<string, unknown>;
+  const receiving = (stat.receiving || {}) as Record<string, unknown>;
+  
+  // Also check for flat structure fallback
+  const passYards = Number(passing.yards) || Number(stat.passing_yards) || 0;
+  const passTD = Number(passing.touchdowns) || Number(stat.passing_touchdowns) || 0;
+  const passINT = Number(passing.interceptions) || Number(stat.interceptions_thrown) || Number(stat.interceptions) || 0;
+  const passAttempts = Number(passing.attempts) || Number(stat.passing_attempts) || 0;
+  const passCompletions = Number(passing.completions) || Number(stat.completions) || 0;
+  
+  const rushYards = Number(rushing.yards) || Number(stat.rushing_yards) || 0;
+  const rushTD = Number(rushing.touchdowns) || Number(stat.rushing_touchdowns) || 0;
+  const rushAttempts = Number(rushing.attempts) || Number(stat.rushing_attempts) || 0;
+  
+  const recYards = Number(receiving.yards) || Number(stat.receiving_yards) || 0;
+  const recTD = Number(receiving.touchdowns) || Number(stat.receiving_touchdowns) || 0;
+  const receptions = Number(receiving.receptions) || Number(stat.receptions) || 0;
+  const targets = Number(receiving.targets) || Number(stat.targets) || 0;
+  
+  const gamesPlayed = Number(stat.games_played) || 1;
+  
+  console.log(`[NFL-Slate] Parsed stats: GP=${gamesPlayed}, PassYds=${passYards}, PassTD=${passTD}, INT=${passINT}, RushYds=${rushYards}`);
+  
+  return {
+    player_id: 0,
+    games_played: gamesPlayed,
+    passing_yards: passYards,
+    passing_touchdowns: passTD,
+    interceptions_thrown: passINT,
+    passing_attempts: passAttempts,
+    completions: passCompletions,
+    rushing_yards: rushYards,
+    rushing_touchdowns: rushTD,
+    rushing_attempts: rushAttempts,
+    receiving_yards: recYards,
+    receiving_touchdowns: recTD,
+    receptions: receptions,
+    targets: targets
+  };
+}
+
+// Fetch player stats by ID directly
+async function fetchPlayerStatsById(apiKey: string, playerId: number): Promise<PlayerSeasonStats | null> {
+  try {
+    const result = await bdlFetch(apiKey, '/season_stats', {
+      season: CURRENT_SEASON,
+      player_ids: [playerId]
+    });
+    
+    const stat = result.data?.[0];
+    if (!stat) {
+      console.log(`[NFL-Slate] No 2025 stats found for player ID ${playerId}`);
+      return null;
+    }
+    
+    // Log raw response for debugging
+    console.log(`[NFL-Slate] Raw stat for ID ${playerId}: ${JSON.stringify(stat).substring(0, 300)}`);
+    
+    const parsed = parseSeasonStats(stat);
+    if (parsed) {
+      parsed.player_id = playerId;
+    }
+    return parsed;
+  } catch (error) {
+    console.error(`[NFL-Slate] Error fetching stats for player ${playerId}:`, error);
     return null;
   }
 }
@@ -306,7 +388,34 @@ serve(async (req) => {
 
     console.log(`[NFL-Slate] Found teams - Home: ${homeTeam.id} (${homeTeam.full_name}), Away: ${awayTeam.id} (${awayTeam.full_name})`);
 
-    // Step 3: Fetch rosters from BDL API
+    // Step 3: Determine which team name matches which team
+    const homeTeamKey = homeTeam.name; // e.g., "Patriots"
+    const awayTeamKey = awayTeam.name; // e.g., "Seahawks"
+
+    // Step 4: Directly fetch stats for known starters first (guaranteed accurate depth chart)
+    console.log(`[NFL-Slate] Fetching stats for known starters...`);
+    
+    const homeStarters = STARTER_PLAYER_IDS[homeTeamKey] || [];
+    const awayStarters = STARTER_PLAYER_IDS[awayTeamKey] || [];
+    const allStarterIds = [...homeStarters, ...awayStarters].map(s => s.id);
+    
+    console.log(`[NFL-Slate] Starter IDs to fetch: ${allStarterIds.join(', ')}`);
+    
+    // Fetch starter stats in parallel
+    const starterStatsPromises = allStarterIds.map(id => fetchPlayerStatsById(apiKey, id));
+    const starterStatsResults = await Promise.all(starterStatsPromises);
+    
+    const starterStats = new Map<number, PlayerSeasonStats>();
+    starterStatsResults.forEach((stats, index) => {
+      if (stats && (stats.passing_yards > 0 || stats.rushing_yards > 0 || stats.receiving_yards > 0)) {
+        starterStats.set(allStarterIds[index], stats);
+        console.log(`[NFL-Slate] Starter stats loaded: ID ${allStarterIds[index]} - Pass:${stats.passing_yards}, Rush:${stats.rushing_yards}, Rec:${stats.receiving_yards}`);
+      }
+    });
+    
+    console.log(`[NFL-Slate] Collected stats for ${starterStats.size} known starters`);
+
+    // Step 5: Also fetch broader roster to catch any top performers we might miss
     const [homePlayersResult, awayPlayersResult] = await Promise.all([
       bdlFetch(apiKey, '/players', { team_ids: [homeTeam.id], per_page: 100 }),
       bdlFetch(apiKey, '/players', { team_ids: [awayTeam.id], per_page: 100 })
@@ -317,8 +426,12 @@ serve(async (req) => {
       ...(awayPlayersResult.data || [])
     ];
     console.log(`[NFL-Slate] Found ${allPlayers.length} total players on rosters`);
+    
+    // Log QBs specifically for debugging
+    const qbs = allPlayers.filter(p => p.position_abbreviation === 'QB' || p.position === 'Quarterback');
+    console.log(`[NFL-Slate] QBs on rosters: ${qbs.map(p => `${p.first_name} ${p.last_name} (${p.team?.abbreviation})`).join(', ')}`);
 
-    // Step 4: Filter to skill positions
+    // Step 6: Filter to skill positions
     const skillPositions = ['QB', 'RB', 'FB', 'WR', 'TE'];
     const skillPlayers = allPlayers.filter(p => {
       const pos = p.position_abbreviation || '';
@@ -335,14 +448,16 @@ serve(async (req) => {
     const playerMap = new Map<number, NFLPlayer>();
     skillPlayers.forEach(p => playerMap.set(p.id, p));
 
-    // Step 5: Fetch 2025 season stats in parallel batches
+    // Step 7: Fetch 2025 season stats for roster players (excluding starters we already have)
+    const rosterPlayerIds = playerIds.filter(id => !starterStats.has(id));
+    
     const batchSize = 25;
     const batches: number[][] = [];
-    for (let i = 0; i < playerIds.length; i += batchSize) {
-      batches.push(playerIds.slice(i, i + batchSize));
+    for (let i = 0; i < rosterPlayerIds.length; i += batchSize) {
+      batches.push(rosterPlayerIds.slice(i, i + batchSize));
     }
 
-    console.log(`[NFL-Slate] Fetching ${CURRENT_SEASON} season stats in ${batches.length} batches`);
+    console.log(`[NFL-Slate] Fetching ${CURRENT_SEASON} season stats in ${batches.length} batches for ${rosterPlayerIds.length} roster players`);
 
     const statsPromises = batches.map(batch => 
       bdlFetch(apiKey, '/season_stats', {
@@ -356,49 +471,130 @@ serve(async (req) => {
 
     const statsResults = await Promise.all(statsPromises);
     
-    // Aggregate stats by player
-    const playerStats = new Map<number, PlayerSeasonStats>();
+    // Aggregate all stats (starters + roster)
+    const allPlayerStats = new Map<number, PlayerSeasonStats>(starterStats);
     
     for (const statsResult of statsResults) {
       for (const stat of statsResult.data || []) {
         const playerId = stat.player?.id;
-        if (!playerId || !playerMap.has(playerId)) continue;
+        if (!playerId) continue;
+        
+        // Skip if we already have starter stats for this player
+        if (starterStats.has(playerId)) continue;
 
-        playerStats.set(playerId, {
-          player_id: playerId,
-          games_played: stat.games_played || 1,
-          passing_yards: stat.passing_yards || 0,
-          passing_touchdowns: stat.passing_touchdowns || 0,
-          interceptions_thrown: stat.interceptions_thrown || 0,
-          passing_attempts: stat.passing_attempts || 0,
-          completions: stat.completions || 0,
-          rushing_yards: stat.rushing_yards || 0,
-          rushing_touchdowns: stat.rushing_touchdowns || 0,
-          rushing_attempts: stat.rushing_attempts || 0,
-          receiving_yards: stat.receiving_yards || 0,
-          receiving_touchdowns: stat.receiving_touchdowns || 0,
-          receptions: stat.receptions || 0,
-          targets: stat.targets || 0
-        });
+        const parsed = parseSeasonStats(stat);
+        if (parsed) {
+          parsed.player_id = playerId;
+          allPlayerStats.set(playerId, parsed);
+        }
       }
     }
 
-    console.log(`[NFL-Slate] Collected stats for ${playerStats.size} players`);
+    console.log(`[NFL-Slate] Total stats collected for ${allPlayerStats.size} players`);
 
-    // Step 6: Build leader arrays with detailed stats
+    // Step 8: Build leader arrays with detailed stats
     const passLeaders: EnhancedLeaderPlayer[] = [];
     const rushLeaders: EnhancedLeaderPlayer[] = [];
     const recLeaders: EnhancedLeaderPlayer[] = [];
 
-    for (const [playerId, stats] of playerStats.entries()) {
+    // First add known starters with their stats
+    for (const starter of [...homeStarters, ...awayStarters]) {
+      const stats = allPlayerStats.get(starter.id);
+      if (!stats) {
+        console.log(`[NFL-Slate] No stats for starter: ${starter.name} (ID: ${starter.id})`);
+        continue;
+      }
+      
+      const player = playerMap.get(starter.id);
+      const gamesPlayed = stats.games_played || 1;
+      
+      // Determine team assignment
+      const isHomeTeam = homeStarters.some(s => s.id === starter.id);
+      const team = isHomeTeam ? homeTeam : awayTeam;
+      
+      const basePlayer = player || {
+        id: starter.id,
+        first_name: starter.name.split(' ')[0],
+        last_name: starter.name.split(' ').slice(1).join(' '),
+        position: starter.position,
+        position_abbreviation: starter.position,
+        team: team,
+        jersey_number: null
+      };
+
+      // QB - Passing Leaders
+      if (starter.position === 'QB' && stats.passing_yards > 0) {
+        const qbr = calculateQBR(stats);
+        console.log(`[NFL-Slate] Adding QB starter: ${starter.name} - ${stats.passing_yards} yds, ${stats.interceptions_thrown} INTs, QBR: ${qbr}`);
+        passLeaders.push({
+          ...basePlayer,
+          team: team,
+          stat_value: stats.passing_yards,
+          stat_type: 'Passing Yards',
+          rank: 0,
+          detailed_stats: {
+            qbr,
+            passing_yards: stats.passing_yards,
+            passing_yards_per_game: Math.round((stats.passing_yards / gamesPlayed) * 10) / 10,
+            passing_touchdowns: stats.passing_touchdowns,
+            interceptions: stats.interceptions_thrown,
+            rushing_yards: stats.rushing_yards,
+            games_played: gamesPlayed
+          }
+        });
+      }
+
+      // RB - Rushing Leaders
+      if (starter.position === 'RB' && stats.rushing_yards > 0) {
+        console.log(`[NFL-Slate] Adding RB starter: ${starter.name} - ${stats.rushing_yards} rush yds`);
+        rushLeaders.push({
+          ...basePlayer,
+          team: team,
+          stat_value: stats.rushing_yards,
+          stat_type: 'Rushing Yards',
+          rank: 0,
+          detailed_stats: {
+            rushing_yards: stats.rushing_yards,
+            rushing_yards_per_game: Math.round((stats.rushing_yards / gamesPlayed) * 10) / 10,
+            rushing_touchdowns: stats.rushing_touchdowns,
+            receptions: stats.receptions,
+            receiving_yards: stats.receiving_yards,
+            games_played: gamesPlayed
+          }
+        });
+      }
+
+      // WR/TE - Receiving Leaders
+      if (['WR', 'TE'].includes(starter.position) && stats.receiving_yards > 0) {
+        console.log(`[NFL-Slate] Adding WR/TE starter: ${starter.name} - ${stats.receiving_yards} rec yds`);
+        recLeaders.push({
+          ...basePlayer,
+          team: team,
+          stat_value: stats.receiving_yards,
+          stat_type: 'Receiving Yards',
+          rank: 0,
+          detailed_stats: {
+            receiving_yards: stats.receiving_yards,
+            receiving_yards_per_game: Math.round((stats.receiving_yards / gamesPlayed) * 10) / 10,
+            receptions: stats.receptions,
+            receiving_touchdowns: stats.receiving_touchdowns,
+            games_played: gamesPlayed
+          }
+        });
+      }
+    }
+
+    // Then add any other roster players with stats (non-starters)
+    for (const [playerId, stats] of allPlayerStats.entries()) {
+      // Skip if already added as starter
+      if ([...homeStarters, ...awayStarters].some(s => s.id === playerId)) continue;
+      
       const player = playerMap.get(playerId);
       if (!player) continue;
 
       const posAbbr = player.position_abbreviation || '';
       const gamesPlayed = stats.games_played || 1;
-
       const playerFullName = `${player.first_name} ${player.last_name}`;
-      const teamName = player.team?.full_name || '';
       
       // Skip excluded players (backups)
       if (isExcludedPlayer(playerFullName)) {
@@ -406,8 +602,7 @@ serve(async (req) => {
         continue;
       }
       
-      const isStarter = isKnownStarter(playerFullName, teamName);
-      // QBs - Passing Leaders (prioritize known starters)
+      // QBs - Passing Leaders
       if ((posAbbr === 'QB' || player.position === 'Quarterback') && stats.passing_yards > 0) {
         const qbr = calculateQBR(stats);
         passLeaders.push({
