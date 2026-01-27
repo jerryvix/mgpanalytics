@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User } from "lucide-react";
 
 interface NFLPlayerCardProps {
   id: number;
@@ -35,6 +34,7 @@ export function NFLPlayerCard({
   experience,
 }: NFLPlayerCardProps) {
   const fullName = `${firstName} ${lastName}`;
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`;
   
   const getPositionColor = () => {
     switch (positionAbbreviation) {
@@ -78,7 +78,7 @@ export function NFLPlayerCard({
             {/* Player Avatar */}
             <div className="relative flex-shrink-0">
               <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
-                <User className="w-7 h-7 text-muted-foreground" />
+                <span className="text-lg font-bold text-muted-foreground">{initials}</span>
               </div>
               {jerseyNumber && (
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-terminal-green flex items-center justify-center">

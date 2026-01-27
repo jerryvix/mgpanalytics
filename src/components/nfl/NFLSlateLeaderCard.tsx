@@ -247,7 +247,7 @@ export function NFLSlateLeaderCard({
                     onError={() => setAvatarError(true)}
                   />
                 ) : (
-                  <User className="w-7 h-7 text-muted-foreground" />
+                  <span className="text-lg font-bold text-muted-foreground">{initials}</span>
                 )}
               </div>
               {jerseyNumber && (
