@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ExternalLink, CheckCircle, Star, Users } from "lucide-react";
+import { ArrowLeft, ExternalLink, CheckCircle, Star, Users, Twitter } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,9 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CAPPER_CATEGORY_LABELS, CAPPER_CATEGORY_ICONS, CAPPER_TIER_COLORS } from "@/types/capper";
+import { Separator } from "@/components/ui/separator";
+import { CAPPER_CATEGORY_LABELS, CAPPER_CATEGORY_ICONS, CAPPER_TIER_COLORS, CATEGORY_CONFIG } from "@/types/capper";
 import type { Capper } from "@/types/capper";
 import { cn } from "@/lib/utils";
+import { TwitterEmbed } from "@/components/twitter";
 
 function formatFollowers(count: number): string {
   if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
@@ -69,6 +71,7 @@ export default function CapperProfilePage() {
   const categoryIcon = CAPPER_CATEGORY_ICONS[capper.category];
   const categoryLabel = CAPPER_CATEGORY_LABELS[capper.category];
   const tierColor = CAPPER_TIER_COLORS[capper.tier];
+  const categoryConfig = CATEGORY_CONFIG[capper.category];
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,6 +136,19 @@ export default function CapperProfilePage() {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* Entertainment Disclaimer */}
+            {categoryConfig?.isEntertainment && (
+              <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                <span className="text-lg">⚠️</span>
+                <div>
+                  <p className="text-sm font-medium text-primary">Entertainment Personality</p>
+                  <p className="text-sm text-muted-foreground">
+                    {categoryConfig.disclaimer || "Follow for vibes and content, not sharp picks"}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {capper.description && (
               <div>
                 <h3 className="font-semibold mb-2">About</h3>
@@ -164,6 +180,38 @@ export default function CapperProfilePage() {
                   <p className="text-sm text-muted-foreground">MGP Users Following</p>
                 </CardContent>
               </Card>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Tweets Section */}
+        <Card className="mt-6">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Twitter className="h-5 w-5" />
+                Recent Tweets
+              </CardTitle>
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={`https://x.com/${capper.x_username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1"
+                >
+                  View All on X
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Embed the user's timeline using their profile URL */}
+              <TwitterEmbed tweetUrl={`https://x.com/${capper.x_username}`} />
+              <p className="text-sm text-muted-foreground text-center pt-2">
+                Click above to view {capper.x_display_name}'s full timeline on X
+              </p>
             </div>
           </CardContent>
         </Card>
