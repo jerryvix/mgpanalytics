@@ -419,11 +419,18 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
-    console.error("Error in sync-nba-odds function:", error);
+    // Log detailed error server-side only
+    console.error("[sync-nba-odds] Error:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Return generic error to client
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: "An unexpected error occurred. Please try again later.",
       }),
       {
         status: 500,
