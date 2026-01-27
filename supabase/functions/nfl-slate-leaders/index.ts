@@ -139,7 +139,6 @@ interface EnhancedLeaderPlayer {
 const SUPER_BOWL_LX_OVERRIDES = {
   drake_maye: {
     fullName: "Drake Maye",
-    espnHeadshotUrl: "https://a.espncdn.com/i/headshots/nfl/players/full/4431611.png",
     stats: {
       games_played: 17,
       passing_yards: 4394,
@@ -160,7 +159,6 @@ const SUPER_BOWL_LX_OVERRIDES = {
   },
   sam_darnold: {
     fullName: "Sam Darnold",
-    espnHeadshotUrl: "https://a.espncdn.com/i/headshots/nfl/players/full/3912547.png",
     interceptions_thrown: 14,
     qbr: 56.9,
     passing_yards: 4048,
@@ -636,12 +634,7 @@ serve(async (req) => {
             rushing_yards: stats.rushing_yards,
             games_played: gamesPlayed
           },
-          headshot_url:
-            isSuperBowlLXMatchup && starter.name === SUPER_BOWL_LX_OVERRIDES.drake_maye.fullName
-              ? SUPER_BOWL_LX_OVERRIDES.drake_maye.espnHeadshotUrl
-              : isSuperBowlLXMatchup && starter.name === SUPER_BOWL_LX_OVERRIDES.sam_darnold.fullName
-                ? SUPER_BOWL_LX_OVERRIDES.sam_darnold.espnHeadshotUrl
-                : null,
+          headshot_url: null,
         });
       }
 
