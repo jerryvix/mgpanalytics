@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Users } from "lucide-react";
+import { Users, ArrowLeft } from "lucide-react";
 import { CappersFilters, CappersGrid, FeaturedCappers } from "@/components/cappers";
 import { useCappers, useFeaturedCappers, useUserCapperFollows, useFollowCapper, useUnfollowCapper } from "@/hooks/useCappers";
 import type { CapperCategory, Sport } from "@/types/capper";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function CappersDirectory() {
   // Filter state
@@ -61,6 +62,16 @@ export default function CappersDirectory() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Back navigation */}
+        <div className="mb-6">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/community/feed" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Feed
+            </Link>
+          </Button>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
