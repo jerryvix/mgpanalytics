@@ -7,6 +7,7 @@ import { Search, Users, Info, Loader2, Globe, Trophy } from "lucide-react";
 import { NFLPlayerCard } from "@/components/players/NFLPlayerCard";
 import { searchNFLPlayers, NFLPlayer } from "@/services/balldontlie/nflPlayers";
 import { NFLSlatePlayersGrid } from "@/components/nfl";
+import { useNFLSlateLeaders } from "@/hooks/useNFLSlateLeaders";
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -23,6 +24,8 @@ function useDebounce<T>(value: T, delay: number): T {
 export default function NFLPlayers() {
   const [activeTab, setActiveTab] = useState<"slate" | "search">("slate");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const { data: slateData } = useNFLSlateLeaders({ enabled: activeTab === "slate" });
   
   const debouncedSearch = useDebounce(searchQuery, 300);
 
@@ -45,10 +48,15 @@ export default function NFLPlayers() {
 
   const apiPlayers = searchResults?.data || [];
 
+  const headerTitle =
+    activeTab === "slate" && slateData?.isSuperBowl
+      ? "Super Bowl LX: Patriots @ Seahawks - Feb 8, 2026"
+      : "NFL Players";
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">NFL Players</h1>
+        <h1 className="text-2xl font-bold text-foreground">{headerTitle}</h1>
         <p className="text-muted-foreground text-sm mt-1">
           Top leaders for the next upcoming game
         </p>

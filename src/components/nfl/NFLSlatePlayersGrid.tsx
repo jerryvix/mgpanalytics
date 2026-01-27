@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -6,96 +5,11 @@ import { Calendar, Users, AlertCircle, RefreshCw, Trophy, Zap } from "lucide-rea
 import { NFLSlateLeaderCard } from "./NFLSlateLeaderCard";
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
-
-const EDGE_FUNCTION_URL = `https://pgrrbkhxukxvzzauviyp.supabase.co/functions/v1/nfl-slate-leaders`;
-
-interface DetailedStats {
-  qbr?: number;
-  passing_yards?: number;
-  passing_yards_per_game?: number;
-  passing_touchdowns?: number;
-  interceptions?: number;
-  rushing_yards?: number;
-  rushing_yards_per_game?: number;
-  rushing_touchdowns?: number;
-  receiving_yards?: number;
-  receiving_yards_per_game?: number;
-  receptions?: number;
-  receiving_touchdowns?: number;
-  games_played?: number;
-}
-
-interface LeaderPlayer {
-  id: number;
-  first_name: string;
-  last_name: string;
-  position: string;
-  position_abbreviation: string;
-  team: {
-    id: number;
-    abbreviation: string;
-    full_name: string;
-    name: string;
-  } | null;
-  jersey_number: string | null;
-  stat_value: number;
-  stat_type: string;
-  rank: number;
-  detailed_stats?: DetailedStats;
-}
-
-interface SlateData {
-  game: {
-    id: number;
-    date: string;
-    time: string;
-    datetime: string;
-    week: number;
-    status: string;
-    home_team: {
-      id: number;
-      abbreviation: string;
-      full_name: string;
-      name: string;
-    };
-    visitor_team: {
-      id: number;
-      abbreviation: string;
-      full_name: string;
-      name: string;
-    };
-  } | null;
-  leaders: {
-    passing: LeaderPlayer[];
-    rushing: LeaderPlayer[];
-    receiving: LeaderPlayer[];
-  };
-  message?: string;
-  isSuperBowl?: boolean;
-  isPlayoffs?: boolean;
-  seasonComplete?: boolean;
-  statsSource?: string;
-}
+import { useNFLSlateLeaders } from "@/hooks/useNFLSlateLeaders";
 
 export function NFLSlatePlayersGrid() {
-  const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } = useQuery<SlateData>({
-    queryKey: ["nfl-slate-leaders"],
-    queryFn: async () => {
-      const response = await fetch(EDGE_FUNCTION_URL, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch slate data');
-      }
-      
-      return response.json();
-    },
-    refetchInterval: 30 * 60 * 1000,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data, isLoading, error, refetch, isFetching, dataUpdatedAt } =
+    useNFLSlateLeaders();
 
   const formatGameDate = (datetime: string | undefined, date: string | undefined) => {
     try {
@@ -215,7 +129,7 @@ export function NFLSlatePlayersGrid() {
               {isSuperBowl ? (
                 <Badge className="bg-gradient-to-r from-amber-500/40 to-yellow-500/30 text-amber-300 border-amber-500/50 gap-1.5 px-3 py-1.5 text-sm font-bold">
                   <Trophy className="w-4 h-4" />
-                  Super Bowl LIX
+                  Super Bowl LX
                 </Badge>
               ) : isPlayoffs ? (
                 <Badge className="bg-gradient-to-r from-purple-500/40 to-indigo-500/30 text-purple-300 border-purple-500/50 gap-1.5 px-3 py-1.5">
@@ -232,9 +146,15 @@ export function NFLSlatePlayersGrid() {
             {/* Matchup Title */}
             <div className="flex items-center gap-3">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
-                {game.visitor_team.full_name}
-                <span className="text-muted-foreground mx-2 text-xl">@</span>
-                {game.home_team.full_name}
+                {isSuperBowl
+                  ? "Super Bowl LX: Patriots @ Seahawks - Feb 8, 2026"
+                  : (
+                      <>
+                        {game.visitor_team.full_name}
+                        <span className="text-muted-foreground mx-2 text-xl">@</span>
+                        {game.home_team.full_name}
+                      </>
+                    )}
               </h2>
             </div>
 
@@ -254,12 +174,12 @@ export function NFLSlatePlayersGrid() {
             <Users className="w-4 h-4" />
             <span>{allLeaders.length} team leaders</span>
           </div>
-          {statsSource && (
-            <>
-              <span className="text-muted-foreground/50">•</span>
-              <span className="italic">{statsSource}</span>
-            </>
-          )}
+            {statsSource && (
+              <>
+                <span className="text-muted-foreground/50">•</span>
+                <span>{statsSource}</span>
+              </>
+            )}
           <span className="text-muted-foreground/50">•</span>
           <span>Updated: {getLastUpdated()}</span>
         </div>
@@ -300,6 +220,7 @@ export function NFLSlatePlayersGrid() {
                   rank={player.rank}
                   category="passing"
                   detailedStats={player.detailed_stats}
+                  headshotUrl={player.headshot_url ?? null}
                 />
               ))}
             </div>
@@ -367,8 +288,8 @@ export function NFLSlatePlayersGrid() {
 
       {/* Performance Delta Disclaimer */}
       <div className="mt-8 pt-4 border-t border-border/50">
-        <p className="text-[10px] text-muted-foreground/70 italic leading-relaxed">
-          Performance Delta: Calculated as the percentage variance between a player's Current Period (Postseason or Last 5 Games) and their 2025 Season Baseline Average.
+        <p className="text-[10px] text-muted-foreground/70 leading-relaxed text-left">
+          Performance Delta: Percentage variance between current Postseason form and 2025 Season baseline averages.
         </p>
       </div>
     </div>
