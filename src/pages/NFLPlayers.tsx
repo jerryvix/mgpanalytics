@@ -1,15 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Users, Info, Loader2, Database, Globe } from "lucide-react";
-import { PlayersGrid } from "@/components/players/PlayersGrid";
+import { Search, Users, Info, Loader2, Globe, Trophy } from "lucide-react";
 import { NFLPlayerCard } from "@/components/players/NFLPlayerCard";
 import { searchNFLPlayers, NFLPlayer } from "@/services/balldontlie/nflPlayers";
-
-const NFL_POSITIONS = ["QB", "RB", "WR", "TE", "FB"];
+import { NFLSlatePlayersGrid } from "@/components/nfl";
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -26,63 +23,8 @@ function useDebounce<T>(value: T, delay: number): T {
 export default function NFLPlayers() {
   const [activeTab, setActiveTab] = useState<"slate" | "search">("slate");
   const [searchQuery, setSearchQuery] = useState("");
-  const [teams, setTeams] = useState<string[]>([]);
   
   const debouncedSearch = useDebounce(searchQuery, 300);
-
-  // Slate players from database
-  const { data: slatePlayers = [], isLoading: slateLoading } = useQuery({
-    queryKey: ["nfl-players-slate"],
-    queryFn: async () => {
-      const now = new Date();
-      const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-      const { data, error } = await supabase
-        .from("players")
-        .select(`
-          id,
-          name,
-          team_name,
-          position,
-          injury_status,
-          is_featured,
-          featured_reason,
-          usage_rank
-        `)
-        .eq("sport", "NFL")
-        .eq("is_featured", true)
-        .gte("slate_window_end", now.toISOString())
-        .order("usage_rank", { ascending: true });
-
-      if (error) {
-        console.error("Error fetching NFL players:", error);
-        return [];
-      }
-
-      if (data && data.length > 0) {
-        const playerIds = data.map((p) => p.id);
-        const { data: statsData } = await supabase
-          .from("player_season_stats")
-          .select("player_id, pass_yards, rush_yards, rec_yards")
-          .in("player_id", playerIds)
-          .eq("sport", "NFL")
-          .eq("season", 2024);
-
-        const statsMap = new Map();
-        for (const stat of statsData || []) {
-          statsMap.set(stat.player_id, stat);
-        }
-
-        return data.map((player) => ({
-          ...player,
-          stats: statsMap.get(player.id),
-        }));
-      }
-
-      return data || [];
-    },
-    refetchInterval: 60000,
-  });
 
   // API search results
   const { 
@@ -98,16 +40,8 @@ export default function NFLPlayers() {
       return searchNFLPlayers(debouncedSearch, 25);
     },
     enabled: activeTab === "search" && debouncedSearch.length >= 2,
-    staleTime: 30000, // Cache for 30 seconds
+    staleTime: 30000,
   });
-
-  // Extract unique teams from slate players
-  useEffect(() => {
-    if (slatePlayers.length > 0) {
-      const uniqueTeams = [...new Set(slatePlayers.map((p) => p.team_name))].sort();
-      setTeams(uniqueTeams);
-    }
-  }, [slatePlayers]);
 
   const apiPlayers = searchResults?.data || [];
 
@@ -116,7 +50,7 @@ export default function NFLPlayers() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">NFL Players</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Search players or view featured players for upcoming games
+          Top leaders for the next upcoming game
         </p>
       </div>
 
@@ -124,8 +58,8 @@ export default function NFLPlayers() {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search")}>
         <TabsList className="bg-muted/50">
           <TabsTrigger value="slate" className="gap-2">
-            <Database className="w-4 h-4" />
-            Slate Players
+            <Trophy className="w-4 h-4" />
+            Top Leaders
           </TabsTrigger>
           <TabsTrigger value="search" className="gap-2">
             <Globe className="w-4 h-4" />
@@ -133,16 +67,9 @@ export default function NFLPlayers() {
           </TabsTrigger>
         </TabsList>
 
-        {/* Slate Players Tab */}
+        {/* Top Leaders Tab */}
         <TabsContent value="slate" className="mt-6">
-          <PlayersGrid
-            sport="NFL"
-            players={slatePlayers}
-            teams={teams}
-            positions={NFL_POSITIONS}
-            slateWindow="7 days"
-            isLoading={slateLoading}
-          />
+          <NFLSlatePlayersGrid />
         </TabsContent>
 
         {/* Search Tab */}

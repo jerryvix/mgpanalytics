@@ -47,3 +47,6 @@ verify_jwt = false
 
 [functions.search-nfl-players]
 verify_jwt = false
+
+[functions.nfl-slate-leaders]
+verify_jwt = false
