@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, AlertCircle, RefreshCw } from "lucide-react";
+import { Calendar, MapPin, Users, AlertCircle, RefreshCw, Trophy } from "lucide-react";
 import { NFLSlateLeaderCard } from "./NFLSlateLeaderCard";
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
@@ -54,6 +54,9 @@ interface SlateData {
     receiving: LeaderPlayer[];
   };
   message?: string;
+  isSuperBowl?: boolean;
+  isPlayoffs?: boolean;
+  seasonComplete?: boolean;
 }
 
 export function NFLSlatePlayersGrid() {
@@ -131,22 +134,28 @@ export function NFLSlatePlayersGrid() {
     );
   }
 
-  // No upcoming games state
+  // No upcoming games state - check if season is complete
   if (!data?.game) {
+    const seasonComplete = data?.seasonComplete;
     return (
       <Card className="bg-card border-border">
         <CardContent className="p-8 text-center">
           <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No Upcoming Games</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            {seasonComplete ? "Season Complete" : "No Upcoming Games"}
+          </h3>
           <p className="text-muted-foreground text-sm">
-            There are no NFL games scheduled. Check back closer to game day for the top slate leaders.
+            {seasonComplete 
+              ? "The NFL season has concluded. Check back for next season!"
+              : "There are no NFL games scheduled. Check back closer to game day for the top slate leaders."
+            }
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  const { game, leaders } = data;
+  const { game, leaders, isSuperBowl, isPlayoffs } = data;
   const allLeaders = [
     ...leaders.passing.map(p => ({ ...p, category: "passing" as const })),
     ...leaders.rushing.map(p => ({ ...p, category: "rushing" as const })),
@@ -202,7 +211,16 @@ export function NFLSlatePlayersGrid() {
                 <span className="text-muted-foreground text-sm">@</span>
                 <span className="text-foreground">{game.home_team.abbreviation}</span>
               </div>
-              <Badge variant="secondary">Week {game.week}</Badge>
+              {isSuperBowl ? (
+                <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 gap-1">
+                  <Trophy className="w-3 h-3" />
+                  Super Bowl LIX
+                </Badge>
+              ) : isPlayoffs ? (
+                <Badge variant="secondary">Playoffs</Badge>
+              ) : (
+                <Badge variant="secondary">Week {game.week}</Badge>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
