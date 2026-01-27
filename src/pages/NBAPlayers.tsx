@@ -1,22 +1,41 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { PlayersGrid } from "@/components/players/PlayersGrid";
-
-const NBA_POSITIONS = ["PG", "SG", "SF", "PF", "C", "G", "F"];
+import { NBASlatePlayersGrid } from "@/components/nba/NBASlatePlayersGrid";
 
 export default function NBAPlayers() {
-  const [teams, setTeams] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"slate" | "all">("slate");
 
-  const { data: players = [], isLoading } = useQuery({
-    queryKey: ["nba-players-slate"],
+  const { data: result, isLoading, refetch, dataUpdatedAt } = useQuery({
+    queryKey: ["nba-top-slate-players", viewMode],
     queryFn: async () => {
-      // Get slate window (now → +48h)
       const now = new Date();
       const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
-      // Get featured players in slate window
-      const { data, error } = await supabase
+      // 1. Get games in next 48 hours
+      const { data: upcomingGames, error: gamesError } = await supabase
+        .from("nba_games")
+        .select("id, home_team_name, visitor_team_name, date, status")
+        .gte("date", now.toISOString())
+        .lte("date", in48Hours.toISOString())
+        .neq("status", "Final");
+
+      if (gamesError) {
+        console.error("Error fetching NBA games:", gamesError);
+        return { players: [], games: [], teams: [], hasGames: false };
+      }
+
+      if (!upcomingGames || upcomingGames.length === 0) {
+        return { players: [], games: upcomingGames || [], teams: [], hasGames: false };
+      }
+
+      // 2. Get unique team names from upcoming games
+      const teamNames = [...new Set(
+        upcomingGames.flatMap(g => [g.home_team_name, g.visitor_team_name])
+      )].filter(Boolean);
+
+      // 3. Get players from those teams, excluding "Out" status
+      const { data: playersData, error: playersError } = await supabase
         .from("players")
         .select(`
           id,
@@ -24,79 +43,115 @@ export default function NBAPlayers() {
           team_name,
           position,
           injury_status,
-          is_featured,
-          featured_reason,
-          usage_rank,
           headshot_url
         `)
         .eq("sport", "NBA")
-        .eq("is_featured", true)
-        .gte("slate_window_end", now.toISOString())
-        .order("usage_rank", { ascending: true });
+        .in("team_name", teamNames)
+        .neq("injury_status", "Out");
 
-      if (error) {
-        console.error("Error fetching NBA players:", error);
-        return [];
+      if (playersError) {
+        console.error("Error fetching players:", playersError);
+        return { players: [], games: upcomingGames, teams: teamNames, hasGames: true };
       }
 
-      // Get stats for these players
-      if (data && data.length > 0) {
-        const playerIds = data.map((p) => p.id);
-        const { data: statsData } = await supabase
-          .from("player_season_stats")
-          .select("player_id, points_per_game, rebounds_per_game, assists_per_game, minutes_per_game, games_played")
-          .in("player_id", playerIds)
-          .eq("sport", "NBA")
-          .eq("season", 2025);
+      if (!playersData || playersData.length === 0) {
+        return { players: [], games: upcomingGames, teams: teamNames, hasGames: true };
+      }
 
-        const statsMap = new Map();
-        for (const stat of statsData || []) {
-          // Only include stats if they have actual data
-          if (stat.points_per_game !== null || stat.games_played !== null) {
-            statsMap.set(stat.player_id, stat);
-          }
+      // 4. Get stats for these players
+      const playerIds = playersData.map(p => p.id);
+      const { data: statsData } = await supabase
+        .from("player_season_stats")
+        .select("player_id, points_per_game, rebounds_per_game, assists_per_game, minutes_per_game, games_played")
+        .in("player_id", playerIds)
+        .eq("sport", "NBA")
+        .eq("season", 2025);
+
+      // Create stats lookup map
+      const statsMap = new Map<string, {
+        points_per_game: number | null;
+        rebounds_per_game: number | null;
+        assists_per_game: number | null;
+        minutes_per_game: number | null;
+        games_played: number | null;
+      }>();
+      
+      for (const stat of statsData || []) {
+        if (stat.points_per_game !== null) {
+          statsMap.set(stat.player_id, stat);
         }
+      }
 
-        return data.map((player) => {
-          const playerStats = statsMap.get(player.id);
-          return {
-            ...player,
-            stats: playerStats,
-            hasStats: !!playerStats,
-          };
+      // 5. Create game context lookup (team -> game info)
+      const gameContextMap = new Map<string, { opponent: string; date: Date; isHome: boolean }>();
+      for (const game of upcomingGames) {
+        const gameDate = new Date(game.date);
+        gameContextMap.set(game.home_team_name, {
+          opponent: game.visitor_team_name,
+          date: gameDate,
+          isHome: true,
+        });
+        gameContextMap.set(game.visitor_team_name, {
+          opponent: game.home_team_name,
+          date: gameDate,
+          isHome: false,
         });
       }
 
-      return data || [];
+      // 6. Combine players with stats and game context
+      const playersWithStats = playersData
+        .map(player => {
+          const stats = statsMap.get(player.id);
+          const gameContext = gameContextMap.get(player.team_name);
+          return {
+            ...player,
+            stats,
+            gameContext,
+            ppg: stats?.points_per_game ?? null,
+          };
+        })
+        // Filter to only players with PPG stats
+        .filter(p => p.ppg !== null && p.ppg > 0)
+        // Sort by PPG descending
+        .sort((a, b) => (b.ppg ?? 0) - (a.ppg ?? 0));
+
+      // 7. Take top 10 for slate view, all for all view
+      const finalPlayers = viewMode === "slate" 
+        ? playersWithStats.slice(0, 10)
+        : playersWithStats;
+
+      // Add rank to each player
+      const rankedPlayers = finalPlayers.map((player, index) => ({
+        ...player,
+        rank: index + 1,
+      }));
+
+      return { 
+        players: rankedPlayers, 
+        games: upcomingGames, 
+        teams: teamNames,
+        hasGames: true,
+        totalWithStats: playersWithStats.length,
+      };
     },
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 30 * 60 * 1000, // Refresh every 30 minutes
+    staleTime: 5 * 60 * 1000, // Consider stale after 5 minutes
   });
 
-  // Extract unique teams from players
-  useEffect(() => {
-    if (players.length > 0) {
-      const uniqueTeams = [...new Set(players.map((p) => p.team_name))].sort();
-      setTeams(uniqueTeams);
-    }
-  }, [players]);
+  const { players = [], games = [], teams = [], hasGames = false, totalWithStats = 0 } = result || {};
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">NBA Players</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Featured players for upcoming NBA games
-        </p>
-      </div>
-
-      <PlayersGrid
-        sport="NBA"
-        players={players}
-        teams={teams}
-        positions={NBA_POSITIONS}
-        slateWindow="48 hours"
-        isLoading={isLoading}
-      />
-    </div>
+    <NBASlatePlayersGrid
+      players={players}
+      games={games}
+      teams={teams}
+      hasGames={hasGames}
+      isLoading={isLoading}
+      viewMode={viewMode}
+      onViewModeChange={setViewMode}
+      lastUpdated={dataUpdatedAt ? new Date(dataUpdatedAt) : null}
+      onRefresh={() => refetch()}
+      totalWithStats={totalWithStats}
+    />
   );
 }
