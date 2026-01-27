@@ -157,90 +157,35 @@ function parseEspnStats(statistics: ESPNRosterEntry['statistics']): Record<strin
 }
 
 async function fetchEspnTeamWithStats(teamId: number): Promise<ESPNRosterEntry[]> {
-  // Use the roster endpoint with statistics
-  const url = `https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster?season=2025`;
-  console.log(`[sync-nba-players] Fetching ESPN team roster with stats: ${url}`);
+  // ESPN uses the year the season ENDS for the season parameter
+  // 2024-25 season = season=2025, but rosters may be under season=2024
+  // Try without season param first (defaults to current season)
+  const url = `https://site.web.api.espn.com/apis/site/v2/sports/basketball/nba/teams/${teamId}/roster`;
+  console.log(`[sync-nba-players] Fetching ESPN team roster: ${url}`);
   
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      console.error(`[sync-nba-players] ESPN team API error: ${response.status}`);
+      console.error(`[sync-nba-players] ESPN team API error: ${response.status} - ${await response.text()}`);
       return [];
     }
     
     const data = await response.json();
     console.log(`[sync-nba-players] ESPN response keys:`, Object.keys(data));
     
-    // The roster endpoint returns athletes array directly
+    // ESPN roster endpoint returns athletes grouped by position
+    const entries: ESPNRosterEntry[] = [];
+    
     if (data.athletes && Array.isArray(data.athletes)) {
-      // Transform athletes array to roster entry format
-      const entries: ESPNRosterEntry[] = [];
+      console.log(`[sync-nba-players] athletes array length: ${data.athletes.length}`);
       
+      // ESPN returns athletes directly in the array - each item IS an athlete
       for (const athlete of data.athletes) {
-        // Fetch individual player stats
-        const statsUrl = `https://site.web.api.espn.com/apis/common/v3/sports/basketball/nba/athletes/${athlete.id}/stats?season=2025`;
-        
-        try {
-          const statsResponse = await fetch(statsUrl);
-          let statistics: ESPNRosterEntry['statistics'] = [];
-          
-          if (statsResponse.ok) {
-            const statsData = await statsResponse.json();
-            console.log(`[sync-nba-players] Stats for ${athlete.displayName}:`, Object.keys(statsData));
-            
-            // Parse the stats from the response
-            if (statsData.statistics) {
-              // Extract per-game averages
-              for (const category of statsData.statistics) {
-                if (category.splits && Array.isArray(category.splits)) {
-                  for (const split of category.splits) {
-                    if (split.stats && Array.isArray(split.stats)) {
-                      for (const stat of split.stats) {
-                        if (stat.perGame !== undefined) {
-                          statistics.push({
-                            name: stat.name,
-                            displayName: stat.displayName || stat.name,
-                            value: stat.perGame
-                          });
-                        } else if (stat.value !== undefined) {
-                          statistics.push({
-                            name: stat.name,
-                            displayName: stat.displayName || stat.name,
-                            value: stat.value
-                          });
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-          
-          entries.push({
+        if (athlete && typeof athlete === 'object' && (athlete.id || athlete.displayName)) {
+          const entry: ESPNRosterEntry = {
             athlete: {
-              id: athlete.id,
-              displayName: athlete.displayName || `${athlete.firstName} ${athlete.lastName}`,
-              firstName: athlete.firstName || '',
-              lastName: athlete.lastName || '',
-              position: athlete.position || { abbreviation: 'G', name: 'Guard' },
-              jersey: athlete.jersey,
-              age: athlete.age,
-              headshot: athlete.headshot,
-              injuries: athlete.injuries
-            },
-            statistics
-          });
-          
-          // Small delay between stats calls
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-        } catch (err) {
-          console.log(`[sync-nba-players] Could not fetch stats for ${athlete.displayName}:`, err);
-          entries.push({
-            athlete: {
-              id: athlete.id,
-              displayName: athlete.displayName || `${athlete.firstName} ${athlete.lastName}`,
+              id: String(athlete.id || athlete.uid?.split(':').pop() || Math.random()),
+              displayName: athlete.displayName || athlete.fullName || `${athlete.firstName || ''} ${athlete.lastName || ''}`.trim(),
               firstName: athlete.firstName || '',
               lastName: athlete.lastName || '',
               position: athlete.position || { abbreviation: 'G', name: 'Guard' },
@@ -250,14 +195,16 @@ async function fetchEspnTeamWithStats(teamId: number): Promise<ESPNRosterEntry[]
               injuries: athlete.injuries
             },
             statistics: []
-          });
+          };
+          entries.push(entry);
         }
       }
       
-      return entries;
+      console.log(`[sync-nba-players] Parsed ${entries.length} athletes from roster`);
     }
     
-    return [];
+    console.log(`[sync-nba-players] Returning ${entries.length} roster entries`);
+    return entries;
   } catch (error) {
     console.error(`[sync-nba-players] ESPN team fetch error:`, error);
     return [];
