@@ -2,12 +2,28 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, AlertCircle, RefreshCw, Trophy } from "lucide-react";
+import { Calendar, Users, AlertCircle, RefreshCw, Trophy, Zap } from "lucide-react";
 import { NFLSlateLeaderCard } from "./NFLSlateLeaderCard";
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
 
 const EDGE_FUNCTION_URL = `https://pgrrbkhxukxvzzauviyp.supabase.co/functions/v1/nfl-slate-leaders`;
+
+interface DetailedStats {
+  qbr?: number;
+  passing_yards?: number;
+  passing_yards_per_game?: number;
+  passing_touchdowns?: number;
+  interceptions?: number;
+  rushing_yards?: number;
+  rushing_yards_per_game?: number;
+  rushing_touchdowns?: number;
+  receiving_yards?: number;
+  receiving_yards_per_game?: number;
+  receptions?: number;
+  receiving_touchdowns?: number;
+  games_played?: number;
+}
 
 interface LeaderPlayer {
   id: number;
@@ -25,6 +41,8 @@ interface LeaderPlayer {
   stat_value: number;
   stat_type: string;
   rank: number;
+  position_rank?: number;
+  detailed_stats?: DetailedStats;
 }
 
 interface SlateData {
@@ -57,6 +75,7 @@ interface SlateData {
   isSuperBowl?: boolean;
   isPlayoffs?: boolean;
   seasonComplete?: boolean;
+  statsSource?: string;
 }
 
 export function NFLSlatePlayersGrid() {
@@ -75,19 +94,19 @@ export function NFLSlatePlayersGrid() {
       
       return response.json();
     },
-    refetchInterval: 30 * 60 * 1000, // Refresh every 30 minutes
-    staleTime: 5 * 60 * 1000, // Consider stale after 5 minutes
+    refetchInterval: 30 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const formatGameTime = (datetime: string | undefined, date: string | undefined) => {
+  const formatGameDate = (datetime: string | undefined, date: string | undefined) => {
     try {
       if (datetime) {
-        return format(parseISO(datetime), "EEEE, MMM d 'at' h:mm a");
+        return format(parseISO(datetime), "EEEE, MMMM d, yyyy");
       }
       if (date) {
-        return format(parseISO(date), "EEEE, MMM d");
+        return format(parseISO(date), "EEEE, MMMM d, yyyy");
       }
-    } catch (e) {
+    } catch {
       return date || "TBD";
     }
     return "TBD";
@@ -105,10 +124,10 @@ export function NFLSlatePlayersGrid() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-20 w-full" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Skeleton className="h-24 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[...Array(6)].map((_, i) => (
-            <Skeleton key={i} className="h-32" />
+            <Skeleton key={i} className="h-48" />
           ))}
         </div>
       </div>
@@ -134,7 +153,7 @@ export function NFLSlatePlayersGrid() {
     );
   }
 
-  // No upcoming games state - check if season is complete
+  // No upcoming games state
   if (!data?.game) {
     const seasonComplete = data?.seasonComplete;
     return (
@@ -155,43 +174,30 @@ export function NFLSlatePlayersGrid() {
     );
   }
 
-  const { game, leaders, isSuperBowl, isPlayoffs } = data;
+  const { game, leaders, isSuperBowl, isPlayoffs, statsSource } = data;
   const allLeaders = [
     ...leaders.passing.map(p => ({ ...p, category: "passing" as const })),
     ...leaders.rushing.map(p => ({ ...p, category: "rushing" as const })),
     ...leaders.receiving.map(p => ({ ...p, category: "receiving" as const })),
   ];
 
-  // No leaders found state
+  // No leaders found
   if (allLeaders.length === 0) {
     return (
       <div className="space-y-6">
-        {/* Game Header */}
         <Card className="bg-muted/30 border-border">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-lg font-bold">
-                  <span>{game.visitor_team.abbreviation}</span>
-                  <span className="text-muted-foreground">@</span>
-                  <span>{game.home_team.abbreviation}</span>
-                </div>
-                <Badge variant="outline">Week {game.week}</Badge>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span>{formatGameTime(game.datetime, game.date)}</span>
-              </div>
+            <div className="text-lg font-bold">
+              {game.visitor_team.abbreviation} @ {game.home_team.abbreviation}
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-card border-border">
           <CardContent className="p-8 text-center">
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-foreground mb-2">No Stats Available</h3>
             <p className="text-muted-foreground text-sm">
-              Season stats for these teams are not available yet. Check back after the season starts.
+              Season stats for these teams are not available yet.
             </p>
           </CardContent>
         </Card>
@@ -201,50 +207,62 @@ export function NFLSlatePlayersGrid() {
 
   return (
     <div className="space-y-6">
-      {/* Game Header */}
-      <Card className="bg-gradient-to-r from-muted/50 to-muted/30 border-border">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3 text-xl font-bold">
-                <span className="text-foreground">{game.visitor_team.abbreviation}</span>
-                <span className="text-muted-foreground text-sm">@</span>
-                <span className="text-foreground">{game.home_team.abbreviation}</span>
-              </div>
+      {/* Dynamic Game Header */}
+      <Card className="bg-gradient-to-r from-muted/60 via-muted/40 to-muted/60 border-border overflow-hidden">
+        <CardContent className="p-5">
+          <div className="flex flex-col gap-3">
+            {/* Event Badge */}
+            <div className="flex items-center gap-2">
               {isSuperBowl ? (
-                <Badge className="bg-gradient-to-r from-amber-500/30 to-yellow-500/20 text-amber-400 border-amber-500/40 gap-1 px-3 py-1">
+                <Badge className="bg-gradient-to-r from-amber-500/40 to-yellow-500/30 text-amber-300 border-amber-500/50 gap-1.5 px-3 py-1.5 text-sm font-bold">
                   <Trophy className="w-4 h-4" />
                   Super Bowl LIX
                 </Badge>
               ) : isPlayoffs ? (
-                <Badge variant="secondary" className="gap-1">
-                  <Trophy className="w-3 h-3" />
-                  Playoffs
+                <Badge className="bg-gradient-to-r from-purple-500/40 to-indigo-500/30 text-purple-300 border-purple-500/50 gap-1.5 px-3 py-1.5">
+                  <Zap className="w-4 h-4" />
+                  NFL Playoffs
                 </Badge>
               ) : (
-                <Badge variant="secondary">Week {game.week}</Badge>
+                <Badge variant="secondary" className="gap-1">
+                  Week {game.week}
+                </Badge>
               )}
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="w-4 h-4" />
-                <span>{formatGameTime(game.datetime, game.date)}</span>
-              </div>
+
+            {/* Matchup Title */}
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
+                {game.visitor_team.full_name}
+                <span className="text-muted-foreground mx-2 text-xl">@</span>
+                {game.home_team.full_name}
+              </h2>
             </div>
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground">
-            {game.visitor_team.full_name} vs {game.home_team.full_name}
+
+            {/* Date */}
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="w-4 h-4" />
+              <span className="text-sm font-medium">{formatGameDate(game.datetime, game.date)}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Info Banner */}
+      {/* Stats Source & Refresh */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Users className="w-4 h-4" />
-          <span>{allLeaders.length} top leaders</span>
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            <span>{allLeaders.length} team leaders</span>
+          </div>
+          {statsSource && (
+            <>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="italic">{statsSource}</span>
+            </>
+          )}
           <span className="text-muted-foreground/50">•</span>
-          <span>Last updated: {getLastUpdated()}</span>
+          <span>Updated: {getLastUpdated()}</span>
         </div>
         <Button 
           variant="ghost" 
@@ -258,16 +276,16 @@ export function NFLSlatePlayersGrid() {
         </Button>
       </div>
 
-      {/* Leaders Grid - Organized by Category */}
-      <div className="space-y-6">
+      {/* Leaders Grid by Category */}
+      <div className="space-y-8">
         {/* Passing Leaders */}
         {leaders.passing.length > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-red-500"></span>
-              PASSING LEADERS
+          <section>
+            <h3 className="text-sm font-bold text-muted-foreground mb-4 flex items-center gap-2 uppercase tracking-wider">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+              Passing Leaders
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {leaders.passing.map((player) => (
                 <NFLSlateLeaderCard
                   key={`pass-${player.id}`}
@@ -282,20 +300,22 @@ export function NFLSlatePlayersGrid() {
                   statType={player.stat_type}
                   rank={player.rank}
                   category="passing"
+                  positionRank={player.position_rank}
+                  detailedStats={player.detailed_stats}
                 />
               ))}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Rushing Leaders */}
         {leaders.rushing.length > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-              RUSHING LEADERS
+          <section>
+            <h3 className="text-sm font-bold text-muted-foreground mb-4 flex items-center gap-2 uppercase tracking-wider">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              Rushing Leaders
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {leaders.rushing.map((player) => (
                 <NFLSlateLeaderCard
                   key={`rush-${player.id}`}
@@ -310,20 +330,22 @@ export function NFLSlatePlayersGrid() {
                   statType={player.stat_type}
                   rank={player.rank}
                   category="rushing"
+                  positionRank={player.position_rank}
+                  detailedStats={player.detailed_stats}
                 />
               ))}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Receiving Leaders */}
         {leaders.receiving.length > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>
-              RECEIVING LEADERS
+          <section>
+            <h3 className="text-sm font-bold text-muted-foreground mb-4 flex items-center gap-2 uppercase tracking-wider">
+              <span className="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+              Receiving Leaders
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {leaders.receiving.map((player) => (
                 <NFLSlateLeaderCard
                   key={`rec-${player.id}`}
@@ -338,10 +360,12 @@ export function NFLSlatePlayersGrid() {
                   statType={player.stat_type}
                   rank={player.rank}
                   category="receiving"
+                  positionRank={player.position_rank}
+                  detailedStats={player.detailed_stats}
                 />
               ))}
             </div>
-          </div>
+          </section>
         )}
       </div>
     </div>

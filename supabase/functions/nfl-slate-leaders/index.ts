@@ -22,7 +22,7 @@ async function bdlFetch(apiKey: string, endpoint: string, params?: Record<string
     });
   }
 
-  console.log(`[NFL-Slate] Fetching: ${url.toString().substring(0, 100)}...`);
+  console.log(`[NFL-Slate] Fetching: ${url.toString().substring(0, 120)}...`);
   
   const response = await fetch(url.toString(), {
     headers: {
@@ -78,7 +78,68 @@ interface NFLPlayer {
   jersey_number: string | null;
 }
 
-interface LeaderPlayer {
+interface PlayerSeasonStats {
+  player_id: number;
+  games_played: number;
+  // Passing
+  passing_yards: number;
+  passing_touchdowns: number;
+  interceptions_thrown: number;
+  passing_attempts: number;
+  completions: number;
+  rushing_yards: number;
+  rushing_touchdowns: number;
+  rushing_attempts: number;
+  // Receiving
+  receiving_yards: number;
+  receiving_touchdowns: number;
+  receptions: number;
+  targets: number;
+}
+
+// Calculate QBR (0-100 scale)
+function calculateQBR(stats: PlayerSeasonStats): number {
+  const { 
+    passing_yards = 0, 
+    passing_touchdowns = 0, 
+    interceptions_thrown = 0,
+    passing_attempts = 0,
+    completions = 0,
+    rushing_yards = 0,
+    rushing_touchdowns = 0,
+    games_played = 1
+  } = stats;
+
+  if (passing_attempts === 0) return 0;
+
+  // Completion percentage component (max ~25 points)
+  const compPct = (completions / passing_attempts) * 100;
+  const compComponent = Math.min((compPct - 30) * 0.5, 25);
+
+  // Yards per attempt component (max ~25 points)
+  const ypa = passing_yards / passing_attempts;
+  const ypaComponent = Math.min((ypa - 3) * 3, 25);
+
+  // TD rate component (max ~25 points)
+  const tdRate = (passing_touchdowns / passing_attempts) * 100;
+  const tdComponent = Math.min(tdRate * 5, 25);
+
+  // INT penalty (reduces score)
+  const intRate = (interceptions_thrown / passing_attempts) * 100;
+  const intPenalty = Math.min(intRate * 5, 20);
+
+  // Rushing bonus (max ~15 points for dual-threat)
+  const rushYardsPerGame = rushing_yards / games_played;
+  const rushBonus = Math.min(rushYardsPerGame * 0.3 + (rushing_touchdowns * 2), 15);
+
+  // Calculate total and normalize to 0-100
+  const rawQBR = compComponent + ypaComponent + tdComponent - intPenalty + rushBonus;
+  const normalizedQBR = Math.max(0, Math.min(100, rawQBR + 30)); // Shift baseline
+
+  return Math.round(normalizedQBR * 10) / 10;
+}
+
+interface EnhancedLeaderPlayer {
   id: number;
   first_name: string;
   last_name: string;
@@ -94,6 +155,22 @@ interface LeaderPlayer {
   stat_value: number;
   stat_type: string;
   rank: number;
+  position_rank?: number;
+  detailed_stats: {
+    qbr?: number;
+    passing_yards?: number;
+    passing_yards_per_game?: number;
+    passing_touchdowns?: number;
+    interceptions?: number;
+    rushing_yards?: number;
+    rushing_yards_per_game?: number;
+    rushing_touchdowns?: number;
+    receiving_yards?: number;
+    receiving_yards_per_game?: number;
+    receptions?: number;
+    receiving_touchdowns?: number;
+    games_played?: number;
+  };
 }
 
 serve(async (req) => {
@@ -108,49 +185,65 @@ serve(async (req) => {
       throw new Error('BALLDONTLIE_API_KEY not configured');
     }
 
-    console.log(`[NFL-Slate] Starting fetch for ${CURRENT_SEASON} season...`);
+    console.log(`[NFL-Slate] Starting scalable engine for ${CURRENT_SEASON} season...`);
 
-    // Step 1: Fetch games - just one page since we need the latest postseason game
-    const gamesResult = await bdlFetch(apiKey, '/games', {
+    // Step 1: Dynamic Game Detection - find next scheduled game
+    // First try postseason, then regular season
+    let allGames: NFLGame[] = [];
+    let nextGame: NFLGame | null = null;
+    
+    // Fetch postseason games first (Super Bowl priority)
+    const postseasonResult = await bdlFetch(apiKey, '/games', {
       season: CURRENT_SEASON,
       postseason: 'true',
-      per_page: 100
+      per_page: 50
     });
-
-    let allGames: NFLGame[] = gamesResult.data || [];
+    allGames = postseasonResult.data || [];
     console.log(`[NFL-Slate] Found ${allGames.length} postseason games`);
 
+    // Find scheduled games first, then fall back to final games if none scheduled
+    const scheduledGames = allGames.filter((g: NFLGame) => 
+      g.status?.toLowerCase() === 'scheduled' || 
+      g.status?.toLowerCase() === 'pre-game'
+    );
+
+    if (scheduledGames.length > 0) {
+      // Sort by date to get the next upcoming
+      scheduledGames.sort((a: NFLGame, b: NFLGame) => 
+        new Date(a.datetime || a.date).getTime() - new Date(b.datetime || b.date).getTime()
+      );
+      nextGame = scheduledGames[0];
+    } else if (allGames.length > 0) {
+      // No scheduled games - take the highest week (Super Bowl)
+      allGames.sort((a: NFLGame, b: NFLGame) => (b.week || 0) - (a.week || 0));
+      nextGame = allGames[0];
+    }
+
     // If no postseason games, try regular season
-    if (allGames.length === 0) {
+    if (!nextGame) {
       const regularResult = await bdlFetch(apiKey, '/games', {
         season: CURRENT_SEASON,
         per_page: 100
       });
       allGames = regularResult.data || [];
       console.log(`[NFL-Slate] Found ${allGames.length} regular season games`);
-    }
-
-    // Find the Super Bowl or latest postseason game (highest week)
-    let nextGame: NFLGame | null = null;
-    let isSuperBowl = false;
-    let isPlayoffs = false;
-
-    if (allGames.length > 0) {
-      // Sort by week descending to get the Super Bowl first
-      allGames.sort((a: NFLGame, b: NFLGame) => (b.week || 0) - (a.week || 0));
-      nextGame = allGames[0];
-      isPlayoffs = nextGame.postseason === true || Boolean(nextGame.week && nextGame.week > 18);
       
-      // Super Bowl detection: highest postseason week, or week >= 4 in postseason (wildcard=1, divisional=2, conf=3, super=4-5)
-      const highestWeek = allGames.reduce((max, g) => Math.max(max, g.week || 0), 0);
-      isSuperBowl = Boolean(
-        nextGame.postseason && (
-          nextGame.week === highestWeek ||  // It's the highest week game
-          (nextGame.week && nextGame.week >= 4)  // Week 4+ in postseason is typically Super Bowl
-        )
+      const scheduledRegular = allGames.filter((g: NFLGame) => 
+        g.status?.toLowerCase() === 'scheduled'
       );
-      console.log(`[NFL-Slate] Selected: ${nextGame.visitor_team.abbreviation} @ ${nextGame.home_team.abbreviation}, Week ${nextGame.week}, Highest: ${highestWeek}, Super Bowl: ${isSuperBowl}`);
+      
+      if (scheduledRegular.length > 0) {
+        scheduledRegular.sort((a: NFLGame, b: NFLGame) => 
+          new Date(a.datetime || a.date).getTime() - new Date(b.datetime || b.date).getTime()
+        );
+        nextGame = scheduledRegular[0];
+      }
     }
+
+    const isSuperBowl = Boolean(
+      nextGame?.postseason && nextGame.week && nextGame.week >= 4
+    );
+    const isPlayoffs = Boolean(nextGame?.postseason);
 
     if (!nextGame) {
       return new Response(
@@ -164,11 +257,13 @@ serve(async (req) => {
       );
     }
 
+    console.log(`[NFL-Slate] Next game: ${nextGame.visitor_team.abbreviation} @ ${nextGame.home_team.abbreviation} (Week ${nextGame.week}, ${nextGame.status})`);
+
     const homeTeamId = nextGame.home_team.id;
     const awayTeamId = nextGame.visitor_team.id;
 
-    // Step 2: Get players for both teams in parallel
-    console.log(`[NFL-Slate] Fetching players for ${nextGame.home_team.abbreviation} and ${nextGame.visitor_team.abbreviation}`);
+    // Step 2: Fetch full rosters for both teams
+    console.log(`[NFL-Slate] Fetching rosters for team IDs: ${homeTeamId}, ${awayTeamId}`);
     const [homePlayersResult, awayPlayersResult] = await Promise.all([
       bdlFetch(apiKey, '/players', { team_ids: [homeTeamId], per_page: 100 }),
       bdlFetch(apiKey, '/players', { team_ids: [awayTeamId], per_page: 100 })
@@ -178,35 +273,29 @@ serve(async (req) => {
       ...(homePlayersResult.data || []),
       ...(awayPlayersResult.data || [])
     ];
+    console.log(`[NFL-Slate] Found ${allPlayers.length} total players on rosters`);
 
-    console.log(`[NFL-Slate] Found ${allPlayers.length} total players`);
+    // Step 3: Filter to skill positions
+    const qbPlayers = allPlayers.filter(p => p.position_abbreviation === 'QB' || p.position === 'Quarterback');
+    const rbPlayers = allPlayers.filter(p => p.position_abbreviation === 'RB' || p.position_abbreviation === 'FB' || p.position === 'Running Back');
+    const recPlayers = allPlayers.filter(p => ['WR', 'TE'].includes(p.position_abbreviation || '') || ['Wide Receiver', 'Tight End'].includes(p.position || ''));
+    
+    console.log(`[NFL-Slate] Skill players - QBs: ${qbPlayers.length}, RBs: ${rbPlayers.length}, WR/TEs: ${recPlayers.length}`);
 
-    // Step 3: Filter to likely skill position players to reduce API calls
-    const skillPositions = ['QB', 'RB', 'WR', 'TE', 'FB'];
-    const skillPlayers = allPlayers.filter(p => 
-      skillPositions.includes(p.position_abbreviation || p.position || '')
-    );
-    console.log(`[NFL-Slate] Filtered to ${skillPlayers.length} skill position players`);
-
-    // Step 4: Fetch stats for skill players in parallel batches
+    const skillPlayers = [...qbPlayers, ...rbPlayers, ...recPlayers];
     const playerIds = skillPlayers.map(p => p.id);
-    const batchSize = 25;
     const playerMap = new Map<number, NFLPlayer>();
     skillPlayers.forEach(p => playerMap.set(p.id, p));
 
-    const passLeaders: LeaderPlayer[] = [];
-    const rushLeaders: LeaderPlayer[] = [];
-    const recLeaders: LeaderPlayer[] = [];
-
-    // Create batches
+    // Step 4: Fetch 2025 season stats in parallel batches
+    const batchSize = 25;
     const batches: number[][] = [];
     for (let i = 0; i < playerIds.length; i += batchSize) {
       batches.push(playerIds.slice(i, i + batchSize));
     }
 
-    console.log(`[NFL-Slate] Fetching stats in ${batches.length} parallel batches`);
+    console.log(`[NFL-Slate] Fetching ${CURRENT_SEASON} season stats in ${batches.length} batches`);
 
-    // Fetch all batches in parallel
     const statsPromises = batches.map(batch => 
       bdlFetch(apiKey, '/season_stats', {
         season: CURRENT_SEASON,
@@ -219,53 +308,119 @@ serve(async (req) => {
 
     const statsResults = await Promise.all(statsPromises);
     
-    // Process all stats
+    // Aggregate stats by player
+    const playerStats = new Map<number, PlayerSeasonStats>();
+    
     for (const statsResult of statsResults) {
       for (const stat of statsResult.data || []) {
         const playerId = stat.player?.id;
-        const player = playerMap.get(playerId);
-        if (!player) continue;
+        if (!playerId || !playerMap.has(playerId)) continue;
 
-        if (stat.passing_yards && stat.passing_yards > 0) {
-          passLeaders.push({
-            ...player,
-            stat_value: stat.passing_yards,
-            stat_type: 'Passing Yards',
-            rank: 0
-          });
-        }
+        playerStats.set(playerId, {
+          player_id: playerId,
+          games_played: stat.games_played || 1,
+          passing_yards: stat.passing_yards || 0,
+          passing_touchdowns: stat.passing_touchdowns || 0,
+          interceptions_thrown: stat.interceptions_thrown || 0,
+          passing_attempts: stat.passing_attempts || 0,
+          completions: stat.completions || 0,
+          rushing_yards: stat.rushing_yards || 0,
+          rushing_touchdowns: stat.rushing_touchdowns || 0,
+          rushing_attempts: stat.rushing_attempts || 0,
+          receiving_yards: stat.receiving_yards || 0,
+          receiving_touchdowns: stat.receiving_touchdowns || 0,
+          receptions: stat.receptions || 0,
+          targets: stat.targets || 0
+        });
+      }
+    }
 
-        if (stat.rushing_yards && stat.rushing_yards > 0) {
-          rushLeaders.push({
-            ...player,
-            stat_value: stat.rushing_yards,
-            stat_type: 'Rushing Yards',
-            rank: 0
-          });
-        }
+    console.log(`[NFL-Slate] Collected stats for ${playerStats.size} players`);
 
-        if (stat.receiving_yards && stat.receiving_yards > 0) {
+    // Step 5: Build leader arrays with detailed stats
+    const passLeaders: EnhancedLeaderPlayer[] = [];
+    const rushLeaders: EnhancedLeaderPlayer[] = [];
+    const recLeaders: EnhancedLeaderPlayer[] = [];
+
+    for (const [playerId, stats] of playerStats.entries()) {
+      const player = playerMap.get(playerId);
+      if (!player) continue;
+
+      const posAbbr = player.position_abbreviation || player.position || '';
+      const gamesPlayed = stats.games_played || 1;
+
+      // QBs - Passing Leaders
+      if ((posAbbr === 'QB' || player.position === 'Quarterback') && stats.passing_yards > 0) {
+        const qbr = calculateQBR(stats);
+        passLeaders.push({
+          ...player,
+          stat_value: stats.passing_yards,
+          stat_type: 'Passing Yards',
+          rank: 0,
+          detailed_stats: {
+            qbr,
+            passing_yards: stats.passing_yards,
+            passing_yards_per_game: Math.round((stats.passing_yards / gamesPlayed) * 10) / 10,
+            passing_touchdowns: stats.passing_touchdowns,
+            interceptions: stats.interceptions_thrown,
+            rushing_yards: stats.rushing_yards,
+            games_played: gamesPlayed
+          }
+        });
+      }
+
+      // RBs - Rushing Leaders
+      if ((posAbbr === 'RB' || posAbbr === 'FB' || player.position === 'Running Back') && stats.rushing_yards > 0) {
+        rushLeaders.push({
+          ...player,
+          stat_value: stats.rushing_yards,
+          stat_type: 'Rushing Yards',
+          rank: 0,
+          detailed_stats: {
+            rushing_yards: stats.rushing_yards,
+            rushing_yards_per_game: Math.round((stats.rushing_yards / gamesPlayed) * 10) / 10,
+            rushing_touchdowns: stats.rushing_touchdowns,
+            receptions: stats.receptions,
+            receiving_yards: stats.receiving_yards,
+            games_played: gamesPlayed
+          }
+        });
+      }
+
+      // WRs/TEs - Receiving Leaders
+      if (['WR', 'TE'].includes(posAbbr) || ['Wide Receiver', 'Tight End'].includes(player.position || '')) {
+        if (stats.receiving_yards > 0) {
           recLeaders.push({
             ...player,
-            stat_value: stat.receiving_yards,
+            stat_value: stats.receiving_yards,
             stat_type: 'Receiving Yards',
-            rank: 0
+            rank: 0,
+            detailed_stats: {
+              receiving_yards: stats.receiving_yards,
+              receiving_yards_per_game: Math.round((stats.receiving_yards / gamesPlayed) * 10) / 10,
+              receptions: stats.receptions,
+              receiving_touchdowns: stats.receiving_touchdowns,
+              games_played: gamesPlayed
+            }
           });
         }
       }
     }
 
-    console.log(`[NFL-Slate] Leaders found - Pass: ${passLeaders.length}, Rush: ${rushLeaders.length}, Rec: ${recLeaders.length}`);
-
-    // Sort and take top 2
+    // Sort and assign ranks
     passLeaders.sort((a, b) => b.stat_value - a.stat_value);
     rushLeaders.sort((a, b) => b.stat_value - a.stat_value);
     recLeaders.sort((a, b) => b.stat_value - a.stat_value);
 
-    passLeaders.slice(0, 2).forEach((p, i) => p.rank = i + 1);
-    rushLeaders.slice(0, 2).forEach((p, i) => p.rank = i + 1);
-    recLeaders.slice(0, 2).forEach((p, i) => p.rank = i + 1);
+    // Assign position-specific rank (this would ideally compare against league)
+    // For now, rank within the game's players
+    passLeaders.forEach((p, i) => { p.rank = i + 1; p.position_rank = i + 1; });
+    rushLeaders.forEach((p, i) => { p.rank = i + 1; p.position_rank = i + 1; });
+    recLeaders.forEach((p, i) => { p.rank = i + 1; p.position_rank = i + 1; });
 
+    console.log(`[NFL-Slate] Leaders - Pass: ${passLeaders.length}, Rush: ${rushLeaders.length}, Rec: ${recLeaders.length}`);
+
+    // Take top 2 from each category
     const response = {
       game: {
         id: nextGame.id,
@@ -285,10 +440,11 @@ serve(async (req) => {
       },
       isSuperBowl,
       isPlayoffs,
-      seasonComplete: false
+      seasonComplete: false,
+      statsSource: `${CURRENT_SEASON} Regular Season`
     };
 
-    console.log(`[NFL-Slate] Done - ${nextGame.visitor_team.abbreviation} @ ${nextGame.home_team.abbreviation}`);
+    console.log(`[NFL-Slate] Success - ${nextGame.visitor_team.abbreviation} @ ${nextGame.home_team.abbreviation}`);
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
