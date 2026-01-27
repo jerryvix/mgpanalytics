@@ -41,7 +41,7 @@ interface LeaderPlayer {
   stat_value: number;
   stat_type: string;
   rank: number;
-  position_rank?: number;
+  headshot_url?: string;
   detailed_stats?: DetailedStats;
 }
 
@@ -300,8 +300,8 @@ export function NFLSlatePlayersGrid() {
                   statType={player.stat_type}
                   rank={player.rank}
                   category="passing"
-                  positionRank={player.position_rank}
                   detailedStats={player.detailed_stats}
+                  headshotUrl={player.headshot_url}
                 />
               ))}
             </div>
@@ -330,8 +330,8 @@ export function NFLSlatePlayersGrid() {
                   statType={player.stat_type}
                   rank={player.rank}
                   category="rushing"
-                  positionRank={player.position_rank}
                   detailedStats={player.detailed_stats}
+                  headshotUrl={player.headshot_url}
                 />
               ))}
             </div>
@@ -360,8 +360,8 @@ export function NFLSlatePlayersGrid() {
                   statType={player.stat_type}
                   rank={player.rank}
                   category="receiving"
-                  positionRank={player.position_rank}
                   detailedStats={player.detailed_stats}
+                  headshotUrl={player.headshot_url}
                 />
               ))}
             </div>

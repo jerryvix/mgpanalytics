@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Flame, Trophy, Star, Zap } from "lucide-react";
+import { User, Flame, Trophy, Star } from "lucide-react";
 import { DeltaResult } from "@/utils/performanceDelta";
 import { PerformanceSurgeBadge } from "@/components/ui/PerformanceSurgeBadge";
+import { useState } from "react";
 
 interface DetailedStats {
   qbr?: number;
@@ -38,9 +39,9 @@ interface NFLSlateLeaderCardProps {
   statType: string;
   rank: number;
   category: "passing" | "rushing" | "receiving";
-  positionRank?: number;
   detailedStats?: DetailedStats;
   performanceDelta?: DeltaResult | null;
+  headshotUrl?: string;
 }
 
 export function NFLSlateLeaderCard({
@@ -55,11 +56,13 @@ export function NFLSlateLeaderCard({
   statType,
   rank,
   category,
-  positionRank,
   detailedStats,
   performanceDelta,
+  headshotUrl,
 }: NFLSlateLeaderCardProps) {
+  const [imageError, setImageError] = useState(false);
   const fullName = `${firstName} ${lastName}`;
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`;
 
   const getCategoryStyles = () => {
     switch (category) {
@@ -118,15 +121,6 @@ export function NFLSlateLeaderCard({
 
   const formatStatValue = (value: number) => {
     return value.toLocaleString();
-  };
-
-  const getPositionLabel = () => {
-    switch (category) {
-      case "passing": return "QBs";
-      case "rushing": return "RBs";
-      case "receiving": return "WR/TEs";
-      default: return "Players";
-    }
   };
 
   // Render position-specific stats
@@ -241,17 +235,26 @@ export function NFLSlateLeaderCard({
 
           {/* Player Info Row */}
           <div className="flex items-start gap-3">
-            {/* Avatar */}
-            <div className="relative flex-shrink-0">
-              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center border-2 border-muted-foreground/20">
-                <User className="w-7 h-7 text-muted-foreground" />
-              </div>
-              {jerseyNumber && (
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-md">
-                  <span className="text-[10px] font-bold text-primary-foreground">#{jerseyNumber}</span>
-                </div>
+          {/* Avatar with Headshot */}
+          <div className="relative flex-shrink-0">
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center border-2 border-muted-foreground/20 overflow-hidden">
+              {headshotUrl && !imageError ? (
+                <img 
+                  src={headshotUrl} 
+                  alt={fullName}
+                  className="w-full h-full object-cover"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <span className="text-lg font-bold text-muted-foreground">{initials}</span>
               )}
             </div>
+            {jerseyNumber && (
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-md">
+                <span className="text-[10px] font-bold text-primary-foreground">#{jerseyNumber}</span>
+              </div>
+            )}
+          </div>
 
             {/* Name & Team */}
             <div className="flex-1 min-w-0">
@@ -272,7 +275,7 @@ export function NFLSlateLeaderCard({
             </div>
           </div>
 
-          {/* Main Stat Display with Position Rank */}
+          {/* Main Stat Display */}
           <div className="mt-4 pt-3 border-t border-border">
             <div className="flex items-baseline justify-between mb-3">
               <div>
@@ -283,16 +286,9 @@ export function NFLSlateLeaderCard({
                   {statType}
                 </span>
               </div>
-              <div className="flex flex-col items-end">
-                <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
-                  2025 Season
-                </Badge>
-                {positionRank && (
-                  <span className="text-[11px] text-muted-foreground italic mt-1">
-                    #{positionRank} among {getPositionLabel()}
-                  </span>
-                )}
-              </div>
+              <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                2025 Season
+              </Badge>
             </div>
 
             {/* Detailed Stats Grid */}
