@@ -270,8 +270,8 @@ export function NBASlatePlayersGrid({
 
       {/* Performance Delta Disclaimer */}
       <div className="mt-8 pt-4 border-t border-border/50">
-        <p className="text-[10px] text-muted-foreground/70 italic leading-relaxed">
-          Performance Delta: Calculated as the percentage variance between a player's Current Period (Postseason or Last 5 Games) and their 2025 Season Baseline Average.
+        <p className="text-[10px] text-muted-foreground/70 leading-relaxed text-left">
+          Performance Delta: Percentage variance between current Postseason form and 2025 Season baseline averages.
         </p>
       </div>
     </div>
