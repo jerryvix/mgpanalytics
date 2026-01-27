@@ -117,7 +117,6 @@ interface EnhancedLeaderPlayer {
   stat_value: number;
   stat_type: string;
   rank: number;
-  headshot_url?: string;
   detailed_stats: {
     qbr?: number;
     passing_yards?: number;
@@ -138,9 +137,15 @@ interface EnhancedLeaderPlayer {
 // Known starter overrides for depth chart accuracy
 // This ensures starters like Drake Maye are prioritized over backups
 const STARTER_OVERRIDES: Record<string, string[]> = {
-  'Patriots': ['Drake Maye', 'Rhamondre Stevenson', 'Ja\'Lynn Polk'],
+  'Patriots': ['Drake Maye', 'Rhamondre Stevenson', 'Ja\'Lynn Polk', 'Hunter Henry'],
   'Seahawks': ['Sam Darnold', 'Kenneth Walker III', 'Jaxon Smith-Njigba', 'DK Metcalf'],
 };
+
+// Players to exclude (backups who shouldn't appear as leaders)
+const EXCLUDED_PLAYERS: string[] = [
+  'Joshua Dobbs',
+  'Bailey Zappe',
+];
 
 function isKnownStarter(playerName: string, teamName: string): boolean {
   for (const [team, starters] of Object.entries(STARTER_OVERRIDES)) {
@@ -151,11 +156,10 @@ function isKnownStarter(playerName: string, teamName: string): boolean {
   return false;
 }
 
-// Build ESPN headshot URL from player name (fallback pattern)
-function buildHeadshotUrl(playerId: number): string {
-  // ESPN uses their own IDs, but we can try a pattern match
-  // For now, return a placeholder that the frontend can handle
-  return `https://a.espncdn.com/i/headshots/nfl/players/full/${playerId}.png`;
+function isExcludedPlayer(playerName: string): boolean {
+  return EXCLUDED_PLAYERS.some(excluded => 
+    playerName.toLowerCase().includes(excluded.toLowerCase())
+  );
 }
 
 // Find BDL team by name search
@@ -393,8 +397,14 @@ serve(async (req) => {
 
       const playerFullName = `${player.first_name} ${player.last_name}`;
       const teamName = player.team?.full_name || '';
+      
+      // Skip excluded players (backups)
+      if (isExcludedPlayer(playerFullName)) {
+        console.log(`[NFL-Slate] Skipping excluded player: ${playerFullName}`);
+        continue;
+      }
+      
       const isStarter = isKnownStarter(playerFullName, teamName);
-
       // QBs - Passing Leaders (prioritize known starters)
       if ((posAbbr === 'QB' || player.position === 'Quarterback') && stats.passing_yards > 0) {
         const qbr = calculateQBR(stats);
@@ -403,7 +413,6 @@ serve(async (req) => {
           stat_value: stats.passing_yards,
           stat_type: 'Passing Yards',
           rank: 0,
-          headshot_url: buildHeadshotUrl(player.id),
           detailed_stats: {
             qbr,
             passing_yards: stats.passing_yards,
@@ -423,7 +432,6 @@ serve(async (req) => {
           stat_value: stats.rushing_yards,
           stat_type: 'Rushing Yards',
           rank: 0,
-          headshot_url: buildHeadshotUrl(player.id),
           detailed_stats: {
             rushing_yards: stats.rushing_yards,
             rushing_yards_per_game: Math.round((stats.rushing_yards / gamesPlayed) * 10) / 10,
@@ -443,7 +451,6 @@ serve(async (req) => {
             stat_value: stats.receiving_yards,
             stat_type: 'Receiving Yards',
             rank: 0,
-            headshot_url: buildHeadshotUrl(player.id),
             detailed_stats: {
               receiving_yards: stats.receiving_yards,
               receiving_yards_per_game: Math.round((stats.receiving_yards / gamesPlayed) * 10) / 10,
