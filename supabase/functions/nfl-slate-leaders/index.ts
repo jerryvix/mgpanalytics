@@ -828,12 +828,17 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('[NFL-Slate] Error:', error instanceof Error ? error.message : 'Unknown');
+    // Log detailed error server-side only
+    console.error('[NFL-Slate] Error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
     
+    // Return generic error to client
     return new Response(
       JSON.stringify({ 
-        error: 'Failed to fetch NFL slate data.',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'An error occurred while fetching NFL slate data. Please try again.'
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

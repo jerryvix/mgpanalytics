@@ -523,11 +523,18 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    console.error("[sync-nba-players] Error:", error);
+    // Log detailed error server-side only
+    console.error("[sync-nba-players] Error:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Return generic error to client
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: "An unexpected error occurred. Please try again later.",
       }),
       {
         status: 500,

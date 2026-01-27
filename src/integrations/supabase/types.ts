@@ -1526,9 +1526,11 @@ export type Database = {
       user_x_connections: {
         Row: {
           access_token: string
+          access_token_encrypted: string | null
           connected_at: string
           id: string
           refresh_token: string | null
+          refresh_token_encrypted: string | null
           scopes: string[] | null
           token_expires_at: string | null
           updated_at: string
@@ -1540,9 +1542,11 @@ export type Database = {
         }
         Insert: {
           access_token: string
+          access_token_encrypted?: string | null
           connected_at?: string
           id?: string
           refresh_token?: string | null
+          refresh_token_encrypted?: string | null
           scopes?: string[] | null
           token_expires_at?: string | null
           updated_at?: string
@@ -1554,9 +1558,11 @@ export type Database = {
         }
         Update: {
           access_token?: string
+          access_token_encrypted?: string | null
           connected_at?: string
           id?: string
           refresh_token?: string | null
+          refresh_token_encrypted?: string | null
           scopes?: string[] | null
           token_expires_at?: string | null
           updated_at?: string
@@ -1603,6 +1609,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_oauth_states: { Args: never; Returns: undefined }
+      get_my_x_connections: {
+        Args: never
+        Returns: {
+          connected_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          x_display_name: string
+          x_profile_image: string
+          x_user_id: string
+          x_username: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
