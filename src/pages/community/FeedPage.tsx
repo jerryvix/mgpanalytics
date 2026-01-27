@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { TwitterTimelineFeed, FeaturedTimelineEmbed } from "@/components/twitter";
+import { NativeTwitterTimeline, NativeFeaturedTimeline } from "@/components/twitter";
 import { useUserCapperFollows } from "@/hooks/useCappers";
 import type { Capper } from "@/types/capper";
 import { CAPPER_CATEGORY_ICONS } from "@/types/capper";
@@ -176,7 +176,7 @@ export default function FeedPage() {
 
             {/* Featured Timeline in Sidebar */}
             {featuredCapper && (
-              <FeaturedTimelineEmbed
+              <NativeFeaturedTimeline
                 username={featuredCapper.x_username}
                 displayName={featuredCapper.x_display_name}
                 tweetLimit={1}
@@ -239,7 +239,7 @@ export default function FeedPage() {
 
                 {/* Timeline Cards with Lazy Loading */}
                 {followedCappers.map((capper) => (
-                  <TwitterTimelineFeed
+                  <NativeTwitterTimeline
                     key={capper.id}
                     capper={capper}
                     tweetLimit={3}
