@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, Flame, Trophy, Star, TrendingUp } from "lucide-react";
+import { User, Flame, Trophy, Star, Zap } from "lucide-react";
+import { DeltaResult } from "@/utils/performanceDelta";
+import { PerformanceSurgeBadge } from "@/components/ui/PerformanceSurgeBadge";
 
 interface DetailedStats {
   qbr?: number;
@@ -38,6 +40,7 @@ interface NFLSlateLeaderCardProps {
   category: "passing" | "rushing" | "receiving";
   positionRank?: number;
   detailedStats?: DetailedStats;
+  performanceDelta?: DeltaResult | null;
 }
 
 export function NFLSlateLeaderCard({
@@ -54,6 +57,7 @@ export function NFLSlateLeaderCard({
   category,
   positionRank,
   detailedStats,
+  performanceDelta,
 }: NFLSlateLeaderCardProps) {
   const fullName = `${firstName} ${lastName}`;
 
@@ -219,6 +223,13 @@ export function NFLSlateLeaderCard({
     <Link to={`/dashboard/nfl/players/bdl-${id}`}>
       <Card className={`group bg-card ${styles.border} transition-all duration-200 cursor-pointer hover:shadow-lg ${styles.glow} h-full`}>
         <CardContent className="p-4">
+          {/* Performance Surge Badge - Top of card */}
+          {performanceDelta?.isSurge && (
+            <div className="mb-3">
+              <PerformanceSurgeBadge delta={performanceDelta} size="md" />
+            </div>
+          )}
+
           {/* Header: Team Leader Badge + Rank */}
           <div className="flex items-center justify-between mb-3">
             <Badge className="bg-primary/10 text-primary border-primary/30 gap-1">
