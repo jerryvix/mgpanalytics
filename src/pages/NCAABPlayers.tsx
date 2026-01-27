@@ -89,6 +89,13 @@ export default function NCAABPlayers() {
         slateWindow="24 hours"
         isLoading={isLoading}
       />
+
+      {/* Performance Delta Disclaimer */}
+      <div className="pt-4 border-t border-border/50">
+        <p className="text-[10px] text-muted-foreground/70 italic leading-relaxed">
+          Performance Delta: Calculated as the percentage variance between a player's Current Period (Postseason or Last 5 Games) and their 2025 Season Baseline Average.
+        </p>
+      </div>
     </div>
   );
 }

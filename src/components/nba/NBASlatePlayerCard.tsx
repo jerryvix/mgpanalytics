@@ -1,8 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Flame, Trophy, Medal, Award } from "lucide-react";
+import { Activity, Flame, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, isToday, isTomorrow } from "date-fns";
+import { DeltaResult } from "@/utils/performanceDelta";
+import { PerformanceSurgeBadge } from "@/components/ui/PerformanceSurgeBadge";
 
 interface GameContext {
   opponent: string;
@@ -24,6 +26,7 @@ interface NBASlatePlayerCardProps {
   minutesPerGame?: number;
   gameContext?: GameContext;
   showRank?: boolean;
+  performanceDelta?: DeltaResult | null;
 }
 
 export function NBASlatePlayerCard({
@@ -40,6 +43,7 @@ export function NBASlatePlayerCard({
   minutesPerGame,
   gameContext,
   showRank = true,
+  performanceDelta,
 }: NBASlatePlayerCardProps) {
   const isInjured = injuryStatus !== "Healthy";
 
@@ -157,6 +161,10 @@ export function NBASlatePlayerCard({
         {getRankBadge()}
 
         <CardContent className="p-4 space-y-3">
+          {/* Performance Surge Badge - Top of card */}
+          {performanceDelta?.isSurge && (
+            <PerformanceSurgeBadge delta={performanceDelta} size="sm" />
+          )}
           {/* Header */}
           <div className="flex items-start gap-3">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
