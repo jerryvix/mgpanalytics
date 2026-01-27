@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Trophy, Star } from "lucide-react";
+import { Flame, Trophy, Star, User } from "lucide-react";
 import { DeltaResult } from "@/utils/performanceDelta";
 import { PerformanceSurgeBadge } from "@/components/ui/PerformanceSurgeBadge";
 
@@ -10,7 +11,7 @@ interface DetailedStats {
   passing_yards?: number;
   passing_yards_per_game?: number;
   passing_touchdowns?: number;
-  interceptions?: number;
+  interceptions?: number | null;
   rushing_yards?: number;
   rushing_yards_per_game?: number;
   rushing_touchdowns?: number;
@@ -40,6 +41,7 @@ interface NFLSlateLeaderCardProps {
   category: "passing" | "rushing" | "receiving";
   detailedStats?: DetailedStats;
   performanceDelta?: DeltaResult | null;
+  headshotUrl?: string | null;
 }
 
 export function NFLSlateLeaderCard({
@@ -56,9 +58,11 @@ export function NFLSlateLeaderCard({
   category,
   detailedStats,
   performanceDelta,
+  headshotUrl,
 }: NFLSlateLeaderCardProps) {
   const fullName = `${firstName} ${lastName}`;
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`;
+  const [avatarError, setAvatarError] = useState(false);
 
   const getCategoryStyles = () => {
     switch (category) {
@@ -148,7 +152,7 @@ export function NFLSlateLeaderCard({
           </div>
           <div>
             <div className="text-sm font-semibold text-foreground">
-              {detailedStats.interceptions}
+              {detailedStats.interceptions ?? "—"}
             </div>
             <div className="text-[10px] text-muted-foreground uppercase">INTs</div>
           </div>
@@ -231,17 +235,27 @@ export function NFLSlateLeaderCard({
 
           {/* Player Info Row */}
           <div className="flex items-start gap-3">
-          {/* Avatar with Initials */}
-          <div className="relative flex-shrink-0">
-            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center border-2 border-muted-foreground/20">
-              <span className="text-lg font-bold text-muted-foreground">{initials}</span>
-            </div>
-            {jerseyNumber && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-md">
-                <span className="text-[10px] font-bold text-primary-foreground">#{jerseyNumber}</span>
+            {/* Avatar */}
+            <div className="relative flex-shrink-0">
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center border-2 border-muted-foreground/20 overflow-hidden">
+                {headshotUrl && !avatarError ? (
+                  <img
+                    src={headshotUrl}
+                    alt={`${fullName} headshot`}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    onError={() => setAvatarError(true)}
+                  />
+                ) : (
+                  <User className="w-7 h-7 text-muted-foreground" />
+                )}
               </div>
-            )}
-          </div>
+              {jerseyNumber && (
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-md">
+                  <span className="text-[10px] font-bold text-primary-foreground">#{jerseyNumber}</span>
+                </div>
+              )}
+            </div>
 
             {/* Name & Team */}
             <div className="flex-1 min-w-0">

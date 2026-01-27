@@ -104,7 +104,12 @@ function calculateFantasyPoints(stat: any): { fantasy_points: number; fantasy_po
   // API uses "passing_yards", "rushing_yards", etc. - not "pass_yards", "rush_yards"
   const passYards = stat.passing_yards || stat.pass_yards || 0;
   const passTd = stat.passing_touchdowns || stat.pass_touchdowns || 0;
-  const passInt = stat.passing_interceptions || stat.pass_interceptions || 0;
+  const passInt =
+    stat.passing_interceptions ??
+    stat.pass_interceptions ??
+    stat?.passing?.interceptions ??
+    stat.interceptions ??
+    0;
   const rushYards = stat.rushing_yards || stat.rush_yards || 0;
   const rushTd = stat.rushing_touchdowns || stat.rush_touchdowns || 0;
   const recYards = stat.receiving_yards || stat.rec_yards || 0;
@@ -299,6 +304,13 @@ Deno.serve(async (req) => {
 
       const fantasyPoints = calculateFantasyPoints(stat);
 
+       // Interceptions mapping: prefer the official API field, but allow fallbacks without breaking types.
+       // IMPORTANT: do not coerce missing values to 0; keep null so downstream logic can override.
+       const passIntRaw: number | null =
+         (stat.passing_interceptions ?? null) ??
+         ((stat as unknown as any)?.passing?.interceptions ?? null) ??
+         ((stat as unknown as any)?.interceptions ?? null);
+
       // Map API fields (passing_yards, rushing_yards) to our DB columns (pass_yards, rush_yards)
       statsToUpsert.push({
         player_id: playerId,
@@ -310,7 +322,8 @@ Deno.serve(async (req) => {
         pass_completions: stat.passing_completions || 0,
         pass_yards: stat.passing_yards || 0,
         pass_td: stat.passing_touchdowns || 0,
-        pass_int: stat.passing_interceptions || 0,
+        // IMPORTANT: don't silently coerce missing INTs to 0; preserve null.
+        pass_int: passIntRaw,
         passer_rating: stat.qbr || null,
         rush_attempts: stat.rushing_attempts || 0,
         rush_yards: stat.rushing_yards || 0,

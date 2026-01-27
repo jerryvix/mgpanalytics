@@ -63,7 +63,7 @@ interface PlayerSeasonStats {
   games_played: number;
   passing_yards: number;
   passing_touchdowns: number;
-  interceptions_thrown: number;
+  interceptions_thrown: number | null;
   passing_attempts: number;
   completions: number;
   rushing_yards: number;
@@ -80,7 +80,7 @@ function calculateQBR(stats: PlayerSeasonStats): number {
   const { 
     passing_yards = 0, 
     passing_touchdowns = 0, 
-    interceptions_thrown = 0,
+    interceptions_thrown,
     passing_attempts = 0,
     completions = 0,
     rushing_yards = 0,
@@ -96,7 +96,7 @@ function calculateQBR(stats: PlayerSeasonStats): number {
   const ypaComponent = Math.min((ypa - 3) * 3, 25);
   const tdRate = (passing_touchdowns / passing_attempts) * 100;
   const tdComponent = Math.min(tdRate * 5, 25);
-  const intRate = (interceptions_thrown / passing_attempts) * 100;
+  const intRate = ((interceptions_thrown ?? 0) / passing_attempts) * 100;
   const intPenalty = Math.min(intRate * 5, 20);
   const rushYardsPerGame = rushing_yards / games_played;
   const rushBonus = Math.min(rushYardsPerGame * 0.3 + (rushing_touchdowns * 2), 15);
@@ -122,7 +122,7 @@ interface EnhancedLeaderPlayer {
     passing_yards?: number;
     passing_yards_per_game?: number;
     passing_touchdowns?: number;
-    interceptions?: number;
+    interceptions?: number | null;
     rushing_yards?: number;
     rushing_yards_per_game?: number;
     rushing_touchdowns?: number;
@@ -132,7 +132,40 @@ interface EnhancedLeaderPlayer {
     receiving_touchdowns?: number;
     games_played?: number;
   };
+  headshot_url?: string | null;
 }
+
+// Manual Super Bowl LX overrides (used when API is missing/incorrect)
+const SUPER_BOWL_LX_OVERRIDES = {
+  drake_maye: {
+    fullName: "Drake Maye",
+    espnHeadshotUrl: "https://a.espncdn.com/i/headshots/nfl/players/full/4431611.png",
+    stats: {
+      games_played: 17,
+      passing_yards: 4394,
+      passing_touchdowns: 31,
+      interceptions_thrown: 8,
+      passing_attempts: 0,
+      completions: 0,
+      rushing_yards: 0,
+      rushing_touchdowns: 0,
+      rushing_attempts: 0,
+      receiving_yards: 0,
+      receiving_touchdowns: 0,
+      receptions: 0,
+      targets: 0,
+    } as Omit<PlayerSeasonStats, "player_id">,
+    qbr: 77.2,
+    passing_yards_per_game: 258.5,
+  },
+  sam_darnold: {
+    fullName: "Sam Darnold",
+    espnHeadshotUrl: "https://a.espncdn.com/i/headshots/nfl/players/full/3912547.png",
+    interceptions_thrown: 14,
+    qbr: 56.9,
+    passing_yards: 4048,
+  },
+} as const;
 
 // Explicit starter mapping with BDL player IDs for depth chart accuracy
 // This ensures the correct starter is used regardless of what the /players endpoint returns
@@ -216,25 +249,39 @@ function parseSeasonStats(stat: Record<string, unknown>): PlayerSeasonStats | nu
   const rushing = (stat.rushing || {}) as Record<string, unknown>;
   const receiving = (stat.receiving || {}) as Record<string, unknown>;
   
+  const numOrNull = (v: unknown): number | null => {
+    if (v === null || v === undefined || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
   // Also check for flat structure fallback
-  const passYards = Number(passing.yards) || Number(stat.passing_yards) || 0;
-  const passTD = Number(passing.touchdowns) || Number(stat.passing_touchdowns) || 0;
-  const passINT = Number(passing.interceptions) || Number(stat.interceptions_thrown) || Number(stat.interceptions) || 0;
-  const passAttempts = Number(passing.attempts) || Number(stat.passing_attempts) || 0;
-  const passCompletions = Number(passing.completions) || Number(stat.completions) || 0;
+  const passYards = numOrNull(passing.yards) ?? numOrNull((stat as any).passing_yards) ?? 0;
+  const passTD = numOrNull(passing.touchdowns) ?? numOrNull((stat as any).passing_touchdowns) ?? 0;
+  const passAttempts = numOrNull(passing.attempts) ?? numOrNull((stat as any).passing_attempts) ?? 0;
+  const passCompletions = numOrNull(passing.completions) ?? numOrNull((stat as any).passing_completions) ?? numOrNull((stat as any).completions) ?? 0;
+
+  // IMPORTANT: do NOT default missing INTs to 0; keep null so overrides can kick in.
+  const passINT =
+    numOrNull(passing.interceptions) ??
+    numOrNull((stat as any).passing_interceptions) ??
+    numOrNull((stat as any).interceptions_thrown) ??
+    numOrNull((stat as any).interceptions);
   
-  const rushYards = Number(rushing.yards) || Number(stat.rushing_yards) || 0;
-  const rushTD = Number(rushing.touchdowns) || Number(stat.rushing_touchdowns) || 0;
-  const rushAttempts = Number(rushing.attempts) || Number(stat.rushing_attempts) || 0;
+  const rushYards = numOrNull(rushing.yards) ?? numOrNull((stat as any).rushing_yards) ?? 0;
+  const rushTD = numOrNull(rushing.touchdowns) ?? numOrNull((stat as any).rushing_touchdowns) ?? 0;
+  const rushAttempts = numOrNull(rushing.attempts) ?? numOrNull((stat as any).rushing_attempts) ?? 0;
   
-  const recYards = Number(receiving.yards) || Number(stat.receiving_yards) || 0;
-  const recTD = Number(receiving.touchdowns) || Number(stat.receiving_touchdowns) || 0;
-  const receptions = Number(receiving.receptions) || Number(stat.receptions) || 0;
-  const targets = Number(receiving.targets) || Number(stat.targets) || 0;
+  const recYards = numOrNull(receiving.yards) ?? numOrNull((stat as any).receiving_yards) ?? 0;
+  const recTD = numOrNull(receiving.touchdowns) ?? numOrNull((stat as any).receiving_touchdowns) ?? 0;
+  const receptions = numOrNull(receiving.receptions) ?? numOrNull((stat as any).receptions) ?? 0;
+  const targets = numOrNull(receiving.targets) ?? numOrNull((stat as any).receiving_targets) ?? numOrNull((stat as any).targets) ?? 0;
   
-  const gamesPlayed = Number(stat.games_played) || 1;
+  const gamesPlayed = numOrNull((stat as any).games_played) ?? 1;
   
-  console.log(`[NFL-Slate] Parsed stats: GP=${gamesPlayed}, PassYds=${passYards}, PassTD=${passTD}, INT=${passINT}, RushYds=${rushYards}`);
+  console.log(
+    `[NFL-Slate] Parsed stats: GP=${gamesPlayed}, PassYds=${passYards}, PassTD=${passTD}, INT=${passINT ?? "null"}, RushYds=${rushYards}`
+  );
   
   return {
     player_id: 0,
@@ -392,6 +439,11 @@ serve(async (req) => {
     const homeTeamKey = homeTeam.name; // e.g., "Patriots"
     const awayTeamKey = awayTeam.name; // e.g., "Seahawks"
 
+    const isSuperBowlLXMatchup =
+      isSuperBowl &&
+      ((homeTeamKey === "Patriots" && awayTeamKey === "Seahawks") ||
+        (homeTeamKey === "Seahawks" && awayTeamKey === "Patriots"));
+
     // Step 4: Directly fetch stats for known starters first (guaranteed accurate depth chart)
     console.log(`[NFL-Slate] Fetching stats for known starters...`);
     
@@ -499,7 +551,37 @@ serve(async (req) => {
 
     // First add known starters with their stats
     for (const starter of [...homeStarters, ...awayStarters]) {
-      const stats = allPlayerStats.get(starter.id);
+      let stats = allPlayerStats.get(starter.id) ?? null;
+
+      // Manual injection for Super Bowl LX QBs (missing or incorrect API values)
+      if (isSuperBowlLXMatchup && starter.position === "QB") {
+        if (starter.name === SUPER_BOWL_LX_OVERRIDES.drake_maye.fullName) {
+          if (!stats || stats.passing_yards === 0) {
+            stats = {
+              player_id: starter.id,
+              ...SUPER_BOWL_LX_OVERRIDES.drake_maye.stats,
+            };
+            allPlayerStats.set(starter.id, stats);
+            console.log(`[NFL-Slate] Applied manual override: Drake Maye 2025 regular season stats`);
+          }
+        }
+
+        if (starter.name === SUPER_BOWL_LX_OVERRIDES.sam_darnold.fullName) {
+          if (stats) {
+            // Force fix for the '0 INT' bug
+            if ((stats.interceptions_thrown ?? 0) === 0) {
+              stats.interceptions_thrown = SUPER_BOWL_LX_OVERRIDES.sam_darnold.interceptions_thrown;
+            }
+            // Keep yards stable
+            if (stats.passing_yards === 0) {
+              stats.passing_yards = SUPER_BOWL_LX_OVERRIDES.sam_darnold.passing_yards;
+            }
+            allPlayerStats.set(starter.id, stats);
+            console.log(`[NFL-Slate] Applied manual override: Sam Darnold INT=${stats.interceptions_thrown}`);
+          }
+        }
+      }
+
       if (!stats) {
         console.log(`[NFL-Slate] No stats for starter: ${starter.name} (ID: ${starter.id})`);
         continue;
@@ -524,8 +606,20 @@ serve(async (req) => {
 
       // QB - Passing Leaders
       if (starter.position === 'QB' && stats.passing_yards > 0) {
-        const qbr = calculateQBR(stats);
-        console.log(`[NFL-Slate] Adding QB starter: ${starter.name} - ${stats.passing_yards} yds, ${stats.interceptions_thrown} INTs, QBR: ${qbr}`);
+        const manualQbr =
+          isSuperBowlLXMatchup && starter.name === SUPER_BOWL_LX_OVERRIDES.drake_maye.fullName
+            ? SUPER_BOWL_LX_OVERRIDES.drake_maye.qbr
+            : isSuperBowlLXMatchup && starter.name === SUPER_BOWL_LX_OVERRIDES.sam_darnold.fullName
+              ? SUPER_BOWL_LX_OVERRIDES.sam_darnold.qbr
+              : null;
+
+        const qbr = manualQbr ?? calculateQBR(stats);
+        console.log(`[NFL-Slate] Adding QB starter: ${starter.name} - ${stats.passing_yards} yds, ${stats.interceptions_thrown ?? "null"} INTs, QBR: ${qbr}`);
+
+        const manualYpg =
+          isSuperBowlLXMatchup && starter.name === SUPER_BOWL_LX_OVERRIDES.drake_maye.fullName
+            ? SUPER_BOWL_LX_OVERRIDES.drake_maye.passing_yards_per_game
+            : null;
         passLeaders.push({
           ...basePlayer,
           team: team,
@@ -535,12 +629,19 @@ serve(async (req) => {
           detailed_stats: {
             qbr,
             passing_yards: stats.passing_yards,
-            passing_yards_per_game: Math.round((stats.passing_yards / gamesPlayed) * 10) / 10,
+            passing_yards_per_game:
+              manualYpg ?? Math.round((stats.passing_yards / gamesPlayed) * 10) / 10,
             passing_touchdowns: stats.passing_touchdowns,
             interceptions: stats.interceptions_thrown,
             rushing_yards: stats.rushing_yards,
             games_played: gamesPlayed
-          }
+          },
+          headshot_url:
+            isSuperBowlLXMatchup && starter.name === SUPER_BOWL_LX_OVERRIDES.drake_maye.fullName
+              ? SUPER_BOWL_LX_OVERRIDES.drake_maye.espnHeadshotUrl
+              : isSuperBowlLXMatchup && starter.name === SUPER_BOWL_LX_OVERRIDES.sam_darnold.fullName
+                ? SUPER_BOWL_LX_OVERRIDES.sam_darnold.espnHeadshotUrl
+                : null,
         });
       }
 
