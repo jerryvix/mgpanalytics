@@ -7,15 +7,7 @@ interface TwitterEmbedProps {
   className?: string;
 }
 
-declare global {
-  interface Window {
-    twttr?: {
-      widgets: {
-        load: (element?: HTMLElement) => void;
-      };
-    };
-  }
-}
+// Types are defined in src/types/twitter.d.ts
 
 export function TwitterEmbed({ tweetUrl, className }: TwitterEmbedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
