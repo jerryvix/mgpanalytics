@@ -212,12 +212,15 @@ export function NFLSlatePlayersGrid() {
                 <span className="text-foreground">{game.home_team.abbreviation}</span>
               </div>
               {isSuperBowl ? (
-                <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 gap-1">
-                  <Trophy className="w-3 h-3" />
+                <Badge className="bg-gradient-to-r from-amber-500/30 to-yellow-500/20 text-amber-400 border-amber-500/40 gap-1 px-3 py-1">
+                  <Trophy className="w-4 h-4" />
                   Super Bowl LIX
                 </Badge>
               ) : isPlayoffs ? (
-                <Badge variant="secondary">Playoffs</Badge>
+                <Badge variant="secondary" className="gap-1">
+                  <Trophy className="w-3 h-3" />
+                  Playoffs
+                </Badge>
               ) : (
                 <Badge variant="secondary">Week {game.week}</Badge>
               )}

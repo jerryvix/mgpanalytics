@@ -6,23 +6,9 @@ const corsHeaders = {
 };
 
 const BDL_NFL_BASE_URL = 'https://api.balldontlie.io/nfl/v1';
-
-// Rate limiting
-const RATE_LIMIT_DELAY = 100;
-let lastCallTime = 0;
-
-async function rateLimitedDelay(): Promise<void> {
-  const now = Date.now();
-  const timeSinceLastCall = now - lastCallTime;
-  if (timeSinceLastCall < RATE_LIMIT_DELAY) {
-    await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY - timeSinceLastCall));
-  }
-  lastCallTime = Date.now();
-}
+const CURRENT_SEASON = 2025;
 
 async function bdlFetch(apiKey: string, endpoint: string, params?: Record<string, string | number | number[] | string[]>) {
-  await rateLimitedDelay();
-  
   const url = new URL(`${BDL_NFL_BASE_URL}${endpoint}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -36,7 +22,7 @@ async function bdlFetch(apiKey: string, endpoint: string, params?: Record<string
     });
   }
 
-  console.log(`[NFL-Slate] Fetching: ${url.toString()}`);
+  console.log(`[NFL-Slate] Fetching: ${url.toString().substring(0, 100)}...`);
   
   const response = await fetch(url.toString(), {
     headers: {
@@ -61,6 +47,7 @@ interface NFLGame {
   datetime: string;
   season: number;
   week: number;
+  postseason: boolean;
   status: string;
   home_team: {
     id: number;
@@ -110,7 +97,6 @@ interface LeaderPlayer {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -119,101 +105,70 @@ serve(async (req) => {
     const apiKey = Deno.env.get('BALLDONTLIE_API_KEY');
     
     if (!apiKey) {
-      throw new Error('API key not configured');
+      throw new Error('BALLDONTLIE_API_KEY not configured');
     }
 
-    console.log('[NFL-Slate] Starting to fetch next game and leaders...');
+    console.log(`[NFL-Slate] Starting fetch for ${CURRENT_SEASON} season...`);
 
-    // Step 1: Get games for current season (2024) and check for upcoming
-    // First try to get all games to find any upcoming ones
+    // Step 1: Fetch games - just one page since we need the latest postseason game
     const gamesResult = await bdlFetch(apiKey, '/games', {
-      season: 2024,
+      season: CURRENT_SEASON,
+      postseason: 'true',
       per_page: 100
     });
 
-    console.log(`[NFL-Slate] Found ${gamesResult.data?.length || 0} total games`);
+    let allGames: NFLGame[] = gamesResult.data || [];
+    console.log(`[NFL-Slate] Found ${allGames.length} postseason games`);
 
-    // Find the next upcoming game (earliest future game) - no time limit
-    const now = new Date();
-    const upcomingGames = (gamesResult.data || [])
-      .filter((game: NFLGame) => {
-        // Parse the game datetime
-        const gameDate = new Date(game.datetime || `${game.date}T${game.time || '00:00:00'}`);
-        // Check if game is in the future and not finished
-        const isFuture = gameDate > now;
-        const isNotFinal = game.status !== 'Final' && 
-                          game.status !== 'final' && 
-                          !game.status?.toLowerCase().includes('final');
-        return isFuture && isNotFinal;
-      })
-      .sort((a: NFLGame, b: NFLGame) => {
-        const dateA = new Date(a.datetime || `${a.date}T${a.time || '00:00:00'}`);
-        const dateB = new Date(b.datetime || `${b.date}T${b.time || '00:00:00'}`);
-        return dateA.getTime() - dateB.getTime();
+    // If no postseason games, try regular season
+    if (allGames.length === 0) {
+      const regularResult = await bdlFetch(apiKey, '/games', {
+        season: CURRENT_SEASON,
+        per_page: 100
       });
+      allGames = regularResult.data || [];
+      console.log(`[NFL-Slate] Found ${allGames.length} regular season games`);
+    }
 
-    console.log(`[NFL-Slate] Found ${upcomingGames.length} upcoming games after filtering`);
-
-    // If no upcoming games, try postseason explicitly
-    let nextGame: NFLGame | null = upcomingGames.length > 0 ? upcomingGames[0] : null;
+    // Find the Super Bowl or latest postseason game (highest week)
+    let nextGame: NFLGame | null = null;
     let isSuperBowl = false;
     let isPlayoffs = false;
 
-    if (!nextGame) {
-      // Try fetching postseason games - use string 'true' for the param
-      console.log('[NFL-Slate] No regular games found, checking postseason...');
-      const postseasonResult = await bdlFetch(apiKey, '/games', {
-        season: 2024,
-        per_page: 50
-      });
-
-      // Filter for postseason games (they typically have week > 18)
-      const postseasonGames = (postseasonResult.data || [])
-        .filter((game: NFLGame) => {
-          const gameDate = new Date(game.datetime || `${game.date}T${game.time || '00:00:00'}`);
-          const isFuture = gameDate > now;
-          const isNotFinal = game.status !== 'Final' && 
-                            game.status !== 'final' && 
-                            !game.status?.toLowerCase().includes('final');
-          const isPostseason = game.week && game.week > 18;
-          return isFuture && isNotFinal && isPostseason;
-        })
-        .sort((a: NFLGame, b: NFLGame) => {
-          const dateA = new Date(a.datetime || `${a.date}T${a.time || '00:00:00'}`);
-          const dateB = new Date(b.datetime || `${b.date}T${b.time || '00:00:00'}`);
-          return dateA.getTime() - dateB.getTime();
-        });
-
-      console.log(`[NFL-Slate] Found ${postseasonGames.length} upcoming postseason games`);
+    if (allGames.length > 0) {
+      // Sort by week descending to get the Super Bowl first
+      allGames.sort((a: NFLGame, b: NFLGame) => (b.week || 0) - (a.week || 0));
+      nextGame = allGames[0];
+      isPlayoffs = nextGame.postseason === true || Boolean(nextGame.week && nextGame.week > 18);
       
-      if (postseasonGames.length > 0) {
-        nextGame = postseasonGames[0];
-        isPlayoffs = true;
-        // Check if it's the Super Bowl (typically week 22 or the last postseason game)
-        if (postseasonGames.length === 1 || (nextGame && nextGame.week === 22)) {
-          isSuperBowl = true;
-        }
-      }
+      // Super Bowl detection: highest postseason week, or week >= 4 in postseason (wildcard=1, divisional=2, conf=3, super=4-5)
+      const highestWeek = allGames.reduce((max, g) => Math.max(max, g.week || 0), 0);
+      isSuperBowl = Boolean(
+        nextGame.postseason && (
+          nextGame.week === highestWeek ||  // It's the highest week game
+          (nextGame.week && nextGame.week >= 4)  // Week 4+ in postseason is typically Super Bowl
+        )
+      );
+      console.log(`[NFL-Slate] Selected: ${nextGame.visitor_team.abbreviation} @ ${nextGame.home_team.abbreviation}, Week ${nextGame.week}, Highest: ${highestWeek}, Super Bowl: ${isSuperBowl}`);
     }
 
     if (!nextGame) {
-      console.log('[NFL-Slate] No upcoming games found (season complete)');
       return new Response(
         JSON.stringify({ 
           game: null, 
           leaders: { passing: [], rushing: [], receiving: [] },
-          message: 'The NFL season has concluded. Check back for next season!',
+          message: `No games found for the ${CURRENT_SEASON} NFL season.`,
           seasonComplete: true
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    console.log(`[NFL-Slate] Next game: ${nextGame.visitor_team.abbreviation} @ ${nextGame.home_team.abbreviation} on ${nextGame.date}`);
 
     const homeTeamId = nextGame.home_team.id;
     const awayTeamId = nextGame.visitor_team.id;
 
-    // Step 2: Get players for both teams
+    // Step 2: Get players for both teams in parallel
+    console.log(`[NFL-Slate] Fetching players for ${nextGame.home_team.abbreviation} and ${nextGame.visitor_team.abbreviation}`);
     const [homePlayersResult, awayPlayersResult] = await Promise.all([
       bdlFetch(apiKey, '/players', { team_ids: [homeTeamId], per_page: 100 }),
       bdlFetch(apiKey, '/players', { team_ids: [awayTeamId], per_page: 100 })
@@ -224,74 +179,89 @@ serve(async (req) => {
       ...(awayPlayersResult.data || [])
     ];
 
-    console.log(`[NFL-Slate] Found ${allPlayers.length} players from both teams`);
+    console.log(`[NFL-Slate] Found ${allPlayers.length} total players`);
 
-    // Step 3: Get season stats for all players
-    // We need to fetch advanced stats for passing, rushing, and receiving
-    const playerIds = allPlayers.map(p => p.id);
-    
-    // Fetch season stats using the season_stats endpoint
-    const statsResult = await bdlFetch(apiKey, '/season_stats', {
-      season: 2024,
-      player_ids: playerIds.slice(0, 25) // Limit to avoid URL too long
-    });
+    // Step 3: Filter to likely skill position players to reduce API calls
+    const skillPositions = ['QB', 'RB', 'WR', 'TE', 'FB'];
+    const skillPlayers = allPlayers.filter(p => 
+      skillPositions.includes(p.position_abbreviation || p.position || '')
+    );
+    console.log(`[NFL-Slate] Filtered to ${skillPlayers.length} skill position players`);
 
-    console.log(`[NFL-Slate] Fetched stats for ${statsResult.data?.length || 0} players`);
+    // Step 4: Fetch stats for skill players in parallel batches
+    const playerIds = skillPlayers.map(p => p.id);
+    const batchSize = 25;
+    const playerMap = new Map<number, NFLPlayer>();
+    skillPlayers.forEach(p => playerMap.set(p.id, p));
 
-    // Create a map of player ID to their stats
-    const statsMap = new Map<number, any>();
-    for (const stat of statsResult.data || []) {
-      if (stat.player?.id) {
-        statsMap.set(stat.player.id, stat);
-      }
-    }
-
-    // Step 4: Calculate leaders
     const passLeaders: LeaderPlayer[] = [];
     const rushLeaders: LeaderPlayer[] = [];
     const recLeaders: LeaderPlayer[] = [];
 
-    for (const player of allPlayers) {
-      const stats = statsMap.get(player.id);
-      if (!stats) continue;
+    // Create batches
+    const batches: number[][] = [];
+    for (let i = 0; i < playerIds.length; i += batchSize) {
+      batches.push(playerIds.slice(i, i + batchSize));
+    }
 
-      // Passing yards
-      if (stats.passing_yards && stats.passing_yards > 0) {
-        passLeaders.push({
-          ...player,
-          stat_value: stats.passing_yards,
-          stat_type: 'Passing Yards',
-          rank: 0
-        });
-      }
+    console.log(`[NFL-Slate] Fetching stats in ${batches.length} parallel batches`);
 
-      // Rushing yards
-      if (stats.rushing_yards && stats.rushing_yards > 0) {
-        rushLeaders.push({
-          ...player,
-          stat_value: stats.rushing_yards,
-          stat_type: 'Rushing Yards',
-          rank: 0
-        });
-      }
+    // Fetch all batches in parallel
+    const statsPromises = batches.map(batch => 
+      bdlFetch(apiKey, '/season_stats', {
+        season: CURRENT_SEASON,
+        player_ids: batch
+      }).catch(err => {
+        console.error(`[NFL-Slate] Batch error: ${err}`);
+        return { data: [] };
+      })
+    );
 
-      // Receiving yards
-      if (stats.receiving_yards && stats.receiving_yards > 0) {
-        recLeaders.push({
-          ...player,
-          stat_value: stats.receiving_yards,
-          stat_type: 'Receiving Yards',
-          rank: 0
-        });
+    const statsResults = await Promise.all(statsPromises);
+    
+    // Process all stats
+    for (const statsResult of statsResults) {
+      for (const stat of statsResult.data || []) {
+        const playerId = stat.player?.id;
+        const player = playerMap.get(playerId);
+        if (!player) continue;
+
+        if (stat.passing_yards && stat.passing_yards > 0) {
+          passLeaders.push({
+            ...player,
+            stat_value: stat.passing_yards,
+            stat_type: 'Passing Yards',
+            rank: 0
+          });
+        }
+
+        if (stat.rushing_yards && stat.rushing_yards > 0) {
+          rushLeaders.push({
+            ...player,
+            stat_value: stat.rushing_yards,
+            stat_type: 'Rushing Yards',
+            rank: 0
+          });
+        }
+
+        if (stat.receiving_yards && stat.receiving_yards > 0) {
+          recLeaders.push({
+            ...player,
+            stat_value: stat.receiving_yards,
+            stat_type: 'Receiving Yards',
+            rank: 0
+          });
+        }
       }
     }
 
-    // Sort and take top 2 for each category
+    console.log(`[NFL-Slate] Leaders found - Pass: ${passLeaders.length}, Rush: ${rushLeaders.length}, Rec: ${recLeaders.length}`);
+
+    // Sort and take top 2
     passLeaders.sort((a, b) => b.stat_value - a.stat_value);
     rushLeaders.sort((a, b) => b.stat_value - a.stat_value);
     recLeaders.sort((a, b) => b.stat_value - a.stat_value);
 
-    // Assign ranks
     passLeaders.slice(0, 2).forEach((p, i) => p.rank = i + 1);
     rushLeaders.slice(0, 2).forEach((p, i) => p.rank = i + 1);
     recLeaders.slice(0, 2).forEach((p, i) => p.rank = i + 1);
@@ -303,6 +273,7 @@ serve(async (req) => {
         time: nextGame.time,
         datetime: nextGame.datetime,
         week: nextGame.week,
+        postseason: nextGame.postseason,
         status: nextGame.status,
         home_team: nextGame.home_team,
         visitor_team: nextGame.visitor_team
@@ -317,21 +288,20 @@ serve(async (req) => {
       seasonComplete: false
     };
 
-    console.log(`[NFL-Slate] Response ready: Pass ${passLeaders.length >= 2 ? 2 : passLeaders.length}, Rush ${rushLeaders.length >= 2 ? 2 : rushLeaders.length}, Rec ${recLeaders.length >= 2 ? 2 : recLeaders.length}`);
+    console.log(`[NFL-Slate] Done - ${nextGame.visitor_team.abbreviation} @ ${nextGame.home_team.abbreviation}`);
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('[NFL-Slate] Error:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      timestamp: new Date().toISOString()
-    });
+    console.error('[NFL-Slate] Error:', error instanceof Error ? error.message : 'Unknown');
     
     return new Response(
-      JSON.stringify({ error: 'Failed to fetch NFL slate data. Please try again.' }),
+      JSON.stringify({ 
+        error: 'Failed to fetch NFL slate data.',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
