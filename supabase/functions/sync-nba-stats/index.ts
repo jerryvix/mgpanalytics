@@ -21,11 +21,11 @@ async function rateLimitedDelay(): Promise<void> {
   lastCallTime = Date.now();
 }
 
-// Fetch from BDL API
+// Fetch from BDL API - handles both array and scalar params
 async function bdlFetch(
   apiKey: string,
   endpoint: string,
-  params?: Record<string, string | number | number[]>
+  params?: Record<string, string | number | string[] | number[]>
 ): Promise<{ data: any; meta?: { next_cursor?: string } }> {
   await rateLimitedDelay();
 
@@ -33,7 +33,7 @@ async function bdlFetch(
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        // Handle arrays (player_ids[])
+        // Handle arrays with bracket notation (player_ids[]=1&player_ids[]=2)
         value.forEach((v) => url.searchParams.append(`${key}[]`, String(v)));
       } else if (value !== undefined && value !== null) {
         url.searchParams.append(key, String(value));
@@ -129,40 +129,39 @@ async function findBdlPlayerId(
   }
 }
 
-interface NBASeasonAverages {
-  player_id: number;
+// New GOAT-tier response structure with nested stats
+interface NBASeasonAveragesResponse {
+  player: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
   season: number;
-  games_played: number;
-  min: string;
-  pts: number;
-  reb: number;
-  ast: number;
-  stl: number;
-  blk: number;
-  fgm: number;
-  fga: number;
-  fg_pct: number;
-  fg3m: number;
-  fg3a: number;
-  fg3_pct: number;
-  ftm: number;
-  fta: number;
-  ft_pct: number;
-  oreb: number;
-  dreb: number;
-  turnover: number;
-  pf: number;
+  season_type: string;
+  stats: {
+    pts: number;
+    reb: number;
+    ast: number;
+    stl: number;
+    blk: number;
+    min: number;
+    gp: number;
+    fgm: number;
+    fga: number;
+    fg_pct: number;
+    fg3m: number;
+    fg3a: number;
+    fg3_pct: number;
+    ftm: number;
+    fta: number;
+    ft_pct: number;
+    oreb: number;
+    dreb: number;
+    tov: number;
+    pf: number;
+  };
 }
 
-// Parse minutes string "32:45" to numeric
-function parseMinutes(minStr: string | null | undefined): number {
-  if (!minStr) return 0;
-  const parts = minStr.split(":");
-  if (parts.length === 2) {
-    return parseInt(parts[0]) + parseInt(parts[1]) / 60;
-  }
-  return parseFloat(minStr) || 0;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -282,48 +281,54 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Step 2: Fetch season averages in batches of 100
-    console.log(`[sync-nba-stats] Step 2: Fetching season averages...`);
+    // Step 2: Fetch season averages in batches of 25 (to stay under URL length limits)
+    console.log(`[sync-nba-stats] Step 2: Fetching season averages using GOAT-tier endpoint...`);
     
-    const BATCH_SIZE = 100;
+    const BATCH_SIZE = 25; // Smaller batches for URL length limits
     const batches: number[][] = [];
     
     for (let i = 0; i < bdlPlayerIds.length; i += BATCH_SIZE) {
       batches.push(bdlPlayerIds.slice(i, i + BATCH_SIZE));
     }
 
-    const allSeasonAverages: NBASeasonAverages[] = [];
+    const allSeasonAverages: NBASeasonAveragesResponse[] = [];
 
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
       console.log(`[sync-nba-stats] Fetching batch ${batchIndex + 1}/${batches.length} (${batch.length} players)`);
 
       try {
-        // Ball Don't Lie season_averages endpoint
-        // 2024 refers to 2024-25 season
-        const result = await bdlFetch(BDL_API_KEY, "/season_averages", {
+        // GOAT-tier endpoint structure:
+        // /season_averages/{category}?season=2024&season_type=regular&type=base&player_ids[]=...
+        const result = await bdlFetch(BDL_API_KEY, "/season_averages/general", {
           season: 2024,
+          season_type: "regular",
+          type: "base",
           player_ids: batch,
         });
 
         if (result.data && Array.isArray(result.data)) {
           allSeasonAverages.push(...result.data);
+          console.log(`[sync-nba-stats] Batch ${batchIndex + 1}: Received ${result.data.length} season averages`);
         }
       } catch (error) {
         console.error(`[sync-nba-stats] Batch ${batchIndex + 1} failed:`, error);
         errors.push(`Batch ${batchIndex + 1} failed: ${error instanceof Error ? error.message : "Unknown"}`);
       }
 
-      // Delay between batches
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      // Rate limiting: wait 100ms between batches (600 req/min limit)
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     console.log(`[sync-nba-stats] Got ${allSeasonAverages.length} season average records`);
 
-    // Create a map of BDL player_id -> stats
-    const statsMap: Record<number, NBASeasonAverages> = {};
+    // Create a map of BDL player_id -> stats response
+    const statsMap: Record<number, NBASeasonAveragesResponse> = {};
     for (const avg of allSeasonAverages) {
-      statsMap[avg.player_id] = avg;
+      // New structure: player.id instead of player_id at root
+      if (avg.player?.id) {
+        statsMap[avg.player.id] = avg;
+      }
     }
 
     // Step 3: Upsert stats into player_season_stats
@@ -336,14 +341,15 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const bdlStats = statsMap[bdlId];
-      if (!bdlStats) {
+      const bdlResponse = statsMap[bdlId];
+      if (!bdlResponse || !bdlResponse.stats) {
         console.log(`[sync-nba-stats] No season averages for ${player.name} (BDL ID: ${bdlId})`);
         noData++;
         continue;
       }
 
-      const mpg = parseMinutes(bdlStats.min);
+      // New structure: stats are nested in .stats object
+      const stats = bdlResponse.stats;
 
       const seasonStats = {
         player_id: player.id,
@@ -351,18 +357,18 @@ Deno.serve(async (req) => {
         season: 2025, // Store as 2025 (2024-25 season)
         season_type: "regular",
         source: "balldontlie",
-        games_played: bdlStats.games_played || 0,
-        points_per_game: bdlStats.pts || 0,
-        rebounds_per_game: bdlStats.reb || 0,
-        assists_per_game: bdlStats.ast || 0,
-        steals_per_game: bdlStats.stl || 0,
-        blocks_per_game: bdlStats.blk || 0,
-        turnovers_per_game: bdlStats.turnover || 0,
-        minutes_per_game: mpg,
-        field_goal_pct: bdlStats.fg_pct ? bdlStats.fg_pct * 100 : null,
-        three_point_pct: bdlStats.fg3_pct ? bdlStats.fg3_pct * 100 : null,
-        free_throw_pct: bdlStats.ft_pct ? bdlStats.ft_pct * 100 : null,
-        raw_data: bdlStats,
+        games_played: stats.gp || 0,
+        points_per_game: stats.pts || 0,
+        rebounds_per_game: stats.reb || 0,
+        assists_per_game: stats.ast || 0,
+        steals_per_game: stats.stl || 0,
+        blocks_per_game: stats.blk || 0,
+        turnovers_per_game: stats.tov || 0,
+        minutes_per_game: stats.min || 0,
+        field_goal_pct: stats.fg_pct ? stats.fg_pct * 100 : null,
+        three_point_pct: stats.fg3_pct ? stats.fg3_pct * 100 : null,
+        free_throw_pct: stats.ft_pct ? stats.ft_pct * 100 : null,
+        raw_data: bdlResponse,
         updated_at: new Date().toISOString(),
       };
 
@@ -377,7 +383,7 @@ Deno.serve(async (req) => {
         errors.push(`Failed: ${player.name}`);
       } else {
         synced++;
-        console.log(`[sync-nba-stats] Updated stats for ${player.name}: ${bdlStats.pts} PPG, ${bdlStats.reb} RPG, ${bdlStats.ast} APG`);
+        console.log(`[sync-nba-stats] Updated stats for ${player.name}: ${stats.pts} PPG, ${stats.reb} RPG, ${stats.ast} APG`);
       }
     }
 
