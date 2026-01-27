@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -40,27 +41,11 @@ async function bdlFetch(apiKey: string, endpoint: string, params?: Record<string
   return await response.json();
 }
 
-interface NFLGame {
+interface BDLTeam {
   id: number;
-  date: string;
-  time: string;
-  datetime: string;
-  season: number;
-  week: number;
-  postseason: boolean;
-  status: string;
-  home_team: {
-    id: number;
-    abbreviation: string;
-    full_name: string;
-    name: string;
-  };
-  visitor_team: {
-    id: number;
-    abbreviation: string;
-    full_name: string;
-    name: string;
-  };
+  abbreviation: string;
+  full_name: string;
+  name: string;
 }
 
 interface NFLPlayer {
@@ -69,19 +54,13 @@ interface NFLPlayer {
   last_name: string;
   position: string;
   position_abbreviation: string;
-  team: {
-    id: number;
-    abbreviation: string;
-    full_name: string;
-    name: string;
-  } | null;
+  team: BDLTeam | null;
   jersey_number: string | null;
 }
 
 interface PlayerSeasonStats {
   player_id: number;
   games_played: number;
-  // Passing
   passing_yards: number;
   passing_touchdowns: number;
   interceptions_thrown: number;
@@ -90,7 +69,6 @@ interface PlayerSeasonStats {
   rushing_yards: number;
   rushing_touchdowns: number;
   rushing_attempts: number;
-  // Receiving
   receiving_yards: number;
   receiving_touchdowns: number;
   receptions: number;
@@ -112,29 +90,18 @@ function calculateQBR(stats: PlayerSeasonStats): number {
 
   if (passing_attempts === 0) return 0;
 
-  // Completion percentage component (max ~25 points)
   const compPct = (completions / passing_attempts) * 100;
   const compComponent = Math.min((compPct - 30) * 0.5, 25);
-
-  // Yards per attempt component (max ~25 points)
   const ypa = passing_yards / passing_attempts;
   const ypaComponent = Math.min((ypa - 3) * 3, 25);
-
-  // TD rate component (max ~25 points)
   const tdRate = (passing_touchdowns / passing_attempts) * 100;
   const tdComponent = Math.min(tdRate * 5, 25);
-
-  // INT penalty (reduces score)
   const intRate = (interceptions_thrown / passing_attempts) * 100;
   const intPenalty = Math.min(intRate * 5, 20);
-
-  // Rushing bonus (max ~15 points for dual-threat)
   const rushYardsPerGame = rushing_yards / games_played;
   const rushBonus = Math.min(rushYardsPerGame * 0.3 + (rushing_touchdowns * 2), 15);
-
-  // Calculate total and normalize to 0-100
   const rawQBR = compComponent + ypaComponent + tdComponent - intPenalty + rushBonus;
-  const normalizedQBR = Math.max(0, Math.min(100, rawQBR + 30)); // Shift baseline
+  const normalizedQBR = Math.max(0, Math.min(100, rawQBR + 30));
 
   return Math.round(normalizedQBR * 10) / 10;
 }
@@ -145,12 +112,7 @@ interface EnhancedLeaderPlayer {
   last_name: string;
   position: string;
   position_abbreviation: string;
-  team: {
-    id: number;
-    abbreviation: string;
-    full_name: string;
-    name: string;
-  } | null;
+  team: BDLTeam | null;
   jersey_number: string | null;
   stat_value: number;
   stat_type: string;
@@ -173,6 +135,42 @@ interface EnhancedLeaderPlayer {
   };
 }
 
+// Find BDL team by name search
+async function findTeamByName(apiKey: string, teamName: string): Promise<BDLTeam | null> {
+  try {
+    // Extract key words from team name for matching
+    const keywords = teamName.toLowerCase().split(' ');
+    const result = await bdlFetch(apiKey, '/teams');
+    const teams: BDLTeam[] = result.data || [];
+    
+    // Find best match
+    for (const team of teams) {
+      const fullNameLower = team.full_name.toLowerCase();
+      const nameLower = team.name.toLowerCase();
+      
+      // Exact match check
+      if (fullNameLower === teamName.toLowerCase()) {
+        return team;
+      }
+      
+      // Check if team name or full name contains key words
+      const matchCount = keywords.filter(kw => 
+        fullNameLower.includes(kw) || nameLower.includes(kw)
+      ).length;
+      
+      if (matchCount >= 2 || nameLower === keywords[keywords.length - 1]) {
+        return team;
+      }
+    }
+    
+    console.log(`[NFL-Slate] Could not find team: ${teamName}`);
+    return null;
+  } catch (error) {
+    console.error(`[NFL-Slate] Error finding team ${teamName}:`, error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -180,70 +178,52 @@ serve(async (req) => {
 
   try {
     const apiKey = Deno.env.get('BALLDONTLIE_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
     if (!apiKey) {
       throw new Error('BALLDONTLIE_API_KEY not configured');
     }
 
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     console.log(`[NFL-Slate] Starting scalable engine for ${CURRENT_SEASON} season...`);
 
-    // Step 1: Dynamic Game Detection - find next scheduled game
-    // First try postseason, then regular season
-    let allGames: NFLGame[] = [];
-    let nextGame: NFLGame | null = null;
-    
-    // Fetch postseason games first (Super Bowl priority)
-    const postseasonResult = await bdlFetch(apiKey, '/games', {
-      season: CURRENT_SEASON,
-      postseason: 'true',
-      per_page: 50
-    });
-    allGames = postseasonResult.data || [];
-    console.log(`[NFL-Slate] Found ${allGames.length} postseason games`);
+    // Step 1: Get next game from our database (authoritative source)
+    const now = new Date().toISOString();
+    const { data: upcomingGames, error: gamesError } = await supabase
+      .from('games')
+      .select('*')
+      .eq('league', 'NFL')
+      .gt('date', now)
+      .order('date', { ascending: true })
+      .limit(1);
 
-    // Find scheduled games first, then fall back to final games if none scheduled
-    const scheduledGames = allGames.filter((g: NFLGame) => 
-      g.status?.toLowerCase() === 'scheduled' || 
-      g.status?.toLowerCase() === 'pre-game'
-    );
-
-    if (scheduledGames.length > 0) {
-      // Sort by date to get the next upcoming
-      scheduledGames.sort((a: NFLGame, b: NFLGame) => 
-        new Date(a.datetime || a.date).getTime() - new Date(b.datetime || b.date).getTime()
-      );
-      nextGame = scheduledGames[0];
-    } else if (allGames.length > 0) {
-      // No scheduled games - take the highest week (Super Bowl)
-      allGames.sort((a: NFLGame, b: NFLGame) => (b.week || 0) - (a.week || 0));
-      nextGame = allGames[0];
+    if (gamesError) {
+      console.error('[NFL-Slate] Database error:', gamesError);
+      throw new Error('Failed to fetch games from database');
     }
 
-    // If no postseason games, try regular season
+    let nextGame = upcomingGames?.[0];
+    let isSuperBowl = false;
+    let isPlayoffs = false;
+
+    // If no future games, check for the most recent postseason game
     if (!nextGame) {
-      const regularResult = await bdlFetch(apiKey, '/games', {
-        season: CURRENT_SEASON,
-        per_page: 100
-      });
-      allGames = regularResult.data || [];
-      console.log(`[NFL-Slate] Found ${allGames.length} regular season games`);
+      const { data: postseasonGames } = await supabase
+        .from('games')
+        .select('*')
+        .eq('league', 'NFL')
+        .eq('postseason', true)
+        .eq('season', CURRENT_SEASON)
+        .order('date', { ascending: false })
+        .limit(1);
       
-      const scheduledRegular = allGames.filter((g: NFLGame) => 
-        g.status?.toLowerCase() === 'scheduled'
-      );
-      
-      if (scheduledRegular.length > 0) {
-        scheduledRegular.sort((a: NFLGame, b: NFLGame) => 
-          new Date(a.datetime || a.date).getTime() - new Date(b.datetime || b.date).getTime()
-        );
-        nextGame = scheduledRegular[0];
+      if (postseasonGames?.[0]) {
+        nextGame = postseasonGames[0];
+        console.log('[NFL-Slate] Using most recent postseason game as slate');
       }
     }
-
-    const isSuperBowl = Boolean(
-      nextGame?.postseason && nextGame.week && nextGame.week >= 4
-    );
-    const isPlayoffs = Boolean(nextGame?.postseason);
 
     if (!nextGame) {
       return new Response(
@@ -257,16 +237,50 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[NFL-Slate] Next game: ${nextGame.visitor_team.abbreviation} @ ${nextGame.home_team.abbreviation} (Week ${nextGame.week}, ${nextGame.status})`);
+    // Determine game type
+    isPlayoffs = nextGame.postseason === true;
+    isSuperBowl = isPlayoffs && (nextGame.week >= 5 || 
+      (nextGame.home_team_name.includes('Patriots') && nextGame.visitor_team_name.includes('Seahawks')) ||
+      (nextGame.home_team_name.includes('Seahawks') && nextGame.visitor_team_name.includes('Patriots')));
 
-    const homeTeamId = nextGame.home_team.id;
-    const awayTeamId = nextGame.visitor_team.id;
+    console.log(`[NFL-Slate] Next game from DB: ${nextGame.visitor_team_name} @ ${nextGame.home_team_name} (Week ${nextGame.week})`);
 
-    // Step 2: Fetch full rosters for both teams
-    console.log(`[NFL-Slate] Fetching rosters for team IDs: ${homeTeamId}, ${awayTeamId}`);
+    // Step 2: Dynamically find BDL team IDs by searching API
+    const [homeTeam, awayTeam] = await Promise.all([
+      findTeamByName(apiKey, nextGame.home_team_name),
+      findTeamByName(apiKey, nextGame.visitor_team_name)
+    ]);
+
+    if (!homeTeam || !awayTeam) {
+      console.error(`[NFL-Slate] Could not find teams in BDL: Home=${nextGame.home_team_name}, Away=${nextGame.visitor_team_name}`);
+      return new Response(
+        JSON.stringify({ 
+          game: {
+            id: nextGame.id,
+            date: nextGame.date,
+            datetime: nextGame.date,
+            week: nextGame.week,
+            postseason: nextGame.postseason,
+            status: nextGame.status,
+            home_team: { id: 0, abbreviation: '???', full_name: nextGame.home_team_name, name: nextGame.home_team_name.split(' ').pop() },
+            visitor_team: { id: 0, abbreviation: '???', full_name: nextGame.visitor_team_name, name: nextGame.visitor_team_name.split(' ').pop() }
+          },
+          leaders: { passing: [], rushing: [], receiving: [] },
+          message: 'Team mapping failed. Stats unavailable.',
+          isSuperBowl,
+          isPlayoffs,
+          seasonComplete: false
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`[NFL-Slate] Found teams - Home: ${homeTeam.id} (${homeTeam.full_name}), Away: ${awayTeam.id} (${awayTeam.full_name})`);
+
+    // Step 3: Fetch rosters from BDL API
     const [homePlayersResult, awayPlayersResult] = await Promise.all([
-      bdlFetch(apiKey, '/players', { team_ids: [homeTeamId], per_page: 100 }),
-      bdlFetch(apiKey, '/players', { team_ids: [awayTeamId], per_page: 100 })
+      bdlFetch(apiKey, '/players', { team_ids: [homeTeam.id], per_page: 100 }),
+      bdlFetch(apiKey, '/players', { team_ids: [awayTeam.id], per_page: 100 })
     ]);
 
     const allPlayers: NFLPlayer[] = [
@@ -275,19 +289,24 @@ serve(async (req) => {
     ];
     console.log(`[NFL-Slate] Found ${allPlayers.length} total players on rosters`);
 
-    // Step 3: Filter to skill positions
-    const qbPlayers = allPlayers.filter(p => p.position_abbreviation === 'QB' || p.position === 'Quarterback');
-    const rbPlayers = allPlayers.filter(p => p.position_abbreviation === 'RB' || p.position_abbreviation === 'FB' || p.position === 'Running Back');
-    const recPlayers = allPlayers.filter(p => ['WR', 'TE'].includes(p.position_abbreviation || '') || ['Wide Receiver', 'Tight End'].includes(p.position || ''));
+    // Step 4: Filter to skill positions
+    const skillPositions = ['QB', 'RB', 'FB', 'WR', 'TE'];
+    const skillPlayers = allPlayers.filter(p => {
+      const pos = p.position_abbreviation || '';
+      return skillPositions.includes(pos) || 
+             p.position === 'Quarterback' || 
+             p.position === 'Running Back' ||
+             p.position === 'Wide Receiver' ||
+             p.position === 'Tight End';
+    });
     
-    console.log(`[NFL-Slate] Skill players - QBs: ${qbPlayers.length}, RBs: ${rbPlayers.length}, WR/TEs: ${recPlayers.length}`);
+    console.log(`[NFL-Slate] Skill players: ${skillPlayers.length}`);
 
-    const skillPlayers = [...qbPlayers, ...rbPlayers, ...recPlayers];
     const playerIds = skillPlayers.map(p => p.id);
     const playerMap = new Map<number, NFLPlayer>();
     skillPlayers.forEach(p => playerMap.set(p.id, p));
 
-    // Step 4: Fetch 2025 season stats in parallel batches
+    // Step 5: Fetch 2025 season stats in parallel batches
     const batchSize = 25;
     const batches: number[][] = [];
     for (let i = 0; i < playerIds.length; i += batchSize) {
@@ -337,7 +356,7 @@ serve(async (req) => {
 
     console.log(`[NFL-Slate] Collected stats for ${playerStats.size} players`);
 
-    // Step 5: Build leader arrays with detailed stats
+    // Step 6: Build leader arrays with detailed stats
     const passLeaders: EnhancedLeaderPlayer[] = [];
     const rushLeaders: EnhancedLeaderPlayer[] = [];
     const recLeaders: EnhancedLeaderPlayer[] = [];
@@ -346,7 +365,7 @@ serve(async (req) => {
       const player = playerMap.get(playerId);
       if (!player) continue;
 
-      const posAbbr = player.position_abbreviation || player.position || '';
+      const posAbbr = player.position_abbreviation || '';
       const gamesPlayed = stats.games_played || 1;
 
       // QBs - Passing Leaders
@@ -412,26 +431,23 @@ serve(async (req) => {
     rushLeaders.sort((a, b) => b.stat_value - a.stat_value);
     recLeaders.sort((a, b) => b.stat_value - a.stat_value);
 
-    // Assign position-specific rank (this would ideally compare against league)
-    // For now, rank within the game's players
     passLeaders.forEach((p, i) => { p.rank = i + 1; p.position_rank = i + 1; });
     rushLeaders.forEach((p, i) => { p.rank = i + 1; p.position_rank = i + 1; });
     recLeaders.forEach((p, i) => { p.rank = i + 1; p.position_rank = i + 1; });
 
     console.log(`[NFL-Slate] Leaders - Pass: ${passLeaders.length}, Rush: ${rushLeaders.length}, Rec: ${recLeaders.length}`);
 
-    // Take top 2 from each category
     const response = {
       game: {
         id: nextGame.id,
         date: nextGame.date,
-        time: nextGame.time,
-        datetime: nextGame.datetime,
+        time: null,
+        datetime: nextGame.date,
         week: nextGame.week,
         postseason: nextGame.postseason,
         status: nextGame.status,
-        home_team: nextGame.home_team,
-        visitor_team: nextGame.visitor_team
+        home_team: homeTeam,
+        visitor_team: awayTeam
       },
       leaders: {
         passing: passLeaders.slice(0, 2),
@@ -444,7 +460,7 @@ serve(async (req) => {
       statsSource: `${CURRENT_SEASON} Regular Season`
     };
 
-    console.log(`[NFL-Slate] Success - ${nextGame.visitor_team.abbreviation} @ ${nextGame.home_team.abbreviation}`);
+    console.log(`[NFL-Slate] Success - ${awayTeam.abbreviation} @ ${homeTeam.abbreviation} (Super Bowl: ${isSuperBowl})`);
 
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
