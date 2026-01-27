@@ -145,6 +145,8 @@ const STARTER_OVERRIDES: Record<string, string[]> = {
 const EXCLUDED_PLAYERS: string[] = [
   'Joshua Dobbs',
   'Bailey Zappe',
+  'Drew Lock',
+  'Geno Smith',
 ];
 
 function isKnownStarter(playerName: string, teamName: string): boolean {
@@ -486,11 +488,26 @@ serve(async (req) => {
     sortWithStarterPriority(rushLeaders);
     sortWithStarterPriority(recLeaders);
 
-    passLeaders.forEach((p, i) => { p.rank = i + 1; });
-    rushLeaders.forEach((p, i) => { p.rank = i + 1; });
-    recLeaders.forEach((p, i) => { p.rank = i + 1; });
+    // Select top leader from each team (one per team for the matchup)
+    const selectOnePerTeam = (leaders: EnhancedLeaderPlayer[], homeTeamId: number, awayTeamId: number): EnhancedLeaderPlayer[] => {
+      const homeLeader = leaders.find(p => p.team?.id === homeTeamId);
+      const awayLeader = leaders.find(p => p.team?.id === awayTeamId);
+      const result: EnhancedLeaderPlayer[] = [];
+      
+      // Add away team leader first (visitor), then home team leader
+      if (awayLeader) result.push({ ...awayLeader, rank: 1 });
+      if (homeLeader) result.push({ ...homeLeader, rank: 2 });
+      
+      return result;
+    };
 
-    console.log(`[NFL-Slate] Leaders - Pass: ${passLeaders.length}, Rush: ${rushLeaders.length}, Rec: ${recLeaders.length}`);
+    const finalPassLeaders = selectOnePerTeam(passLeaders, homeTeam.id, awayTeam.id);
+    const finalRushLeaders = selectOnePerTeam(rushLeaders, homeTeam.id, awayTeam.id);
+    const finalRecLeaders = selectOnePerTeam(recLeaders, homeTeam.id, awayTeam.id);
+
+    console.log(`[NFL-Slate] Final Leaders - Pass: ${finalPassLeaders.map(p => `${p.first_name} ${p.last_name} (${p.team?.abbreviation})`).join(', ')}`);
+    console.log(`[NFL-Slate] Final Leaders - Rush: ${finalRushLeaders.map(p => `${p.first_name} ${p.last_name} (${p.team?.abbreviation})`).join(', ')}`);
+    console.log(`[NFL-Slate] Final Leaders - Rec: ${finalRecLeaders.map(p => `${p.first_name} ${p.last_name} (${p.team?.abbreviation})`).join(', ')}`);
 
     const response = {
       game: {
@@ -505,9 +522,9 @@ serve(async (req) => {
         visitor_team: awayTeam
       },
       leaders: {
-        passing: passLeaders.slice(0, 2),
-        rushing: rushLeaders.slice(0, 2),
-        receiving: recLeaders.slice(0, 2)
+        passing: finalPassLeaders,
+        rushing: finalRushLeaders,
+        receiving: finalRecLeaders
       },
       isSuperBowl,
       isPlayoffs,
