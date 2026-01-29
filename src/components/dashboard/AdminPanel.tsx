@@ -95,8 +95,21 @@ export function AdminPanel() {
   // Sync timestamps
   const [syncTimestamps, setSyncTimestamps] = useState<SyncTimestamp[]>([]);
 
-  // API Key
-  const BDL_API_KEY = "52aa922d-2187-406d-a52b-3d51c71117f7";
+  // API calls now go through the balldontlie edge function - no client-side API key needed
+  
+  // Helper function to make BallDontLie API calls through the edge function
+  const bdlFetch = async (sport: string, endpoint: string, params?: Record<string, string | number>): Promise<{ data: unknown[]; meta?: { next_cursor?: string } }> => {
+    const { data, error } = await supabase.functions.invoke("balldontlie", {
+      body: { action: "fetch", sport, endpoint, params },
+    });
+    
+    if (error) {
+      console.error("[Admin] BDL edge function error:", error);
+      throw new Error(error.message || "API request failed");
+    }
+    
+    return data;
+  };
 
   // Fetch all counts
   const fetchAllCounts = async () => {
@@ -381,85 +394,78 @@ export function AdminPanel() {
       for (const season of seasons) {
         if (stopSyncRef.current || stopSeasonStatsSyncRef.current) break;
 
-        const response = await fetch(
-          `https://api.balldontlie.io/nfl/v1/season_stats?season=${season}&per_page=100`,
-          { headers: { "Authorization": BDL_API_KEY } }
-        );
+        try {
+          const result = await bdlFetch("nfl", "/season_stats", { season, per_page: 100 });
+          let seasonStats = result.data as Record<string, unknown>[] || [];
+          let nextCursor = result.meta?.next_cursor;
 
-        if (!response.ok) continue;
-
-        let result = await response.json();
-        let seasonStats = result.data || [];
-        let nextCursor = result.meta?.next_cursor;
-
-        while (nextCursor && !stopSyncRef.current && !stopSeasonStatsSyncRef.current) {
-          const nextResponse = await fetch(
-            `https://api.balldontlie.io/nfl/v1/season_stats?season=${season}&per_page=100&cursor=${nextCursor}`,
-            { headers: { "Authorization": BDL_API_KEY } }
-          );
-          if (!nextResponse.ok) break;
-          const nextResult = await nextResponse.json();
-          seasonStats = [...seasonStats, ...(nextResult.data || [])];
-          nextCursor = nextResult.meta?.next_cursor;
-          await new Promise(r => setTimeout(r, 150));
-        }
-        
-        // Check if stopped mid-season
-        if (stopSeasonStatsSyncRef.current) break;
-
-        // Process stats
-        const statsToUpsert = [];
-        for (const stat of seasonStats) {
-          const playerId = playerMap.get(String(stat.player?.id));
-          if (!playerId) continue;
-
-          // API uses "passing_yards", "rushing_yards" - not "pass_yards", "rush_yards"
-          const passYards = stat.passing_yards || stat.pass_yards || 0;
-          const passTd = stat.passing_touchdowns || stat.pass_touchdowns || 0;
-          const passInt = stat.passing_interceptions || stat.pass_interceptions || 0;
-          const rushYards = stat.rushing_yards || stat.rush_yards || 0;
-          const rushTd = stat.rushing_touchdowns || stat.rush_touchdowns || 0;
-          const recYards = stat.receiving_yards || stat.rec_yards || 0;
-          const recTd = stat.receiving_touchdowns || stat.rec_touchdowns || 0;
-          const receptions = stat.receptions || 0;
-
-          const fantasyPoints = (passYards * 0.04) + (passTd * 4) - (passInt * 2) + 
-            (rushYards * 0.1) + (rushTd * 6) + (recYards * 0.1) + (recTd * 6);
-
-          statsToUpsert.push({
-            player_id: playerId,
-            sport: "NFL",
-            season: stat.season || season,
-            season_type: "regular",
-            games_played: stat.games_played || 0,
-            pass_attempts: stat.passing_attempts || stat.pass_attempts || 0,
-            pass_completions: stat.passing_completions || stat.pass_completions || 0,
-            pass_yards: passYards,
-            pass_td: passTd,
-            pass_int: passInt,
-            passer_rating: stat.qbr || stat.passer_rating || null,
-            rush_attempts: stat.rushing_attempts || stat.rush_attempts || 0,
-            rush_yards: rushYards,
-            rush_td: rushTd,
-            receptions: receptions,
-            rec_yards: recYards,
-            rec_td: recTd,
-            targets: stat.receiving_targets || stat.targets || 0,
-            fantasy_points: Math.round(fantasyPoints * 100) / 100,
-            fantasy_points_ppr: Math.round((fantasyPoints + receptions) * 100) / 100,
-            raw_data: stat,
-            updated_at: new Date().toISOString(),
-          });
-        }
-
-        if (statsToUpsert.length > 0) {
-          for (let i = 0; i < statsToUpsert.length; i += 50) {
-            const batch = statsToUpsert.slice(i, i + 50);
-            await supabase.from("player_season_stats").upsert(batch, {
-              onConflict: "player_id,sport,season,season_type",
-            });
-            totalSynced += batch.length;
+          while (nextCursor && !stopSyncRef.current && !stopSeasonStatsSyncRef.current) {
+            const nextResult = await bdlFetch("nfl", "/season_stats", { season, per_page: 100, cursor: nextCursor });
+            seasonStats = [...seasonStats, ...((nextResult.data as Record<string, unknown>[]) || [])];
+            nextCursor = nextResult.meta?.next_cursor;
+            await new Promise(r => setTimeout(r, 150));
           }
+          
+          // Check if stopped mid-season
+          if (stopSeasonStatsSyncRef.current) break;
+
+          // Process stats
+          const statsToUpsert = [];
+          for (const stat of seasonStats) {
+            const playerId = playerMap.get(String((stat.player as Record<string, unknown>)?.id));
+            if (!playerId) continue;
+
+            // API uses "passing_yards", "rushing_yards" - not "pass_yards", "rush_yards"
+            const passYards = (stat.passing_yards || stat.pass_yards || 0) as number;
+            const passTd = (stat.passing_touchdowns || stat.pass_touchdowns || 0) as number;
+            const passInt = (stat.passing_interceptions || stat.pass_interceptions || 0) as number;
+            const rushYards = (stat.rushing_yards || stat.rush_yards || 0) as number;
+            const rushTd = (stat.rushing_touchdowns || stat.rush_touchdowns || 0) as number;
+            const recYards = (stat.receiving_yards || stat.rec_yards || 0) as number;
+            const recTd = (stat.receiving_touchdowns || stat.rec_touchdowns || 0) as number;
+            const receptions = (stat.receptions || 0) as number;
+
+            const fantasyPoints = (passYards * 0.04) + (passTd * 4) - (passInt * 2) + 
+              (rushYards * 0.1) + (rushTd * 6) + (recYards * 0.1) + (recTd * 6);
+
+            statsToUpsert.push({
+              player_id: playerId,
+              sport: "NFL",
+              season: (stat.season as number) || season,
+              season_type: "regular",
+              games_played: (stat.games_played as number) || 0,
+              pass_attempts: (stat.passing_attempts || stat.pass_attempts || 0) as number,
+              pass_completions: (stat.passing_completions || stat.pass_completions || 0) as number,
+              pass_yards: passYards,
+              pass_td: passTd,
+              pass_int: passInt,
+              passer_rating: (stat.qbr || stat.passer_rating || null) as number | null,
+              rush_attempts: (stat.rushing_attempts || stat.rush_attempts || 0) as number,
+              rush_yards: rushYards,
+              rush_td: rushTd,
+              receptions: receptions,
+              rec_yards: recYards,
+              rec_td: recTd,
+              targets: (stat.receiving_targets || stat.targets || 0) as number,
+              fantasy_points: Math.round(fantasyPoints * 100) / 100,
+              fantasy_points_ppr: Math.round((fantasyPoints + receptions) * 100) / 100,
+              raw_data: stat,
+              updated_at: new Date().toISOString(),
+            });
+          }
+
+          if (statsToUpsert.length > 0) {
+            for (let i = 0; i < statsToUpsert.length; i += 50) {
+              const batch = statsToUpsert.slice(i, i + 50);
+              await supabase.from("player_season_stats").upsert(batch, {
+                onConflict: "player_id,sport,season,season_type",
+              });
+              totalSynced += batch.length;
+            }
+          }
+        } catch (seasonError) {
+          console.warn(`[Admin] Error fetching season ${season}:`, seasonError);
+          continue;
         }
         await new Promise(r => setTimeout(r, 300));
       }
@@ -537,25 +543,18 @@ export function AdminPanel() {
       const playerMap = new Map(allPlayers.map(p => [String(p.external_id), p.id]));
       console.log(`[Admin] Loaded ${playerMap.size} NFL players into lookup map`);
 
-      // Step 2: Fetch all games for the season from Ball Don't Lie API
+      // Step 2: Fetch all games for the season from Ball Don't Lie API via edge function
       toast({ title: "Fetching games...", description: `Loading ${season} NFL games from API` });
       
       let allGames: Array<{ id: number; week: number; date: string; status: string; home_team: { abbreviation: string; full_name: string }; away_team: { abbreviation: string; full_name: string }; home_team_score: number; away_team_score: number }> = [];
       let nextCursor: string | null = null;
       
       do {
-        const url = nextCursor 
-          ? `https://api.balldontlie.io/nfl/v1/games?season=${season}&per_page=50&cursor=${nextCursor}`
-          : `https://api.balldontlie.io/nfl/v1/games?season=${season}&per_page=50`;
+        const params: Record<string, string | number> = { season, per_page: 50 };
+        if (nextCursor) params.cursor = nextCursor;
         
-        const response = await fetch(url, { headers: { "Authorization": BDL_API_KEY } });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch games: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        allGames = [...allGames, ...(result.data || [])];
+        const result = await bdlFetch("nfl", "/games", params);
+        allGames = [...allGames, ...((result.data || []) as typeof allGames)];
         nextCursor = result.meta?.next_cursor || null;
         
         await new Promise(r => setTimeout(r, 100));
@@ -588,24 +587,14 @@ export function AdminPanel() {
 
         const gameBatch = allGames.slice(i, i + GAME_BATCH_SIZE);
         
-        // Fetch stats for each game in the batch
+        // Fetch stats for each game in the batch via edge function
         const batchPromises = gameBatch.map(async (game) => {
           try {
-            const response = await fetch(
-              `https://api.balldontlie.io/nfl/v1/stats?game_ids=${game.id}`,
-              { headers: { "Authorization": BDL_API_KEY } }
-            );
-            
-            if (!response.ok) {
-              console.warn(`[Admin] Failed to fetch stats for game ${game.id}: ${response.status}`);
-              return { game, stats: [] };
-            }
-            
-            const result = await response.json();
-            return { game, stats: result.data || [] };
+            const result = await bdlFetch("nfl", "/stats", { game_ids: game.id });
+            return { game, stats: (result.data || []) as Record<string, unknown>[] };
           } catch (err) {
             console.warn(`[Admin] Error fetching game ${game.id}:`, err);
-            return { game, stats: [] };
+            return { game, stats: [] as Record<string, unknown>[] };
           }
         });
 
@@ -643,8 +632,12 @@ export function AdminPanel() {
 
         for (const { game, stats } of batchResults) {
           for (const stat of stats) {
+            const statObj = stat as Record<string, unknown>;
+            const playerObj = statObj.player as Record<string, unknown> | undefined;
+            const teamObj = playerObj?.team as Record<string, unknown> | undefined;
+            
             // Find player in our database
-            const externalPlayerId = String(stat.player?.id);
+            const externalPlayerId = String(playerObj?.id);
             const playerId = playerMap.get(externalPlayerId);
             
             if (!playerId) {
@@ -653,7 +646,7 @@ export function AdminPanel() {
             }
 
             // Determine home/away and opponent
-            const playerTeamAbbr = stat.player?.team?.abbreviation || "";
+            const playerTeamAbbr = (teamObj?.abbreviation as string) || "";
             const isHome = game.home_team?.abbreviation === playerTeamAbbr;
             const homeAway = isHome ? "home" : "away";
             const opponentAbbr = isHome ? game.away_team?.abbreviation : game.home_team?.abbreviation;
@@ -674,15 +667,15 @@ export function AdminPanel() {
             }
 
             // Extract stats with API field name variations
-            const passYards = stat.pass_yards || stat.passing_yards || 0;
-            const passTd = stat.pass_touchdowns || stat.passing_touchdowns || stat.pass_td || 0;
-            const passInt = stat.pass_interceptions || stat.passing_interceptions || stat.pass_int || 0;
-            const rushYards = stat.rush_yards || stat.rushing_yards || 0;
-            const rushTd = stat.rush_touchdowns || stat.rushing_touchdowns || stat.rush_td || 0;
-            const recYards = stat.receiving_yards || stat.rec_yards || 0;
-            const recTd = stat.receiving_touchdowns || stat.rec_td || 0;
-            const receptions = stat.receptions || 0;
-            const targets = stat.targets || 0;
+            const passYards = ((statObj.pass_yards || statObj.passing_yards || 0) as number);
+            const passTd = ((statObj.pass_touchdowns || statObj.passing_touchdowns || statObj.pass_td || 0) as number);
+            const passInt = ((statObj.pass_interceptions || statObj.passing_interceptions || statObj.pass_int || 0) as number);
+            const rushYards = ((statObj.rush_yards || statObj.rushing_yards || 0) as number);
+            const rushTd = ((statObj.rush_touchdowns || statObj.rushing_touchdowns || statObj.rush_td || 0) as number);
+            const recYards = ((statObj.receiving_yards || statObj.rec_yards || 0) as number);
+            const recTd = ((statObj.receiving_touchdowns || statObj.rec_td || 0) as number);
+            const receptions = ((statObj.receptions || 0) as number);
+            const targets = ((statObj.targets || 0) as number);
 
             // Calculate fantasy points
             const fantasyPoints = 
@@ -709,13 +702,13 @@ export function AdminPanel() {
               team_score: teamScore,
               opponent_score: opponentScore,
               result: result,
-              pass_attempts: stat.pass_attempts || 0,
-              pass_completions: stat.pass_completions || 0,
+              pass_attempts: ((statObj.pass_attempts || 0) as number),
+              pass_completions: ((statObj.pass_completions || 0) as number),
               pass_yards: passYards,
               pass_td: passTd,
               pass_int: passInt,
-              passer_rating: stat.passer_rating || null,
-              rush_attempts: stat.rush_attempts || 0,
+              passer_rating: ((statObj.passer_rating || null) as number | null),
+              rush_attempts: ((statObj.rush_attempts || 0) as number),
               rush_yards: rushYards,
               rush_td: rushTd,
               targets: targets,
@@ -724,7 +717,7 @@ export function AdminPanel() {
               rec_td: recTd,
               fantasy_points: Math.round(fantasyPoints * 100) / 100,
               fantasy_points_ppr: Math.round(fantasyPointsPpr * 100) / 100,
-              raw_data: stat as Json,
+              raw_data: statObj as Json,
             });
           }
         }
@@ -792,20 +785,18 @@ export function AdminPanel() {
     const season = 2025;
     
     try {
-      // Test endpoints
+      // Test endpoints via edge function
       const testEndpoints = [
-        { name: "passing", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/passing?season=2024&per_page=1`, positions: ["QB"] },
-        { name: "rushing", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/rushing?season=2024&per_page=1`, positions: ["RB", "FB"] },
-        { name: "receiving", url: `https://api.balldontlie.io/nfl/v1/advanced_stats/receiving?season=2024&per_page=1`, positions: ["WR", "TE"] },
+        { name: "passing", positions: ["QB"] },
+        { name: "rushing", positions: ["RB", "FB"] },
+        { name: "receiving", positions: ["WR", "TE"] },
       ];
 
       const availableEndpoints: { name: string; positions: string[] }[] = [];
       for (const endpoint of testEndpoints) {
         try {
-          const response = await fetch(endpoint.url, { headers: { "Authorization": BDL_API_KEY } });
-          if (response.ok) {
-            availableEndpoints.push({ name: endpoint.name, positions: endpoint.positions });
-          }
+          await bdlFetch("nfl", `/advanced_stats/${endpoint.name}`, { season: 2024, per_page: 1 });
+          availableEndpoints.push({ name: endpoint.name, positions: endpoint.positions });
         } catch { /* skip */ }
       }
 
@@ -843,15 +834,8 @@ export function AdminPanel() {
         if (stopSyncRef.current || stopAdvancedStatsSyncRef.current) break;
 
         try {
-          const response = await fetch(
-            `https://api.balldontlie.io/nfl/v1/advanced_stats/${endpoint.name}?season=${season}&per_page=100`,
-            { headers: { "Authorization": BDL_API_KEY } }
-          );
-
-          if (!response.ok) continue;
-
-          const result = await response.json();
-          const allStats = result.data || [];
+          const result = await bdlFetch("nfl", `/advanced_stats/${endpoint.name}`, { season, per_page: 100 });
+          const allStats = (result.data || []) as Record<string, unknown>[];
           const playerExternalIds = new Set(uniquePlayers.map(p => String(p.external_id)));
           const relevantStats = allStats.filter((stat: Record<string, unknown>) => 
             playerExternalIds.has(String((stat.player as Record<string, unknown>)?.id))
@@ -1019,18 +1003,10 @@ export function AdminPanel() {
     setIsTestingAPI(true);
     setApiStatus(null);
     try {
-      const response = await fetch(
-        `https://api.balldontlie.io/nfl/v1/teams?per_page=1`,
-        { headers: { "Authorization": BDL_API_KEY } }
-      );
-      
-      if (response.ok) {
-        setApiStatus({ success: true, message: "API connection successful" });
-        toast({ title: "API Connected", description: "Ball Don't Lie API is reachable" });
-      } else {
-        setApiStatus({ success: false, message: `API returned ${response.status}` });
-        toast({ title: "API Error", description: `Status: ${response.status}`, variant: "destructive" });
-      }
+      // Test via edge function
+      await bdlFetch("nfl", "/teams", { per_page: 1 });
+      setApiStatus({ success: true, message: "API connection successful" });
+      toast({ title: "API Connected", description: "Ball Don't Lie API is reachable" });
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Connection failed";
       setApiStatus({ success: false, message: msg });
