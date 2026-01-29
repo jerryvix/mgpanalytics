@@ -50,3 +50,9 @@ verify_jwt = false
 
 [functions.nfl-slate-leaders]
 verify_jwt = false
+
+[functions.sportradar]
+verify_jwt = false
+
+[functions.analyst-query]
+verify_jwt = false

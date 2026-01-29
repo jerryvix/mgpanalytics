@@ -81,9 +81,10 @@ export function DashboardHome() {
     try {
       const now = new Date();
       const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+      const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
       
-      // Fetch NFL games in next 48 hours
-      const { data: nflGames } = await supabase
+      // Fetch NFL games in next 48 hours first, then extend to 7 days if empty
+      let { data: nflGames } = await supabase
         .from("games")
         .select("*")
         .not("status", "ilike", "%final%")
@@ -92,8 +93,21 @@ export function DashboardHome() {
         .order("date", { ascending: true })
         .limit(10);
 
-      // Fetch NBA games in next 48 hours
-      const { data: nbaGames } = await supabase
+      // If no NFL games in 48 hours, look ahead 7 days
+      if (!nflGames?.length) {
+        const { data: extendedNflGames } = await supabase
+          .from("games")
+          .select("*")
+          .not("status", "ilike", "%final%")
+          .gte("date", now.toISOString())
+          .lte("date", in7Days.toISOString())
+          .order("date", { ascending: true })
+          .limit(10);
+        nflGames = extendedNflGames;
+      }
+
+      // Fetch NBA games in next 48 hours first, then extend
+      let { data: nbaGames } = await supabase
         .from("nba_games")
         .select("*")
         .not("status", "ilike", "%final%")
@@ -101,6 +115,40 @@ export function DashboardHome() {
         .lte("date", in48Hours.toISOString())
         .order("date", { ascending: true })
         .limit(10);
+
+      if (!nbaGames?.length) {
+        const { data: extendedNbaGames } = await supabase
+          .from("nba_games")
+          .select("*")
+          .not("status", "ilike", "%final%")
+          .gte("date", now.toISOString())
+          .lte("date", in7Days.toISOString())
+          .order("date", { ascending: true })
+          .limit(10);
+        nbaGames = extendedNbaGames;
+      }
+
+      // Fetch NCAAB games in next 48 hours
+      let { data: ncaabGames } = await supabase
+        .from("ncaab_games")
+        .select("*")
+        .not("status", "ilike", "%final%")
+        .gte("date", now.toISOString())
+        .lte("date", in48Hours.toISOString())
+        .order("date", { ascending: true })
+        .limit(10);
+
+      if (!ncaabGames?.length) {
+        const { data: extendedNcaabGames } = await supabase
+          .from("ncaab_games")
+          .select("*")
+          .not("status", "ilike", "%final%")
+          .gte("date", now.toISOString())
+          .lte("date", in7Days.toISOString())
+          .order("date", { ascending: true })
+          .limit(10);
+        ncaabGames = extendedNcaabGames;
+      }
 
       // Fetch NFL odds for games
       const nflGameIds = nflGames?.map(g => g.id) || [];
@@ -119,6 +167,16 @@ export function DashboardHome() {
             .from("nba_odds")
             .select("*")
             .in("game_id", nbaGameIds)
+            .eq("sportsbook", "draftkings")
+        : { data: [] };
+
+      // Fetch NCAAB odds
+      const ncaabGameIds = ncaabGames?.map(g => g.id) || [];
+      const { data: ncaabOdds } = ncaabGameIds.length > 0
+        ? await supabase
+            .from("ncaab_odds")
+            .select("*")
+            .in("game_id", ncaabGameIds)
             .eq("sportsbook", "draftkings")
         : { data: [] };
 
@@ -155,6 +213,21 @@ export function DashboardHome() {
         });
       });
 
+      ncaabGames?.forEach(game => {
+        const odds = ncaabOdds?.find(o => o.game_id === game.id);
+        gamesWithOdds.push({
+          id: game.id,
+          home_team_name: game.home_team_name,
+          visitor_team_name: game.visitor_team_name,
+          date: game.date,
+          status: game.status,
+          league: "NCAAB",
+          spread: odds?.spread_value ?? null,
+          total: odds?.total_value ?? null,
+          hasOdds: !!odds,
+        });
+      });
+
       // Sort: games with odds first, then by date
       gamesWithOdds.sort((a, b) => {
         if (a.hasOdds && !b.hasOdds) return -1;
@@ -162,11 +235,15 @@ export function DashboardHome() {
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
 
-      setUpcomingGames(gamesWithOdds.slice(0, 4));
+      setUpcomingGames(gamesWithOdds.slice(0, 6));
 
       // Fetch Money Flows from odds_snapshots
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      const allGameIds = [...nflGameIds.map(id => String(id)), ...nbaGameIds.map(id => String(id))];
+      const allGameIds = [
+        ...nflGameIds.map(id => String(id)), 
+        ...nbaGameIds.map(id => String(id)),
+        ...ncaabGameIds.map(id => String(id))
+      ];
       
       let movements: OddsMovement[] = [];
 
