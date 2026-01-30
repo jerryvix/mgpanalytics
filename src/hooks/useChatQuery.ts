@@ -296,7 +296,7 @@ export function useChatQuery() {
     const team = player.team_name || player.team_abbr || "Unknown Team";
     
     if (!stats) {
-      return `🏈 ${displayName} (${position}, ${team})\n\nI found the player but don't have their stats yet. Stats data is being synced.`;
+      return `🏈 ${displayName} (${position}, ${team})\n\nI found the player but stats aren't available for this season yet.`;
     }
     
     // Extract stats from raw_data or columns

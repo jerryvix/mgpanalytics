@@ -448,7 +448,7 @@ export async function handleNFLStatsQuery(query: string): Promise<string | null>
   const seasonStats = await getPlayerSeasonStats(player.id);
   
   if (!seasonStats) {
-    return `🏈 ${player.name} (${position}, ${player.team_abbr || player.team_name})\n\nI found the player but don't have their stats yet. Stats data is being synced.`;
+    return `🏈 ${player.name} (${position}, ${player.team_abbr || player.team_name})\n\nI found the player but stats aren't available for this season yet.`;
   }
   
   return formatSeasonStats(player, seasonStats);

@@ -24,8 +24,13 @@ CRITICAL RULES - ZERO HALLUCINATION MODE
 4. NO PREDICTIONS: Never predict outcomes or recommend bets. Show data only.
 
 5. HANDLE MISSING DATA GRACEFULLY:
-   - If no data is provided: "I don't have that data synced yet. Would you like me to search for current information?"
+   - If no data is provided: "I don't have that data in MGP yet."
    - If partial data: Share what you have and note what's missing.
+
+6. STRICT ODDS RULES:
+   - NEVER cite odds, spreads, moneylines, or totals from your training data
+   - ONLY report odds that appear in the [MGP DATA] section below
+   - If odds are not provided in [MGP DATA], say "I don't have current odds for that game"
 
 ═══════════════════════════════════════════════════════════
 RESPONSE FORMAT
@@ -35,7 +40,6 @@ Keep responses CONCISE (3-5 key points max):
 - Lead with the most relevant data
 - Use exact numbers from the data (no rounding)
 - Include source attribution
-- Offer to search if data is limited
 
 ═══════════════════════════════════════════════════════════
 BETTING NOTATION
@@ -324,7 +328,7 @@ serve(async (req) => {
 
     console.log(`[gemini-chat] Authenticated user: ${user.id}`);
 
-    const { messages } = await req.json() as { messages: ChatMessage[] };
+    const { messages, webSearchEnabled = false } = await req.json() as { messages: ChatMessage[]; webSearchEnabled?: boolean };
     const lastUserMessage = messages.filter(m => m.role === "user").pop()?.content || "";
 
     console.log("Processing chat request with", messages.length, "messages");
@@ -368,7 +372,7 @@ CURRENT SPORTS SEASONS:
 
 ${dataPrompt}
 
-REMEMBER: Only use the data above. If information is missing, say "I don't have that synced in MGP yet."`;
+REMEMBER: Only use the data above. If information is missing, say "I don't have that data in MGP yet."`;
 
     // Build conversation for Gemini
     const contents = messages.map((msg) => ({
@@ -376,7 +380,7 @@ REMEMBER: Only use the data above. If information is missing, say "I don't have 
       parts: [{ text: msg.content }],
     }));
 
-    // Call Gemini with Google Search grounding for supplementary info
+    // Call Gemini (Google Search grounding is opt-in via webSearchEnabled parameter)
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
@@ -387,7 +391,7 @@ REMEMBER: Only use the data above. If information is missing, say "I don't have 
           systemInstruction: {
             parts: [{ text: fullSystemInstruction }],
           },
-          tools: [{ googleSearch: {} }],
+          ...(webSearchEnabled ? { tools: [{ googleSearch: {} }] } : {}),
           generationConfig: {
             temperature: 0.4, // Lower temperature for more factual
             maxOutputTokens: 1024,

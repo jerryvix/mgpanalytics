@@ -342,18 +342,19 @@ export function ChatPanel() {
     <div className="flex flex-col h-full">
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        <div className="space-y-4">
+        <div className="space-y-2 md:space-y-4">
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] rounded-lg px-4 py-2.5 font-mono text-sm ${
+                className={`max-w-[90%] md:max-w-[70%] rounded-lg px-4 py-2.5 font-mono text-sm break-words ${
                   message.role === "user"
                     ? "bg-muted text-foreground"
                     : "bg-terminal-green/10 border border-terminal-green/20"
                 }`}
+                style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
               >
                 {message.role === "user" ? (
                   <p className="text-foreground">{message.content}</p>
@@ -375,14 +376,14 @@ export function ChatPanel() {
                   <div className="mt-2 pt-2 border-t border-terminal-green/20">
                     <button
                       onClick={() => toggleSources(message.id)}
-                      className="flex items-center gap-1 text-[10px] text-terminal-green hover:text-terminal-green/80 transition-colors"
+                      className="flex items-center gap-1.5 py-2 text-xs text-terminal-green hover:text-terminal-green/80 transition-colors min-h-[44px]"
                     >
-                      <ExternalLink className="w-3 h-3" />
+                      <ExternalLink className="w-4 h-4" />
                       <span>Sources ({message.sources.length})</span>
                       {expandedSources.has(message.id) ? (
-                        <ChevronUp className="w-3 h-3" />
+                        <ChevronUp className="w-4 h-4" />
                       ) : (
-                        <ChevronDown className="w-3 h-3" />
+                        <ChevronDown className="w-4 h-4" />
                       )}
                     </button>
                     <AnimatePresence>
@@ -401,10 +402,11 @@ export function ChatPanel() {
                                 href={source.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="block text-[10px] text-muted-foreground hover:text-terminal-green transition-colors truncate"
-                                title={source.title}
+                                className="flex items-center gap-2 py-2 px-1 -mx-1 rounded text-xs text-muted-foreground hover:text-terminal-green hover:bg-terminal-green/5 transition-colors min-h-[44px]"
+                                style={{ wordBreak: "break-word" }}
                               >
-                                {idx + 1}. {source.title}
+                                <span className="shrink-0 w-5 text-terminal-green/60">{idx + 1}.</span>
+                                <span className="break-words">{source.title}</span>
                               </a>
                             ))}
                           </div>
@@ -414,7 +416,7 @@ export function ChatPanel() {
                   </div>
                 )}
                 {message.role === "bot" && (
-                  <p className="text-[10px] text-muted-foreground mt-1.5">
+                  <p className="text-xs md:text-[10px] text-muted-foreground mt-1.5">
                     {formatTime(message.timestamp)}
                   </p>
                 )}
@@ -432,7 +434,10 @@ export function ChatPanel() {
       </ScrollArea>
 
       {/* Input */}
-      <div className="p-4 border-t border-border">
+      <div
+        className="p-4 border-t border-border bg-card"
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+      >
         <div className="flex gap-2">
           <Input
             ref={inputRef}
@@ -440,15 +445,16 @@ export function ChatPanel() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask about games, odds, or teams..."
-            className="flex-1 font-mono text-sm bg-background border-border focus-visible:ring-terminal-green/50"
+            className="flex-1 font-mono text-base md:text-sm bg-background border-border focus-visible:ring-terminal-green/50"
             disabled={isLoading}
           />
           <Button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="bg-terminal-green hover:bg-terminal-green/90 text-background"
+            className="bg-terminal-green hover:bg-terminal-green/90 text-background h-11 w-11 p-0 shrink-0"
+            aria-label="Send message"
           >
-            <Send className="w-4 h-4" />
+            <Send className="w-5 h-5" />
           </Button>
         </div>
       </div>

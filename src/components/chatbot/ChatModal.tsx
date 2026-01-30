@@ -183,18 +183,19 @@ export function ChatModal({ onClose }: ChatModalProps) {
 
         {/* Messages */}
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="space-y-4">
+          <div className="space-y-2 md:space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-lg px-4 py-2.5 font-mono text-sm ${
+                  className={`max-w-[90%] md:max-w-[70%] rounded-lg px-4 py-2.5 font-mono text-sm break-words ${
                     message.role === "user"
                       ? "bg-muted text-foreground"
                       : "bg-terminal-green/10 border border-terminal-green/20"
                   }`}
+                  style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
                 >
                   {message.role === "user" ? (
                     <p className="text-foreground">{message.content}</p>
@@ -211,7 +212,7 @@ export function ChatModal({ onClose }: ChatModalProps) {
                       ">
                         <ReactMarkdown>{message.content}</ReactMarkdown>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                      <p className="text-xs md:text-[10px] text-muted-foreground mt-1.5">
                         {formatTime(message.timestamp)}
                       </p>
                       {/* Show welcome suggestions only for the welcome message */}
@@ -241,7 +242,10 @@ export function ChatModal({ onClose }: ChatModalProps) {
         </ScrollArea>
 
         {/* Input */}
-        <div className="p-4 border-t border-terminal-green/20">
+        <div
+          className="p-4 border-t border-terminal-green/20 bg-card"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
           <div className="flex gap-2">
             <Input
               ref={inputRef}
@@ -249,15 +253,16 @@ export function ChatModal({ onClose }: ChatModalProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about games or odds..."
-              className="flex-1 font-mono text-sm bg-background border-terminal-green/30 focus-visible:ring-terminal-green/50"
+              className="flex-1 font-mono text-base md:text-sm bg-background border-terminal-green/30 focus-visible:ring-terminal-green/50"
               disabled={isLoading}
             />
             <Button
               onClick={handleSend}
               disabled={!input.trim() || isLoading}
-              className="bg-terminal-green hover:bg-terminal-green/90 text-background"
+              className="bg-terminal-green hover:bg-terminal-green/90 text-background h-11 w-11 p-0 shrink-0"
+              aria-label="Send message"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-5 h-5" />
             </Button>
           </div>
         </div>

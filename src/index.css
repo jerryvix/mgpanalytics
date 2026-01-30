@@ -106,14 +106,12 @@
 
   html {
     font-family: 'Space Grotesk', sans-serif;
-    min-width: 768px;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Space Grotesk', sans-serif;
-    min-width: 768px;
-    overflow-x: auto;
+    overflow-x: hidden;
   }
 
   /* Custom scrollbar for terminal feel */
@@ -208,5 +206,18 @@
   .border-glow-red {
     box-shadow: 0 0 0 1px hsl(var(--terminal-red) / 0.3),
                 0 0 15px hsl(var(--terminal-red) / 0.1);
+  }
+
+  /* Safe area utilities for iOS notch/home indicator */
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
