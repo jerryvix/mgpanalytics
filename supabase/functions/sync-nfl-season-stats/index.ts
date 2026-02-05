@@ -249,28 +249,7 @@ Deno.serve(async (req) => {
         error_message: null,
       }, { onConflict: "sport,data_type" });
 
-    // Step 2: Fetch all season stats from Ball Don't Lie
-    console.log(`[Sync NFL Season Stats] Fetching season stats for ${season}...`);
-    let seasonStats: NFLSeasonStat[];
-    try {
-      seasonStats = await fetchAllPages(apiKey, "/season_stats", { season });
-    } catch (error) {
-      // Update sync status to failed
-      await supabase
-        .from("sync_schedule")
-        .update({
-          last_sync_status: "failed",
-          error_message: error instanceof Error ? error.message : "Failed to fetch season stats",
-        })
-        .eq("sport", "NFL")
-        .eq("data_type", "season_stats");
-
-      throw error;
-    }
-
-    console.log(`[Sync NFL Season Stats] Fetched ${seasonStats.length} season stat records from API`);
-
-    // Step 3: Get all NFL players from our database to map external_id to internal id
+    // Step 2: Get all NFL players from our database to map external_id to internal id
     const { data: players, error: playersError } = await supabase
       .from("players")
       .select("id, external_id")
@@ -289,53 +268,79 @@ Deno.serve(async (req) => {
     }
     console.log(`[Sync NFL Season Stats] Found ${playerMap.size} NFL players in database`);
 
-    // Step 4: Transform and upsert season stats
-    const statsToUpsert: any[] = [];
+    // Helper to transform stats for upsert
+    const transformStats = (stats: NFLSeasonStat[], seasonType: "regular" | "postseason"): any[] => {
+      const result: any[] = [];
+      for (const stat of stats) {
+        const playerId = playerMap.get(String(stat.player.id));
+        if (!playerId) continue;
+
+        const fantasyPoints = calculateFantasyPoints(stat);
+        const passIntRaw: number | null =
+          (stat.passing_interceptions ?? null) ??
+          ((stat as unknown as any)?.passing?.interceptions ?? null) ??
+          ((stat as unknown as any)?.interceptions ?? null);
+
+        result.push({
+          player_id: playerId,
+          sport: "NFL",
+          season: stat.season,
+          season_type: seasonType,
+          games_played: stat.games_played || 0,
+          pass_attempts: stat.passing_attempts || 0,
+          pass_completions: stat.passing_completions || 0,
+          pass_yards: stat.passing_yards || 0,
+          pass_td: stat.passing_touchdowns || 0,
+          pass_int: passIntRaw,
+          passer_rating: stat.qbr || null,
+          rush_attempts: stat.rushing_attempts || 0,
+          rush_yards: stat.rushing_yards || 0,
+          rush_td: stat.rushing_touchdowns || 0,
+          receptions: stat.receptions || 0,
+          rec_yards: stat.receiving_yards || 0,
+          rec_td: stat.receiving_touchdowns || 0,
+          targets: stat.receiving_targets || 0,
+          fantasy_points: fantasyPoints.fantasy_points,
+          fantasy_points_ppr: fantasyPoints.fantasy_points_ppr,
+          raw_data: stat,
+          updated_at: new Date().toISOString(),
+        });
+      }
+      return result;
+    };
+
+    // Step 3: Fetch BOTH regular season AND postseason stats
+    let statsToUpsert: any[] = [];
     let skippedCount = 0;
 
-    for (const stat of seasonStats) {
-      const playerId = playerMap.get(String(stat.player.id));
-      
-      if (!playerId) {
-        skippedCount++;
-        continue; // Player not in database yet
-      }
+    try {
+      // Fetch regular season stats
+      console.log(`[Sync NFL Season Stats] Fetching regular season stats for ${season}...`);
+      const regularStats = await fetchAllPages(apiKey, "/season_stats", { season, postseason: "false" });
+      console.log(`[Sync NFL Season Stats] Got ${regularStats.length} regular season records`);
+      const regularTransformed = transformStats(regularStats, "regular");
+      skippedCount += regularStats.length - regularTransformed.length;
+      statsToUpsert.push(...regularTransformed);
 
-      const fantasyPoints = calculateFantasyPoints(stat);
+      // Fetch postseason stats
+      console.log(`[Sync NFL Season Stats] Fetching postseason stats for ${season}...`);
+      const postseasonStats = await fetchAllPages(apiKey, "/season_stats", { season, postseason: "true" });
+      console.log(`[Sync NFL Season Stats] Got ${postseasonStats.length} postseason records`);
+      const postseasonTransformed = transformStats(postseasonStats, "postseason");
+      skippedCount += postseasonStats.length - postseasonTransformed.length;
+      statsToUpsert.push(...postseasonTransformed);
 
-       // Interceptions mapping: prefer the official API field, but allow fallbacks without breaking types.
-       // IMPORTANT: do not coerce missing values to 0; keep null so downstream logic can override.
-       const passIntRaw: number | null =
-         (stat.passing_interceptions ?? null) ??
-         ((stat as unknown as any)?.passing?.interceptions ?? null) ??
-         ((stat as unknown as any)?.interceptions ?? null);
-
-      // Map API fields (passing_yards, rushing_yards) to our DB columns (pass_yards, rush_yards)
-      statsToUpsert.push({
-        player_id: playerId,
-        sport: "NFL",
-        season: stat.season,
-        season_type: "regular",
-        games_played: stat.games_played || 0,
-        pass_attempts: stat.passing_attempts || 0,
-        pass_completions: stat.passing_completions || 0,
-        pass_yards: stat.passing_yards || 0,
-        pass_td: stat.passing_touchdowns || 0,
-        // IMPORTANT: don't silently coerce missing INTs to 0; preserve null.
-        pass_int: passIntRaw,
-        passer_rating: stat.qbr || null,
-        rush_attempts: stat.rushing_attempts || 0,
-        rush_yards: stat.rushing_yards || 0,
-        rush_td: stat.rushing_touchdowns || 0,
-        receptions: stat.receptions || 0,
-        rec_yards: stat.receiving_yards || 0,
-        rec_td: stat.receiving_touchdowns || 0,
-        targets: stat.receiving_targets || 0,
-        fantasy_points: fantasyPoints.fantasy_points,
-        fantasy_points_ppr: fantasyPoints.fantasy_points_ppr,
-        raw_data: stat,
-        updated_at: new Date().toISOString(),
-      });
+    } catch (error) {
+      // Update sync status to failed
+      await supabase
+        .from("sync_schedule")
+        .update({
+          last_sync_status: "failed",
+          error_message: error instanceof Error ? error.message : "Failed to fetch season stats",
+        })
+        .eq("sport", "NFL")
+        .eq("data_type", "season_stats");
+      throw error;
     }
 
     console.log(`[Sync NFL Season Stats] Upserting ${statsToUpsert.length} stats (skipped ${skippedCount} - players not found)...`);

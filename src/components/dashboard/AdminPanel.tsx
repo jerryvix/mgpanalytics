@@ -391,68 +391,84 @@ export function AdminPanel() {
       const playerMap = new Map(allPlayers.map(p => [String(p.external_id), p.id]));
       let totalSynced = 0;
 
+      // Helper to transform stats for upsert
+      const transformStats = (stats: Record<string, unknown>[], seasonType: "regular" | "postseason", fallbackSeason: number) => {
+        const result = [];
+        for (const stat of stats) {
+          const playerId = playerMap.get(String((stat.player as Record<string, unknown>)?.id));
+          if (!playerId) continue;
+
+          const passYards = (stat.passing_yards || stat.pass_yards || 0) as number;
+          const passTd = (stat.passing_touchdowns || stat.pass_touchdowns || 0) as number;
+          const passInt = (stat.passing_interceptions || stat.pass_interceptions || 0) as number;
+          const rushYards = (stat.rushing_yards || stat.rush_yards || 0) as number;
+          const rushTd = (stat.rushing_touchdowns || stat.rush_touchdowns || 0) as number;
+          const recYards = (stat.receiving_yards || stat.rec_yards || 0) as number;
+          const recTd = (stat.receiving_touchdowns || stat.rec_touchdowns || 0) as number;
+          const receptions = (stat.receptions || 0) as number;
+
+          const fantasyPoints = (passYards * 0.04) + (passTd * 4) - (passInt * 2) +
+            (rushYards * 0.1) + (rushTd * 6) + (recYards * 0.1) + (recTd * 6);
+
+          result.push({
+            player_id: playerId,
+            sport: "NFL",
+            season: (stat.season as number) || fallbackSeason,
+            season_type: seasonType,
+            games_played: (stat.games_played as number) || 0,
+            pass_attempts: (stat.passing_attempts || stat.pass_attempts || 0) as number,
+            pass_completions: (stat.passing_completions || stat.pass_completions || 0) as number,
+            pass_yards: passYards,
+            pass_td: passTd,
+            pass_int: passInt,
+            passer_rating: (stat.qbr || stat.passer_rating || null) as number | null,
+            rush_attempts: (stat.rushing_attempts || stat.rush_attempts || 0) as number,
+            rush_yards: rushYards,
+            rush_td: rushTd,
+            receptions: receptions,
+            rec_yards: recYards,
+            rec_td: recTd,
+            targets: (stat.receiving_targets || stat.targets || 0) as number,
+            fantasy_points: Math.round(fantasyPoints * 100) / 100,
+            fantasy_points_ppr: Math.round((fantasyPoints + receptions) * 100) / 100,
+            raw_data: stat,
+            updated_at: new Date().toISOString(),
+          });
+        }
+        return result;
+      };
+
+      // Helper to fetch all pages for a season/postseason combo
+      const fetchAllStats = async (season: number, postseason: string): Promise<Record<string, unknown>[]> => {
+        const result = await bdlFetch("nfl", "/season_stats", { season, per_page: 100, postseason });
+        let stats = result.data as Record<string, unknown>[] || [];
+        let nextCursor = result.meta?.next_cursor;
+
+        while (nextCursor && !stopSyncRef.current && !stopSeasonStatsSyncRef.current) {
+          const nextResult = await bdlFetch("nfl", "/season_stats", { season, per_page: 100, cursor: nextCursor, postseason });
+          stats = [...stats, ...((nextResult.data as Record<string, unknown>[]) || [])];
+          nextCursor = nextResult.meta?.next_cursor;
+          await new Promise(r => setTimeout(r, 150));
+        }
+        return stats;
+      };
+
       for (const season of seasons) {
         if (stopSyncRef.current || stopSeasonStatsSyncRef.current) break;
 
         try {
-          const result = await bdlFetch("nfl", "/season_stats", { season, per_page: 100 });
-          let seasonStats = result.data as Record<string, unknown>[] || [];
-          let nextCursor = result.meta?.next_cursor;
-
-          while (nextCursor && !stopSyncRef.current && !stopSeasonStatsSyncRef.current) {
-            const nextResult = await bdlFetch("nfl", "/season_stats", { season, per_page: 100, cursor: nextCursor });
-            seasonStats = [...seasonStats, ...((nextResult.data as Record<string, unknown>[]) || [])];
-            nextCursor = nextResult.meta?.next_cursor;
-            await new Promise(r => setTimeout(r, 150));
-          }
-          
-          // Check if stopped mid-season
+          // Fetch BOTH regular season AND postseason stats
+          const regularStats = await fetchAllStats(season, "false");
           if (stopSeasonStatsSyncRef.current) break;
 
-          // Process stats
-          const statsToUpsert = [];
-          for (const stat of seasonStats) {
-            const playerId = playerMap.get(String((stat.player as Record<string, unknown>)?.id));
-            if (!playerId) continue;
+          const postseasonStats = await fetchAllStats(season, "true");
+          if (stopSeasonStatsSyncRef.current) break;
 
-            // API uses "passing_yards", "rushing_yards" - not "pass_yards", "rush_yards"
-            const passYards = (stat.passing_yards || stat.pass_yards || 0) as number;
-            const passTd = (stat.passing_touchdowns || stat.pass_touchdowns || 0) as number;
-            const passInt = (stat.passing_interceptions || stat.pass_interceptions || 0) as number;
-            const rushYards = (stat.rushing_yards || stat.rush_yards || 0) as number;
-            const rushTd = (stat.rushing_touchdowns || stat.rush_touchdowns || 0) as number;
-            const recYards = (stat.receiving_yards || stat.rec_yards || 0) as number;
-            const recTd = (stat.receiving_touchdowns || stat.rec_touchdowns || 0) as number;
-            const receptions = (stat.receptions || 0) as number;
-
-            const fantasyPoints = (passYards * 0.04) + (passTd * 4) - (passInt * 2) + 
-              (rushYards * 0.1) + (rushTd * 6) + (recYards * 0.1) + (recTd * 6);
-
-            statsToUpsert.push({
-              player_id: playerId,
-              sport: "NFL",
-              season: (stat.season as number) || season,
-              season_type: "regular",
-              games_played: (stat.games_played as number) || 0,
-              pass_attempts: (stat.passing_attempts || stat.pass_attempts || 0) as number,
-              pass_completions: (stat.passing_completions || stat.pass_completions || 0) as number,
-              pass_yards: passYards,
-              pass_td: passTd,
-              pass_int: passInt,
-              passer_rating: (stat.qbr || stat.passer_rating || null) as number | null,
-              rush_attempts: (stat.rushing_attempts || stat.rush_attempts || 0) as number,
-              rush_yards: rushYards,
-              rush_td: rushTd,
-              receptions: receptions,
-              rec_yards: recYards,
-              rec_td: recTd,
-              targets: (stat.receiving_targets || stat.targets || 0) as number,
-              fantasy_points: Math.round(fantasyPoints * 100) / 100,
-              fantasy_points_ppr: Math.round((fantasyPoints + receptions) * 100) / 100,
-              raw_data: stat,
-              updated_at: new Date().toISOString(),
-            });
-          }
+          // Transform and combine
+          const statsToUpsert = [
+            ...transformStats(regularStats, "regular", season),
+            ...transformStats(postseasonStats, "postseason", season),
+          ];
 
           if (statsToUpsert.length > 0) {
             for (let i = 0; i < statsToUpsert.length; i += 50) {

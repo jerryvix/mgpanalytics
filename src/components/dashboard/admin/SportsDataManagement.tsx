@@ -3,18 +3,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  Loader2, 
-  RefreshCw, 
-  Trophy, 
-  Dribbble, 
-  GraduationCap, 
+import {
+  Loader2,
+  RefreshCw,
+  Trophy,
+  Dribbble,
+  GraduationCap,
   Clock,
   CheckCircle,
   XCircle,
   Play,
-  ChevronDown
+  ChevronDown,
+  Info
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -322,6 +324,14 @@ export function SportsDataManagement() {
           <CardTitle className="text-xs font-mono text-foreground flex items-center gap-2">
             <RefreshCw className="w-3 h-3 text-primary" />
             Sports Data
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="w-3 h-3 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs text-xs">
+                <p>Data is cached in the database. Sync pulls fresh data from external APIs (Ball Don't Lie, The Odds API) into the cache. You don't need to sync before every query.</p>
+              </TooltipContent>
+            </Tooltip>
           </CardTitle>
           
           {/* Big Green Sync All Button */}

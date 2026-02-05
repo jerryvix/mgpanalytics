@@ -384,9 +384,9 @@ export function DataInspector() {
                   </span>
                 </div>
                 <div>
-                  • Position format: <span className="text-terminal-amber">
+                  • Most common position in DB: <span className="text-terminal-amber">
                     {positionData?.[0]?.position || "Unknown"}
-                  </span>
+                  </span> ({positionData?.[0]?.count || 0} players)
                 </div>
               </div>
             </div>

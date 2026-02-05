@@ -198,11 +198,12 @@ Deno.serve(async (req) => {
         error_message: null,
       }, { onConflict: "sport,data_type" });
 
-    // Step 2: Fetch all NFL players from Ball Don't Lie
-    console.log("[Sync NFL Players] Fetching all NFL players...");
+    // Step 2: Fetch active NFL players from Ball Don't Lie
+    // Using /players/active to exclude retired players (requires GOAT tier)
+    console.log("[Sync NFL Players] Fetching active NFL players...");
     let players: NFLPlayer[];
     try {
-      players = await fetchAllPages(apiKey, "/players", {});
+      players = await fetchAllPages(apiKey, "/players/active", {});
     } catch (error) {
       // Update sync status to failed
       await supabase
