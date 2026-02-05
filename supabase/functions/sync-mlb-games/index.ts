@@ -69,20 +69,19 @@ serve(async (req) => {
       );
     }
 
-    const token = authHeader.substring(7);
     const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: claims, error: claimsError } = await authClient.auth.getClaims(token);
-    if (claimsError || !claims?.claims) {
+    const { data: { user }, error: userError } = await authClient.auth.getUser();
+    if (userError || !user) {
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized - invalid token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const userId = claims.claims.sub;
+    const userId = user.id;
 
     // Check admin role using service client
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
