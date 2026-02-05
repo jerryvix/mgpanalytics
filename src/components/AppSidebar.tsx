@@ -186,7 +186,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
       className="border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out"
       collapsible="icon"
     >
-      <SidebarHeader className="border-b border-sidebar-border p-3">
+      <SidebarHeader className="border-b border-sidebar-border p-2">
         <div className="flex items-center gap-3">
           <SidebarTrigger className="text-sidebar-foreground hover:text-terminal-green hover:bg-sidebar-accent" />
           {!collapsed && (
@@ -207,7 +207,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-2">
+      <SidebarContent className="px-2 py-1">
         {/* New Conversation Button */}
         <SidebarGroup>
           <SidebarGroupContent>
@@ -221,7 +221,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                           navigate("/dashboard");
                           startNewConversation();
                         }}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded text-terminal-green hover:bg-terminal-green/10 transition-colors font-medium"
+                        className="w-full flex items-center gap-3 px-3 py-1.5 rounded text-terminal-green hover:bg-terminal-green/10 transition-colors font-medium"
                       >
                         <PenLine className="w-4 h-4 shrink-0" />
                         {!collapsed && <span className="text-sm">New Conversation</span>}
@@ -239,8 +239,8 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
 
         {/* Chat History */}
         {!collapsed && (
-          <SidebarGroup className="mt-4">
-            <div className="flex items-center justify-between px-2 mb-2">
+          <SidebarGroup className="mt-1">
+            <div className="flex items-center justify-between px-2 mb-1">
               <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest p-0">
                 Recent Chats
               </SidebarGroupLabel>
@@ -275,7 +275,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
               )}
             </div>
             <SidebarGroupContent>
-              <ScrollArea className="max-h-40">
+              <ScrollArea className="max-h-24">
                 <SidebarMenu>
                   {conversationsLoading ? (
                     <div className="px-3 py-2 text-xs text-sidebar-foreground/50">Loading...</div>
@@ -311,9 +311,9 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
         )}
 
         {/* Sports */}
-        <SidebarGroup className="mt-4">
+        <SidebarGroup className="mt-1">
           {!collapsed && (
-            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
+            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-1">
               Sports
             </SidebarGroupLabel>
           )}
@@ -325,12 +325,12 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <SidebarMenuButton asChild>
-                          <NavLink 
-                            to={item.url} 
-                            className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                          <NavLink
+                            to={item.url}
+                            className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                             activeClassName="bg-sidebar-accent text-terminal-green"
                           >
-                            <img src={item.logo} alt={item.title} className="w-5 h-5 object-contain shrink-0" />
+                            <img src={item.logo} alt={item.title} className="w-4 h-4 object-contain shrink-0" />
                             {!collapsed && <span className="text-sm">{item.title}</span>}
                           </NavLink>
                         </SidebarMenuButton>
@@ -342,7 +342,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                   </SidebarMenuItem>
                   {/* Sub-items for sports with players */}
                   {!collapsed && item.subItems && (
-                    <div className="ml-8 space-y-1 mt-1">
+                    <div className="ml-8 space-y-0.5 mt-0.5">
                       {item.subItems.map((sub) => (
                         <SidebarMenuItem key={sub.url}>
                           <SidebarMenuButton asChild>
@@ -365,9 +365,9 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
         </SidebarGroup>
 
         {/* Community */}
-        <SidebarGroup className="mt-4">
+        <SidebarGroup className="mt-1">
           {!collapsed && (
-            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
+            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-1">
               Community
             </SidebarGroupLabel>
           )}
@@ -378,9 +378,9 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <SidebarMenuButton asChild>
-                        <NavLink 
-                          to={item.url} 
-                          className="flex items-center gap-3 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                        <NavLink
+                          to={item.url}
+                          className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                           activeClassName="bg-sidebar-accent text-terminal-green"
                         >
                           <item.icon className="w-4 h-4 shrink-0" />
@@ -400,9 +400,9 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
 
         {/* Admin - Always show for admins, regardless of preview mode */}
         {isAdmin && (
-          <SidebarGroup className="mt-4">
+          <SidebarGroup className="mt-1">
             {!collapsed && (
-              <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-2">
+              <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-1">
                 Admin
               </SidebarGroupLabel>
             )}
@@ -413,7 +413,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                     <TooltipTrigger asChild>
                       <Link 
                         to="/dashboard/admin"
-                        className={`flex items-center gap-3 px-3 py-2 rounded transition-colors w-full cursor-pointer relative z-10 ${
+                        className={`flex items-center gap-3 px-3 py-1.5 rounded transition-colors w-full cursor-pointer relative z-10 ${
                           location.pathname === "/dashboard/admin" 
                             ? "bg-sidebar-accent text-terminal-green" 
                             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -434,16 +434,16 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      <SidebarFooter className="border-t border-sidebar-border p-2">
         {!collapsed && (
-          <div className="mb-2 text-[10px] text-sidebar-foreground/60 font-mono truncate">
+          <div className="mb-1 text-[10px] text-sidebar-foreground/60 font-mono truncate">
             {user.email}
           </div>
         )}
         
         {/* Admin Preview Toggle - only show for actual admins */}
         {isAdmin && !collapsed && onTogglePreview && (
-          <div className="mb-2 flex items-center justify-between gap-2 p-2 rounded bg-sidebar-accent/50 border border-dashed border-terminal-green/30">
+          <div className="mb-1 flex items-center justify-between gap-2 p-1.5 rounded bg-sidebar-accent/50 border border-dashed border-terminal-green/30">
             <div className="flex items-center gap-2">
               {isPreviewingAsUser ? (
                 <EyeOff className="w-3 h-3 text-terminal-green" />
