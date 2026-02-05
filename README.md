@@ -1,73 +1,81 @@
-# Welcome to your Lovable project
+# MGP Analytics
 
-## Project info
+Sports analytics platform covering NFL, NBA, NCAAB, NCAAF, and MLB. Provides player stats, odds tracking with line-movement detection, and an AI-powered analyst chat.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Tech Stack
 
-## How can I edit this code?
+- **Frontend** — React 18 + TypeScript, Vite, Tailwind CSS, shadcn/ui, Recharts
+- **Backend** — Supabase (Postgres, Auth, Edge Functions)
+- **Hosting** — Vercel (frontend), Supabase (API + DB)
+- **AI** — Google Gemini (analyst chat)
 
-There are several ways of editing your application.
+## Local Development
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Prerequisites: Node.js 18+ and npm.
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+git clone https://github.com/your-org/mgpanalytics.git
+cd mgpanalytics
+npm install
+npm run dev        # starts dev server on http://localhost:8080
 ```
 
-**Edit a file directly in GitHub**
+### Environment Variables
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file in the project root:
 
-**Use GitHub Codespaces**
+```
+VITE_SUPABASE_URL=https://vwezujtftfccamoduglp.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=<your-anon-key>
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Edge functions use Supabase project secrets (set via `supabase secrets set`):
 
-## What technologies are used for this project?
+| Secret | Purpose |
+|--------|---------|
+| `THE_ODDS_API_KEY` | The Odds API — odds snapshots |
+| `GEMINI_API_KEY` | Google Gemini — analyst chat |
+| `SPORTRADAR_API_KEY` | Sportradar — player/game data |
+| `BALLDONTLIE_API_KEY` | BallDontLie — NBA/NFL stats |
 
-This project is built with:
+## Scripts
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm run lint` | ESLint |
+| `npm test` | Run tests (vitest) |
 
-## How can I deploy this project?
+## Supabase Edge Functions
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Sync functions are triggered by an admin user from the dashboard. The project includes functions for:
 
-## Can I connect a custom domain to my Lovable project?
+- Game syncing — `sync-nfl-games`, `sync-nba-games`, `sync-ncaab-games`, `sync-ncaaf-games`, `sync-mlb-games`
+- Player syncing — `sync-nfl-players`, `sync-nba-players`, `sync-ncaab-players`
+- Odds — `sync-nfl-odds`, `sync-nba-odds`, `sync-odds-snapshot`
+- Stats — `sync-nfl-season-stats`, `sync-nba-stats`, `sync-nba-game-logs`, `sync-nba-props`
+- AI — `gemini-chat`, `analyst-query`
+- Utilities — `balldontlie`, `sportradar`, `search-nfl-players`, `nfl-slate-leaders`
 
-Yes, you can!
+## Deployment
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- **Frontend**: Pushes to `main` auto-deploy to Vercel. `vercel.json` handles SPA routing rewrites.
+- **Edge Functions**: Deploy with `supabase functions deploy <function-name>` or deploy all with `supabase functions deploy`.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Project Structure
+
+```
+src/
+  components/   # UI components
+  contexts/     # React contexts (auth, theme)
+  hooks/        # Custom hooks
+  pages/        # Route pages
+  services/     # API service layers
+  types/        # TypeScript types
+  utils/        # Helpers
+supabase/
+  functions/    # Deno edge functions
+  config.toml   # Supabase CLI config
+```

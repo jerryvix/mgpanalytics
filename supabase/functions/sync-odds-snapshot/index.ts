@@ -46,7 +46,7 @@ serve(async (req) => {
     }
 
     if (!THE_ODDS_API_KEY) {
-      throw new Error("THE_ODDS_API_KEY not configured - please add it in Lovable Cloud secrets");
+      throw new Error("THE_ODDS_API_KEY not configured - please add it in Supabase project secrets");
     }
 
     // Authenticate user - require admin role
