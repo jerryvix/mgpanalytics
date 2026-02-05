@@ -93,7 +93,7 @@ export interface SearchResult {
   };
 }
 
-const EDGE_FUNCTION_URL = `https://pgrrbkhxukxvzzauviyp.supabase.co/functions/v1/search-nfl-players`;
+const EDGE_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-nfl-players`;
 
 /**
  * Search for NFL players by name

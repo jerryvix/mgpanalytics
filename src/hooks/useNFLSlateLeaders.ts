@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 const EDGE_FUNCTION_URL =
-  "https://pgrrbkhxukxvzzauviyp.supabase.co/functions/v1/nfl-slate-leaders";
+  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nfl-slate-leaders`;
 
 interface DetailedStats {
   qbr?: number;
