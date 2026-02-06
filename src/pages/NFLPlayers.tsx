@@ -43,7 +43,6 @@ export default function NFLPlayers() {
       return searchNFLPlayers(debouncedSearch, 25);
     },
     enabled: activeTab === "search" && debouncedSearch.length >= 2,
-    staleTime: 30000,
   });
 
   const apiPlayers = searchResults?.data || [];

@@ -134,8 +134,7 @@ export default function NBAPlayers() {
         totalWithStats: playersWithStats.length,
       };
     },
-    refetchInterval: 30 * 60 * 1000, // Refresh every 30 minutes
-    staleTime: 5 * 60 * 1000, // Consider stale after 5 minutes
+    refetchInterval: 30 * 60 * 1000,
   });
 
   const { players = [], games = [], teams = [], hasGames = false, totalWithStats = 0 } = result || {};
