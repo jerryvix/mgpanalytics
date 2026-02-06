@@ -62,7 +62,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
         .select("*")
         .eq("player_id", playerId)
         .eq("sport", "NBA")
-        .eq("season", 2025)
+        .eq("season", new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear())
         .single();
 
       if (error && error.code !== "PGRST116") throw error;
@@ -80,7 +80,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
         .select("*")
         .eq("player_id", playerId)
         .eq("sport", "NBA")
-        .eq("season", 2025)
+        .eq("season", new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear())
         .order("game_date", { ascending: false });
 
       if (error) throw error;

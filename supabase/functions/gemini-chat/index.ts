@@ -15,7 +15,7 @@ const SYSTEM_INSTRUCTION = `You are the MGP Analyst, a sports analytics assistan
 CRITICAL RULES - ZERO HALLUCINATION MODE
 ═══════════════════════════════════════════════════════════
 
-1. ONLY USE DATA PROVIDED: You can ONLY reference data that appears in the [MGP DATA] section below. If information is not in that section, you MUST say "That information isn't available right now" and suggest what you CAN help with (schedules, odds, player stats, injury reports).
+1. ONLY USE DATA PROVIDED: You can ONLY reference data that appears in the [MGP DATA] section below. If the specific answer isn't there but related data IS available, share what you DO have and note what's missing. Only say "That information isn't available right now" if the [MGP DATA] section is completely empty.
 
 2. NEVER INVENT DATA: Do not make up statistics, odds, lines, scores, or any numerical data. If you're uncertain, say so.
 
@@ -23,9 +23,10 @@ CRITICAL RULES - ZERO HALLUCINATION MODE
 
 4. NO PREDICTIONS: Never predict outcomes or recommend bets. Show data only.
 
-5. HANDLE MISSING DATA GRACEFULLY:
-   - If no data is provided: "That information isn't available right now."
-   - If partial data: Share what you have and note what's missing.
+5. HANDLE MISSING DATA — ALWAYS SHARE WHAT YOU HAVE:
+   - ALWAYS share available data first, then note gaps.
+   - If partial data exists: Lead with what you have. Example: "I don't have specific odds for that matchup, but here's what I do have..." then share games, stats, or other available data.
+   - Only say "not available" if [MGP DATA] is completely empty.
 
 6. STRICT ODDS RULES:
    - NEVER cite odds, spreads, moneylines, or totals from your training data
@@ -54,11 +55,11 @@ PROPS: "Josh Allen O/U 275.5 passing yards"
 STRICT DATA INTEGRITY
 ═══════════════════════════════════════════════════════════
 
-If the [MGP DATA] section does not contain the answer to the user's question:
-- Respond ONLY with: "That information isn't available right now."
+If the [MGP DATA] section does not contain the exact answer to the user's question:
+- Share whatever related data IS available from [MGP DATA] and note what specific piece is missing
 - NEVER estimate, extrapolate, interpolate, or use your training knowledge for stats, scores, odds, or results
 - NEVER fill in gaps with plausible-sounding numbers
-- It is better to say nothing than to risk providing incorrect data
+- If [MGP DATA] is completely empty, say "That information isn't available right now" and suggest checking back later
 
 ═══════════════════════════════════════════════════════════
 PROHIBITED PHRASES
@@ -187,8 +188,8 @@ async function fetchRelevantData(
     }
   }
 
-  // Fetch odds if relevant
-  if (intent === "odds" || intent === "general") {
+  // Fetch odds if relevant (also for games/results/props intents as fallback context)
+  if (intent === "odds" || intent === "general" || intent === "games" || intent === "results" || intent === "props") {
     const oddsTable = league === "NFL" ? "odds" : 
                       league === "NBA" ? "nba_odds" :
                       league === "NCAAB" ? "ncaab_odds" :
@@ -322,7 +323,7 @@ async function fetchRelevantData(
 
 function formatDataForPrompt(data: FetchedData, sources: SourceRef[]): string {
   if (Object.keys(data).length === 0 || Object.values(data).every(v => !v?.length)) {
-    return "\n[MGP DATA]\nNo data available for this query.\n";
+    return "\n[MGP DATA]\nNo data available for this query. Suggest the user ask about upcoming games, player stats, odds, or injury reports.\n";
   }
 
   let prompt = "\n[MGP DATA]\n";
@@ -507,15 +508,22 @@ TIME: ${currentTime} ET
 DETECTED LEAGUE: ${league}
 
 CURRENT SPORTS SEASONS:
-- NFL: 2024-25 season (Super Bowl LIX coming February 2025)
-- NBA: 2024-25 season (Regular season)
-- NCAAB: 2024-25 season (Conference play)
-- NCAAF: 2024-25 season (Completed)
-- MLB: Offseason (2025 season starts March/April)
+${(() => {
+  const n = new Date();
+  const yr = n.getFullYear();
+  const mo = n.getMonth(); // 0-indexed
+  const nflSeason = mo >= 8 ? yr : yr - 1;
+  const nbaSeason = mo >= 9 ? yr : yr - 1;
+  return `- NFL: ${nflSeason}-${String(nflSeason + 1).slice(2)} season
+- NBA: ${nbaSeason}-${String(nbaSeason + 1).slice(2)} season (Regular season)
+- NCAAB: ${nbaSeason}-${String(nbaSeason + 1).slice(2)} season
+- NCAAF: ${nflSeason}-${String(nflSeason + 1).slice(2)} season
+- MLB: ${mo >= 3 && mo <= 9 ? yr + " season (Active)" : "Offseason (" + (mo < 3 ? yr : yr + 1) + " season starts March/April)"}`;
+})()}
 
 ${dataPrompt}
 
-REMEMBER: Only use the data above. If information is missing, say "That information isn't available right now" and suggest what data you DO have.`;
+REMEMBER: Only use the data above. ALWAYS lead with whatever data IS available. If the exact answer is missing but related data exists, share that and note the gap. Never give a dead-end response when any data is available.`;
 
     // Build conversation for Gemini — trim to last 10 messages to prevent context overflow
     const recentMessages = messages.length > 10 ? messages.slice(-10) : messages;

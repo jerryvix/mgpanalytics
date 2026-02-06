@@ -54,7 +54,7 @@ export function PlayerSyncCard() {
         .from("player_season_stats")
         .select("player_id", { count: "exact", head: true })
         .eq("sport", "NBA")
-        .eq("season", 2025)
+        .eq("season", new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear())
         .gt("points_per_game", 0),
     ]);
 

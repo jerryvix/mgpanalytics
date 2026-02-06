@@ -58,14 +58,26 @@ export default function NBAPlayers() {
         return { players: [], games: upcomingGames, teams: teamNames, hasGames: true };
       }
 
-      // 4. Get stats for these players
+      // 4. Get stats for these players (try current season, fall back to previous)
       const playerIds = playersData.map(p => p.id);
-      const { data: statsData } = await supabase
+      const currentDbSeason = new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear();
+      let { data: statsData } = await supabase
         .from("player_season_stats")
         .select("player_id, points_per_game, rebounds_per_game, assists_per_game, minutes_per_game, games_played")
         .in("player_id", playerIds)
         .eq("sport", "NBA")
-        .eq("season", new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear());
+        .eq("season", currentDbSeason);
+
+      // Fallback: if no stats for current season, try previous season
+      if (!statsData || statsData.length === 0) {
+        const fallback = await supabase
+          .from("player_season_stats")
+          .select("player_id, points_per_game, rebounds_per_game, assists_per_game, minutes_per_game, games_played")
+          .in("player_id", playerIds)
+          .eq("sport", "NBA")
+          .eq("season", currentDbSeason - 1);
+        statsData = fallback.data;
+      }
 
       // Create stats lookup map
       const statsMap = new Map<string, {

@@ -106,6 +106,12 @@ serve(async (req) => {
   try {
     console.log("Starting NBA games and odds sync...");
 
+    // Dynamic season calculation
+    const now = new Date();
+    const bdlSeason = now.getMonth() >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+    const dbSeason = bdlSeason + 1;
+    console.log(`[sync-nba-odds] Season: BDL=${bdlSeason}, DB=${dbSeason}`);
+
     const BALLDONTLIE_API_KEY = Deno.env.get("BALLDONTLIE_API_KEY");
     const THE_ODDS_API_KEY = Deno.env.get("THE_ODDS_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
@@ -175,11 +181,12 @@ serve(async (req) => {
     // =========================
     console.log("Fetching NBA games from BallDontLie...");
     
-    // Use exact dates as specified
-    const startDate = "2026-01-14";
-    const endDate = "2026-01-21";
-    
-    const gamesUrl = `https://api.balldontlie.io/nba/v1/games?seasons[]=2025&start_date=${startDate}&end_date=${endDate}&per_page=100`;
+    // Fetch games for the next 7 days
+    const startDate = now.toISOString().split("T")[0];
+    const endDateObj = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const endDate = endDateObj.toISOString().split("T")[0];
+
+    const gamesUrl = `https://api.balldontlie.io/nba/v1/games?seasons[]=${bdlSeason}&start_date=${startDate}&end_date=${endDate}&per_page=100`;
     
     console.log("Fetching from URL:", gamesUrl);
     
@@ -204,7 +211,7 @@ serve(async (req) => {
     // =========================
     const gamesToInsert = apiGames.map((game) => ({
       league: "NBA",
-      season: 2025,
+      season: dbSeason,
       date: game.date,
       status: game.status,
       home_team_name: game.home_team.full_name,

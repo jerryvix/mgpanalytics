@@ -24,6 +24,21 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "ALL:grade_props": "grade-player-props",
 };
 
+// Approximate season windows (month ranges, 0-indexed)
+// Returns true if the sport has active games/data worth syncing right now
+function isSportInSeason(sport: string): boolean {
+  const month = new Date().getMonth(); // 0=Jan, 11=Dec
+  switch (sport) {
+    case "NFL":   return month >= 8 || month <= 1;   // Sep–Feb (reg season + playoffs)
+    case "NBA":   return month >= 9 || month <= 5;    // Oct–Jun
+    case "NCAAB": return month >= 10 || month <= 3;   // Nov–Apr (March Madness)
+    case "NCAAF": return month >= 7 || month <= 0;    // Aug–Jan (bowls)
+    case "MLB":   return month >= 2 && month <= 10;   // Mar–Nov (spring training thru WS)
+    case "ALL":   return true;                        // Cross-sport syncs always run
+    default:      return true;
+  }
+}
+
 // Parse interval string to milliseconds
 function intervalToMs(interval: string): number {
   const match = interval.match(/^(\d+)(h|m|d)$/);
@@ -111,6 +126,12 @@ Deno.serve(async (req) => {
       // If force-sync specified, only run those
       if (forceSync.length > 0) {
         return forceSync.includes(key) || forceSync.includes(s.data_type);
+      }
+
+      // Skip out-of-season sports (saves API quota, especially Odds API)
+      if (!isSportInSeason(s.sport)) {
+        console.log(`[dispatch-syncs] ${key} skipped — ${s.sport} is out of season`);
+        return false;
       }
 
       // Check if function exists in our map

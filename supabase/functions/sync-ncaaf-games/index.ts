@@ -194,7 +194,7 @@ serve(async (req) => {
       return {
         external_id: `espn_ncaaf_${game.id}`,
         date: game.date,
-        season: 2025,
+        season: now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear(),
         status: game.status?.type?.name || "scheduled",
         home_team_name: homeTeam?.team?.displayName || homeTeam?.team?.name || "TBD",
         visitor_team_name: awayTeam?.team?.displayName || awayTeam?.team?.name || "TBD",

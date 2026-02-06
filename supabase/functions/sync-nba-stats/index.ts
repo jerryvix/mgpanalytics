@@ -254,6 +254,13 @@ Deno.serve(async (req) => {
 
     console.log(`[sync-nba-stats] Found ${players.length} NBA players to sync stats for`);
 
+    // Dynamic season calculation
+    // BDL uses start-year (2025 = 2025-26 season). Our DB uses end-year (2026 = 2025-26 season).
+    const now = new Date();
+    const bdlSeason = now.getMonth() >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+    const dbSeason = bdlSeason + 1;
+    console.log(`[sync-nba-stats] Season: BDL=${bdlSeason}, DB=${dbSeason}`);
+
     let synced = 0;
     let noData = 0;
     let errors: string[] = [];
@@ -306,7 +313,7 @@ Deno.serve(async (req) => {
         // GOAT-tier endpoint structure:
         // /season_averages/{category}?season=2024&season_type=regular&type=base&player_ids[]=...
         const result = await bdlFetch(BDL_API_KEY, "/season_averages/general", {
-          season: 2024,
+          season: bdlSeason,
           season_type: "regular",
           type: "base",
           player_ids: batch,
@@ -359,7 +366,7 @@ Deno.serve(async (req) => {
       const seasonStats = {
         player_id: player.id,
         sport: "NBA",
-        season: 2025, // Store as 2025 (2024-25 season)
+        season: dbSeason,
         season_type: "regular",
         source: "balldontlie",
         games_played: stats.gp || 0,

@@ -170,7 +170,7 @@ serve(async (req) => {
       return {
         external_id: `espn_mlb_${game.id}`,
         date: game.date,
-        season: 2026, // MLB 2026 season
+        season: now.getFullYear(), // MLB uses calendar year
         status: game.status?.type?.name || "scheduled",
         home_team_name: homeTeam?.team?.displayName || homeTeam?.team?.name || "TBD",
         visitor_team_name: awayTeam?.team?.displayName || awayTeam?.team?.name || "TBD",

@@ -96,8 +96,13 @@ serve(async (req) => {
       console.log(`[sync-nba-games] Admin user ${userId} authenticated, starting NBA games sync via ESPN...`);
     }
 
-    // Calculate date range: now to +48 hours
+    // Dynamic season calculation
     const now = new Date();
+    const bdlSeason = now.getMonth() >= 9 ? now.getFullYear() : now.getFullYear() - 1;
+    const dbSeason = bdlSeason + 1;
+    console.log(`[sync-nba-games] Season: BDL=${bdlSeason}, DB=${dbSeason}`);
+
+    // Calculate date range: now to +48 hours
     const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
     // Fetch NBA schedule from ESPN API (free, no key needed)
@@ -152,7 +157,7 @@ serve(async (req) => {
       return {
         external_id: `espn_nba_${game.id}`,
         date: game.date,
-        season: 2025,
+        season: dbSeason,
         status: game.status?.type?.name || "scheduled",
         home_team_name: homeTeam?.team?.displayName || homeTeam?.team?.name || "TBD",
         visitor_team_name: awayTeam?.team?.displayName || awayTeam?.team?.name || "TBD",
