@@ -181,6 +181,10 @@ serve(async (req) => {
       const awayRank = rankedTeams.find((t) => t.teamId === awayTeam?.team?.id)?.rank || 
                        awayTeam?.curatedRank?.current || null;
 
+      const isCompleted = game.status?.type?.completed === true;
+      const homeScore = homeTeam?.score ? parseInt(homeTeam.score) : null;
+      const awayScore = awayTeam?.score ? parseInt(awayTeam.score) : null;
+
       return {
         external_id: `espn_ncaaf_${game.id}`,
         date: game.date,
@@ -194,6 +198,9 @@ serve(async (req) => {
         visitor_team_rank: awayRank,
         venue: competition?.venue?.fullName || null,
         is_featured: (homeRank && homeRank <= 25) || (awayRank && awayRank <= 25),
+        home_score: homeScore,
+        away_score: awayScore,
+        is_final: isCompleted,
         updated_at: new Date().toISOString(),
       };
     });
@@ -214,9 +221,7 @@ serve(async (req) => {
 
     console.log(`Syncing ${gamesToSync.length} games (${rankedGames.length} ranked)`);
 
-    // Delete old games (> 48h past)
-    const cutoffDate = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
-    await supabase.from("ncaaf_games").delete().lt("date", cutoffDate);
+    // Historical data preserved — no longer deleting old games
 
     let insertedCount = 0;
     if (gamesToSync.length > 0) {

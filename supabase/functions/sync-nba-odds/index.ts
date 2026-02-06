@@ -164,25 +164,8 @@ serve(async (req) => {
     console.log(`Admin user ${userId} authenticated, proceeding with sync...`);
 
     // =========================
-    // STEP 1: Prune old NBA games (older than 48 hours)
-    // =========================
-    console.log("Pruning NBA games older than 48 hours...");
-    const cutoffDate = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    
-    const { error: pruneError } = await supabase
-      .from("games")
-      .delete()
-      .eq("league", "NBA")
-      .lt("date", cutoffDate);
-
-    if (pruneError) {
-      console.error("Error pruning old NBA games:", pruneError);
-    } else {
-      console.log("Pruned old NBA games successfully");
-    }
-
-    // =========================
-    // STEP 2: Fetch NBA games from BallDontLie /nba/v1/games
+    // STEP 1: Fetch NBA games from BallDontLie /nba/v1/games
+    // (No longer deleting old games — historical data preserved)
     // =========================
     console.log("Fetching NBA games from BallDontLie...");
     
@@ -211,22 +194,7 @@ serve(async (req) => {
     console.log(`Fetched ${apiGames.length} NBA games from BallDontLie`);
 
     // =========================
-    // STEP 3: Delete existing NBA games in this date range
-    // =========================
-    console.log("Deleting existing NBA games in date range...");
-    const { error: deleteGamesError } = await supabase
-      .from("games")
-      .delete()
-      .eq("league", "NBA")
-      .gte("date", startDate)
-      .lte("date", endDate + "T23:59:59Z");
-
-    if (deleteGamesError) {
-      console.error("Error deleting existing games:", deleteGamesError);
-    }
-
-    // =========================
-    // STEP 4: Insert new games into games table with league='NBA'
+    // STEP 2: Upsert games (onConflict handles duplicates, preserves historical data)
     // =========================
     const gamesToInsert = apiGames.map((game) => ({
       league: "NBA",
@@ -282,22 +250,7 @@ serve(async (req) => {
     }
 
     // =========================
-    // STEP 6: Delete existing odds for synced games
-    // =========================
-    if (insertedGames.length > 0 && !oddsError) {
-      const gameIds = insertedGames.map((g) => g.id);
-      const { error: deleteOddsError } = await supabase
-        .from("odds")
-        .delete()
-        .in("game_id", gameIds);
-
-      if (deleteOddsError) {
-        console.error("Error deleting existing odds:", deleteOddsError);
-      }
-    }
-
-    // =========================
-    // STEP 7: Process and insert odds
+    // STEP 4: Process and upsert odds (onConflict handles updates)
     // =========================
     let oddsInsertedCount = 0;
     const oddsToInsert: {

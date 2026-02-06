@@ -202,6 +202,10 @@ serve(async (req) => {
       // Only include ranked games (at least one team in top 25)
       const isRanked = (homeRank !== null && homeRank <= 25) || (awayRank !== null && awayRank <= 25);
 
+      const isCompleted = game.status?.type?.completed === true;
+      const homeScore = homeTeam.score ? parseInt(homeTeam.score) : null;
+      const awayScore = awayTeam.score ? parseInt(awayTeam.score) : null;
+
       processedGames.push({
         external_id: `espn_ncaab_${game.id}`,
         date: game.date,
@@ -216,6 +220,9 @@ serve(async (req) => {
         home_team_conference: null, // ESPN doesn't always provide this in scoreboard
         visitor_team_conference: null,
         is_featured: !isRanked, // If not ranked, mark as featured
+        home_score: homeScore,
+        away_score: awayScore,
+        is_final: isCompleted,
       });
     }
 
@@ -237,9 +244,7 @@ serve(async (req) => {
       console.log(`No ranked games found, using ${gamesToInsert.length} featured games`);
     }
 
-    // Clean up old games first (older than 48 hours)
-    const cutoffDate = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-    await supabase.from("ncaab_games").delete().lt("date", cutoffDate);
+    // Historical data preserved — no longer deleting old games
 
     let insertedCount = 0;
     if (gamesToInsert.length > 0) {

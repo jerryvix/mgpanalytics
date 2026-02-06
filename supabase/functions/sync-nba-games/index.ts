@@ -139,6 +139,10 @@ serve(async (req) => {
       const homeTeam = competition?.competitors?.find((c) => c.homeAway === "home");
       const awayTeam = competition?.competitors?.find((c) => c.homeAway === "away");
 
+      const isCompleted = game.status?.type?.completed === true;
+      const homeScore = homeTeam?.score ? parseInt(homeTeam.score) : null;
+      const awayScore = awayTeam?.score ? parseInt(awayTeam.score) : null;
+
       return {
         external_id: `espn_nba_${game.id}`,
         date: game.date,
@@ -148,6 +152,9 @@ serve(async (req) => {
         visitor_team_name: awayTeam?.team?.displayName || awayTeam?.team?.name || "TBD",
         home_team_id: homeTeam?.team?.id ? parseInt(homeTeam.team.id) : null,
         visitor_team_id: awayTeam?.team?.id ? parseInt(awayTeam.team.id) : null,
+        home_score: homeScore,
+        away_score: awayScore,
+        is_final: isCompleted,
         updated_at: new Date().toISOString(),
       };
     });

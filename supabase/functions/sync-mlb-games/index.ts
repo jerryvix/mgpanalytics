@@ -157,6 +157,10 @@ serve(async (req) => {
       const weather = game.weather?.displayValue || 
         (game.weather?.temperature ? `${game.weather.temperature}°F` : null);
 
+      const isCompleted = game.status?.type?.completed === true;
+      const homeScore = homeTeam?.score ? parseInt(homeTeam.score) : null;
+      const awayScore = awayTeam?.score ? parseInt(awayTeam.score) : null;
+
       return {
         external_id: `espn_mlb_${game.id}`,
         date: game.date,
@@ -171,13 +175,14 @@ serve(async (req) => {
         starting_pitcher_home: homePitcher,
         starting_pitcher_away: awayPitcher,
         is_featured: false, // Will be set based on matchup quality
+        home_score: homeScore,
+        away_score: awayScore,
+        is_final: isCompleted,
         updated_at: new Date().toISOString(),
       };
     });
 
-    // Delete old games (> 24h past)
-    const cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-    await supabase.from("mlb_games").delete().lt("date", cutoffDate);
+    // Historical data preserved — no longer deleting old games
 
     let insertedCount = 0;
     if (gamesToUpsert.length > 0) {
