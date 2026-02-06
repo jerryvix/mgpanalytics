@@ -255,11 +255,14 @@ Deno.serve(async (req) => {
         error_message: null,
       }, { onConflict: "sport,data_type" });
 
-    // Step 2: Get all NFL players from our database to map external_id to internal id
+    // Step 2: Get skill-position NFL players from DB to map external_id to internal id
+    // Only sync stats for bet-relevant positions — reduces API volume ~60%
+    const SKILL_POSITIONS = ["QB", "RB", "WR", "TE", "FB"];
     const { data: players, error: playersError } = await supabase
       .from("players")
       .select("id, external_id")
-      .eq("sport", "NFL");
+      .eq("sport", "NFL")
+      .in("position", SKILL_POSITIONS);
 
     if (playersError) {
       throw new Error(`Failed to fetch players: ${playersError.message}`);
