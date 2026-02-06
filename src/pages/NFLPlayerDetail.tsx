@@ -1,58 +1,98 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, User, TrendingUp, Zap, Calendar, Target } from "lucide-react";
-import { 
-  getNFLPlayer, 
-  getNFLPlayerStats, 
-  getNFLPlayerGameLogs,
-  NFLPlayer 
-} from "@/services/balldontlie/nflPlayers";
 import { NFLPlayerStatsCard } from "@/components/players/NFLPlayerStatsCard";
 import { NFLGameLog } from "@/components/players/NFLGameLog";
 import { NFLAdvancedStats } from "@/components/players/NFLAdvancedStats";
 
 export default function NFLPlayerDetail() {
   const { playerId } = useParams<{ playerId: string }>();
-  
-  // Extract numeric ID from "bdl-123" format
-  const bdlId = playerId?.startsWith("bdl-") ? playerId.substring(4) : null;
-  
+
+  // Extract numeric ID from "bdl-123" format (external_id in DB)
+  const externalId = playerId?.startsWith("bdl-") ? playerId.substring(4) : playerId;
+
+  // Fetch player from DB by external_id
   const { data: player, isLoading: playerLoading, error: playerError } = useQuery({
-    queryKey: ["bdl-nfl-player", bdlId],
+    queryKey: ["nfl-player-db", externalId],
     queryFn: async () => {
-      if (!bdlId) return null;
-      return getNFLPlayer(bdlId);
+      if (!externalId) return null;
+      const { data, error } = await supabase
+        .from("players")
+        .select("*")
+        .eq("external_id", externalId)
+        .eq("sport", "NFL")
+        .single();
+      if (error) throw error;
+      return data;
     },
-    enabled: !!bdlId,
-    staleTime: 60000,
+    enabled: !!externalId,
+    staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch season stats from DB
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["bdl-nfl-player-stats", bdlId],
+    queryKey: ["nfl-player-stats-db", player?.id],
     queryFn: async () => {
-      if (!bdlId) return null;
-      return getNFLPlayerStats(bdlId, 2024);
+      if (!player?.id) return null;
+      const { data, error } = await supabase
+        .from("player_season_stats")
+        .select("*")
+        .eq("player_id", player.id)
+        .eq("sport", "NFL")
+        .eq("season_type", "regular")
+        .order("season", { ascending: false })
+        .limit(1)
+        .single();
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
     },
-    enabled: !!bdlId,
-    staleTime: 60000,
+    enabled: !!player?.id,
+    staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch game logs from DB
   const { data: gameLogs = [], isLoading: gameLogsLoading } = useQuery({
-    queryKey: ["bdl-nfl-player-game-logs", bdlId],
+    queryKey: ["nfl-player-gamelogs-db", player?.id],
     queryFn: async () => {
-      if (!bdlId) return [];
-      return getNFLPlayerGameLogs(bdlId, 2024, 17);
+      if (!player?.id) return [];
+      const { data, error } = await supabase
+        .from("player_game_logs")
+        .select("*")
+        .eq("player_id", player.id)
+        .eq("sport", "NFL")
+        .order("game_date", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      // Map DB columns to the format NFLGameLog component expects
+      return (data || []).map((log: any) => ({
+        game_id: log.game_id,
+        game_date: log.game_date,
+        opponent: log.opponent_name || log.opponent_abbr,
+        is_home: log.home_away === "home",
+        pass_yards: log.pass_yards,
+        pass_td: log.pass_td,
+        pass_attempts: log.pass_attempts,
+        pass_completions: log.pass_completions,
+        interceptions: log.pass_int,
+        passer_rating: log.passer_rating,
+        rush_yards: log.rush_yards,
+        rush_td: log.rush_td,
+        rush_attempts: log.rush_attempts,
+        receptions: log.receptions,
+        rec_yards: log.rec_yards,
+        rec_td: log.rec_td,
+        targets: log.targets,
+      }));
     },
-    enabled: !!bdlId,
-    staleTime: 60000,
+    enabled: !!player?.id,
+    staleTime: 5 * 60 * 1000,
   });
-
-  const isLoading = playerLoading;
 
   const getPositionColor = (pos: string) => {
     switch (pos) {
@@ -70,7 +110,7 @@ export default function NFLPlayerDetail() {
     }
   };
 
-  if (!bdlId) {
+  if (!externalId) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold text-foreground">Invalid player ID</h2>
@@ -84,7 +124,7 @@ export default function NFLPlayerDetail() {
     );
   }
 
-  if (isLoading) {
+  if (playerLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -100,7 +140,7 @@ export default function NFLPlayerDetail() {
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold text-foreground">Player not found</h2>
         <p className="text-muted-foreground mt-2">
-          Unable to load player data from Ball Don't Lie API.
+          This player hasn't been synced yet or doesn't exist.
         </p>
         <Link to="/dashboard/nfl/players">
           <Button variant="outline" className="mt-4">
@@ -112,8 +152,8 @@ export default function NFLPlayerDetail() {
     );
   }
 
-  const fullName = `${player.first_name} ${player.last_name}`;
-  const posAbbr = player.position_abbreviation || player.position;
+  const fullName = player.name || `${player.first_name || ""} ${player.last_name || ""}`.trim();
+  const posAbbr = player.position || "";
 
   // Calculate season averages for highlighting in game log
   const seasonAverages = stats ? {
@@ -157,10 +197,10 @@ export default function NFLPlayerDetail() {
                   <Badge variant="outline" className={getPositionColor(posAbbr)}>
                     {posAbbr}
                   </Badge>
-                  {player.team && (
+                  {player.team_name && (
                     <>
                       <span>|</span>
-                      <span className="font-medium">{player.team.full_name}</span>
+                      <span className="font-medium">{player.team_name}</span>
                     </>
                   )}
                 </div>
@@ -177,9 +217,7 @@ export default function NFLPlayerDetail() {
                 {player.weight && (
                   <div className="bg-muted/30 rounded-lg p-2">
                     <span className="text-muted-foreground block text-xs">Weight</span>
-                    <span className="text-foreground font-medium">
-                      {typeof player.weight === 'string' ? player.weight : `${player.weight} lbs`}
-                    </span>
+                    <span className="text-foreground font-medium">{player.weight} lbs</span>
                   </div>
                 )}
                 {player.age && (
@@ -198,21 +236,8 @@ export default function NFLPlayerDetail() {
                   <div className="bg-muted/30 rounded-lg p-2">
                     <span className="text-muted-foreground block text-xs">Experience</span>
                     <span className="text-foreground font-medium">
-                      {typeof player.experience === 'string' ? player.experience : 
-                        player.experience === 0 ? "Rookie" : `${player.experience} yr${player.experience !== 1 ? "s" : ""}`}
+                      {player.experience === 0 ? "Rookie" : `${player.experience} yr${player.experience !== 1 ? "s" : ""}`}
                     </span>
-                  </div>
-                )}
-                {player.team?.conference && (
-                  <div className="bg-muted/30 rounded-lg p-2">
-                    <span className="text-muted-foreground block text-xs">Conference</span>
-                    <span className="text-foreground font-medium">{player.team.conference}</span>
-                  </div>
-                )}
-                {player.team?.division && (
-                  <div className="bg-muted/30 rounded-lg p-2">
-                    <span className="text-muted-foreground block text-xs">Division</span>
-                    <span className="text-foreground font-medium">{player.team.division}</span>
                   </div>
                 )}
               </div>
@@ -241,33 +266,33 @@ export default function NFLPlayerDetail() {
             Betting
           </TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="traditional">
-          <NFLPlayerStatsCard 
-            stats={stats} 
-            position={posAbbr} 
-            isLoading={statsLoading} 
+          <NFLPlayerStatsCard
+            stats={stats}
+            position={posAbbr}
+            isLoading={statsLoading}
           />
         </TabsContent>
-        
+
         <TabsContent value="advanced">
-          <NFLAdvancedStats 
+          <NFLAdvancedStats
             stats={stats}
             gameLogs={gameLogs}
             position={posAbbr}
             isLoading={statsLoading || gameLogsLoading}
           />
         </TabsContent>
-        
+
         <TabsContent value="gamelog">
-          <NFLGameLog 
-            gameLogs={gameLogs} 
-            position={posAbbr} 
+          <NFLGameLog
+            gameLogs={gameLogs}
+            position={posAbbr}
             seasonAverages={seasonAverages}
-            isLoading={gameLogsLoading} 
+            isLoading={gameLogsLoading}
           />
         </TabsContent>
-        
+
         <TabsContent value="betting">
           <Card className="bg-card border-border">
             <CardContent className="p-6">
@@ -277,7 +302,7 @@ export default function NFLPlayerDetail() {
                   Betting Trends Coming Soon
                 </h3>
                 <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Player prop betting history, line movements, and performance 
+                  Player prop betting history, line movements, and performance
                   against closing lines will be available here.
                 </p>
               </div>
