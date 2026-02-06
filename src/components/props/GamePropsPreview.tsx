@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart3, User } from "lucide-react";
 
 interface GamePropsPreviewProps {
@@ -11,6 +13,7 @@ interface GamePropsPreviewProps {
 
 interface TopProp {
   playerName: string;
+  playerId: string | null;
   propType: string;
   line: number;
   odds: number;
@@ -99,6 +102,7 @@ export function GamePropsPreview({ gameId, homeTeam, awayTeam }: GamePropsPrevie
 
         return playerProps.map((p: any) => ({
           playerName: p.players.name,
+          playerId: p.players.id || null,
           propType: p.prop_type,
           line: p.line,
           odds: p.over_odds,
@@ -108,6 +112,7 @@ export function GamePropsPreview({ gameId, homeTeam, awayTeam }: GamePropsPrevie
 
       return props.map((p: any) => ({
         playerName: p.players.name,
+        playerId: p.players.id || null,
         propType: p.prop_type,
         line: p.line,
         odds: p.over_odds,
@@ -146,7 +151,21 @@ export function GamePropsPreview({ gameId, homeTeam, awayTeam }: GamePropsPrevie
           >
             <div className="flex items-center gap-1.5 truncate">
               <User className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-              <span className="text-foreground truncate">{prop.playerName.split(' ').pop()}</span>
+              {prop.playerId ? (
+                <Link
+                  to={`/dashboard/nba/players/${prop.playerId}`}
+                  className="text-foreground truncate hover:text-terminal-cyan transition-colors"
+                >
+                  {prop.playerName.split(' ').pop()}
+                </Link>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-foreground truncate cursor-default">{prop.playerName.split(' ').pop()}</span>
+                  </TooltipTrigger>
+                  <TooltipContent>Player profile not available yet</TooltipContent>
+                </Tooltip>
+              )}
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               <span className="text-terminal-green">O{prop.line}</span>

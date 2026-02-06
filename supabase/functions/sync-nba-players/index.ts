@@ -194,7 +194,7 @@ async function fetchEspnTeamWithStats(teamId: number): Promise<ESPNRosterEntry[]
               headshot: athlete.headshot,
               injuries: athlete.injuries
             },
-            statistics: []
+            statistics: athlete.statistics || athlete.stats || []
           };
           entries.push(entry);
         }
@@ -361,8 +361,10 @@ Deno.serve(async (req) => {
       playersData.sort((a, b) => b.mpg - a.mpg);
 
       // Filter to rotation players: top 10 by MPG, exclude deep bench (0 MPG)
-      const rotationPlayers = playersData.filter(p => p.mpg > 0).slice(0, 10);
-      console.log(`[sync-nba-players] Filtered to ${rotationPlayers.length} rotation players (from ${playersData.length} total, ${playersData.filter(p => p.mpg > 0).length} with MPG > 0)`);
+      const withStats = playersData.filter(p => p.mpg > 0);
+      // If ESPN roster doesn't include stats, fall back to all players (capped at 12)
+      const rotationPlayers = withStats.length > 0 ? withStats.slice(0, 10) : playersData.slice(0, 12);
+      console.log(`[sync-nba-players] Selected ${rotationPlayers.length} players (${withStats.length} with MPG > 0, ${playersData.length} total)`);
 
       console.log(`[sync-nba-players] Step 4: Calculating featured players for ${teamName}`);
 
@@ -440,10 +442,15 @@ Deno.serve(async (req) => {
         if (upsertedPlayer && Object.keys(stats).length > 0) {
           playersWithStats++;
           
+          // NBA season year = calendar year the season ends in (e.g., 2024-25 = 2025)
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          const nbaSeason = currentMonth >= 9 ? currentYear + 1 : currentYear;
+
           const seasonStats = {
             player_id: upsertedPlayer.id,
             sport: "NBA",
-            season: 2025,
+            season: nbaSeason,
             season_type: "regular",
             games_played: stats.games_played || 0,
             points_per_game: stats.points_per_game || 0,

@@ -35,8 +35,8 @@ const navItems: NavItem[] = [
     label: "Community",
     icon: Users,
     action: "navigate",
-    path: "/community/feed",
-    matchPaths: ["/community"],
+    path: "/dashboard/community/feed",
+    matchPaths: ["/dashboard/community"],
   },
 ];
 

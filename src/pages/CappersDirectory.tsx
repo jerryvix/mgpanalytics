@@ -52,11 +52,11 @@ export default function CappersDirectory() {
   const showFeatured = !debouncedSearch && sport === 'all' && category === 'all';
 
   const categoryLinks = [
-    { to: "/community/cappers/sharps", emoji: "🎯", label: "Sharp Bettors", description: "Proven winners" },
-    { to: "/community/cappers/analysts", emoji: "📊", label: "Analysts", description: "Data experts" },
-    { to: "/community/cappers/pop-culture", emoji: "🎬", label: "Pop Culture", description: "Entertainment" },
-    { to: "/community/cappers/media", emoji: "📰", label: "Media", description: "Betting media" },
-    { to: "/community/cappers/insiders", emoji: "🔔", label: "Insiders", description: "Team intel" },
+    { to: "/dashboard/community/cappers/sharps", emoji: "🎯", label: "Sharp Bettors", description: "Proven winners" },
+    { to: "/dashboard/community/cappers/analysts", emoji: "📊", label: "Analysts", description: "Data experts" },
+    { to: "/dashboard/community/cappers/pop-culture", emoji: "🎬", label: "Pop Culture", description: "Entertainment" },
+    { to: "/dashboard/community/cappers/media", emoji: "📰", label: "Media", description: "Betting media" },
+    { to: "/dashboard/community/cappers/insiders", emoji: "🔔", label: "Insiders", description: "Team intel" },
   ];
 
   return (
@@ -65,7 +65,7 @@ export default function CappersDirectory() {
         {/* Back navigation */}
         <div className="mb-6">
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/community/feed" className="flex items-center gap-2">
+            <Link to="/dashboard/community/feed" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
               Back to Feed
             </Link>

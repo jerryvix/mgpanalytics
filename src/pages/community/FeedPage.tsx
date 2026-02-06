@@ -109,7 +109,7 @@ export default function FeedPage() {
                     Following ({followedCappers.length})
                   </CardTitle>
                   <Button variant="outline" size="sm" asChild>
-                    <Link to="/community/cappers" className="flex items-center gap-1">
+                    <Link to="/dashboard/community/cappers" className="flex items-center gap-1">
                       <Plus className="h-3.5 w-3.5" />
                     </Link>
                   </Button>
@@ -135,7 +135,7 @@ export default function FeedPage() {
                       No cappers followed yet
                     </p>
                     <Button size="sm" asChild>
-                      <Link to="/community/cappers">Browse Cappers</Link>
+                      <Link to="/dashboard/community/cappers">Browse Cappers</Link>
                     </Button>
                   </div>
                 ) : (
@@ -212,7 +212,7 @@ export default function FeedPage() {
                     Follow your favorite cappers, analysts, and betting personalities to see their live tweets here.
                   </p>
                   <Button size="lg" asChild>
-                    <Link to="/community/cappers" className="flex items-center gap-2">
+                    <Link to="/dashboard/community/cappers" className="flex items-center gap-2">
                       <Users className="h-5 w-5" />
                       Explore Cappers Directory
                     </Link>

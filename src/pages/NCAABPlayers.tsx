@@ -46,7 +46,7 @@ export default function NCAABPlayers() {
           .select("player_id, points_per_game, rebounds_per_game, assists_per_game, minutes_per_game")
           .in("player_id", playerIds)
           .eq("sport", "NCAAB")
-          .eq("season", 2025);
+          .eq("season", new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear());
 
         const statsMap = new Map();
         for (const stat of statsData || []) {

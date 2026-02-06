@@ -3,48 +3,56 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2, Database, Users, Trophy } from "lucide-react";
+import { Search, Loader2, Database, Activity, Clock, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
-interface JoshAllenData {
-  first_name: string;
-  last_name: string;
-  position: string;
-  team_abbr: string;
-  season: number | null;
-  games_played: number | null;
-  pass_yards: number | null;
-  pass_td: number | null;
-  pass_int: number | null;
-  rush_yards: number | null;
-  rush_td: number | null;
+interface SyncStatus {
+  sport: string;
+  data_type: string;
+  last_sync_at: string | null;
+  last_sync_status: string | null;
+  records_synced: number | null;
+  cron_interval: string | null;
+  is_enabled: boolean;
 }
 
-interface TopPasserData {
-  first_name: string;
-  last_name: string;
-  pass_yards: number;
-  pass_td: number;
+interface DataCoverage {
+  sport: string;
+  players: number;
+  games: number;
+  odds: number;
+  props: number;
+  provider: string;
 }
 
-interface PositionData {
-  position: string;
-  count: number;
+function timeAgo(dateStr: string | null): string {
+  if (!dateStr) return "Never";
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const hours = Math.floor(diff / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  if (hours > 48) return `${Math.floor(hours / 24)}d ago`;
+  if (hours > 0) return `${hours}h ${minutes}m ago`;
+  return `${minutes}m ago`;
+}
+
+function freshnessColor(dateStr: string | null, intervalHours: number): string {
+  if (!dateStr) return "text-destructive";
+  const hours = (Date.now() - new Date(dateStr).getTime()) / 3600000;
+  if (hours <= intervalHours * 1.5) return "text-terminal-green";
+  if (hours <= intervalHours * 3) return "text-terminal-amber";
+  return "text-destructive";
+}
+
+function intervalToHours(interval: string | null): number {
+  if (!interval) return 24;
+  const match = interval.match(/(\d+)h/);
+  return match ? parseInt(match[1]) : 24;
 }
 
 export function DataInspector() {
   const [isLoading, setIsLoading] = useState(false);
-  const [joshAllenData, setJoshAllenData] = useState<JoshAllenData[] | null>(null);
-  const [topPassersData, setTopPassersData] = useState<TopPasserData[] | null>(null);
-  const [positionData, setPositionData] = useState<PositionData[] | null>(null);
+  const [syncStatuses, setSyncStatuses] = useState<SyncStatus[] | null>(null);
+  const [coverage, setCoverage] = useState<DataCoverage[] | null>(null);
   const [hasRun, setHasRun] = useState(false);
 
   const runDiagnostics = async () => {
@@ -52,125 +60,72 @@ export function DataInspector() {
     setHasRun(true);
 
     try {
-      // Query 1: Josh Allen's actual data
-      const { data: joshData } = await supabase
-        .from("players")
-        .select(`
-          first_name,
-          last_name,
-          position,
-          team_abbr,
-          player_season_stats (
-            season,
-            games_played,
-            pass_yards,
-            pass_td,
-            pass_int,
-            rush_yards,
-            rush_td
-          )
-        `)
-        .ilike("first_name", "josh")
-        .ilike("last_name", "allen")
-        .eq("sport", "NFL");
+      // 1. Sync schedule health
+      const { data: schedules } = await supabase
+        .from("sync_schedule")
+        .select("sport, data_type, last_sync_at, last_sync_status, records_synced, cron_interval, is_enabled")
+        .order("sport")
+        .order("data_type");
 
-      // Flatten the joined data
-      const flattenedJoshData: JoshAllenData[] = [];
-      if (joshData) {
-        for (const player of joshData) {
-          const stats = player.player_season_stats;
-          if (stats && stats.length > 0) {
-            for (const stat of stats) {
-              flattenedJoshData.push({
-                first_name: player.first_name || "",
-                last_name: player.last_name || "",
-                position: player.position || "",
-                team_abbr: player.team_abbr || "",
-                season: stat.season,
-                games_played: stat.games_played,
-                pass_yards: stat.pass_yards,
-                pass_td: stat.pass_td,
-                pass_int: stat.pass_int,
-                rush_yards: stat.rush_yards,
-                rush_td: stat.rush_td,
-              });
-            }
-          } else {
-            flattenedJoshData.push({
-              first_name: player.first_name || "",
-              last_name: player.last_name || "",
-              position: player.position || "",
-              team_abbr: player.team_abbr || "",
-              season: null,
-              games_played: null,
-              pass_yards: null,
-              pass_td: null,
-              pass_int: null,
-              rush_yards: null,
-              rush_td: null,
-            });
-          }
+      setSyncStatuses(schedules || []);
+
+      // 2. Data coverage counts per sport
+      const sports = ["NFL", "NBA", "NCAAB"];
+      const coverageData: DataCoverage[] = [];
+
+      for (const sport of sports) {
+        const [playersRes, propsRes] = await Promise.all([
+          supabase.from("players").select("id", { count: "exact", head: true }).eq("sport", sport),
+          supabase.from("player_props").select("id", { count: "exact", head: true }).eq("sport", sport).eq("is_active", true),
+        ]);
+
+        // Sport-specific game/odds tables
+        let gamesCount = 0;
+        let oddsCount = 0;
+        let provider = "BDL";
+
+        if (sport === "NFL") {
+          const { count: gc } = await supabase.from("games").select("id", { count: "exact", head: true }).eq("league", "NFL");
+          const { count: oc } = await supabase.from("odds").select("id", { count: "exact", head: true });
+          gamesCount = gc || 0;
+          oddsCount = oc || 0;
+          provider = "BDL + Odds API";
+        } else if (sport === "NBA") {
+          const { count: gc } = await supabase.from("nba_games").select("id", { count: "exact", head: true });
+          const { count: oc } = await supabase.from("nba_odds").select("id", { count: "exact", head: true });
+          gamesCount = gc || 0;
+          oddsCount = oc || 0;
+          provider = "ESPN + Odds API";
+        } else if (sport === "NCAAB") {
+          const { count: gc } = await supabase.from("ncaab_games").select("id", { count: "exact", head: true });
+          gamesCount = gc || 0;
+          provider = "ESPN + Odds API";
         }
+
+        coverageData.push({
+          sport,
+          players: playersRes.count || 0,
+          games: gamesCount,
+          odds: oddsCount,
+          props: propsRes.count || 0,
+          provider,
+        });
       }
-      setJoshAllenData(flattenedJoshData);
 
-      // Query 2: Top 5 passers (using join)
-      const { data: passersRaw } = await supabase
-        .from("player_season_stats")
-        .select(`
-          pass_yards,
-          pass_td,
-          players!inner (
-            first_name,
-            last_name,
-            sport
-          )
-        `)
-        .eq("players.sport", "NFL")
-        .gt("pass_yards", 1000)
-        .order("pass_yards", { ascending: false })
-        .limit(5);
-
-      const passersFlat: TopPasserData[] = (passersRaw || []).map((row: any) => ({
-        first_name: row.players?.first_name || "",
-        last_name: row.players?.last_name || "",
-        pass_yards: row.pass_yards || 0,
-        pass_td: row.pass_td || 0,
-      }));
-      setTopPassersData(passersFlat);
-
-      // Query 3: Position values
-      const { data: positions } = await supabase
-        .rpc("get_position_counts" as any);
-
-      // Fallback: manual count if RPC doesn't exist
-      if (!positions) {
-        const { data: allPlayers } = await supabase
-          .from("players")
-          .select("position")
-          .eq("sport", "NFL");
-
-        if (allPlayers) {
-          const positionCounts: Record<string, number> = {};
-          for (const p of allPlayers) {
-            const pos = p.position || "Unknown";
-            positionCounts[pos] = (positionCounts[pos] || 0) + 1;
-          }
-          const sorted = Object.entries(positionCounts)
-            .map(([position, count]) => ({ position, count }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10);
-          setPositionData(sorted);
-        }
-      } else {
-        setPositionData(positions as PositionData[]);
-      }
+      setCoverage(coverageData);
     } catch (error) {
       console.error("Diagnostics error:", error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const failingSyncs = syncStatuses?.filter(s => s.last_sync_status === "error" || s.last_sync_status === "fail") || [];
+  const staleSyncs = syncStatuses?.filter(s => {
+    if (!s.last_sync_at || !s.is_enabled) return false;
+    const hours = (Date.now() - new Date(s.last_sync_at).getTime()) / 3600000;
+    return hours > intervalToHours(s.cron_interval) * 3;
+  }) || [];
 
   return (
     <motion.div
@@ -182,11 +137,11 @@ export function DataInspector() {
       <Card className="bg-card border-terminal-amber/30">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-mono text-foreground flex items-center gap-2">
-            <Search className="w-4 h-4 text-terminal-amber" />
-            Data Inspector
+            <Activity className="w-4 h-4 text-terminal-amber" />
+            Data Health Monitor
           </CardTitle>
           <Badge variant="outline" className="border-terminal-amber text-terminal-amber text-[10px]">
-            DEBUG
+            DIAGNOSTICS
           </Badge>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -200,193 +155,102 @@ export function DataInspector() {
             {isLoading ? (
               <>
                 <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                Running Queries...
+                Checking Health...
               </>
             ) : (
               <>
                 <Database className="w-3 h-3 mr-2" />
-                Run Diagnostic Queries
+                Run Health Check
               </>
             )}
           </Button>
 
           {hasRun && !isLoading && (
-            <div className="space-y-6">
-              {/* Query 1: Josh Allen */}
+            <div className="space-y-5">
+              {/* Alerts */}
+              {(failingSyncs.length > 0 || staleSyncs.length > 0) && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 space-y-1">
+                  <div className="flex items-center gap-2 font-mono text-xs font-semibold text-destructive">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    Issues Detected
+                  </div>
+                  {failingSyncs.map(s => (
+                    <div key={`${s.sport}-${s.data_type}`} className="font-mono text-[10px] text-destructive">
+                      {s.sport}:{s.data_type} — last sync failed
+                    </div>
+                  ))}
+                  {staleSyncs.map(s => (
+                    <div key={`${s.sport}-${s.data_type}`} className="font-mono text-[10px] text-terminal-amber">
+                      {s.sport}:{s.data_type} — stale ({timeAgo(s.last_sync_at)})
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Data Coverage */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Users className="w-3 h-3 text-terminal-green" />
-                  <span className="font-mono text-xs text-muted-foreground">
-                    Query 1: Josh Allen's Data
-                  </span>
-                  <Badge variant="outline" className="text-[9px] px-1">
-                    {joshAllenData?.length || 0} rows
-                  </Badge>
+                  <Database className="w-3 h-3 text-terminal-cyan" />
+                  <span className="font-mono text-xs text-muted-foreground">Data Coverage</span>
                 </div>
-                {joshAllenData && joshAllenData.length > 0 ? (
-                  <div className="overflow-auto max-h-48 rounded border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead className="font-mono text-[10px] h-8">Name</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Pos</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Team</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Season</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">GP</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Pass Yds</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Pass TD</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">INT</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Rush Yds</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Rush TD</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {joshAllenData.map((row, idx) => (
-                          <TableRow key={idx} className="font-mono text-[10px]">
-                            <TableCell className="py-1">
-                              {row.first_name} {row.last_name}
-                            </TableCell>
-                            <TableCell className="py-1">{row.position}</TableCell>
-                            <TableCell className="py-1">{row.team_abbr}</TableCell>
-                            <TableCell className="py-1">{row.season ?? "—"}</TableCell>
-                            <TableCell className="py-1">{row.games_played ?? "—"}</TableCell>
-                            <TableCell className="py-1 text-terminal-green">
-                              {row.pass_yards?.toLocaleString() ?? "—"}
-                            </TableCell>
-                            <TableCell className="py-1 text-terminal-green">
-                              {row.pass_td ?? "—"}
-                            </TableCell>
-                            <TableCell className="py-1 text-terminal-red">
-                              {row.pass_int ?? "—"}
-                            </TableCell>
-                            <TableCell className="py-1 text-terminal-cyan">
-                              {row.rush_yards?.toLocaleString() ?? "—"}
-                            </TableCell>
-                            <TableCell className="py-1 text-terminal-cyan">
-                              {row.rush_td ?? "—"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-xs font-mono text-muted-foreground bg-muted/30 p-2 rounded">
-                    No "Josh Allen" found in NFL players
-                  </div>
-                )}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {coverage?.map(c => (
+                    <div key={c.sport} className="bg-muted/30 rounded-lg p-3 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-bold text-foreground">{c.sport}</span>
+                        <Badge variant="outline" className="text-[8px] px-1">{c.provider}</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-[10px]">
+                        <span className="text-muted-foreground">Players</span>
+                        <span className={c.players > 0 ? "text-terminal-green" : "text-destructive"}>{c.players}</span>
+                        <span className="text-muted-foreground">Games</span>
+                        <span className={c.games > 0 ? "text-terminal-green" : "text-muted-foreground"}>{c.games}</span>
+                        <span className="text-muted-foreground">Odds</span>
+                        <span className={c.odds > 0 ? "text-terminal-green" : "text-muted-foreground"}>{c.odds}</span>
+                        <span className="text-muted-foreground">Props</span>
+                        <span className={c.props > 0 ? "text-terminal-green" : "text-muted-foreground"}>{c.props}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              {/* Query 2: Top Passers */}
+              {/* Sync Schedule */}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Trophy className="w-3 h-3 text-terminal-cyan" />
-                  <span className="font-mono text-xs text-muted-foreground">
-                    Query 2: Top 5 Passers (pass_yards &gt; 1000)
-                  </span>
-                  <Badge variant="outline" className="text-[9px] px-1">
-                    {topPassersData?.length || 0} rows
-                  </Badge>
+                  <Clock className="w-3 h-3 text-terminal-green" />
+                  <span className="font-mono text-xs text-muted-foreground">Sync Schedule</span>
                 </div>
-                {topPassersData && topPassersData.length > 0 ? (
-                  <div className="overflow-auto max-h-40 rounded border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead className="font-mono text-[10px] h-8">#</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Name</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Pass Yards</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Pass TD</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {topPassersData.map((row, idx) => (
-                          <TableRow key={idx} className="font-mono text-[10px]">
-                            <TableCell className="py-1">{idx + 1}</TableCell>
-                            <TableCell className="py-1">
-                              {row.first_name} {row.last_name}
-                            </TableCell>
-                            <TableCell className="py-1 text-terminal-green">
-                              {row.pass_yards?.toLocaleString()}
-                            </TableCell>
-                            <TableCell className="py-1 text-terminal-green">
-                              {row.pass_td}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-xs font-mono text-muted-foreground bg-muted/30 p-2 rounded">
-                    No players with pass_yards &gt; 1000 found (column may be empty)
-                  </div>
-                )}
-              </div>
-
-              {/* Query 3: Positions */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Users className="w-3 h-3 text-terminal-amber" />
-                  <span className="font-mono text-xs text-muted-foreground">
-                    Query 3: Position Values (QB vs Quarterback?)
-                  </span>
-                  <Badge variant="outline" className="text-[9px] px-1">
-                    {positionData?.length || 0} positions
-                  </Badge>
-                </div>
-                {positionData && positionData.length > 0 ? (
-                  <div className="overflow-auto max-h-48 rounded border border-border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="bg-muted/50">
-                          <TableHead className="font-mono text-[10px] h-8">Position</TableHead>
-                          <TableHead className="font-mono text-[10px] h-8">Count</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {positionData.map((row, idx) => (
-                          <TableRow key={idx} className="font-mono text-[10px]">
-                            <TableCell className="py-1">
-                              <code className="bg-muted px-1 rounded">
-                                {row.position || "(empty)"}
-                              </code>
-                            </TableCell>
-                            <TableCell className="py-1">{row.count?.toLocaleString()}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                ) : (
-                  <div className="text-xs font-mono text-muted-foreground bg-muted/30 p-2 rounded">
-                    No position data found
-                  </div>
-                )}
-              </div>
-
-              {/* Summary */}
-              <div className="bg-muted/30 rounded p-3 font-mono text-xs space-y-1">
-                <div className="text-muted-foreground font-semibold">Summary:</div>
-                <div>
-                  • Josh Allen found: <span className={joshAllenData && joshAllenData.length > 0 ? "text-terminal-green" : "text-terminal-red"}>
-                    {joshAllenData && joshAllenData.length > 0 ? "Yes" : "No"}
-                  </span>
-                </div>
-                <div>
-                  • Has season stats: <span className={joshAllenData?.some(r => r.season !== null) ? "text-terminal-green" : "text-terminal-red"}>
-                    {joshAllenData?.some(r => r.season !== null) ? "Yes" : "No"}
-                  </span>
-                </div>
-                <div>
-                  • pass_yards column populated: <span className={topPassersData && topPassersData.length > 0 ? "text-terminal-green" : "text-terminal-red"}>
-                    {topPassersData && topPassersData.length > 0 ? "Yes" : "No (data may be in raw_data JSON)"}
-                  </span>
-                </div>
-                <div>
-                  • Most common position in DB: <span className="text-terminal-amber">
-                    {positionData?.[0]?.position || "Unknown"}
-                  </span> ({positionData?.[0]?.count || 0} players)
+                <div className="space-y-1 max-h-64 overflow-auto">
+                  {syncStatuses?.map(s => {
+                    const intervalH = intervalToHours(s.cron_interval);
+                    return (
+                      <div
+                        key={`${s.sport}-${s.data_type}`}
+                        className="flex items-center justify-between bg-muted/20 rounded px-2 py-1.5 font-mono text-[10px]"
+                      >
+                        <div className="flex items-center gap-2">
+                          {!s.is_enabled && <Badge variant="outline" className="text-[8px] px-1 text-muted-foreground">OFF</Badge>}
+                          <span className="text-foreground">{s.sport}:{s.data_type}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-muted-foreground">{s.cron_interval || "—"}</span>
+                          {s.records_synced !== null && (
+                            <span className="text-muted-foreground">{s.records_synced} rec</span>
+                          )}
+                          <span className={
+                            s.last_sync_status === "error" || s.last_sync_status === "fail"
+                              ? "text-destructive"
+                              : freshnessColor(s.last_sync_at, intervalH)
+                          }>
+                            {timeAgo(s.last_sync_at)}
+                          </span>
+                          {s.last_sync_status === "success" && <span className="text-terminal-green">OK</span>}
+                          {(s.last_sync_status === "error" || s.last_sync_status === "fail") && <span className="text-destructive">FAIL</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

@@ -2,23 +2,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import CappersDirectory from "./pages/CappersDirectory";
-import { 
-  SharpsPage, 
-  AnalystsPage, 
-  PropsPage, 
-  PopCulturePage, 
-  MediaPage, 
-  InsidersPage,
-  CapperProfilePage 
-} from "./pages/cappers";
-import { FeedPage } from "./pages/community";
 import NotFound from "./pages/NotFound";
 import { ChatProvider } from "./contexts/ChatContext";
-import { MobileLayout } from "./components/MobileLayout";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,16 +38,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
-            {/* Community Routes — wrapped in MobileLayout for bottom nav */}
-            <Route path="/community/feed" element={<MobileLayout><FeedPage /></MobileLayout>} />
-            <Route path="/community/cappers" element={<MobileLayout><CappersDirectory /></MobileLayout>} />
-            <Route path="/community/cappers/sharps" element={<MobileLayout><SharpsPage /></MobileLayout>} />
-            <Route path="/community/cappers/analysts" element={<MobileLayout><AnalystsPage /></MobileLayout>} />
-            <Route path="/community/cappers/props" element={<MobileLayout><PropsPage /></MobileLayout>} />
-            <Route path="/community/cappers/pop-culture" element={<MobileLayout><PopCulturePage /></MobileLayout>} />
-            <Route path="/community/cappers/media" element={<MobileLayout><MediaPage /></MobileLayout>} />
-            <Route path="/community/cappers/insiders" element={<MobileLayout><InsidersPage /></MobileLayout>} />
-            <Route path="/community/cappers/:username" element={<MobileLayout><CapperProfilePage /></MobileLayout>} />
+            {/* Redirect old /community/* paths to /dashboard/community/* */}
+            <Route path="/community/*" element={<Navigate to="/dashboard/community/cappers" replace />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
