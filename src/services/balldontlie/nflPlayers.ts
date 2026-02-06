@@ -95,6 +95,14 @@ export interface SearchResult {
 
 const EDGE_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-nfl-players`;
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return {
+    'Content-Type': 'application/json',
+    ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
+  };
+}
+
 /**
  * Search for NFL players by name
  */
@@ -105,11 +113,7 @@ export async function searchNFLPlayers(query: string, perPage = 25): Promise<Sea
 
   const response = await fetch(
     `${EDGE_FUNCTION_URL}?action=search&query=${encodeURIComponent(query)}&per_page=${perPage}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
+    { headers: await getAuthHeaders() }
   );
 
   if (!response.ok) {
@@ -125,11 +129,7 @@ export async function searchNFLPlayers(query: string, perPage = 25): Promise<Sea
 export async function getNFLPlayer(playerId: number | string): Promise<NFLPlayer | null> {
   const response = await fetch(
     `${EDGE_FUNCTION_URL}?action=player&id=${playerId}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
+    { headers: await getAuthHeaders() }
   );
 
   if (!response.ok) {
@@ -149,11 +149,7 @@ export async function getNFLPlayer(playerId: number | string): Promise<NFLPlayer
 export async function getNFLPlayerStats(playerId: number | string, season = 2024): Promise<NFLPlayerStats | null> {
   const response = await fetch(
     `${EDGE_FUNCTION_URL}?action=stats&player_id=${playerId}&season=${season}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
+    { headers: await getAuthHeaders() }
   );
 
   if (!response.ok) {
@@ -176,11 +172,7 @@ export async function getNFLPlayerGameLogs(
 ): Promise<NFLGameLogEntry[]> {
   const response = await fetch(
     `${EDGE_FUNCTION_URL}?action=game_logs&player_id=${playerId}&season=${season}&per_page=${perPage}`,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
+    { headers: await getAuthHeaders() }
   );
 
   if (!response.ok) {

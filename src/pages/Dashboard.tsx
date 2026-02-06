@@ -18,6 +18,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isPreviewingAsUser, setIsPreviewingAsUser] = useState(false);
   const { role, isAdmin, loading: roleLoading } = useUserRole(user);
+  const isMobile = useIsMobile();
 
   const handleTogglePreview = useCallback(() => {
     setIsPreviewingAsUser(prev => {
@@ -80,7 +81,6 @@ const Dashboard = () => {
 
   // Compute effective admin status (real admin AND not previewing)
   const effectiveIsAdmin = isAdmin && !isPreviewingAsUser;
-  const isMobile = useIsMobile();
 
   return (
     <SidebarProvider>

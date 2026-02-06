@@ -85,7 +85,7 @@ export function generateFollowUpSuggestions(query: string, response: string): Su
   const context = buildQueryContext(query);
   
   // Get sport-specific suggestions
-  let suggestions = getSportSpecificSuggestions(context);
+  const suggestions = getSportSpecificSuggestions(context);
   
   // Filter out suggestions too similar to the original query
   const lowerQuery = query.toLowerCase();
