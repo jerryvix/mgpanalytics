@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 // ESPN Team ID mapping
@@ -225,46 +225,52 @@ Deno.serve(async (req) => {
       throw new Error("Supabase configuration missing");
     }
 
-    // Authenticate user - require admin role
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized - no token provided" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const { data: { user }, error: userError } = await authClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized - invalid token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const userId = user.id;
-
-    // Check admin role using service client
+    // Service client for database operations (used by both auth paths)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: roleData, error: roleError } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .single();
+    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    const cronSecret = req.headers.get("x-cron-secret");
+    if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
+      console.log(`[sync-nba-players] Authenticated via cron secret`);
+    } else {
+      // Authenticate user - require admin role
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Unauthorized - no token provided" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
 
-    if (roleError || roleData?.role !== "admin") {
-      return new Response(
-        JSON.stringify({ success: false, error: "Forbidden - admin access required" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: { user }, error: userError } = await authClient.auth.getUser();
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Unauthorized - invalid token" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const userId = user.id;
+
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .single();
+
+      if (roleError || roleData?.role !== "admin") {
+        return new Response(
+          JSON.stringify({ success: false, error: "Forbidden - admin access required" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`[sync-nba-players] Admin user ${userId} authenticated, starting NBA players sync using ESPN API...`);
     }
-
-    console.log(`[sync-nba-players] Admin user ${userId} authenticated, starting NBA players sync using ESPN API...`);
 
     // Step 1: Get NBA games in slate window (NOW → +48h)
     const now = new Date();

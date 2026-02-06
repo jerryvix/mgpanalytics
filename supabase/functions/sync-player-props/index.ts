@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 const ODDS_API_BASE = "https://api.the-odds-api.com/v4/sports";
@@ -75,55 +75,62 @@ serve(async (req) => {
       );
     }
 
-    // Authenticate user - require admin role
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized - no token" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
-    });
-
-    const {
-      data: { user },
-      error: userError,
-    } = await authClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Unauthorized - invalid token" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
+    // Service client for database operations (used by both auth paths)
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: roleData, error: roleError } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
+    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    const cronSecret = req.headers.get("x-cron-secret");
+    if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
+      console.log(`[sync-player-props] Authenticated via cron secret`);
+    } else {
+      // Authenticate user - require admin role
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader?.startsWith("Bearer ")) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Unauthorized - no token" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
 
-    if (roleError || roleData?.role !== "admin") {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Forbidden - admin access required",
-        }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const {
+        data: { user },
+        error: userError,
+      } = await authClient.auth.getUser();
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Unauthorized - invalid token" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const { data: roleData, error: roleError } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (roleError || roleData?.role !== "admin") {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Forbidden - admin access required",
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     // Parse optional request body for sport filter
@@ -140,7 +147,7 @@ serve(async (req) => {
       : Object.entries(SPORT_MARKETS);
 
     console.log(
-      `[sync-player-props] Admin ${user.id} starting props sync for: ${sportsToSync.map(([k]) => k).join(", ")}`
+      `[sync-player-props] Starting props sync for: ${sportsToSync.map(([k]) => k).join(", ")}`
     );
 
     let totalPropsAdded = 0;

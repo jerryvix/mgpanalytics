@@ -31,13 +31,14 @@ import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
 import { 
-  TheOddsApiCard, 
-  LineMovementDashboard, 
-  SteamMoveAlerts, 
+  TheOddsApiCard,
+  LineMovementDashboard,
+  SteamMoveAlerts,
   SportsDataManagement,
   PlayerSyncCard,
   PropsSyncCard,
-  NBASyncCard
+  NBASyncCard,
+  SyncScheduleDashboard
 } from "./admin";
 
 // Types for sync schedule
@@ -1092,6 +1093,11 @@ export function AdminPanel() {
         {/* Sports Data Management - Consolidated */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="md:col-span-2">
           <SportsDataManagement />
+        </motion.div>
+
+        {/* Automated Sync Schedule */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.105 }} className="md:col-span-2">
+          <SyncScheduleDashboard />
         </motion.div>
 
         {/* Player Sync */}
