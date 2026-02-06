@@ -9,8 +9,16 @@ import { ArrowLeft, User, Activity, Calendar, TrendingUp, Target, ExternalLink, 
 import { format } from "date-fns";
 
 export default function PlayerProfile() {
-  const { sport, playerId } = useParams<{ sport: string; playerId: string }>();
-  const sportUpper = sport?.toUpperCase() || "NFL";
+  const { playerId } = useParams<{ playerId: string }>();
+
+  // Derive sport from the URL path since the route doesn't have a :sport param
+  const pathname = window.location.pathname;
+  const sportFromPath = pathname.includes("/nba/") ? "nba"
+    : pathname.includes("/ncaab/") ? "ncaab"
+    : pathname.includes("/nfl/") ? "nfl"
+    : "nba";
+  const sport = sportFromPath;
+  const sportUpper = sport.toUpperCase();
 
   const { data: player, isLoading: playerLoading } = useQuery({
     queryKey: ["player", playerId],
@@ -183,7 +191,19 @@ export default function PlayerProfile() {
     );
   }
 
-  const seasonYear = sportUpper === "NBA" ? "2024-25" : "2024";
+  // Dynamic season label from the actual stats data
+  const seasonYear = stats?.season
+    ? (sportUpper === "NBA" || sportUpper === "NCAAB"
+        ? `${stats.season - 1}-${String(stats.season).slice(2)}`
+        : String(stats.season))
+    : (() => {
+        const now = new Date();
+        if (sportUpper === "NBA" || sportUpper === "NCAAB") {
+          const s = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+          return `${s - 1}-${String(s).slice(2)}`;
+        }
+        return String(now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1);
+      })();
 
   return (
     <div className="space-y-6">
