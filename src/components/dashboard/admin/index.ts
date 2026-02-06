@@ -9,3 +9,4 @@ export { SportsDataManagement } from "./SportsDataManagement";
 export { PlayerSyncCard } from "./PlayerSyncCard";
 export { PropsSyncCard } from "./PropsSyncCard";
 export { NBASyncCard } from "./NBASyncCard";
+export { SyncScheduleDashboard } from "./SyncScheduleDashboard";
