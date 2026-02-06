@@ -1102,11 +1102,14 @@ export type Database = {
       }
       player_props: {
         Row: {
+          actual_value: number | null
           created_at: string | null
           external_game_id: string | null
           external_player_id: string | null
           game_date: string | null
           game_id: string | null
+          graded: boolean | null
+          graded_at: string | null
           id: string
           is_active: boolean | null
           line: number
@@ -1114,17 +1117,21 @@ export type Database = {
           over_odds: number | null
           player_id: string | null
           prop_type: string
+          result: string | null
           sport: string
           sportsbook: string
           under_odds: number | null
           updated_at: string | null
         }
         Insert: {
+          actual_value?: number | null
           created_at?: string | null
           external_game_id?: string | null
           external_player_id?: string | null
           game_date?: string | null
           game_id?: string | null
+          graded?: boolean | null
+          graded_at?: string | null
           id?: string
           is_active?: boolean | null
           line: number
@@ -1132,17 +1139,21 @@ export type Database = {
           over_odds?: number | null
           player_id?: string | null
           prop_type: string
+          result?: string | null
           sport?: string
           sportsbook: string
           under_odds?: number | null
           updated_at?: string | null
         }
         Update: {
+          actual_value?: number | null
           created_at?: string | null
           external_game_id?: string | null
           external_player_id?: string | null
           game_date?: string | null
           game_id?: string | null
+          graded?: boolean | null
+          graded_at?: string | null
           id?: string
           is_active?: boolean | null
           line?: number
@@ -1150,6 +1161,7 @@ export type Database = {
           over_odds?: number | null
           player_id?: string | null
           prop_type?: string
+          result?: string | null
           sport?: string
           sportsbook?: string
           under_odds?: number | null
