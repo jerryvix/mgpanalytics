@@ -114,7 +114,6 @@ export function GamePropsPreview({ gameId, homeTeam, awayTeam }: GamePropsPrevie
         team: p.players.team_name,
       }));
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   if (isLoading) {

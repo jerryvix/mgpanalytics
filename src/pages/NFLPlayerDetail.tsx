@@ -29,7 +29,7 @@ export default function NFLPlayerDetail() {
       return getNFLPlayer(bdlId);
     },
     enabled: !!bdlId,
-    staleTime: 60000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -39,7 +39,7 @@ export default function NFLPlayerDetail() {
       return getNFLPlayerStats(bdlId, 2024);
     },
     enabled: !!bdlId,
-    staleTime: 60000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: gameLogs = [], isLoading: gameLogsLoading } = useQuery({
@@ -49,7 +49,7 @@ export default function NFLPlayerDetail() {
       return getNFLPlayerGameLogs(bdlId, 2024, 17);
     },
     enabled: !!bdlId,
-    staleTime: 60000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const isLoading = playerLoading;

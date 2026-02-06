@@ -94,6 +94,5 @@ export function useNFLSlateLeaders(options?: { enabled?: boolean }) {
     },
     enabled: options?.enabled ?? true,
     refetchInterval: 30 * 60 * 1000,
-    staleTime: 5 * 60 * 1000,
   });
 }
