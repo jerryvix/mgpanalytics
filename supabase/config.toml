@@ -3,9 +3,6 @@ project_id = "vwezujtftfccamoduglp"
 [functions.sync-nfl-games]
 verify_jwt = false
 
-[functions.sync-nfl-odds]
-verify_jwt = false
-
 [functions.sync-nba-odds]
 verify_jwt = false
 
@@ -22,6 +19,9 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.sync-odds-snapshot]
+verify_jwt = false
+
+[functions.sync-player-props]
 verify_jwt = false
 
 [functions.balldontlie]

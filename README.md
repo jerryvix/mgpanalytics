@@ -54,8 +54,9 @@ Sync functions are triggered by an admin user from the dashboard. The project in
 
 - Game syncing — `sync-nfl-games`, `sync-nba-games`, `sync-ncaab-games`, `sync-ncaaf-games`, `sync-mlb-games`
 - Player syncing — `sync-nfl-players`, `sync-nba-players`, `sync-ncaab-players`
-- Odds — `sync-nfl-odds`, `sync-nba-odds`, `sync-odds-snapshot`
-- Stats — `sync-nfl-season-stats`, `sync-nba-stats`, `sync-nba-game-logs`, `sync-nba-props`
+- Odds — `sync-nba-odds`, `sync-odds-snapshot`
+- Props — `sync-player-props` (The Odds API, NFL + NBA)
+- Stats — `sync-nfl-season-stats`, `sync-nba-stats`, `sync-nba-game-logs`
 - AI — `gemini-chat`, `analyst-query`
 - Utilities — `balldontlie`, `sportradar`, `search-nfl-players`, `nfl-slate-leaders`
 
