@@ -94,18 +94,26 @@ serve(async (req) => {
         // Search for players
         const query = url.searchParams.get('query') || '';
         const perPage = url.searchParams.get('per_page') || '25';
-        
+
         if (!query || query.length < 2) {
           return new Response(
             JSON.stringify({ data: [], meta: { total: 0 } }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        
-        result = await bdlFetch(apiKey, '/players', { 
+
+        result = await bdlFetch(apiKey, '/players', {
           search: query,
           per_page: parseInt(perPage)
         });
+
+        // Filter to bet-relevant positions only (skill positions)
+        const BET_RELEVANT = ['Quarterback', 'Running Back', 'Wide Receiver', 'Tight End', 'Fullback', 'QB', 'RB', 'WR', 'TE', 'FB'];
+        if (result?.data && Array.isArray(result.data)) {
+          result.data = result.data.filter((p: any) =>
+            BET_RELEVANT.includes(p.position || '')
+          );
+        }
         break;
       }
       

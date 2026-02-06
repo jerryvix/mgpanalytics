@@ -14,24 +14,26 @@ import { NFLAdvancedStats } from "@/components/players/NFLAdvancedStats";
 export default function NFLPlayerDetail() {
   const { playerId } = useParams<{ playerId: string }>();
 
-  // Extract numeric ID from "bdl-123" format (external_id in DB)
-  const externalId = playerId?.startsWith("bdl-") ? playerId.substring(4) : playerId;
+  // Support both ID formats: "bdl-123" (BDL external_id) or UUID (Supabase ID)
+  const isBdlId = playerId?.startsWith("bdl-");
+  const lookupId = isBdlId ? playerId!.substring(4) : playerId;
 
-  // Fetch player from DB by external_id
+  // Fetch player from DB — by external_id for BDL IDs, by id for UUIDs
   const { data: player, isLoading: playerLoading, error: playerError } = useQuery({
-    queryKey: ["nfl-player-db", externalId],
+    queryKey: ["nfl-player-db", lookupId, isBdlId],
     queryFn: async () => {
-      if (!externalId) return null;
-      const { data, error } = await supabase
-        .from("players")
-        .select("*")
-        .eq("external_id", externalId)
-        .eq("sport", "NFL")
-        .single();
+      if (!lookupId) return null;
+      let query = supabase.from("players").select("*").eq("sport", "NFL");
+      if (isBdlId) {
+        query = query.eq("external_id", lookupId);
+      } else {
+        query = query.eq("id", lookupId);
+      }
+      const { data, error } = await query.single();
       if (error) throw error;
       return data;
     },
-    enabled: !!externalId,
+    enabled: !!lookupId,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -110,7 +112,7 @@ export default function NFLPlayerDetail() {
     }
   };
 
-  if (!externalId) {
+  if (!lookupId) {
     return (
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold text-foreground">Invalid player ID</h2>
@@ -138,9 +140,10 @@ export default function NFLPlayerDetail() {
   if (playerError || !player) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-foreground">Player not found</h2>
-        <p className="text-muted-foreground mt-2">
-          This player hasn't been synced yet or doesn't exist.
+        <h2 className="text-xl font-semibold text-foreground">No Betting Markets Available</h2>
+        <p className="text-muted-foreground mt-2 max-w-md mx-auto">
+          This player does not have betting-relevant markets in MGP.
+          Only skill-position players (QB, RB, WR, TE) are supported.
         </p>
         <Link to="/dashboard/nfl/players">
           <Button variant="outline" className="mt-4">

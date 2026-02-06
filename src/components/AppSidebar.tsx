@@ -93,8 +93,8 @@ const sportsMenuItems = [
 
 // Community menu items
 const communityMenuItems = [
-  { title: "Feed", url: "/community/feed", icon: Newspaper },
-  { title: "Cappers", url: "/community/cappers", icon: Users },
+  { title: "Feed", url: "/dashboard/community/feed", icon: Newspaper },
+  { title: "Cappers", url: "/dashboard/community/cappers", icon: Users },
 ];
 
 const adminMenuItem = {

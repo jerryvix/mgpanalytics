@@ -16,6 +16,6 @@ CREATE INDEX IF NOT EXISTS idx_player_props_results
   WHERE graded = true;
 
 -- Add grade_props to sync schedule so dispatch-syncs runs it automatically
-INSERT INTO sync_schedule (sport, data_type, cron_interval, is_enabled, endpoint_url)
-VALUES ('ALL', 'grade_props', '6h', true, '/functions/v1/grade-player-props')
+INSERT INTO sync_schedule (sport, data_type, cron_interval, is_enabled)
+VALUES ('ALL', 'grade_props', '6h', true)
 ON CONFLICT (sport, data_type) DO NOTHING;

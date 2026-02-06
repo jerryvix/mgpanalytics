@@ -65,7 +65,7 @@ export default function NBAPlayers() {
         .select("player_id, points_per_game, rebounds_per_game, assists_per_game, minutes_per_game, games_played")
         .in("player_id", playerIds)
         .eq("sport", "NBA")
-        .eq("season", 2025);
+        .eq("season", new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear());
 
       // Create stats lookup map
       const statsMap = new Map<string, {
