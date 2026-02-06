@@ -190,7 +190,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
         <div className="flex items-center gap-3">
           <SidebarTrigger className="text-sidebar-foreground hover:text-terminal-green hover:bg-sidebar-accent" />
           {!collapsed && (
-            <div className="flex items-center gap-2">
+            <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-7 h-7 rounded bg-primary/20 flex items-center justify-center">
                 <Activity className="w-3.5 h-3.5 text-terminal-green" />
               </div>
@@ -202,7 +202,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                   Analytics
                 </p>
               </div>
-            </div>
+            </Link>
           )}
         </div>
       </SidebarHeader>
