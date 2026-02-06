@@ -134,10 +134,16 @@ serve(async (req) => {
 
     console.log(`Found ${players?.length || 0} NBA players to sync game logs for`);
 
-    // Build date range
+    // Dynamic season calculation
+    const nowDate = new Date();
+    const bdlSeason = nowDate.getMonth() >= 9 ? nowDate.getFullYear() : nowDate.getFullYear() - 1;
+    const dbSeason = bdlSeason + 1;
+    console.log(`[sync-nba-game-logs] Season: BDL=${bdlSeason}, DB=${dbSeason}`);
+
+    // Build date range — NBA seasons typically start in late October
     const endDate = new Date();
-    const startDate = fullSeason 
-      ? new Date("2024-10-22") // 2024-25 NBA season start
+    const startDate = fullSeason
+      ? new Date(`${bdlSeason}-10-22`)
       : new Date(endDate.getTime() - syncDays * 24 * 60 * 60 * 1000);
     
     const startDateStr = startDate.toISOString().split("T")[0];
@@ -247,7 +253,7 @@ serve(async (req) => {
           gameLogsToInsert.push({
             player_id: playerId,
             sport: "NBA",
-            season: 2025, // 2024-25 season stored as 2025
+            season: dbSeason,
             game_id: `bdl_nba_game_${stat.game.id}`,
             game_date: gameDate,
             opponent_abbr: opponentAbbr,

@@ -145,13 +145,19 @@ async function findPlayer(name: string): Promise<Player | null> {
   return player;
 }
 
+// NFL uses start-year convention in DB (2025 = 2025-26 season)
+function getCurrentNflSeason(): number {
+  const now = new Date();
+  return now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1; // NFL starts in September (month 8)
+}
+
 async function getPlayerStats(playerId: string): Promise<PlayerSeasonStats | null> {
   const { data, error } = await supabase
     .from("player_season_stats")
     .select("*")
     .eq("player_id", playerId)
     .eq("sport", "NFL")
-    .eq("season", 2024)
+    .eq("season", getCurrentNflSeason())
     .single();
 
   if (error || !data) return null;
@@ -164,7 +170,7 @@ async function getPlayerGameLogs(playerId: string): Promise<GameLog[]> {
     .select("*")
     .eq("player_id", playerId)
     .eq("sport", "NFL")
-    .eq("season", 2024)
+    .eq("season", getCurrentNflSeason())
     .order("game_date", { ascending: false })
     .limit(17);
 

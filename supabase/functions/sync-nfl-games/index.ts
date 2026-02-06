@@ -155,9 +155,14 @@ Deno.serve(async (req) => {
       console.log(`Admin user ${userId} authenticated, proceeding with sync...`);
     }
 
+    // Dynamic season: NFL BDL uses end-year (2025 = 2024-25 season)
+    const now = new Date();
+    const nflDbSeason = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
+    console.log(`[sync-nfl-games] Season: ${nflDbSeason}`);
+
     // ===== STEP 1: Fetch games from BallDontLie =====
     const gamesParams = new URLSearchParams({
-      "seasons[]": "2025",
+      "seasons[]": String(nflDbSeason),
       "postseason": "true",
     });
 
@@ -197,7 +202,7 @@ Deno.serve(async (req) => {
     const gamesToUpsert = gamesData.data.map((game) => ({
       id: game.id,
       league: "NFL",
-      season: 2025,
+      season: nflDbSeason,
       week: game.week || null,
       date: game.date,
       status: game.status,

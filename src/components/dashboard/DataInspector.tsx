@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, Loader2, Database, Activity, Clock, AlertTriangle } from "lucide-react";
+import { Search, Loader2, Database, Activity, Clock, AlertTriangle, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SyncStatus {
@@ -23,6 +23,16 @@ interface DataCoverage {
   odds: number;
   props: number;
   provider: string;
+}
+
+interface PageHealthCheck {
+  page: string;
+  season: number;
+  playersWithStats: number;
+  totalGames: number;
+  prevSeasonStats: number;
+  status: "ok" | "warning" | "error";
+  message: string;
 }
 
 function timeAgo(dateStr: string | null): string {
@@ -54,6 +64,7 @@ export function DataInspector() {
   const [syncStatuses, setSyncStatuses] = useState<SyncStatus[] | null>(null);
   const [coverage, setCoverage] = useState<DataCoverage[] | null>(null);
   const [hasRun, setHasRun] = useState(false);
+  const [pageHealth, setPageHealth] = useState<PageHealthCheck[] | null>(null);
 
   const runDiagnostics = async () => {
     setIsLoading(true);
@@ -113,6 +124,86 @@ export function DataInspector() {
       }
 
       setCoverage(coverageData);
+
+      // 3. Page Health — simulate user-facing queries
+      const pageChecks: PageHealthCheck[] = [];
+      const now = new Date();
+      const currentDbSeason = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
+
+      // NBA Players page check
+      const { count: nbaStatsCount } = await supabase
+        .from("player_season_stats")
+        .select("id", { count: "exact", head: true })
+        .eq("sport", "NBA")
+        .eq("season", currentDbSeason);
+
+      const { count: nbaPrevStatsCount } = await supabase
+        .from("player_season_stats")
+        .select("id", { count: "exact", head: true })
+        .eq("sport", "NBA")
+        .eq("season", currentDbSeason - 1);
+
+      const { count: nbaGamesCount } = await supabase
+        .from("nba_games")
+        .select("id", { count: "exact", head: true });
+
+      const nbaStats = nbaStatsCount || 0;
+      const nbaPrev = nbaPrevStatsCount || 0;
+      const nbaGames = nbaGamesCount || 0;
+
+      let nbaStatus: "ok" | "warning" | "error" = "ok";
+      let nbaMsg = `${nbaStats} players with season ${currentDbSeason} stats`;
+      if (nbaStats === 0 && nbaGames > 0) {
+        nbaStatus = "error";
+        nbaMsg = `${nbaGames} games exist but 0 players matched season ${currentDbSeason} — likely season mismatch`;
+      } else if (nbaStats === 0) {
+        nbaStatus = "warning";
+        nbaMsg = `No stats for season ${currentDbSeason}. Previous season (${currentDbSeason - 1}): ${nbaPrev} players`;
+      }
+
+      pageChecks.push({
+        page: "NBA Players",
+        season: currentDbSeason,
+        playersWithStats: nbaStats,
+        totalGames: nbaGames,
+        prevSeasonStats: nbaPrev,
+        status: nbaStatus,
+        message: nbaMsg,
+      });
+
+      // NFL Players page check
+      const nflSeason = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+      const { count: nflStatsCount } = await supabase
+        .from("player_season_stats")
+        .select("id", { count: "exact", head: true })
+        .eq("sport", "NFL")
+        .eq("season", nflSeason);
+
+      const { count: nflPrevStatsCount } = await supabase
+        .from("player_season_stats")
+        .select("id", { count: "exact", head: true })
+        .eq("sport", "NFL")
+        .eq("season", nflSeason - 1);
+
+      const nflStats = nflStatsCount || 0;
+      const nflPrev = nflPrevStatsCount || 0;
+
+      const nflStatus: "ok" | "warning" | "error" = nflStats > 0 ? "ok" : "warning";
+      const nflMsg = nflStats > 0
+        ? `${nflStats} players with season ${nflSeason} stats`
+        : `No stats for season ${nflSeason}. Previous (${nflSeason - 1}): ${nflPrev} players`;
+
+      pageChecks.push({
+        page: "NFL Players",
+        season: nflSeason,
+        playersWithStats: nflStats,
+        totalGames: 0,
+        prevSeasonStats: nflPrev,
+        status: nflStatus,
+        message: nflMsg,
+      });
+
+      setPageHealth(pageChecks);
     } catch (error) {
       console.error("Diagnostics error:", error);
     } finally {
@@ -184,6 +275,44 @@ export function DataInspector() {
                       {s.sport}:{s.data_type} — stale ({timeAgo(s.last_sync_at)})
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Page Health */}
+              {pageHealth && pageHealth.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-3 h-3 text-terminal-cyan" />
+                    <span className="font-mono text-xs text-muted-foreground">Page Health (User View)</span>
+                  </div>
+                  <div className="space-y-1">
+                    {pageHealth.map(ph => (
+                      <div
+                        key={ph.page}
+                        className={`flex items-center justify-between rounded px-2 py-1.5 font-mono text-[10px] ${
+                          ph.status === "error" ? "bg-destructive/10 border border-destructive/30" :
+                          ph.status === "warning" ? "bg-terminal-amber/10 border border-terminal-amber/30" :
+                          "bg-muted/20"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {ph.status === "error" && <AlertTriangle className="w-3 h-3 text-destructive" />}
+                          {ph.status === "warning" && <AlertTriangle className="w-3 h-3 text-terminal-amber" />}
+                          <span className="text-foreground">{ph.page}</span>
+                          <span className="text-muted-foreground">s{ph.season}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={
+                            ph.status === "error" ? "text-destructive" :
+                            ph.status === "warning" ? "text-terminal-amber" :
+                            "text-terminal-green"
+                          }>
+                            {ph.message}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

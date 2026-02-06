@@ -201,13 +201,15 @@ export async function handleNbaPropsQuery(query: string): Promise<string | null>
       return `I encountered an error looking up props for ${player.name}.`;
     }
 
-    // Fetch season averages
+    // Fetch season averages (dynamic season: end-year convention)
+    const now = new Date();
+    const dbSeason = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
     const { data: stats } = await supabase
       .from("player_season_stats")
       .select("points_per_game, rebounds_per_game, assists_per_game")
       .eq("player_id", player.id)
       .eq("sport", "NBA")
-      .eq("season", 2025)
+      .eq("season", dbSeason)
       .single();
 
     if (!props?.length) {
