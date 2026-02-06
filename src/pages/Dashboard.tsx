@@ -5,8 +5,10 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { DashboardContent } from "@/components/DashboardContent";
 import { ChatPanel } from "@/components/chatbot";
+import { BottomNav } from "@/components/ui/BottomNav";
 import { User } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 const Dashboard = () => {
@@ -78,20 +80,27 @@ const Dashboard = () => {
 
   // Compute effective admin status (real admin AND not previewing)
   const effectiveIsAdmin = isAdmin && !isPreviewingAsUser;
+  const isMobile = useIsMobile();
 
   return (
     <SidebarProvider>
       <div className="h-screen flex w-full bg-background overflow-hidden">
-        <AppSidebar 
-          user={user} 
-          isAdmin={isAdmin} 
-          isPreviewingAsUser={isPreviewingAsUser}
-          onTogglePreview={handleTogglePreview}
-        />
+        {/* Sidebar hidden on mobile — BottomNav replaces it */}
+        {!isMobile && (
+          <AppSidebar
+            user={user}
+            isAdmin={isAdmin}
+            isPreviewingAsUser={isPreviewingAsUser}
+            onTogglePreview={handleTogglePreview}
+          />
+        )}
         <main className="flex-1 overflow-auto">
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
+        {/* ChatPanel: docked on desktop, full-screen overlay on mobile */}
         <ChatPanel />
+        {/* Bottom nav replaces sidebar on mobile */}
+        {isMobile && <BottomNav />}
       </div>
     </SidebarProvider>
   );

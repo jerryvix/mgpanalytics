@@ -76,12 +76,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     refreshConversations();
   }, [refreshConversations]);
 
-  // Set initial state after mount - always default to open (tablet/desktop behavior)
+  // Set initial state after mount - default to open on desktop, closed on mobile
   useEffect(() => {
     if (!mounted) {
       const stored = localStorage.getItem(CHAT_OPEN_KEY);
       if (stored === null) {
-        setIsOpen(true);
+        const isMobileWidth = window.innerWidth < 768;
+        setIsOpen(!isMobileWidth);
       }
       setMounted(true);
     }

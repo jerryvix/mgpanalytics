@@ -18,6 +18,7 @@ import {
 import { FeedPage } from "./pages/community";
 import NotFound from "./pages/NotFound";
 import { ChatProvider } from "./contexts/ChatContext";
+import { MobileLayout } from "./components/MobileLayout";
 
 const queryClient = new QueryClient();
 
@@ -40,16 +41,16 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
-            {/* Community Routes */}
-            <Route path="/community/feed" element={<FeedPage />} />
-            <Route path="/community/cappers" element={<CappersDirectory />} />
-            <Route path="/community/cappers/sharps" element={<SharpsPage />} />
-            <Route path="/community/cappers/analysts" element={<AnalystsPage />} />
-            <Route path="/community/cappers/props" element={<PropsPage />} />
-            <Route path="/community/cappers/pop-culture" element={<PopCulturePage />} />
-            <Route path="/community/cappers/media" element={<MediaPage />} />
-            <Route path="/community/cappers/insiders" element={<InsidersPage />} />
-            <Route path="/community/cappers/:username" element={<CapperProfilePage />} />
+            {/* Community Routes — wrapped in MobileLayout for bottom nav */}
+            <Route path="/community/feed" element={<MobileLayout><FeedPage /></MobileLayout>} />
+            <Route path="/community/cappers" element={<MobileLayout><CappersDirectory /></MobileLayout>} />
+            <Route path="/community/cappers/sharps" element={<MobileLayout><SharpsPage /></MobileLayout>} />
+            <Route path="/community/cappers/analysts" element={<MobileLayout><AnalystsPage /></MobileLayout>} />
+            <Route path="/community/cappers/props" element={<MobileLayout><PropsPage /></MobileLayout>} />
+            <Route path="/community/cappers/pop-culture" element={<MobileLayout><PopCulturePage /></MobileLayout>} />
+            <Route path="/community/cappers/media" element={<MobileLayout><MediaPage /></MobileLayout>} />
+            <Route path="/community/cappers/insiders" element={<MobileLayout><InsidersPage /></MobileLayout>} />
+            <Route path="/community/cappers/:username" element={<MobileLayout><CapperProfilePage /></MobileLayout>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

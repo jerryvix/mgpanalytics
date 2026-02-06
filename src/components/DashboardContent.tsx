@@ -18,7 +18,7 @@ interface DashboardContentProps {
 
 export function DashboardContent({ isAdmin }: DashboardContentProps) {
   return (
-    <div className="p-6">
+    <div className="p-4 pb-20 md:p-6 md:pb-6">
       <Routes>
         <Route index element={<DashboardHome />} />
         <Route path="analyst" element={<Analyst />} />
