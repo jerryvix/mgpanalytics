@@ -54,12 +54,19 @@ Deno.serve(async (req) => {
       throw new Error("CRON_SECRET not configured");
     }
 
-    // Auth: accept either x-cron-secret header or Authorization Bearer with cron secret
+    // Auth: accept cron secret, service role key (Bearer or apikey header)
     const cronSecret = req.headers.get("x-cron-secret");
     const authHeader = req.headers.get("Authorization");
     const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const apikeyHeader = req.headers.get("apikey");
 
-    if (cronSecret !== CRON_SECRET && bearerToken !== CRON_SECRET) {
+    const isAuthed =
+      cronSecret === CRON_SECRET ||
+      bearerToken === CRON_SECRET ||
+      bearerToken === SUPABASE_SERVICE_ROLE_KEY ||
+      apikeyHeader === SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!isAuthed) {
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
