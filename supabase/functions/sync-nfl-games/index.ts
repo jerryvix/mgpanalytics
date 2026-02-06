@@ -187,21 +187,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Delete existing 2025 postseason games to avoid duplicates
-    const { error: deleteGamesError } = await supabase
-      .from("games")
-      .delete()
-      .eq("league", "NFL")
-      .eq("season", 2025)
-      .eq("postseason", true);
-
-    if (deleteGamesError) {
-      console.error("Delete games error:", deleteGamesError);
-    } else {
-      console.log("Cleared existing NFL postseason games");
-    }
-
-    // Transform and upsert games
+    // Transform and upsert games (UPSERT handles duplicates via onConflict)
     const gamesToUpsert = gamesData.data.map((game) => ({
       id: game.id,
       league: "NFL",
@@ -262,21 +248,7 @@ Deno.serve(async (req) => {
       // Get game IDs to delete odds for
       const gameIds = gamesToUpsert.map(g => g.id);
       
-      // Delete existing odds for these games
-      if (gameIds.length > 0) {
-        const { error: deleteOddsError } = await supabase
-          .from("odds")
-          .delete()
-          .in("game_id", gameIds);
-
-        if (deleteOddsError) {
-          console.error("Delete odds error:", deleteOddsError);
-        } else {
-          console.log("Cleared existing odds for synced games");
-        }
-      }
-
-      // Process and insert odds
+      // Process and upsert odds (onConflict handles updates, preserves history)
       const oddsToInsert: {
         game_id: number;
         sportsbook: string;
