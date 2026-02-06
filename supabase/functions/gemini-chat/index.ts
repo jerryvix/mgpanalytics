@@ -15,7 +15,7 @@ const SYSTEM_INSTRUCTION = `You are the MGP Analyst, a sports analytics assistan
 CRITICAL RULES - ZERO HALLUCINATION MODE
 ═══════════════════════════════════════════════════════════
 
-1. ONLY USE DATA PROVIDED: You can ONLY reference data that appears in the [MGP DATA] section below. If information is not in that section, you MUST say "I don't have that data synced in MGP yet."
+1. ONLY USE DATA PROVIDED: You can ONLY reference data that appears in the [MGP DATA] section below. If information is not in that section, you MUST say "That information isn't available right now" and suggest what you CAN help with (schedules, odds, player stats, injury reports).
 
 2. NEVER INVENT DATA: Do not make up statistics, odds, lines, scores, or any numerical data. If you're uncertain, say so.
 
@@ -24,7 +24,7 @@ CRITICAL RULES - ZERO HALLUCINATION MODE
 4. NO PREDICTIONS: Never predict outcomes or recommend bets. Show data only.
 
 5. HANDLE MISSING DATA GRACEFULLY:
-   - If no data is provided: "I don't have that data in MGP yet."
+   - If no data is provided: "That information isn't available right now."
    - If partial data: Share what you have and note what's missing.
 
 6. STRICT ODDS RULES:
@@ -51,10 +51,21 @@ TOTALS: "O/U 229.5"
 PROPS: "Josh Allen O/U 275.5 passing yards"
 
 ═══════════════════════════════════════════════════════════
+STRICT DATA INTEGRITY
+═══════════════════════════════════════════════════════════
+
+If the [MGP DATA] section does not contain the answer to the user's question:
+- Respond ONLY with: "That information isn't available right now."
+- NEVER estimate, extrapolate, interpolate, or use your training knowledge for stats, scores, odds, or results
+- NEVER fill in gaps with plausible-sounding numbers
+- It is better to say nothing than to risk providing incorrect data
+
+═══════════════════════════════════════════════════════════
 PROHIBITED PHRASES
 ═══════════════════════════════════════════════════════════
 
 NEVER SAY: "will", "should", "likely", "probably", "expect", "predict", "I think", "chances are", "confident that"
+NEVER SAY: "synced", "sync", "admin panel", "backend", "database", "edge function", "API call"
 
 ALWAYS SAY: "The data shows...", "According to MGP...", "Based on the numbers..."`;
 
@@ -231,7 +242,7 @@ async function fetchRelevantData(
 
 function formatDataForPrompt(data: FetchedData, sources: SourceRef[]): string {
   if (Object.keys(data).length === 0 || Object.values(data).every(v => !v?.length)) {
-    return "\n[MGP DATA]\nNo data currently synced for this query.\n";
+    return "\n[MGP DATA]\nNo data available for this query.\n";
   }
 
   let prompt = "\n[MGP DATA]\n";
@@ -372,10 +383,11 @@ CURRENT SPORTS SEASONS:
 
 ${dataPrompt}
 
-REMEMBER: Only use the data above. If information is missing, say "I don't have that data in MGP yet."`;
+REMEMBER: Only use the data above. If information is missing, say "That information isn't available right now" and suggest what data you DO have.`;
 
-    // Build conversation for Gemini
-    const contents = messages.map((msg) => ({
+    // Build conversation for Gemini — trim to last 10 messages to prevent context overflow
+    const recentMessages = messages.length > 10 ? messages.slice(-10) : messages;
+    const contents = recentMessages.map((msg) => ({
       role: msg.role === "assistant" ? "model" : "user",
       parts: [{ text: msg.content }],
     }));
@@ -394,7 +406,7 @@ REMEMBER: Only use the data above. If information is missing, say "I don't have 
           ...(webSearchEnabled ? { tools: [{ googleSearch: {} }] } : {}),
           generationConfig: {
             temperature: 0.4, // Lower temperature for more factual
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
           },
         }),
       }
@@ -418,8 +430,15 @@ REMEMBER: Only use the data above. If information is missing, say "I don't have 
     }
 
     const data = await response.json();
-    const textContent = data.candidates?.[0]?.content?.parts?.find((part: { text?: string }) => part.text);
-    const responseText = textContent?.text || "I couldn't generate a response. Please try again.";
+    const candidate = data.candidates?.[0];
+    const textContent = candidate?.content?.parts?.find((part: { text?: string }) => part.text);
+    let responseText = textContent?.text || "I couldn't generate a response. Please try again.";
+
+    // Detect truncated responses
+    if (candidate?.finishReason === "MAX_TOKENS") {
+      console.warn("[gemini-chat] Response truncated due to MAX_TOKENS");
+      responseText += "\n\n*Response was trimmed for length. Try asking a more specific question.*";
+    }
 
     // Build sources array from our fetched data + any Google search grounding
     const responseSources: { title: string; url: string }[] = [];
