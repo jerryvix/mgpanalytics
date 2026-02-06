@@ -220,8 +220,16 @@ Deno.serve(async (req) => {
 
     console.log(`[Sync NFL Players] Fetched ${players.length} players from API`);
 
-    // Step 3: Transform and upsert players into database
-    const playersToUpsert = players.map((player: NFLPlayer) => ({
+    // Step 3: Filter to bet-relevant skill positions only
+    const SKILL_POSITIONS = ["Quarterback", "Running Back", "Wide Receiver", "Tight End", "Fullback",
+                             "QB", "RB", "WR", "TE", "FB"];
+    const filteredPlayers = players.filter((p: NFLPlayer) =>
+      SKILL_POSITIONS.includes(p.position || "")
+    );
+    console.log(`[Sync NFL Players] Filtered to ${filteredPlayers.length} skill-position players (from ${players.length} total)`);
+
+    // Step 4: Transform and upsert players into database
+    const playersToUpsert = filteredPlayers.map((player: NFLPlayer) => ({
       external_id: String(player.id),
       sport: "NFL",
       name: `${player.first_name || ""} ${player.last_name || ""}`.trim(),
@@ -237,6 +245,7 @@ Deno.serve(async (req) => {
       college: player.college || null,
       experience: player.years_exp || null,
       status: "active",
+      last_active_season: new Date().getFullYear(),
       updated_at: new Date().toISOString(),
     }));
 

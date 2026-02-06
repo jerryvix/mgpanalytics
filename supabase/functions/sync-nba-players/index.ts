@@ -354,15 +354,19 @@ Deno.serve(async (req) => {
       // Sort by MPG for featured calculation
       playersData.sort((a, b) => b.mpg - a.mpg);
 
+      // Filter to rotation players: top 10 by MPG, exclude deep bench (0 MPG)
+      const rotationPlayers = playersData.filter(p => p.mpg > 0).slice(0, 10);
+      console.log(`[sync-nba-players] Filtered to ${rotationPlayers.length} rotation players (from ${playersData.length} total, ${playersData.filter(p => p.mpg > 0).length} with MPG > 0)`);
+
       console.log(`[sync-nba-players] Step 4: Calculating featured players for ${teamName}`);
 
       const slateStart = now;
       const slateEnd = in48Hours;
       const teamGames = teamToGames[teamName] || [];
 
-      // Step 4: Upsert players
-      for (let i = 0; i < playersData.length; i++) {
-        const { entry, stats, mpg } = playersData[i];
+      // Step 4: Upsert rotation players only
+      for (let i = 0; i < rotationPlayers.length; i++) {
+        const { entry, stats, mpg } = rotationPlayers[i];
         const athlete = entry.athlete;
         
         // Check injury status from ESPN
@@ -406,6 +410,7 @@ Deno.serve(async (req) => {
           usage_rank: i + 1,
           usage_metric: mpg,
           raw_data: entry,
+          last_active_season: new Date().getFullYear(),
           updated_at: new Date().toISOString(),
         };
 
@@ -482,7 +487,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      console.log(`[sync-nba-players] Processed ${playersData.length} players for ${teamName}`);
+      console.log(`[sync-nba-players] Processed ${rotationPlayers.length} rotation players for ${teamName}`);
 
       // Rate limiting between teams
       await new Promise(resolve => setTimeout(resolve, 500));
