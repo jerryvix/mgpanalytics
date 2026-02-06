@@ -87,6 +87,7 @@ interface SourceRef {
 
 interface FetchedData {
   games?: unknown[];
+  results?: unknown[];
   odds?: unknown[];
   players?: unknown[];
   injuries?: unknown[];
@@ -108,6 +109,7 @@ function detectLeague(message: string): string {
 function detectIntent(message: string): string {
   const m = message.toLowerCase();
   if (/\b(odds|line|spread|total|over|under|moneyline|ml|ats|point spread)\b/.test(m)) return "odds";
+  if (/\b(who won|final score|result|score of|did .+ (win|lose|cover|beat)|last night|yesterday|recap|box score)\b/.test(m)) return "results";
   if (/\b(game|schedule|when|playing|tonight|today|upcoming|matchup)\b/.test(m)) return "games";
   if (/\b(player|stats?|average|scoring|points|yards|rushing|passing|receiving)\b/.test(m)) return "player_stats";
   if (/\b(injur|out|questionable|doubtful|status|health)\b/.test(m)) return "injuries";
@@ -154,6 +156,32 @@ async function fetchRelevantData(
     }
   } catch (e) {
     console.error("Error fetching games:", e);
+  }
+
+  // Fetch completed game results if relevant (last 7 days)
+  if (intent === "results" || intent === "general") {
+    try {
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const { data: results } = await supabase
+        .from(gameTable)
+        .select("*")
+        .eq("is_final", true)
+        .gte("date", sevenDaysAgo.toISOString())
+        .order("date", { ascending: false })
+        .limit(15);
+
+      if (results?.length) {
+        fetchedData.results = results;
+        sources.push({
+          provider: "mgp_database",
+          endpoint: `${league}/results`,
+          fetched_at: now.toISOString(),
+          ids: {},
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching results:", e);
+    }
   }
 
   // Fetch odds if relevant
@@ -254,6 +282,18 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[]): string {
         weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York"
       });
       prompt += `• ${g.visitor_team_name} @ ${g.home_team_name} - ${date} ET\n`;
+    });
+  }
+
+  if (data.results?.length) {
+    prompt += "\n🏆 RECENT RESULTS:\n";
+    data.results.slice(0, 10).forEach((g: any) => {
+      const date = new Date(g.date).toLocaleDateString("en-US", {
+        weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York"
+      });
+      const homeScore = g.home_score ?? "?";
+      const awayScore = g.away_score ?? "?";
+      prompt += `• ${date}: ${g.visitor_team_name} ${awayScore} @ ${g.home_team_name} ${homeScore} (FINAL)\n`;
     });
   }
 
