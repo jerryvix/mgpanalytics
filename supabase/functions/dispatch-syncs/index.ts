@@ -21,6 +21,7 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "MLB:games": "sync-mlb-games",
   "ALL:player_props": "sync-player-props",
   "ALL:odds_snapshot": "sync-odds-snapshot",
+  "ALL:grade_props": "grade-player-props",
 };
 
 // Parse interval string to milliseconds

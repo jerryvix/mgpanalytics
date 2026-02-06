@@ -206,64 +206,83 @@ serve(async (req) => {
 
     console.log(`Processing ${allSnapshots.length} total snapshot entries`);
 
-    // For each snapshot, get previous values and calculate movement
+    // Batch-fetch previous and opening lines to avoid O(n) individual queries
     const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
-    for (const snapshot of allSnapshots) {
+    // Build a lookup key for each snapshot
+    const snapshotKey = (s: { game_id: string; bookmaker: string; odds_type: string; team: string | null }) =>
+      `${s.game_id}|${s.bookmaker}|${s.odds_type}|${s.team || ""}`;
+
+    // Collect unique game_ids for batch query
+    const uniqueGameIds = [...new Set(allSnapshots.map((s) => s.game_id))];
+
+    // Batch-fetch all odds_history for these games (latest + oldest per combo)
+    const prevMap = new Map<string, { current_line: number | null; current_price: number | null; timestamp: string }>();
+    const openingMap = new Map<string, { current_line: number | null }>();
+
+    // Fetch in chunks of 50 game_ids to avoid query size limits
+    for (let i = 0; i < uniqueGameIds.length; i += 50) {
+      const gameIdBatch = uniqueGameIds.slice(i, i + 50);
+
       try {
-        // Get previous snapshot (most recent)
-        const { data: prevSnapshot } = await supabase
+        // Get all history rows for this batch of games, ordered by timestamp desc
+        const { data: historyRows } = await supabase
           .from("odds_history")
-          .select("current_line, current_price, timestamp")
-          .eq("game_id", snapshot.game_id)
-          .eq("bookmaker", snapshot.bookmaker)
-          .eq("odds_type", snapshot.odds_type)
-          .eq("team", snapshot.team)
-          .order("timestamp", { ascending: false })
-          .limit(1)
-          .single();
+          .select("game_id, bookmaker, odds_type, team, current_line, current_price, timestamp")
+          .in("game_id", gameIdBatch)
+          .order("timestamp", { ascending: false });
 
-        // Get opening line (oldest snapshot)
-        const { data: openingSnapshot } = await supabase
-          .from("odds_history")
-          .select("current_line")
-          .eq("game_id", snapshot.game_id)
-          .eq("bookmaker", snapshot.bookmaker)
-          .eq("odds_type", snapshot.odds_type)
-          .eq("team", snapshot.team)
-          .order("timestamp", { ascending: true })
-          .limit(1)
-          .single();
-
-        if (prevSnapshot) {
-          snapshot.previous_line = prevSnapshot.current_line;
-          snapshot.previous_price = prevSnapshot.current_price;
-
-          // Calculate movement
-          if (snapshot.current_line !== null && prevSnapshot.current_line !== null) {
-            const diff = snapshot.current_line - prevSnapshot.current_line;
-            if (Math.abs(diff) >= 1.5) {
-              // Check if it's a steam move (fast movement)
-              const prevTime = new Date(prevSnapshot.timestamp);
-              const isRecent = prevTime >= new Date(thirtyMinsAgo);
-              snapshot.line_movement = isRecent ? "steam" : (diff > 0 ? "up" : "down");
-            } else if (Math.abs(diff) >= 0.5) {
-              snapshot.line_movement = diff > 0 ? "up" : "down";
-            } else {
-              snapshot.line_movement = "neutral";
+        if (historyRows?.length) {
+          for (const row of historyRows) {
+            const key = snapshotKey(row);
+            // First occurrence (desc order) = most recent = previous
+            if (!prevMap.has(key)) {
+              prevMap.set(key, {
+                current_line: row.current_line,
+                current_price: row.current_price,
+                timestamp: row.timestamp,
+              });
             }
+            // Keep overwriting = last occurrence (desc order) = oldest = opening
+            openingMap.set(key, { current_line: row.current_line });
           }
         }
-
-        if (openingSnapshot) {
-          snapshot.opening_line = openingSnapshot.current_line;
-        } else {
-          // This is the opening line
-          snapshot.opening_line = snapshot.current_line;
-        }
       } catch (err) {
-        // Ignore errors for individual snapshots
+        console.error(`Error batch-fetching odds_history chunk ${i / 50 + 1}:`, err);
+      }
+    }
+
+    console.log(`Fetched history for ${prevMap.size} unique combos across ${uniqueGameIds.length} games`);
+
+    // Apply previous/opening values and calculate movement
+    for (const snapshot of allSnapshots) {
+      const key = snapshotKey(snapshot);
+      const prevSnapshot = prevMap.get(key);
+      const openingSnapshot = openingMap.get(key);
+
+      if (prevSnapshot) {
+        snapshot.previous_line = prevSnapshot.current_line;
+        snapshot.previous_price = prevSnapshot.current_price;
+
+        // Calculate movement
+        if (snapshot.current_line !== null && prevSnapshot.current_line !== null) {
+          const diff = snapshot.current_line - prevSnapshot.current_line;
+          if (Math.abs(diff) >= 1.5) {
+            const prevTime = new Date(prevSnapshot.timestamp);
+            const isRecent = prevTime >= new Date(thirtyMinsAgo);
+            snapshot.line_movement = isRecent ? "steam" : (diff > 0 ? "up" : "down");
+          } else if (Math.abs(diff) >= 0.5) {
+            snapshot.line_movement = diff > 0 ? "up" : "down";
+          } else {
+            snapshot.line_movement = "neutral";
+          }
+        }
+      }
+
+      if (openingSnapshot) {
+        snapshot.opening_line = openingSnapshot.current_line;
+      } else {
+        snapshot.opening_line = snapshot.current_line;
       }
     }
 

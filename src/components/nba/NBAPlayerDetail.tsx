@@ -89,7 +89,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
     enabled: !!playerId,
   });
 
-  // Fetch props for this player
+  // Fetch upcoming props for this player
   const { data: props = [] } = useQuery({
     queryKey: ["nba-player-props", playerId],
     queryFn: async () => {
@@ -101,6 +101,25 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
         .eq("sport", "NBA")
         .gte("game_date", today)
         .eq("is_active", true);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!playerId,
+  });
+
+  // Fetch graded prop results
+  const { data: propResults = [] } = useQuery({
+    queryKey: ["nba-player-prop-results", playerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("player_props")
+        .select("*")
+        .eq("player_id", playerId)
+        .eq("sport", "NBA")
+        .eq("graded", true)
+        .order("game_date", { ascending: false })
+        .limit(30);
 
       if (error) throw error;
       return data || [];
@@ -345,49 +364,181 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
 
         {/* Props */}
         <TabsContent value="props">
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Target className="w-5 h-5" />
-                Player Props
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <Target className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">Props Coming Soon</h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Player props will appear here when available for upcoming games.
-                  Sync props from the Admin Panel to populate this section.
-                </p>
-              </div>
+          <div className="space-y-4">
+            {/* Upcoming Props */}
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Upcoming Props
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {props.length > 0 ? (
+                  <div className="space-y-3">
+                    {Object.entries(
+                      props.reduce((acc: Record<string, typeof props>, p) => {
+                        if (!acc[p.prop_type]) acc[p.prop_type] = [];
+                        acc[p.prop_type].push(p);
+                        return acc;
+                      }, {})
+                    ).map(([propType, typeProps]) => {
+                      const primary = typeProps.find((p) => p.sportsbook === "draftkings") || typeProps[0];
+                      const label = {
+                        points: "Points", rebounds: "Rebounds", assists: "Assists",
+                        threes: "3-Pointers", blocks: "Blocks", steals: "Steals",
+                        turnovers: "Turnovers", "pts+reb+ast": "PTS+REB+AST",
+                        "pts+reb": "PTS+REB", "pts+ast": "PTS+AST", "reb+ast": "REB+AST",
+                      }[propType] || propType;
 
-              {/* Props Context from Game Logs */}
-              {gameLogs.length > 0 && (
-                <div className="bg-terminal-green/5 border border-terminal-green/20 rounded-lg p-4 mt-4">
-                  <h4 className="font-mono text-sm text-terminal-green mb-3">📊 RECENT CONTEXT</h4>
-                  <div className="space-y-2 text-sm font-mono">
-                    <p className="text-muted-foreground">
-                      • Last 5 games:{" "}
-                      <span className="text-foreground">
-                        {gameLogs.slice(0, 5).map((g) => g.points).join(", ")} PTS
-                      </span>
-                    </p>
-                    <p className="text-muted-foreground">
-                      • Last 5 avg:{" "}
-                      <span className="text-foreground">
-                        {(gameLogs.slice(0, 5).reduce((a, g) => a + g.points, 0) / Math.min(gameLogs.length, 5)).toFixed(1)} PPG
-                      </span>
-                    </p>
-                    <p className="text-muted-foreground">
-                      • Season avg:{" "}
-                      <span className="text-foreground">{stats?.points_per_game?.toFixed(1) || "—"} PPG</span>
-                    </p>
+                      return (
+                        <div key={propType} className="border border-border rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-mono text-sm text-foreground font-semibold">{label}</span>
+                            <span className="font-mono text-lg text-terminal-cyan font-bold">O/U {primary.line}</span>
+                          </div>
+                          <div className="space-y-1">
+                            {typeProps.map((prop) => {
+                              const bookLabel = {
+                                draftkings: "DraftKings", fanduel: "FanDuel",
+                                betmgm: "BetMGM", caesars: "Caesars",
+                              }[prop.sportsbook.toLowerCase()] || prop.sportsbook;
+                              const fmtOdds = (o: number | null) => o === null ? "—" : o > 0 ? `+${o}` : `${o}`;
+                              return (
+                                <div key={`${prop.prop_type}-${prop.sportsbook}`} className="flex items-center justify-between text-xs font-mono">
+                                  <span className="text-muted-foreground">{bookLabel}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-terminal-green">{fmtOdds(prop.over_odds)}</span>
+                                    <span className="text-muted-foreground">/</span>
+                                    <span className="text-terminal-amber">{fmtOdds(prop.under_odds)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No upcoming props available. Props typically release on game day around 10 AM ET.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Prop Results History */}
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Prop Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {propResults.length > 0 ? (
+                  <>
+                    {/* Hit Rate Summary */}
+                    {(() => {
+                      const scored = propResults.filter((p) => p.result === "over" || p.result === "under");
+                      const overs = scored.filter((p) => p.result === "over").length;
+                      return scored.length > 0 ? (
+                        <div className="bg-terminal-cyan/5 border border-terminal-cyan/20 rounded-lg p-3 mb-4">
+                          <p className="font-mono text-xs text-terminal-cyan">
+                            Overall: {overs}/{scored.length} Overs hit ({((overs / scored.length) * 100).toFixed(0)}%)
+                          </p>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* Results Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs font-mono">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground">
+                            <th className="text-left py-2 pr-2">Date</th>
+                            <th className="text-left py-2 pr-2">Prop</th>
+                            <th className="text-right py-2 pr-2">Line</th>
+                            <th className="text-right py-2 pr-2">Actual</th>
+                            <th className="text-right py-2">Result</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {propResults.map((prop) => {
+                            const label = {
+                              points: "PTS", rebounds: "REB", assists: "AST",
+                              threes: "3PM", blocks: "BLK", steals: "STL",
+                              turnovers: "TO", "pts+reb+ast": "P+R+A",
+                              "pts+reb": "P+R", "pts+ast": "P+A", "reb+ast": "R+A",
+                            }[prop.prop_type] || prop.prop_type;
+                            const date = prop.game_date
+                              ? new Date(prop.game_date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                              : "—";
+                            return (
+                              <tr key={prop.id} className="border-b border-border/50">
+                                <td className="py-1.5 pr-2 text-muted-foreground">{date}</td>
+                                <td className="py-1.5 pr-2">{label}</td>
+                                <td className="py-1.5 pr-2 text-right">{prop.line}</td>
+                                <td className="py-1.5 pr-2 text-right font-semibold">{prop.actual_value ?? "—"}</td>
+                                <td className="py-1.5 text-right">
+                                  {prop.result === "over" && (
+                                    <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green/50 text-[10px]">OVER</Badge>
+                                  )}
+                                  {prop.result === "under" && (
+                                    <Badge className="bg-terminal-amber/20 text-terminal-amber border-terminal-amber/50 text-[10px]">UNDER</Badge>
+                                  )}
+                                  {prop.result === "push" && (
+                                    <Badge variant="outline" className="text-[10px]">PUSH</Badge>
+                                  )}
+                                  {prop.result === "void" && (
+                                    <Badge variant="outline" className="text-[10px] text-muted-foreground">VOID</Badge>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No prop results yet. Results appear after games are completed and graded.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Recent Game Context */}
+            {gameLogs.length > 0 && (
+              <Card className="bg-card border-border">
+                <CardContent className="pt-6">
+                  <div className="bg-terminal-green/5 border border-terminal-green/20 rounded-lg p-4">
+                    <h4 className="font-mono text-sm text-terminal-green mb-3">RECENT CONTEXT</h4>
+                    <div className="space-y-2 text-sm font-mono">
+                      <p className="text-muted-foreground">
+                        Last 5 games:{" "}
+                        <span className="text-foreground">
+                          {gameLogs.slice(0, 5).map((g) => g.points).join(", ")} PTS
+                        </span>
+                      </p>
+                      <p className="text-muted-foreground">
+                        Last 5 avg:{" "}
+                        <span className="text-foreground">
+                          {(gameLogs.slice(0, 5).reduce((a, g) => a + (g.points || 0), 0) / Math.min(gameLogs.length, 5)).toFixed(1)} PPG
+                        </span>
+                      </p>
+                      <p className="text-muted-foreground">
+                        Season avg:{" "}
+                        <span className="text-foreground">{stats?.points_per_game?.toFixed(1) || "—"} PPG</span>
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

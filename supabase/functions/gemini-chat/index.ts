@@ -91,6 +91,8 @@ interface FetchedData {
   odds?: unknown[];
   players?: unknown[];
   injuries?: unknown[];
+  props?: unknown[];
+  prop_results?: unknown[];
 }
 
 // ============================================================
@@ -108,6 +110,7 @@ function detectLeague(message: string): string {
 
 function detectIntent(message: string): string {
   const m = message.toLowerCase();
+  if (/\b(props?|player prop|over\s*\/?\s*under\s+\d|o\/u\s+\d)\b/.test(m)) return "props";
   if (/\b(odds|line|spread|total|over|under|moneyline|ml|ats|point spread)\b/.test(m)) return "odds";
   if (/\b(who won|final score|result|score of|did .+ (win|lose|cover|beat)|last night|yesterday|recap|box score)\b/.test(m)) return "results";
   if (/\b(game|schedule|when|playing|tonight|today|upcoming|matchup)\b/.test(m)) return "games";
@@ -265,6 +268,55 @@ async function fetchRelevantData(
     }
   }
 
+  // Fetch player props if relevant
+  if (intent === "props" || intent === "general") {
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const { data: props } = await supabase
+        .from("player_props")
+        .select("*, players!inner(name, team_name)")
+        .eq("sport", league)
+        .eq("is_active", true)
+        .gte("game_date", today)
+        .order("game_date", { ascending: true })
+        .limit(50);
+
+      if (props?.length) {
+        fetchedData.props = props;
+        sources.push({
+          provider: "mgp_database",
+          endpoint: `${league}/player_props`,
+          fetched_at: now.toISOString(),
+          ids: {},
+        });
+      }
+
+      // Also fetch recent prop results (last 3 days, graded)
+      const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+        .toISOString().split("T")[0];
+      const { data: gradedProps } = await supabase
+        .from("player_props")
+        .select("*, players!inner(name, team_name)")
+        .eq("sport", league)
+        .eq("graded", true)
+        .gte("game_date", threeDaysAgo)
+        .order("game_date", { ascending: false })
+        .limit(30);
+
+      if (gradedProps?.length) {
+        fetchedData.prop_results = gradedProps;
+        sources.push({
+          provider: "mgp_database",
+          endpoint: `${league}/prop_results`,
+          fetched_at: now.toISOString(),
+          ids: {},
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching props:", e);
+    }
+  }
+
   return { data: fetchedData, sources };
 }
 
@@ -325,6 +377,46 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[]): string {
     data.injuries.slice(0, 5).forEach((p: any) => {
       prompt += `• ${p.name} (${p.team_abbr}): ${p.injury_status}${p.injury_designation ? ` - ${p.injury_designation}` : ""}\n`;
     });
+  }
+
+  if (data.props?.length) {
+    prompt += "\n🎯 PLAYER PROPS:\n";
+    const byPlayer: Record<string, any[]> = {};
+    for (const p of data.props as any[]) {
+      const name = p.players?.name || "Unknown";
+      if (!byPlayer[name]) byPlayer[name] = [];
+      byPlayer[name].push(p);
+    }
+    for (const [name, playerProps] of Object.entries(byPlayer).slice(0, 10)) {
+      const team = (playerProps[0] as any).players?.team_name || "";
+      prompt += `\n${name} (${team}):\n`;
+      for (const prop of playerProps.slice(0, 6)) {
+        const overOdds = prop.over_odds ? (prop.over_odds > 0 ? `+${prop.over_odds}` : prop.over_odds) : "—";
+        const underOdds = prop.under_odds ? (prop.under_odds > 0 ? `+${prop.under_odds}` : prop.under_odds) : "—";
+        prompt += `  • ${prop.prop_type}: O/U ${prop.line} (Over ${overOdds} / Under ${underOdds}) — ${prop.sportsbook}\n`;
+      }
+    }
+  }
+
+  if (data.prop_results?.length) {
+    prompt += "\n📊 RECENT PROP RESULTS:\n";
+    const byPlayer: Record<string, any[]> = {};
+    for (const p of data.prop_results as any[]) {
+      const name = p.players?.name || "Unknown";
+      if (!byPlayer[name]) byPlayer[name] = [];
+      byPlayer[name].push(p);
+    }
+    for (const [name, playerProps] of Object.entries(byPlayer).slice(0, 8)) {
+      const team = (playerProps[0] as any).players?.team_name || "";
+      const gameDate = new Date(playerProps[0].game_date).toLocaleDateString("en-US", {
+        month: "short", day: "numeric", timeZone: "America/New_York"
+      });
+      prompt += `\n${name} (${team}) — ${gameDate}:\n`;
+      for (const prop of playerProps.slice(0, 6)) {
+        const resultLabel = prop.result === "over" ? "OVER ✓" : prop.result === "under" ? "UNDER" : prop.result === "push" ? "PUSH" : "VOID";
+        prompt += `  • ${prop.prop_type}: Line ${prop.line}, Actual ${prop.actual_value} → ${resultLabel}\n`;
+      }
+    }
   }
 
   prompt += "\n[DATA SOURCES]\n";
@@ -446,7 +538,7 @@ REMEMBER: Only use the data above. If information is missing, say "That informat
           ...(webSearchEnabled ? { tools: [{ googleSearch: {} }] } : {}),
           generationConfig: {
             temperature: 0.4, // Lower temperature for more factual
-            maxOutputTokens: 2048,
+            maxOutputTokens: 4096,
           },
         }),
       }

@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.test-bdl]
 verify_jwt = false
+
+[functions.grade-player-props]
+verify_jwt = false
