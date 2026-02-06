@@ -105,6 +105,13 @@ export function ChatPanel() {
         }));
         setMessages(loadedMessages);
         setCurrentConversationId(convId);
+
+        // Rebuild Gemini conversation history from loaded messages
+        const rebuiltHistory = data.map(msg => ({
+          role: (msg.role === "bot" ? "assistant" : "user") as "user" | "assistant",
+          content: msg.content,
+        }));
+        setConversationHistory(rebuiltHistory);
       }
     } catch (error) {
       console.error("Error loading messages:", error);

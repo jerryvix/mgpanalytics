@@ -286,7 +286,7 @@ async function generateAnswer(
   );
   
   if (!hasData) {
-    return "I don't have that data synced in MGP yet. Would you like me to search for current information from the web?";
+    return "That information isn't available right now. I can help with game schedules, odds, player stats, and injury reports.";
   }
 
   const systemPrompt = `You are the MGP Analyst. You ONLY answer based on the data provided below.
@@ -294,10 +294,12 @@ async function generateAnswer(
 CRITICAL RULES:
 1. NEVER make up statistics, odds, lines, or any numerical data
 2. NEVER predict outcomes or recommend bets
-3. If the data doesn't contain what the user is asking for, say "I don't have that data synced yet"
+3. If the data doesn't contain what the user is asking for, say "That information isn't available right now" and suggest what you CAN help with (schedules, odds, player stats, injury reports)
 4. Always cite the data source (MGP Database, The Odds API, etc.)
 5. Keep responses concise - 3-5 key data points maximum
 6. Format numbers exactly as provided - don't round or estimate
+7. NEVER estimate, extrapolate, or use training knowledge for stats/scores/odds
+8. NEVER use words like "synced", "admin panel", "backend", or "database" in responses
 
 DATA PROVIDED:
 ${JSON.stringify(data, null, 2)}
@@ -307,7 +309,7 @@ ${sources.map(s => `- ${s.provider}: ${s.endpoint} (fetched at ${s.fetched_at})`
 
 USER QUESTION: ${question}
 
-Based ONLY on the data above, provide a helpful response. If the data doesn't contain the answer, say "I don't have that data synced in MGP yet."`;
+Based ONLY on the data above, provide a helpful response. If the data doesn't contain the answer, say "That information isn't available right now" and mention what types of data you can help with.`;
 
   try {
     const response = await fetch(
@@ -404,7 +406,7 @@ function formatFallbackAnswer(
     }
     
     default:
-      return "I don't have that data synced in MGP yet. Would you like me to search for current information?" + sourceNote;
+      return "That information isn't available right now. I can help with game schedules, odds, player stats, and injury reports." + sourceNote;
   }
 }
 

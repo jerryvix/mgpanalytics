@@ -187,7 +187,7 @@ Games Played: ${stats.games_played || "—"}
 // Format game log response
 function formatGameLog(player: NBAPlayer, logs: NBAGameLog[], count: number): string {
   if (logs.length === 0) {
-    return `No recent game logs found for **${player.name}**. Try syncing game logs in the admin panel.`;
+    return `No recent game logs found for **${player.name}**. I can look up their season stats instead — just ask!`;
   }
   
   const recentLogs = logs.slice(0, count);
@@ -218,7 +218,7 @@ function formatGameLog(player: NBAPlayer, logs: NBAGameLog[], count: number): st
 // Format games response
 function formatGamesResponse(games: any[]): string {
   if (games.length === 0) {
-    return "No NBA games scheduled for today. Check back later or sync games in the admin panel.";
+    return "No NBA games scheduled for today. Check back closer to game time or ask about a specific team or player.";
   }
   
   let response = `🏀 **NBA Games Today**\n\n`;
@@ -313,7 +313,7 @@ export async function handleNbaQuery(query: string): Promise<string | null> {
     .limit(1);
   
   if (!stats || stats.length === 0) {
-    return `I found **${player.name}** (${player.position || "—"}, ${player.team_name || "—"}) but don't have their stats yet. Try syncing NBA stats in the admin panel.`;
+    return `I found **${player.name}** (${player.position || "—"}, ${player.team_name || "—"}) but their stats aren't available yet. Try asking about their recent games or props instead.`;
   }
   
   return formatSeasonStats(player, stats[0] as NBASeasonStats);
