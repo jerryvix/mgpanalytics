@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, ExternalLink, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
+import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, ExternalLink, ChevronDown, ChevronUp, Trash2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGeminiChat } from "@/hooks/useGeminiChat";
 import { useChat } from "@/contexts/ChatContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
@@ -468,7 +469,168 @@ export function ChatPanel() {
     </div>
   );
 
-  // Always use desktop/tablet docked side panel layout
+  const isMobile = useIsMobile();
+
+  // Mobile: full-screen overlay (managed by BottomNav toggle)
+  if (isMobile) {
+    return (
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed inset-0 z-40 bg-card flex flex-col"
+            style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+          >
+            {/* Mobile header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleChat}
+                  className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
+                <div>
+                  <h2 className="font-mono font-bold text-foreground text-sm">MGP Analyst</h2>
+                  <p className="font-mono text-[10px] text-muted-foreground">
+                    Games, odds & insights
+                  </p>
+                </div>
+              </div>
+              <ClearChatButton />
+            </div>
+
+            {/* Chat content fills remaining space, input padded for bottom nav */}
+            <div className="flex flex-col flex-1 min-h-0">
+              <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+                <div className="space-y-2">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-lg px-4 py-2.5 font-mono text-sm break-words ${
+                          message.role === "user"
+                            ? "bg-muted text-foreground"
+                            : "bg-terminal-green/10 border border-terminal-green/20"
+                        }`}
+                        style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
+                      >
+                        {message.role === "user" ? (
+                          <p className="text-foreground">{message.content}</p>
+                        ) : (
+                          <div className="text-foreground prose prose-sm prose-invert max-w-none
+                            prose-headings:text-terminal-green prose-headings:font-mono prose-headings:font-semibold prose-headings:text-sm prose-headings:mb-2 prose-headings:mt-3 first:prose-headings:mt-0
+                            prose-p:text-foreground prose-p:my-1 prose-p:leading-relaxed
+                            prose-strong:text-terminal-green prose-strong:font-semibold
+                            prose-ul:my-1 prose-ul:pl-0 prose-li:text-foreground prose-li:my-0.5 prose-li:pl-0
+                            prose-li:marker:text-terminal-green/60
+                            [&_ul]:list-disc [&_ul]:ml-4
+                            [&_em]:text-muted-foreground [&_em]:not-italic [&_em]:text-xs
+                          ">
+                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                          </div>
+                        )}
+                        {message.role === "bot" && message.sources && message.sources.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-terminal-green/20">
+                            <button
+                              onClick={() => toggleSources(message.id)}
+                              className="flex items-center gap-1.5 py-2 text-xs text-terminal-green hover:text-terminal-green/80 transition-colors min-h-[44px]"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              <span>Sources ({message.sources.length})</span>
+                              {expandedSources.has(message.id) ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                            <AnimatePresence>
+                              {expandedSources.has(message.id) && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  transition={{ duration: 0.2 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="mt-2 space-y-1">
+                                    {message.sources.map((source, idx) => (
+                                      <a
+                                        key={idx}
+                                        href={source.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 py-2 px-1 -mx-1 rounded text-xs text-muted-foreground hover:text-terminal-green hover:bg-terminal-green/5 transition-colors min-h-[44px]"
+                                        style={{ wordBreak: "break-word" }}
+                                      >
+                                        <span className="shrink-0 w-5 text-terminal-green/60">{idx + 1}.</span>
+                                        <span className="break-words">{source.title}</span>
+                                      </a>
+                                    ))}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        )}
+                        {message.role === "bot" && (
+                          <p className="text-xs text-muted-foreground mt-1.5">
+                            {formatTime(message.timestamp)}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {isLoading && (
+                    <div className="flex justify-start">
+                      <div className="bg-terminal-green/10 border border-terminal-green/20 rounded-lg px-4 py-3">
+                        <Loader2 className="w-4 h-4 animate-spin text-terminal-green" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+
+              {/* Mobile input — padded for bottom nav + safe area */}
+              <div
+                className="p-4 border-t border-border bg-card"
+                style={{ paddingBottom: "max(calc(3.5rem + env(safe-area-inset-bottom, 0px) + 0.5rem), 1rem)" }}
+              >
+                <div className="flex gap-2">
+                  <Input
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask about games, odds, or teams..."
+                    className="flex-1 font-mono text-base bg-background border-border focus-visible:ring-terminal-green/50"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={!input.trim() || isLoading}
+                    className="bg-terminal-green hover:bg-terminal-green/90 text-background h-11 w-11 p-0 shrink-0"
+                    aria-label="Send message"
+                  >
+                    <Send className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  // Desktop/tablet: docked side panel layout
   return (
     <div className="relative flex h-full">
       {/* Collapsed state - slim vertical tab */}
@@ -489,7 +651,7 @@ export function ChatPanel() {
               <PanelRightClose className="w-5 h-5" />
             </Button>
             <div className="flex-1 flex items-center">
-              <div 
+              <div
                 className="px-2 py-3 rounded-md bg-terminal-green/10 border border-terminal-green/30"
                 style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
               >
