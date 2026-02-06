@@ -245,7 +245,7 @@ export function DashboardHome() {
         ...ncaabGameIds.map(id => String(id))
       ];
       
-      let movements: OddsMovement[] = [];
+      const movements: OddsMovement[] = [];
 
       if (allGameIds.length > 0) {
         const { data: snapshots } = await supabase

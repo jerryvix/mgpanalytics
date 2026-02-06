@@ -127,77 +127,71 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Dispatch each due sync in parallel
-    const results = await Promise.allSettled(
-      dueSchedules.map(async (schedule) => {
-        const key = `${schedule.sport}:${schedule.data_type}`;
-        const functionName = SYNC_FUNCTION_MAP[key];
-        if (!functionName) return { key, status: "skipped", reason: "no function" };
+    // Mark all due syncs as "running" in sync_schedule, then fire-and-forget
+    // Each sync function will take 10-60s; awaiting all would exceed edge function timeout
+    const dispatched: string[] = [];
+    for (const schedule of dueSchedules) {
+      const key = `${schedule.sport}:${schedule.data_type}`;
+      const functionName = SYNC_FUNCTION_MAP[key];
+      if (!functionName) continue;
 
-        const functionUrl = `${SUPABASE_URL}/functions/v1/${functionName}`;
-        console.log(`[dispatch-syncs] Calling ${functionName} for ${key}`);
+      const functionUrl = `${SUPABASE_URL}/functions/v1/${functionName}`;
+      console.log(`[dispatch-syncs] Firing ${functionName} for ${key}`);
 
-        try {
-          const response = await fetch(functionUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "x-cron-secret": CRON_SECRET,
-              "apikey": SUPABASE_SERVICE_ROLE_KEY,
-            },
-          });
+      // Fire the fetch without awaiting — the sync function runs independently
+      fetch(functionUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-cron-secret": CRON_SECRET,
+          "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        },
+      }).then(async (response) => {
+        const responseData = await response.json().catch(() => ({}));
+        const success = response.ok && responseData.success !== false;
+        await supabase
+          .from("sync_schedule")
+          .upsert({
+            sport: schedule.sport,
+            data_type: schedule.data_type,
+            last_sync_at: new Date().toISOString(),
+            last_sync_status: success ? "success" : "failed",
+            records_synced: responseData.gamesCount || responseData.oddsCount || responseData.count || 0,
+            error_message: success ? null : (responseData.error || `HTTP ${response.status}`),
+          }, { onConflict: "sport,data_type" });
+        console.log(`[dispatch-syncs] ${key}: ${success ? "success" : "failed"}`);
+      }).catch(async (err) => {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.error(`[dispatch-syncs] ${key} error:`, errorMsg);
+        await supabase
+          .from("sync_schedule")
+          .upsert({
+            sport: schedule.sport,
+            data_type: schedule.data_type,
+            last_sync_at: new Date().toISOString(),
+            last_sync_status: "failed",
+            error_message: errorMsg,
+          }, { onConflict: "sport,data_type" });
+      });
 
-          const responseData = await response.json().catch(() => ({}));
-          const success = response.ok && responseData.success !== false;
+      // Mark as running
+      await supabase
+        .from("sync_schedule")
+        .upsert({
+          sport: schedule.sport,
+          data_type: schedule.data_type,
+          last_sync_status: "running",
+          error_message: null,
+        }, { onConflict: "sport,data_type" });
 
-          // Update sync_schedule with result
-          await supabase
-            .from("sync_schedule")
-            .upsert({
-              sport: schedule.sport,
-              data_type: schedule.data_type,
-              last_sync_at: now.toISOString(),
-              last_sync_status: success ? "success" : "failed",
-              records_synced: responseData.gamesCount || responseData.oddsCount || responseData.count || 0,
-              error_message: success ? null : (responseData.error || `HTTP ${response.status}`),
-            }, { onConflict: "sport,data_type" });
-
-          return { key, status: success ? "success" : "failed", data: responseData };
-        } catch (err) {
-          const errorMsg = err instanceof Error ? err.message : String(err);
-          console.error(`[dispatch-syncs] Error calling ${functionName}:`, errorMsg);
-
-          await supabase
-            .from("sync_schedule")
-            .upsert({
-              sport: schedule.sport,
-              data_type: schedule.data_type,
-              last_sync_at: now.toISOString(),
-              last_sync_status: "failed",
-              error_message: errorMsg,
-            }, { onConflict: "sport,data_type" });
-
-          return { key, status: "error", error: errorMsg };
-        }
-      })
-    );
-
-    const summary = results.map((r, i) => {
-      const key = dueSchedules[i] ? `${dueSchedules[i].sport}:${dueSchedules[i].data_type}` : "unknown";
-      if (r.status === "fulfilled") return { key, ...r.value };
-      return { key, status: "error", error: r.reason?.message || "Unknown error" };
-    });
-
-    const successCount = summary.filter(s => s.status === "success").length;
-    const failCount = summary.filter(s => s.status !== "success" && s.status !== "skipped").length;
+      dispatched.push(key);
+    }
 
     const response = {
       success: true,
-      dispatched: dueSchedules.length,
-      succeeded: successCount,
-      failed: failCount,
-      results: summary,
-      message: `Dispatched ${dueSchedules.length} syncs: ${successCount} succeeded, ${failCount} failed`,
+      dispatched: dispatched.length,
+      syncs: dispatched,
+      message: `Dispatched ${dispatched.length} syncs (fire-and-forget). Check sync_schedule for results.`,
     };
 
     console.log("[dispatch-syncs] Complete:", response.message);

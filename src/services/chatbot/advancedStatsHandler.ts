@@ -174,7 +174,7 @@ async function getPlayerGameLogs(playerId: string): Promise<GameLog[]> {
 
 function extractPlayerName(query: string): string | null {
   // Remove common patterns to isolate player name
-  let cleaned = query.toLowerCase()
+  const cleaned = query.toLowerCase()
     .replace(/\b(what('s|s)?|show|tell|me|about|the|is|are|for|get|find)\b/gi, "")
     .replace(/\b(epa|cpoe|yac|advanced\s+stats?|target\s+share|air\s+yards?|efficiency)\b/gi, "")
     .replace(/\b(this\s+season|2024|season|nfl)\b/gi, "")
@@ -342,7 +342,7 @@ async function handleLeaderboardQuery(query: string): Promise<string | null> {
   const definitions = getStatDefinitions(positionGroup);
   const statDef = definitions.find(d => 
     d.key.toLowerCase().includes(statRaw) ||
-    d.shortName.toLowerCase().replace(/[%\/]/g, "").includes(statRaw)
+    d.shortName.toLowerCase().replace(/[%/]/g, "").includes(statRaw)
   );
   
   if (!statDef) {

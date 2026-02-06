@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const EDGE_FUNCTION_URL =
   `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/nfl-slate-leaders`;
@@ -80,9 +81,11 @@ export function useNFLSlateLeaders(options?: { enabled?: boolean }) {
   return useQuery<SlateData>({
     queryKey: ["nfl-slate-leaders"],
     queryFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch(EDGE_FUNCTION_URL, {
         headers: {
           "Content-Type": "application/json",
+          ...(session?.access_token && { Authorization: `Bearer ${session.access_token}` }),
         },
       });
 

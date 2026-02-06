@@ -56,3 +56,15 @@ verify_jwt = false
 
 [functions.analyst-query]
 verify_jwt = false
+
+[functions.dispatch-syncs]
+verify_jwt = false
+
+[functions.sync-nba-stats]
+verify_jwt = false
+
+[functions.sync-nba-game-logs]
+verify_jwt = false
+
+[functions.test-bdl]
+verify_jwt = false

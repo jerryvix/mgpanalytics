@@ -115,7 +115,7 @@ async function getPlayerGameLogs(playerId: string, limit = 5): Promise<GameLog[]
 
 function extractPlayerName(query: string): string | null {
   // Remove prop-related terms to isolate player name
-  let cleaned = query.toLowerCase()
+  const cleaned = query.toLowerCase()
     .replace(/\b(what('s|s)?|show|tell|me|about|the|is|are|for|get|find|analyze|analysis)\b/gi, "")
     .replace(/\b(prop|over|under|o\/u|passing|rushing|receiving|yards|receptions?|td|touchdowns?)\b/gi, "")
     .replace(/\d+\.?\d*/g, "")
