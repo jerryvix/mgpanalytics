@@ -238,7 +238,9 @@ export function NBASyncCard() {
     setPropsSyncState("syncing");
     
     try {
-      const { data, error } = await supabase.functions.invoke("sync-nba-props");
+      const { data, error } = await supabase.functions.invoke("sync-player-props", {
+        body: { sport: "NBA" },
+      });
       
       if (error) {
         console.log("[NBA Sync] Props edge error:", error.message);
