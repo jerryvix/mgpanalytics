@@ -591,8 +591,8 @@ ${dataPrompt}
 
 REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is missing but related data exists, share that and note the gap. End with an exploration prompt to keep the conversation going.`;
 
-    // Build conversation for Gemini — trim to last 10 messages to prevent context overflow
-    const recentMessages = messages.length > 10 ? messages.slice(-10) : messages;
+    // Build conversation for Gemini — trim to last 20 messages to balance context vs cost
+    const recentMessages = messages.length > 20 ? messages.slice(-20) : messages;
     const contents = recentMessages.map((msg) => ({
       role: msg.role === "assistant" ? "model" : "user",
       parts: [{ text: msg.content }],
@@ -615,7 +615,7 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
           ...(useSearch ? { tools: [{ googleSearch: {} }] } : {}),
           generationConfig: {
             temperature: 0.4, // Lower temperature for more factual
-            maxOutputTokens: 4096,
+            maxOutputTokens: 8192,
           },
         }),
       }

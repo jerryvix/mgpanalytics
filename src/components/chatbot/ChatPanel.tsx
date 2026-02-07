@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, ExternalLink, ChevronDown, ChevronUp, Trash2, ArrowLeft } from "lucide-react";
+import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, ExternalLink, ChevronDown, ChevronUp, Trash2, ArrowLeft, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -61,6 +61,16 @@ export function ChatPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
+  const [isExpanded, setIsExpanded] = useState(() => {
+    return localStorage.getItem("chat-expanded") === "true";
+  });
+
+  const toggleExpand = () => {
+    setIsExpanded(prev => {
+      localStorage.setItem("chat-expanded", String(!prev));
+      return !prev;
+    });
+  };
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { sendMessage: sendGeminiMessage } = useGeminiChat();
@@ -441,6 +451,13 @@ export function ChatPanel() {
         </div>
       </ScrollArea>
 
+      {/* Context warning */}
+      {messages.length >= 16 && (
+        <div className="px-4 py-2 bg-yellow-500/10 border-t border-yellow-500/20 text-xs text-yellow-400 font-mono text-center">
+          Long conversation — older messages may lose context. Consider starting a new chat for fresh topics.
+        </div>
+      )}
+
       {/* Input */}
       <div
         className="p-4 border-t border-border bg-card"
@@ -598,6 +615,13 @@ export function ChatPanel() {
                 </div>
               </ScrollArea>
 
+              {/* Context warning */}
+              {messages.length >= 16 && (
+                <div className="px-4 py-2 bg-yellow-500/10 border-t border-yellow-500/20 text-xs text-yellow-400 font-mono text-center">
+                  Long conversation — older messages may lose context. Consider starting a new chat for fresh topics.
+                </div>
+              )}
+
               {/* Mobile input — padded for bottom nav + safe area */}
               <div
                 className="p-4 border-t border-border bg-card"
@@ -670,7 +694,7 @@ export function ChatPanel() {
         {isOpen && (
           <motion.div
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 380, opacity: 1 }}
+            animate={{ width: isExpanded ? 600 : 380, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
             className="h-full bg-card border-l border-border flex flex-col overflow-hidden"
@@ -688,6 +712,15 @@ export function ChatPanel() {
               </div>
               <div className="flex items-center gap-1">
                 <ClearChatButton />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleExpand}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                  title={isExpanded ? "Narrow panel" : "Widen panel"}
+                >
+                  {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
