@@ -84,29 +84,31 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-sm md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-50 md:hidden px-4"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <div className="flex items-center justify-around h-14">
-        {navItems.map((item) => {
-          const active = isActive(item);
-          return (
-            <button
-              key={item.label}
-              data-coach={item.label === "Sports" ? "sports-nav" : undefined}
-              onClick={() => handleTap(item)}
-              className={cn(
-                "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
-                active
-                  ? "text-terminal-green"
-                  : "text-muted-foreground active:text-foreground"
-              )}
-            >
-              <item.icon className={cn("w-5 h-5", active && "drop-shadow-[0_0_4px_hsl(var(--terminal-green))]")} />
-              <span className="text-[10px] font-medium">{item.label}</span>
-            </button>
-          );
-        })}
+      <div className="mx-auto max-w-md mb-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-lg shadow-black/30">
+        <div className="flex items-center justify-around h-14">
+          {navItems.map((item) => {
+            const active = isActive(item);
+            return (
+              <button
+                key={item.label}
+                data-coach={item.label === "Sports" ? "sports-nav" : undefined}
+                onClick={() => handleTap(item)}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
+                  active
+                    ? "text-terminal-green"
+                    : "text-muted-foreground active:text-foreground"
+                )}
+              >
+                <item.icon className={cn("w-5 h-5", active && "drop-shadow-[0_0_4px_hsl(var(--terminal-green))]")} />
+                <span className="text-[10px] font-medium">{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

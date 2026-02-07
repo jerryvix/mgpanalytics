@@ -79,8 +79,8 @@ export default function FeedPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Back navigation */}
-        <div className="mb-6">
+        {/* Back navigation — hidden on mobile (bottom nav handles it) */}
+        <div className="mb-6 hidden md:block">
           <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back

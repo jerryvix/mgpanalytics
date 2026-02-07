@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, Trash2, ArrowLeft } from "lucide-react";
+import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, Trash2, ArrowLeft, History, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -53,17 +53,21 @@ function getQuestionTypeFooter(questionType?: QuestionType): string | null {
 }
 
 export function ChatPanel() {
-  const { 
-    isOpen, 
-    toggleChat, 
-    pendingQuery, 
+  const {
+    isOpen,
+    toggleChat,
+    pendingQuery,
     setPendingQuery,
     activeConversationId,
     setActiveConversationId,
-    refreshConversations
+    refreshConversations,
+    conversations,
+    startNewConversation,
+    loadConversation,
   } = useChat();
   
 
+  const [showMobileHistory, setShowMobileHistory] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -530,8 +534,73 @@ export function ChatPanel() {
                   </p>
                 </div>
               </div>
-              <ClearChatButton />
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowMobileHistory(h => !h)}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                  title="Chat history"
+                >
+                  <History className="w-4 h-4" />
+                </Button>
+                <ClearChatButton />
+              </div>
             </div>
+
+            {/* Mobile chat history drawer */}
+            <AnimatePresence>
+              {showMobileHistory && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="border-b border-border bg-card overflow-hidden shrink-0"
+                >
+                  <div className="p-3 max-h-64 overflow-y-auto">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Recent Chats</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          startNewConversation();
+                          setShowMobileHistory(false);
+                        }}
+                        className="h-7 text-xs text-terminal-green hover:text-terminal-green"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        New
+                      </Button>
+                    </div>
+                    {conversations.length === 0 ? (
+                      <p className="text-xs text-muted-foreground py-2">No past conversations</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {conversations.slice(0, 10).map((conv) => (
+                          <button
+                            key={conv.id}
+                            onClick={() => {
+                              loadConversation(conv.id);
+                              setShowMobileHistory(false);
+                            }}
+                            className={cn(
+                              "w-full text-left px-3 py-2 rounded-lg text-xs transition-colors truncate",
+                              activeConversationId === conv.id
+                                ? "bg-terminal-green/10 text-terminal-green"
+                                : "text-foreground hover:bg-muted/50"
+                            )}
+                          >
+                            {conv.title}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Chat content fills remaining space, input padded for bottom nav */}
             <div className="flex flex-col flex-1 min-h-0">

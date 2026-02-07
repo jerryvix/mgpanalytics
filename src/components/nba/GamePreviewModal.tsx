@@ -134,10 +134,20 @@ export function GamePreviewModal({ game, open, onOpenChange }: GamePreviewModalP
         })),
       });
 
-      // Process head to head
+      // Process head to head — show which team leads
       const h2hData = h2h.data;
       if (h2hData && h2hData.total_games > 0) {
-        setHeadToHead(h2hData.summary);
+        const t1 = getTeamAbbrev(h2hData.team1 || game.home_team_name, "NBA");
+        const t2 = getTeamAbbrev(h2hData.team2 || game.visitor_team_name, "NBA");
+        const w1 = h2hData.team1_wins || 0;
+        const w2 = h2hData.team2_wins || 0;
+        if (w1 > w2) {
+          setHeadToHead(`${t1} leads ${w1}-${w2} this season`);
+        } else if (w2 > w1) {
+          setHeadToHead(`${t2} leads ${w2}-${w1} this season`);
+        } else {
+          setHeadToHead(`Series tied ${w1}-${w2} this season`);
+        }
       } else {
         setHeadToHead("No meetings this season");
       }
@@ -220,17 +230,17 @@ export function GamePreviewModal({ game, open, onOpenChange }: GamePreviewModalP
                 </Tooltip>
               </span>
             </div>
-            {/* Last 5 Games */}
+            {/* Last 10 Games */}
             {stats.last5.length > 0 && (
               <div className="pt-2 border-t border-border/30">
-                <span className="text-muted-foreground text-[10px] uppercase">Last 10 Games:</span>
-                <div className="flex gap-1 mt-1">
+                <span className="text-muted-foreground text-[10px] uppercase">Last {stats.last5.length}:</span>
+                <div className="flex flex-wrap gap-1 mt-1">
                   {stats.last5.map((g, idx) => (
                     <Tooltip key={idx}>
                       <TooltipTrigger asChild>
                         <span>
                           <Badge
-                            className={`text-[9px] cursor-help ${
+                            className={`text-[9px] px-1.5 py-0 cursor-help ${
                               g.result === "W"
                                 ? "bg-terminal-green/20 text-terminal-green"
                                 : "bg-destructive/20 text-destructive"

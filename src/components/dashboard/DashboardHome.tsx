@@ -528,48 +528,44 @@ export function DashboardHome() {
       {/* Below the Fold Sections */}
       <div className="border-t border-border px-0 md:px-4 py-6 md:py-8 space-y-6 md:space-y-8">
         {/* Sport Filter Pills + Refresh */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {ALL_SPORTS.map(sport => {
-              const active = activeSports.includes(sport);
-              const config = SPORT_CONFIG[sport];
-              return (
-                <button
-                  key={sport}
-                  onClick={() => toggleSportFilter(sport)}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                    active
-                      ? "bg-primary/10 text-primary border-primary/30"
-                      : "bg-card/50 text-muted-foreground border-border hover:border-primary/30 hover:text-foreground"
-                  }`}
-                >
-                  <span>{config.emoji}</span>
-                  <span>{config.label}</span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSetup(true)}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Settings2 className="w-4 h-4 mr-2" />
-              Setup
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={refreshing || loading}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
-              Refresh Data
-            </Button>
-          </div>
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {ALL_SPORTS.map(sport => {
+            const active = activeSports.includes(sport);
+            const config = SPORT_CONFIG[sport];
+            return (
+              <button
+                key={sport}
+                onClick={() => toggleSportFilter(sport)}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap shrink-0 ${
+                  active
+                    ? "bg-primary/10 text-primary border-primary/30"
+                    : "bg-card/50 text-muted-foreground border-border hover:border-primary/30 hover:text-foreground"
+                }`}
+              >
+                <span>{config.emoji}</span>
+                <span>{config.label}</span>
+              </button>
+            );
+          })}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSetup(true)}
+            className="text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <Settings2 className="w-4 h-4 mr-1.5" />
+            <span className="hidden sm:inline">Setup</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing || loading}
+            className="text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+            <span className="hidden sm:inline ml-1.5">Refresh</span>
+          </Button>
         </div>
 
         {/* Money Flows Section */}

@@ -135,6 +135,15 @@
 }
 
 @layer utilities {
+  /* Hide scrollbar but keep scroll functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Terminal text effects */
   .text-terminal-green {
     color: hsl(var(--terminal-green));

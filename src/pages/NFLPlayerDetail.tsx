@@ -300,9 +300,9 @@ export default function NFLPlayerDetail() {
   const fmtOdds = (o: number | null) => o === null ? "—" : o > 0 ? `+${o}` : `${o}`;
 
   return (
-    <div className="space-y-6">
-      {/* Back Button */}
-      <Link to="/dashboard/nfl/players">
+    <div className="space-y-4 md:space-y-6">
+      {/* Back Button — hidden on mobile (bottom nav handles it) */}
+      <Link to="/dashboard/nfl/players" className="hidden md:inline-block">
         <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to NFL Players
@@ -355,7 +355,7 @@ export default function NFLPlayerDetail() {
             </div>
 
             {/* Bio Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 text-sm pt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 md:gap-4 text-sm pt-4">
               {player.height && (
                 <div className="bg-muted/30 rounded-lg p-2">
                   <span className="text-muted-foreground block text-xs">Height</span>
@@ -392,7 +392,7 @@ export default function NFLPlayerDetail() {
 
             {/* Quick Stats Summary */}
             {stats && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 md:gap-3 mt-3 md:mt-4">
                 {posGroup === "QB" && (
                   <>
                     <div className="text-center">
@@ -481,20 +481,20 @@ export default function NFLPlayerDetail() {
 
       {/* Stats Tabs */}
       <Tabs defaultValue="traditional" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4">
-          <TabsTrigger value="traditional" className="text-xs sm:text-sm">
+        <TabsList className="flex w-full overflow-x-auto scrollbar-hide mb-4">
+          <TabsTrigger value="traditional" className="text-xs sm:text-sm flex-1 min-w-0">
             <TrendingUp className="w-4 h-4 mr-1.5 hidden sm:inline" />
-            Traditional
+            Stats
           </TabsTrigger>
-          <TabsTrigger value="advanced" className="text-xs sm:text-sm">
+          <TabsTrigger value="advanced" className="text-xs sm:text-sm flex-1 min-w-0">
             <Zap className="w-4 h-4 mr-1.5 hidden sm:inline" />
-            Advanced
+            Adv
           </TabsTrigger>
-          <TabsTrigger value="gamelog" className="text-xs sm:text-sm">
+          <TabsTrigger value="gamelog" className="text-xs sm:text-sm flex-1 min-w-0">
             <Calendar className="w-4 h-4 mr-1.5 hidden sm:inline" />
-            Game Log
+            Log
           </TabsTrigger>
-          <TabsTrigger value="betting" className="text-xs sm:text-sm">
+          <TabsTrigger value="betting" className="text-xs sm:text-sm flex-1 min-w-0">
             <Target className="w-4 h-4 mr-1.5 hidden sm:inline" />
             Betting
           </TabsTrigger>

@@ -167,9 +167,9 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
     : undefined;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 md:space-y-6">
+      {/* Header — back button hidden on mobile (bottom nav handles it) */}
+      <div className="hidden md:flex items-center gap-4">
         <Button
           variant="ghost"
           size="sm"
@@ -234,7 +234,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
 
             {/* Quick Stats */}
             {stats && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-6">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 md:gap-3 mt-4 md:mt-6">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-terminal-green">
                     {stats.points_per_game?.toFixed(1) || "—"}
@@ -271,24 +271,24 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
 
       {/* Tabs */}
       <Tabs defaultValue="traditional" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-4">
-          <TabsTrigger value="traditional" className="text-xs sm:text-sm">
+        <TabsList className="flex w-full overflow-x-auto scrollbar-hide mb-4">
+          <TabsTrigger value="traditional" className="text-xs sm:text-sm flex-1 min-w-0">
             <TrendingUp className="w-4 h-4 mr-1.5 hidden sm:inline" />
-            Traditional
+            Stats
           </TabsTrigger>
-          <TabsTrigger value="advanced" className="text-xs sm:text-sm">
+          <TabsTrigger value="advanced" className="text-xs sm:text-sm flex-1 min-w-0">
             <Zap className="w-4 h-4 mr-1.5 hidden sm:inline" />
-            Advanced
+            Adv
           </TabsTrigger>
-          <TabsTrigger value="gamelog" className="text-xs sm:text-sm">
+          <TabsTrigger value="gamelog" className="text-xs sm:text-sm flex-1 min-w-0">
             <Calendar className="w-4 h-4 mr-1.5 hidden sm:inline" />
-            Game Log
+            Log
           </TabsTrigger>
-          <TabsTrigger value="splits" className="text-xs sm:text-sm">
+          <TabsTrigger value="splits" className="text-xs sm:text-sm flex-1 min-w-0">
             <BarChart3 className="w-4 h-4 mr-1.5 hidden sm:inline" />
             Splits
           </TabsTrigger>
-          <TabsTrigger value="props" className="text-xs sm:text-sm">
+          <TabsTrigger value="props" className="text-xs sm:text-sm flex-1 min-w-0">
             <Target className="w-4 h-4 mr-1.5 hidden sm:inline" />
             Props
           </TabsTrigger>
