@@ -1,5 +1,6 @@
+import { useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Trophy, MessageCircle, Users, Menu } from "lucide-react";
+import { Home, Trophy, MessageCircle, Users } from "lucide-react";
 import { useChat } from "@/contexts/ChatContext";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,8 @@ interface NavItem {
   path?: string;
   matchPaths?: string[];
 }
+
+const SPORTS_PATHS = ["/dashboard/nfl", "/dashboard/nba", "/dashboard/ncaab", "/dashboard/ncaaf", "/dashboard/mlb"];
 
 const navItems: NavItem[] = [
   {
@@ -23,8 +26,8 @@ const navItems: NavItem[] = [
     label: "Sports",
     icon: Trophy,
     action: "navigate",
-    path: "/dashboard/nfl",
-    matchPaths: ["/dashboard/nfl", "/dashboard/nba", "/dashboard/ncaab", "/dashboard/ncaaf", "/dashboard/mlb"],
+    path: "/dashboard/nba",
+    matchPaths: SPORTS_PATHS,
   },
   {
     label: "Chat",
@@ -44,6 +47,14 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isOpen, toggleChat } = useChat();
+  // Remember the last sport page the user visited
+  const lastSportPath = useRef("/dashboard/nba");
+
+  // Track current sport page
+  const currentSportPath = SPORTS_PATHS.find((p) => location.pathname.startsWith(p));
+  if (currentSportPath) {
+    lastSportPath.current = currentSportPath;
+  }
 
   const isActive = (item: NavItem) => {
     if (item.action === "chat") return isOpen;
@@ -58,12 +69,16 @@ export function BottomNav() {
   const handleTap = (item: NavItem) => {
     if (item.action === "chat") {
       toggleChat();
-    } else if (item.path) {
-      // If chat is open on mobile, close it first
+    } else {
       if (isOpen) {
         toggleChat();
       }
-      navigate(item.path);
+      // For Sports tab, navigate to last visited sport
+      if (item.label === "Sports") {
+        navigate(lastSportPath.current);
+      } else if (item.path) {
+        navigate(item.path);
+      }
     }
   };
 

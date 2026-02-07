@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { NFLSlate } from "@/components/dashboard/NFLSlate";
 import { NBASlate } from "@/components/dashboard/NBASlate";
@@ -24,14 +24,19 @@ import {
   CapperProfilePage,
 } from "@/pages/cappers";
 import { FeedPage } from "@/pages/community";
+import { MobileSportNav } from "@/components/ui/MobileSportNav";
 
 interface DashboardContentProps {
   isAdmin: boolean;
 }
 
 export function DashboardContent({ isAdmin }: DashboardContentProps) {
+  const location = useLocation();
+  const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab)/.test(location.pathname);
+
   return (
     <div className="p-4 pb-20 md:p-6 md:pb-6">
+      {isSportsPage && <MobileSportNav />}
       <Routes>
         <Route index element={<DashboardHome />} />
         <Route path="analyst" element={<Analyst />} />

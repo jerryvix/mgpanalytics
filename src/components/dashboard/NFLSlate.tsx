@@ -210,7 +210,7 @@ export function NFLSlate() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 xl:grid-cols-3 gap-4"
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
         >
           {games.map((game, index) => {
             const dkOdds = gameOddsMap[game.id];

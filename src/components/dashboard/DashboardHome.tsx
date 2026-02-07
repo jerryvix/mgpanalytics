@@ -361,42 +361,42 @@ export function DashboardHome() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-6rem)] flex flex-col">
+    <div className="flex flex-col">
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20"
+        className="flex flex-col items-center justify-center px-0 py-4 md:px-4 md:py-20"
       >
-        <h1 className="text-2xl md:text-4xl font-semibold text-foreground text-center tracking-tight mb-8">
+        <h1 className="text-xl md:text-4xl font-semibold text-foreground text-center tracking-tight mb-4 md:mb-8">
           What's on your mind today?
         </h1>
 
-        <form onSubmit={handleSubmit} className="w-full max-w-2xl mb-6">
+        <form onSubmit={handleSubmit} className="w-full max-w-2xl mb-4 md:mb-6">
           <div className="relative">
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ask about any game, market, or move"
-              className="h-14 md:h-16 text-base md:text-lg px-6 pr-14 bg-card border-border focus:border-primary rounded-xl"
+              className="h-12 md:h-16 text-sm md:text-lg px-4 pr-12 md:px-6 md:pr-14 bg-card border-border focus:border-primary rounded-xl"
             />
             <Button
               type="submit"
               size="icon"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-primary hover:bg-primary/90 rounded-lg"
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 md:h-10 md:w-10 bg-primary hover:bg-primary/90 rounded-lg"
             >
-              <ArrowRight className="h-5 w-5" />
+              <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
           </div>
         </form>
 
-        <div className="flex flex-wrap justify-center gap-3 max-w-2xl">
+        <div className="flex flex-col md:flex-row md:flex-wrap md:justify-center gap-2 md:gap-3 w-full max-w-2xl">
           {EXAMPLE_PROMPTS.map((prompt, idx) => (
             <button
               key={idx}
               onClick={() => handleExampleClick(prompt)}
-              className="px-4 py-2 text-sm text-muted-foreground bg-card/50 hover:bg-card hover:text-foreground border border-border hover:border-primary/50 rounded-lg transition-all"
+              className="px-3 py-2 text-xs md:text-sm text-muted-foreground bg-card/50 hover:bg-card hover:text-foreground border border-border hover:border-primary/50 rounded-lg transition-all text-left md:text-center"
             >
               {prompt}
             </button>
@@ -405,7 +405,7 @@ export function DashboardHome() {
       </motion.section>
 
       {/* Below the Fold Sections */}
-      <div className="border-t border-border px-4 py-8 space-y-8">
+      <div className="border-t border-border px-0 md:px-4 py-6 md:py-8 space-y-6 md:space-y-8">
         {/* Refresh Button */}
         <div className="flex justify-end">
           <Button
@@ -451,15 +451,15 @@ export function DashboardHome() {
               {moneyFlows.map((flow) => (
                 <div
                   key={flow.id}
-                  className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg text-sm"
+                  className="flex items-center justify-between px-3 py-2.5 bg-card/50 border border-border rounded-lg text-sm gap-2"
                 >
-                  <span className="flex items-center gap-2">
-                    <span>{getSportEmoji(flow.sport)}</span>
-                    <span className="text-foreground font-medium">{flow.team}</span>
-                    <span className="text-muted-foreground">vs</span>
-                    <span className="text-muted-foreground">{flow.opponent}</span>
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <span className="shrink-0">{getSportEmoji(flow.sport)}</span>
+                    <span className="text-foreground font-medium truncate">{flow.team}</span>
+                    <span className="text-muted-foreground shrink-0">vs</span>
+                    <span className="text-muted-foreground truncate">{flow.opponent}</span>
                   </span>
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5 shrink-0">
                     {flow.hasMovement && flow.movement !== null ? (
                       <>
                         <span className="text-muted-foreground">{formatLine(flow.openValue)}</span>
@@ -468,15 +468,14 @@ export function DashboardHome() {
                           {formatLine(flow.currentValue)}
                         </span>
                         {flow.movement > 0 ? (
-                          <ArrowUpRight className="w-4 h-4 text-terminal-green" />
+                          <ArrowUpRight className="w-3.5 h-3.5 text-terminal-green" />
                         ) : (
-                          <ArrowDownRight className="w-4 h-4 text-destructive" />
+                          <ArrowDownRight className="w-3.5 h-3.5 text-destructive" />
                         )}
-                        <span className="text-muted-foreground text-xs">[{flow.lastUpdated}]</span>
                       </>
                     ) : (
                       <span className="text-muted-foreground text-xs">
-                        {flow.currentValue !== null 
+                        {flow.currentValue !== null
                           ? `${formatLine(flow.currentValue)} — no movement yet`
                           : "Odds not available"
                         }
@@ -510,33 +509,28 @@ export function DashboardHome() {
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="h-12 bg-card/50 rounded animate-pulse" />
               ))}
             </div>
           ) : upcomingGames.length > 0 ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
               {upcomingGames.map((game) => (
                 <div
                   key={`${game.league}-${game.id}`}
-                  className="flex items-center justify-between px-4 py-3 bg-card/50 border border-border rounded-lg text-sm"
+                  className="flex items-center justify-between px-3 py-2.5 bg-card/50 border border-border rounded-lg text-sm gap-2"
                 >
-                  <span className="flex items-center gap-2">
-                    <span>{getSportEmoji(game.league)}</span>
-                    <span className="text-foreground">{game.visitor_team_name}</span>
-                    <span className="text-muted-foreground">@</span>
-                    <span className="text-foreground">{game.home_team_name}</span>
+                  <span className="flex items-center gap-2 min-w-0">
+                    <span className="shrink-0">{getSportEmoji(game.league)}</span>
+                    <span className="text-foreground truncate">{game.visitor_team_name}</span>
+                    <span className="text-muted-foreground shrink-0">@</span>
+                    <span className="text-foreground truncate">{game.home_team_name}</span>
                   </span>
-                  <span className="flex items-center gap-2 text-muted-foreground">
+                  <span className="flex items-center gap-1.5 text-muted-foreground shrink-0">
                     <span className="text-xs">{formatGameTime(game.date)}</span>
                     {game.hasOdds && game.spread !== null ? (
-                      <>
-                        <span className="text-primary">{formatLine(game.spread)}</span>
-                        {game.total !== null && (
-                          <span>| {game.total}</span>
-                        )}
-                      </>
+                      <span className="text-primary">{formatLine(game.spread)}</span>
                     ) : (
                       <span className="text-muted-foreground/50">—</span>
                     )}
