@@ -11,6 +11,7 @@ import NFLPlayerDetail from "@/pages/NFLPlayerDetail";
 import NBAPlayers from "@/pages/NBAPlayers";
 import NCAABPlayers from "@/pages/NCAABPlayers";
 import PlayerProfile from "@/pages/PlayerProfile";
+import NBAPlayerDetailPage from "@/pages/NBAPlayerDetailPage";
 import CappersDirectory from "@/pages/CappersDirectory";
 import {
   SharpsPage,
@@ -39,7 +40,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="nfl/players/:playerId" element={<NFLPlayerDetail />} />
         <Route path="nba" element={<NBASlate />} />
         <Route path="nba/players" element={<NBAPlayers />} />
-        <Route path="nba/players/:playerId" element={<PlayerProfile />} />
+        <Route path="nba/players/:playerId" element={<NBAPlayerDetailPage />} />
         <Route path="mlb" element={<ComingSoon sport="MLB" emoji="⚾" />} />
         <Route path="ncaaf" element={<ComingSoon sport="NCAAF" emoji="🏈" />} />
         <Route path="ncaab" element={<NCAABSlate />} />

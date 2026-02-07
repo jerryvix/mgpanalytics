@@ -160,9 +160,9 @@ export default function PlayerProfile() {
         <StatCard label="SPG" value={stats.steals_per_game?.toFixed(1) || "0.0"} />
         <StatCard label="BPG" value={stats.blocks_per_game?.toFixed(1) || "0.0"} />
         <StatCard label="TO" value={stats.turnovers_per_game?.toFixed(1) || "0.0"} />
-        <StatCard label="FG%" value={((stats.field_goal_pct || 0) * 100).toFixed(1) + "%"} />
-        <StatCard label="3P%" value={((stats.three_point_pct || 0) * 100).toFixed(1) + "%"} />
-        <StatCard label="FT%" value={((stats.free_throw_pct || 0) * 100).toFixed(1) + "%"} />
+        <StatCard label="FG%" value={(stats.field_goal_pct || 0).toFixed(1) + "%"} />
+        <StatCard label="3P%" value={(stats.three_point_pct || 0).toFixed(1) + "%"} />
+        <StatCard label="FT%" value={(stats.free_throw_pct || 0).toFixed(1) + "%"} />
       </div>
     );
   };
@@ -221,9 +221,17 @@ export default function PlayerProfile() {
           <div className="flex flex-col md:flex-row gap-6">
             {/* Avatar with jersey number */}
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                <User className="w-12 h-12 text-muted-foreground" />
-              </div>
+              {player.headshot_url ? (
+                <img
+                  src={player.headshot_url}
+                  alt={player.name}
+                  className="w-24 h-24 rounded-full object-cover border-2 border-terminal-cyan/50 flex-shrink-0"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+                  <User className="w-12 h-12 text-muted-foreground" />
+                </div>
+              )}
               {player.jersey_number && (
                 <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-terminal-green flex items-center justify-center">
                   <span className="text-xs font-bold text-background">#{player.jersey_number}</span>

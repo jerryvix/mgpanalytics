@@ -255,7 +255,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-foreground">
-                    {((stats.field_goal_pct || 0) * 100).toFixed(1)}%
+                    {(stats.field_goal_pct || 0).toFixed(1)}%
                   </p>
                   <p className="text-xs text-muted-foreground">FG%</p>
                 </div>
@@ -300,7 +300,10 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-semibold flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
-                2024-25 Season Stats
+                {(() => {
+                  const s = stats?.season || (new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear());
+                  return `${s - 1}-${String(s).slice(2)} Season Stats`;
+                })()}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -320,9 +323,9 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
                   <SimpleStatCard label="SPG" value={stats.steals_per_game?.toFixed(1) || "0.0"} />
                   <SimpleStatCard label="BPG" value={stats.blocks_per_game?.toFixed(1) || "0.0"} />
                   <SimpleStatCard label="TO" value={stats.turnovers_per_game?.toFixed(1) || "0.0"} />
-                  <SimpleStatCard label="FG%" value={((stats.field_goal_pct || 0) * 100).toFixed(1) + "%"} />
-                  <SimpleStatCard label="3P%" value={((stats.three_point_pct || 0) * 100).toFixed(1) + "%"} />
-                  <SimpleStatCard label="FT%" value={((stats.free_throw_pct || 0) * 100).toFixed(1) + "%"} />
+                  <SimpleStatCard label="FG%" value={(stats.field_goal_pct || 0).toFixed(1) + "%"} />
+                  <SimpleStatCard label="3P%" value={(stats.three_point_pct || 0).toFixed(1) + "%"} />
+                  <SimpleStatCard label="FT%" value={(stats.free_throw_pct || 0).toFixed(1) + "%"} />
                 </div>
               ) : (
                 <p className="text-muted-foreground text-sm">
