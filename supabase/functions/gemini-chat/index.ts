@@ -652,13 +652,8 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
     // Build sources array from our fetched data + any Google search grounding
     const responseSources: { title: string; url: string }[] = [];
     
-    // Add our MGP data sources
-    sources.forEach((s) => {
-      responseSources.push({
-        title: `${s.provider}: ${s.endpoint}`,
-        url: `#mgp-data-${s.endpoint.replace(/\//g, "-")}`,
-      });
-    });
+    // MGP internal sources are not exposed to the consumer.
+    // Only Google grounding sources (external web results) are shown.
 
     // Add Google grounding sources if available
     const groundingMetadata = data.candidates?.[0]?.groundingMetadata;
