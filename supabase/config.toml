@@ -71,3 +71,9 @@ verify_jwt = false
 
 [functions.grade-player-props]
 verify_jwt = false
+
+[functions.backfill-nba-games]
+verify_jwt = false
+
+[functions.sync-nfl-game-logs]
+verify_jwt = false
