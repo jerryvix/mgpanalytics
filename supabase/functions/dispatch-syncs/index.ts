@@ -20,6 +20,7 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "NBA:players": "sync-nba-players",
   "NBA:stats": "sync-nba-stats",
   "NBA:game_logs": "sync-nba-game-logs",
+  "NBA:backfill": "backfill-nba-games",
   // NBA:season_stats — same as NBA:stats; skip duplicate
   // NBA:props — handled by ALL:player_props
   "NCAAB:games": "sync-ncaab-games",

@@ -77,13 +77,12 @@ const sportsMenuItems = [
       { title: "Players", url: "/dashboard/nba/players" },
     ]
   },
-  { 
-    title: "NCAAB", 
-    url: "/dashboard/ncaab", 
+  {
+    title: "NCAAB",
+    url: "/dashboard/ncaab",
     logo: "/logos/ncaa.png",
     subItems: [
       { title: "Games", url: "/dashboard/ncaab" },
-      { title: "Players", url: "/dashboard/ncaab/players" },
     ]
   },
   { title: "NCAAF", url: "/dashboard/ncaaf", logo: "/logos/ncaa.png" },

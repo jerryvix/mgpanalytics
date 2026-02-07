@@ -10,8 +10,8 @@ import Analyst from "@/pages/Analyst";
 import NFLPlayers from "@/pages/NFLPlayers";
 import NFLPlayerDetail from "@/pages/NFLPlayerDetail";
 import NBAPlayers from "@/pages/NBAPlayers";
-import NCAABPlayers from "@/pages/NCAABPlayers";
-import PlayerProfile from "@/pages/PlayerProfile";
+// NCAABPlayers removed — no props data available for NCAAB
+// PlayerProfile import removed with NCAAB players routes
 import NBAPlayerDetailPage from "@/pages/NBAPlayerDetailPage";
 import CappersDirectory from "@/pages/CappersDirectory";
 import {
@@ -50,8 +50,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="mlb" element={<ComingSoon sport="MLB" emoji="⚾" />} />
         <Route path="ncaaf" element={<ComingSoon sport="NCAAF" emoji="🏈" />} />
         <Route path="ncaab" element={<NCAABSlate />} />
-        <Route path="ncaab/players" element={<NCAABPlayers />} />
-        <Route path="ncaab/players/:playerId" element={<PlayerProfile />} />
+        {/* NCAAB players routes removed — no props data available */}
         {/* Community routes — inside dashboard for sidebar nav */}
         <Route path="community/feed" element={<FeedPage />} />
         <Route path="community/cappers" element={<CappersDirectory />} />

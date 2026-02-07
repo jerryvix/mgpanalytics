@@ -136,11 +136,13 @@ serve(async (req) => {
     }
 
     // Get NBA players from our database to map BDL IDs
+    // Broadened from is_featured=true (which depends on 48h slate window)
+    // to all active NBA players with a BDL external_id mapping
     const { data: players, error: playersError } = await supabase
       .from("players")
       .select("id, name, external_id, team_abbr")
       .eq("sport", "NBA")
-      .eq("is_featured", true);
+      .not("external_id", "is", null);
 
     if (playersError) {
       throw new Error(`Failed to fetch players: ${playersError.message}`);

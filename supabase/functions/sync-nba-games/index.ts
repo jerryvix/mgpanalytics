@@ -117,13 +117,13 @@ serve(async (req) => {
       api_source: "espn",
     });
 
-    // Calculate date range: now to +48 hours
+    // Calculate date range: yesterday (for score updates) to +48 hours
     const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
 
     // Fetch NBA schedule from ESPN API (free, no key needed)
-    // Get today and next 2 days to cover 48-hour window
+    // Include yesterday (-1) for completed game score updates, today, and next 2 days
     const dates: string[] = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = -1; i < 3; i++) {
       const date = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
       dates.push(date.toISOString().split("T")[0].replace(/-/g, ""));
     }
@@ -151,13 +151,15 @@ serve(async (req) => {
       }
     }
 
-    // Filter games within 48-hour window
+    // Include: yesterday's games (for score updates) + upcoming games within 48h window
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    yesterday.setHours(0, 0, 0, 0);
     const upcomingGames = allGames.filter((game) => {
       const gameDate = new Date(game.date);
-      return gameDate >= now && gameDate <= in48Hours;
+      return gameDate >= yesterday && gameDate <= in48Hours;
     });
 
-    console.log(`Filtered to ${upcomingGames.length} games in 48-hour window`);
+    console.log(`Filtered to ${upcomingGames.length} games (yesterday + next 48h)`);
 
     // Transform and upsert games
     const gamesToUpsert = upcomingGames.map((game) => {
