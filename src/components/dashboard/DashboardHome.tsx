@@ -36,10 +36,32 @@ interface GameWithOdds extends Game {
   hasOdds: boolean;
 }
 
+type FreshnessLevel = "high" | "limited" | "stale";
+
+interface SyncFreshness {
+  level: FreshnessLevel;
+  label: string;
+}
+
+function computeFreshness(lastSyncAt: string | null, lastSyncStatus: string | null, recordsSynced: number | null): SyncFreshness {
+  if (!lastSyncAt || !lastSyncStatus) return { level: "stale", label: "Stale" };
+  const minutesAgo = (Date.now() - new Date(lastSyncAt).getTime()) / (1000 * 60);
+  if (lastSyncStatus !== "success") return { level: "stale", label: "Stale" };
+  if (minutesAgo > 30) return { level: "stale", label: "Stale" };
+  if ((recordsSynced ?? 0) === 0) return { level: "limited", label: "Limited" };
+  return { level: "high", label: "Live" };
+}
+
+const freshnessColors: Record<FreshnessLevel, string> = {
+  high: "bg-terminal-green/20 text-terminal-green border-terminal-green/30",
+  limited: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  stale: "bg-muted text-muted-foreground border-border",
+};
+
 const EXAMPLE_PROMPTS = [
-  "What should I know about tonight's slate?",
-  "What props have moved the most since open?",
-  "Who are the biggest favorites this week?",
+  "What's on tonight's slate?",
+  "Which games have the most line movement?",
+  "How do the spreads look this week?",
 ];
 
 const getSportEmoji = (league?: string) => {
@@ -71,6 +93,7 @@ export function DashboardHome() {
   const [lastRefresh, setLastRefresh] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [dataFreshness, setDataFreshness] = useState<Record<string, SyncFreshness>>({});
 
   useEffect(() => {
     fetchData();
@@ -323,6 +346,24 @@ export function DashboardHome() {
       movements.sort((a, b) => Math.abs(b.movement || 0) - Math.abs(a.movement || 0));
       setMoneyFlows(movements.slice(0, 4));
 
+      // Fetch data freshness from sync_schedule
+      try {
+        const { data: schedules } = await supabase
+          .from("sync_schedule")
+          .select("sport, data_type, last_sync_at, last_sync_status, records_synced");
+
+        if (schedules) {
+          const freshness: Record<string, SyncFreshness> = {};
+          for (const s of schedules) {
+            const key = `${s.sport}-${s.data_type}`;
+            freshness[key] = computeFreshness(s.last_sync_at, s.last_sync_status, s.records_synced);
+          }
+          setDataFreshness(freshness);
+        }
+      } catch (e) {
+        console.error("Error fetching sync freshness:", e);
+      }
+
       setLastRefresh(new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -376,6 +417,7 @@ export function DashboardHome() {
         <form onSubmit={handleSubmit} className="w-full max-w-2xl mb-4 md:mb-6">
           <div className="relative">
             <Input
+              data-coach="hero-input"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ask about any game, market, or move"
@@ -432,6 +474,22 @@ export function DashboardHome() {
               <h2 className="text-sm text-foreground uppercase tracking-wider font-medium">
                 Money Flows
               </h2>
+              {(() => {
+                const oddsKeys = Object.keys(dataFreshness).filter(k => k.includes("odds"));
+                const best = oddsKeys.length > 0
+                  ? oddsKeys.reduce((best, k) => {
+                      const level = dataFreshness[k].level;
+                      if (level === "high") return dataFreshness[k];
+                      if (level === "limited" && best.level !== "high") return dataFreshness[k];
+                      return best;
+                    }, dataFreshness[oddsKeys[0]])
+                  : null;
+                return best ? (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded border ${freshnessColors[best.level]}`}>
+                    {best.label}
+                  </span>
+                ) : null;
+              })()}
             </div>
             {lastRefresh && (
               <span className="text-xs text-muted-foreground">
@@ -505,6 +563,22 @@ export function DashboardHome() {
                 Upcoming Games
               </h2>
               <span className="text-xs text-muted-foreground">(next 48 hours)</span>
+              {(() => {
+                const gameKeys = Object.keys(dataFreshness).filter(k => k.includes("games"));
+                const best = gameKeys.length > 0
+                  ? gameKeys.reduce((best, k) => {
+                      const level = dataFreshness[k].level;
+                      if (level === "high") return dataFreshness[k];
+                      if (level === "limited" && best.level !== "high") return dataFreshness[k];
+                      return best;
+                    }, dataFreshness[gameKeys[0]])
+                  : null;
+                return best ? (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded border ${freshnessColors[best.level]}`}>
+                    {best.label}
+                  </span>
+                ) : null;
+              })()}
             </div>
           </div>
 

@@ -124,7 +124,7 @@ function buildDynamicPrompts(context: DataContext, timeOfDay: TimeOfDay): Sugges
   if (context.gameCount > 0) {
     prompts.unshift({
       text: `${context.gameCount} games today`,
-      query: `What should I know about the ${context.gameCount} games today?`
+      query: `Show me the ${context.gameCount} games and their lines today`
     });
   }
   

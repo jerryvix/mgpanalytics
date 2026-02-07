@@ -8,6 +8,9 @@ import { ChatPanel } from "@/components/chatbot";
 import { BottomNav } from "@/components/ui/BottomNav";
 import { User } from "@supabase/supabase-js";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useTrialStatus } from "@/hooks/useTrialStatus";
+import { OnboardingModal } from "@/components/onboarding";
+import { GuidedWalkthrough } from "@/components/onboarding/GuidedWalkthrough";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
@@ -18,6 +21,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isPreviewingAsUser, setIsPreviewingAsUser] = useState(false);
   const { role, isAdmin, loading: roleLoading } = useUserRole(user);
+  const { onboardingCompleted, loading: trialLoading } = useTrialStatus();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [walkthroughReady, setWalkthroughReady] = useState(false);
   const isMobile = useIsMobile();
 
   const handleTogglePreview = useCallback(() => {
@@ -56,6 +62,22 @@ const Dashboard = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Show onboarding modal for users who haven't completed it — only on dashboard home
+  const isOnDashboardHome = location.pathname === "/dashboard" || location.pathname === "/dashboard/";
+  useEffect(() => {
+    if (!trialLoading && !onboardingCompleted && user && isOnDashboardHome) {
+      setShowOnboarding(true);
+    } else if (onboardingCompleted || !isOnDashboardHome) {
+      setShowOnboarding(false);
+    }
+  }, [trialLoading, onboardingCompleted, user, isOnDashboardHome]);
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+    // Trigger walkthrough after a short delay
+    setTimeout(() => setWalkthroughReady(true), 500);
+  };
 
   // Redirect non-admins trying to access /dashboard/admin
   useEffect(() => {
@@ -102,6 +124,12 @@ const Dashboard = () => {
         {/* Bottom nav replaces sidebar on mobile */}
         {isMobile && <BottomNav />}
       </div>
+      {/* Onboarding Modal — shown once for new users */}
+      <OnboardingModal open={showOnboarding} onComplete={handleOnboardingComplete} />
+      {/* Guided Walkthrough — triggered after onboarding completes */}
+      {walkthroughReady && (
+        <GuidedWalkthrough onComplete={() => setWalkthroughReady(false)} />
+      )}
     </SidebarProvider>
   );
 };

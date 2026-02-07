@@ -32,7 +32,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChat } from "@/contexts/ChatContext";
 import {
   AlertDialog,
@@ -275,14 +274,13 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
               )}
             </div>
             <SidebarGroupContent>
-              <ScrollArea className="max-h-24">
                 <SidebarMenu>
                   {conversationsLoading ? (
                     <div className="px-3 py-2 text-xs text-sidebar-foreground/50">Loading...</div>
                   ) : conversations.length === 0 ? (
                     <div className="px-3 py-2 text-xs text-sidebar-foreground/50">No conversations yet</div>
                   ) : (
-                    conversations.slice(0, 10).map((conv) => (
+                    conversations.slice(0, 3).map((conv) => (
                       <SidebarMenuItem key={conv.id}>
                         <SidebarMenuButton asChild>
                           <button
@@ -305,13 +303,12 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                     ))
                   )}
                 </SidebarMenu>
-              </ScrollArea>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
 
         {/* Sports */}
-        <SidebarGroup className="mt-1">
+        <SidebarGroup className="mt-1" data-coach="sports-nav">
           {!collapsed && (
             <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-1">
               Sports

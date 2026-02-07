@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, ExternalLink, ChevronDown, ChevronUp, Trash2, ArrowLeft, Maximize2, Minimize2 } from "lucide-react";
+import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, Trash2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -27,15 +27,30 @@ interface Source {
   url: string;
 }
 
+type QuestionType = "MARKET_SPECIFIC" | "CONTEXTUAL" | "FACTUAL";
+
 interface Message {
   id: string;
   role: "user" | "bot";
   content: string;
   timestamp: Date;
   sources?: Source[];
+  questionType?: QuestionType;
 }
 
-const WELCOME_MESSAGE = "Hey! I'm your MGP Analyst. Ask me about upcoming games, odds, line movement, or teams across NFL, NBA, NCAAB, and more. 🏈🏀";
+const WELCOME_MESSAGE = "Welcome to the MGP Analyst. Think of me as your research assistant — I surface the data, you draw the conclusions.\n\nAsk me about games, odds, player stats, or matchups across NFL, NBA, NCAAB, and more. I'll share what I find and help you dig deeper.\n\nWhat would you like to explore?";
+
+function getQuestionTypeFooter(questionType?: QuestionType): string | null {
+  switch (questionType) {
+    case "MARKET_SPECIFIC":
+      return "Lines reflect current market data. Updated moments ago.";
+    case "CONTEXTUAL":
+    case "FACTUAL":
+      return "Context based on publicly available game results, not live market odds.";
+    default:
+      return null;
+  }
+}
 
 export function ChatPanel() {
   const { 
@@ -60,17 +75,63 @@ export function ChatPanel() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-  const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
-  const [isExpanded, setIsExpanded] = useState(() => {
-    return localStorage.getItem("chat-expanded") === "true";
-  });
+  const MIN_PANEL_WIDTH = 320;
+  const MAX_PANEL_WIDTH = 800;
+  const DEFAULT_PANEL_WIDTH = 380;
 
-  const toggleExpand = () => {
-    setIsExpanded(prev => {
-      localStorage.setItem("chat-expanded", String(!prev));
-      return !prev;
-    });
-  };
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const stored = localStorage.getItem("chat-panel-width");
+    const parsed = stored ? parseInt(stored, 10) : DEFAULT_PANEL_WIDTH;
+    return Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, parsed || DEFAULT_PANEL_WIDTH));
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = panelWidth;
+  }, [panelWidth]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Dragging left edge: moving left = wider, moving right = narrower
+      const delta = dragStartX.current - e.clientX;
+      const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH, dragStartWidth.current + delta));
+      setPanelWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      // Persist final width
+      localStorage.setItem("chat-panel-width", String(panelWidth));
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    // Prevent text selection while dragging
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    };
+  }, [isDragging, panelWidth]);
+
+  // Persist width on change (debounced via mouseup above, but also catch state)
+  useEffect(() => {
+    if (!isDragging) {
+      localStorage.setItem("chat-panel-width", String(panelWidth));
+    }
+  }, [panelWidth, isDragging]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { sendMessage: sendGeminiMessage } = useGeminiChat();
@@ -226,7 +287,6 @@ export function ChatPanel() {
     setCurrentConversationId(null);
     setActiveConversationId(null);
     setConversationHistory([]);
-    setExpandedSources(new Set());
   };
 
   const handleSendWithQuery = async (query: string) => {
@@ -272,6 +332,7 @@ export function ChatPanel() {
         content: response.content,
         timestamp: new Date(),
         sources: response.sources,
+        questionType: response.questionType,
       };
       setMessages((prev) => [...prev, botMessage]);
       
@@ -310,18 +371,6 @@ export function ChatPanel() {
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  };
-
-  const toggleSources = (messageId: string) => {
-    setExpandedSources((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(messageId)) {
-        newSet.delete(messageId);
-      } else {
-        newSet.add(messageId);
-      }
-      return newSet;
-    });
   };
 
   const ClearChatButton = () => (
@@ -389,49 +438,11 @@ export function ChatPanel() {
                     <ReactMarkdown>{message.content}</ReactMarkdown>
                   </div>
                 )}
-                {/* Sources section for bot messages */}
-                {message.role === "bot" && message.sources && message.sources.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-terminal-green/20">
-                    <button
-                      onClick={() => toggleSources(message.id)}
-                      className="flex items-center gap-1.5 py-2 text-xs text-terminal-green hover:text-terminal-green/80 transition-colors min-h-[44px]"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      <span>Sources ({message.sources.length})</span>
-                      {expandedSources.has(message.id) ? (
-                        <ChevronUp className="w-4 h-4" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4" />
-                      )}
-                    </button>
-                    <AnimatePresence>
-                      {expandedSources.has(message.id) && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="mt-2 space-y-1">
-                            {message.sources.map((source, idx) => (
-                              <a
-                                key={idx}
-                                href={source.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 py-2 px-1 -mx-1 rounded text-xs text-muted-foreground hover:text-terminal-green hover:bg-terminal-green/5 transition-colors min-h-[44px]"
-                                style={{ wordBreak: "break-word" }}
-                              >
-                                <span className="shrink-0 w-5 text-terminal-green/60">{idx + 1}.</span>
-                                <span className="break-words">{source.title}</span>
-                              </a>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                {/* Question type footer for bot messages */}
+                {message.role === "bot" && message.id !== "welcome" && getQuestionTypeFooter(message.questionType) && (
+                  <p className="text-[10px] text-muted-foreground/70 mt-2 italic">
+                    {getQuestionTypeFooter(message.questionType)}
+                  </p>
                 )}
                 {message.role === "bot" && (
                   <p className="text-xs md:text-[10px] text-muted-foreground mt-1.5">
@@ -554,48 +565,11 @@ export function ChatPanel() {
                             <ReactMarkdown>{message.content}</ReactMarkdown>
                           </div>
                         )}
-                        {message.role === "bot" && message.sources && message.sources.length > 0 && (
-                          <div className="mt-2 pt-2 border-t border-terminal-green/20">
-                            <button
-                              onClick={() => toggleSources(message.id)}
-                              className="flex items-center gap-1.5 py-2 text-xs text-terminal-green hover:text-terminal-green/80 transition-colors min-h-[44px]"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                              <span>Sources ({message.sources.length})</span>
-                              {expandedSources.has(message.id) ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                            <AnimatePresence>
-                              {expandedSources.has(message.id) && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: "auto", opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  transition={{ duration: 0.2 }}
-                                  className="overflow-hidden"
-                                >
-                                  <div className="mt-2 space-y-1">
-                                    {message.sources.map((source, idx) => (
-                                      <a
-                                        key={idx}
-                                        href={source.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 py-2 px-1 -mx-1 rounded text-xs text-muted-foreground hover:text-terminal-green hover:bg-terminal-green/5 transition-colors min-h-[44px]"
-                                        style={{ wordBreak: "break-word" }}
-                                      >
-                                        <span className="shrink-0 w-5 text-terminal-green/60">{idx + 1}.</span>
-                                        <span className="break-words">{source.title}</span>
-                                      </a>
-                                    ))}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
+                        {/* Question type footer for bot messages */}
+                        {message.role === "bot" && message.id !== "welcome" && getQuestionTypeFooter(message.questionType) && (
+                          <p className="text-[10px] text-muted-foreground/70 mt-2 italic">
+                            {getQuestionTypeFooter(message.questionType)}
+                          </p>
                         )}
                         {message.role === "bot" && (
                           <p className="text-xs text-muted-foreground mt-1.5">
@@ -694,13 +668,29 @@ export function ChatPanel() {
         {isOpen && (
           <motion.div
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: isExpanded ? 600 : 380, opacity: 1 }}
+            animate={{ width: panelWidth, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="h-full bg-card border-l border-border flex flex-col overflow-hidden"
+            transition={isDragging ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
+            className="h-full bg-card border-l border-border flex flex-col overflow-hidden relative"
           >
+            {/* Drag handle — left edge */}
+            <div
+              onMouseDown={handleDragStart}
+              className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 group"
+            >
+              <div className={`absolute inset-y-0 left-0 w-full transition-colors ${
+                isDragging ? "bg-terminal-green/40" : "bg-transparent group-hover:bg-terminal-green/20"
+              }`} />
+              {/* Visible drag indicator — centered dot cluster */}
+              <div className="absolute top-1/2 -translate-y-1/2 left-0 w-1.5 flex flex-col items-center gap-1 py-2">
+                <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-green" : "bg-muted-foreground/30 group-hover:bg-terminal-green/60"}`} />
+                <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-green" : "bg-muted-foreground/30 group-hover:bg-terminal-green/60"}`} />
+                <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-green" : "bg-muted-foreground/30 group-hover:bg-terminal-green/60"}`} />
+              </div>
+            </div>
+
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
+            <div data-coach="chat-panel" className="flex items-center justify-between p-4 border-b border-border shrink-0">
               <div className="flex items-center gap-3">
                 <MessageCircle className="w-5 h-5 text-terminal-green" />
                 <div>
@@ -712,15 +702,6 @@ export function ChatPanel() {
               </div>
               <div className="flex items-center gap-1">
                 <ClearChatButton />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleExpand}
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
-                  title={isExpanded ? "Narrow panel" : "Widen panel"}
-                >
-                  {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                </Button>
                 <Button
                   variant="ghost"
                   size="icon"

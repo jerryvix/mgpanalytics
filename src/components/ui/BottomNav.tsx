@@ -93,6 +93,7 @@ export function BottomNav() {
           return (
             <button
               key={item.label}
+              data-coach={item.label === "Sports" ? "sports-nav" : undefined}
               onClick={() => handleTap(item)}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",

@@ -11,9 +11,12 @@ interface ChatMessage {
   content: string;
 }
 
+type QuestionType = "MARKET_SPECIFIC" | "CONTEXTUAL" | "FACTUAL";
+
 interface GeminiResponse {
   content: string;
   sources: Source[];
+  questionType?: QuestionType;
 }
 
 export function useGeminiChat() {
@@ -40,6 +43,7 @@ export function useGeminiChat() {
         return {
           content: data?.content || "I couldn't generate a response.",
           sources: data?.sources || [],
+          questionType: data?.questionType,
         };
       } catch (err) {
         console.error("Error calling Gemini:", err);
