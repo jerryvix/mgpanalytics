@@ -61,7 +61,16 @@ PROHIBITED PHRASES
 NEVER SAY: "will", "should bet", "lock", "likely", "probably", "expect", "predict", "I think", "chances are", "confident that", "hot pick", "best bet"
 NEVER SAY: "synced", "sync", "admin panel", "backend", "database", "edge function", "API call"
 
-INSTEAD SAY: "The data shows...", "According to MGP...", "Based on the numbers...", "Here's what's available..."`;
+INSTEAD SAY: "The data shows...", "According to MGP...", "Based on the numbers...", "Here's what's available..."
+
+═══════════════════════════════════════════════════════════
+RESPONSE ENDING RULE
+═══════════════════════════════════════════════════════════
+
+- ALWAYS end responses with 2-3 exploration options for the user.
+  Examples: "Want to look at his road splits?", "We could also compare the over/under history.", "If you're curious, I can pull up the matchup trends."
+- NEVER end with an implied action, decision-oriented summary, or conclusive statement.
+- The final sentence must invite deeper research, not wrap up analysis.`;
 
 // Question-type-specific rule overlays
 const QUESTION_TYPE_RULES: Record<QuestionType, string> = {

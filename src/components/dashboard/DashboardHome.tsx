@@ -37,9 +37,9 @@ interface GameWithOdds extends Game {
 }
 
 const EXAMPLE_PROMPTS = [
-  "What caused the biggest movement today?",
   "What should I know about tonight's slate?",
-  "Which games are the hardest to interpret right now?",
+  "What props have moved the most since open?",
+  "Who are the biggest favorites this week?",
 ];
 
 const getSportEmoji = (league?: string) => {
