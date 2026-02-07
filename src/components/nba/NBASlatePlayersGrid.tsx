@@ -30,6 +30,7 @@ interface SlatePlayer {
   headshot_url: string | null;
   rank: number;
   ppg: number | null;
+  hasProps?: boolean;
   stats?: {
     points_per_game: number | null;
     rebounds_per_game: number | null;
@@ -263,6 +264,7 @@ export function NBASlatePlayersGrid({
               minutesPerGame={player.stats?.minutes_per_game ?? undefined}
               gameContext={player.gameContext}
               showRank={viewMode === "slate"}
+              hasProps={player.hasProps}
             />
           ))}
         </div>

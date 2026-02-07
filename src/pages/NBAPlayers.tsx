@@ -110,7 +110,19 @@ export default function NBAPlayers() {
         });
       }
 
-      // 6. Combine players with stats and game context
+      // 6. Check which players have props today
+      const today = new Date().toISOString().split("T")[0];
+      const { data: propsData } = await supabase
+        .from("player_props")
+        .select("player_id")
+        .in("player_id", playerIds)
+        .eq("sport", "NBA")
+        .gte("game_date", today)
+        .eq("is_active", true);
+
+      const playerIdsWithProps = new Set((propsData || []).map(p => p.player_id));
+
+      // 7. Combine players with stats and game context
       const playersWithStats = playersData
         .map(player => {
           const stats = statsMap.get(player.id);
@@ -120,6 +132,7 @@ export default function NBAPlayers() {
             stats,
             gameContext,
             ppg: stats?.points_per_game ?? null,
+            hasProps: playerIdsWithProps.has(player.id),
           };
         })
         // Filter to only players with PPG stats
@@ -127,7 +140,7 @@ export default function NBAPlayers() {
         // Sort by PPG descending
         .sort((a, b) => (b.ppg ?? 0) - (a.ppg ?? 0));
 
-      // 7. Take top 10 for slate view, all for all view
+      // 8. Take top 10 for slate view, all for all view
       const finalPlayers = viewMode === "slate" 
         ? playersWithStats.slice(0, 10)
         : playersWithStats;
