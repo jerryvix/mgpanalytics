@@ -83,8 +83,8 @@ export default function SyncObservatory() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link to="/dashboard/admin">
             <Button variant="ghost" size="sm" className="gap-1 font-mono text-xs text-muted-foreground hover:text-foreground">
               <ArrowLeft className="w-3 h-3" />
@@ -93,7 +93,7 @@ export default function SyncObservatory() {
           </Link>
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-terminal-cyan" />
-            <h1 className="text-lg font-mono font-bold text-foreground tracking-tight">SYNC OBSERVATORY</h1>
+            <h1 className="text-base sm:text-lg font-mono font-bold text-foreground tracking-tight">SYNC OBSERVATORY</h1>
           </div>
           <Badge variant="outline" className="border-terminal-cyan text-terminal-cyan text-[10px]">
             ADMIN
@@ -102,7 +102,7 @@ export default function SyncObservatory() {
         <Button
           variant="outline"
           size="sm"
-          className="gap-1 font-mono text-xs border-terminal-cyan/50 hover:bg-terminal-cyan/10"
+          className="gap-1 font-mono text-xs border-terminal-cyan/50 hover:bg-terminal-cyan/10 self-end sm:self-auto"
           onClick={() => refetch()}
           disabled={isRefetching}
         >
@@ -125,7 +125,7 @@ export default function SyncObservatory() {
       <DataFreshnessGrid syncLogs={recentLogs} />
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[10px] text-muted-foreground uppercase">Sport:</span>
           <Select value={sportFilter} onValueChange={(v) => { setSportFilter(v); setPage(0); }}>
