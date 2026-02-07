@@ -264,11 +264,11 @@ Deno.serve(async (req) => {
 
       do {
         const params: Record<string, string | number | number[]> = {
-          seasons: bdlSeason,
+          seasons: [bdlSeason],
           player_ids: batchIds,
           per_page: 100,
         };
-        if (cursor) (params as any).cursor = cursor;
+        if (cursor) params.cursor = cursor as unknown as string;
 
         try {
           const result = await bdlFetch(BDL_API_KEY, "/stats", params);
