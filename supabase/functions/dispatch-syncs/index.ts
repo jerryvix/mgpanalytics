@@ -1,10 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
-};
+import { getCorsHeaders, legacyCorsHeaders } from "../_shared/cors.ts";
 
 // Map sync_schedule rows to edge function names
 const SYNC_FUNCTION_MAP: Record<string, string> = {
@@ -61,6 +57,8 @@ function intervalToMs(interval: string): number {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -81,21 +79,15 @@ Deno.serve(async (req) => {
       throw new Error("CRON_SECRET not configured");
     }
 
-    // Auth: accept cron secret, service role key, OR admin user JWT
+    // Auth: accept cron secret OR admin user JWT (service role key no longer accepted as bearer)
     const cronSecret = req.headers.get("x-cron-secret");
     const authHeader = req.headers.get("Authorization");
-    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-    const apikeyHeader = req.headers.get("apikey");
 
-    let isAuthed =
-      cronSecret === CRON_SECRET ||
-      bearerToken === CRON_SECRET ||
-      bearerToken === SUPABASE_SERVICE_ROLE_KEY ||
-      apikeyHeader === SUPABASE_SERVICE_ROLE_KEY;
+    let isAuthed = cronSecret === CRON_SECRET;
 
     // If not authed via secret/key, check if caller is an admin user
     if (!isAuthed && authHeader) {
-      const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || apikeyHeader || "";
+      const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || "";
       const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         global: { headers: { Authorization: authHeader } },
       });
@@ -218,13 +210,14 @@ Deno.serve(async (req) => {
       console.log(`[dispatch-syncs] Firing ${functionName} for ${key}`);
 
       // Fire the fetch without awaiting — the sync function runs independently
+      // Auth via x-cron-secret only; apikey is for gateway routing (anon key preferred)
+      const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || SUPABASE_SERVICE_ROLE_KEY;
       fetch(functionUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
           "x-cron-secret": CRON_SECRET,
-          "apikey": SUPABASE_SERVICE_ROLE_KEY,
+          "apikey": ANON_KEY,
         },
       }).then(async (response) => {
         const responseData = await response.json().catch(() => ({}));
