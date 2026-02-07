@@ -177,7 +177,7 @@ Points: ${stats.points_per_game?.toFixed(1) || "—"} | Rebounds: ${stats.reboun
 Steals: ${stats.steals_per_game?.toFixed(1) || "—"} | Blocks: ${stats.blocks_per_game?.toFixed(1) || "—"} | Minutes: ${stats.minutes_per_game?.toFixed(1) || "—"}
 
 🎯 **SHOOTING**
-FG%: ${stats.field_goal_pct ? (stats.field_goal_pct * 100).toFixed(1) + "%" : "—"} | 3P%: ${stats.three_point_pct ? (stats.three_point_pct * 100).toFixed(1) + "%" : "—"} | FT%: ${stats.free_throw_pct ? (stats.free_throw_pct * 100).toFixed(1) + "%" : "—"}
+FG%: ${stats.field_goal_pct ? stats.field_goal_pct.toFixed(1) + "%" : "—"} | 3P%: ${stats.three_point_pct ? stats.three_point_pct.toFixed(1) + "%" : "—"} | FT%: ${stats.free_throw_pct ? stats.free_throw_pct.toFixed(1) + "%" : "—"}
 
 Games Played: ${stats.games_played || "—"}
 
@@ -386,7 +386,7 @@ export async function handleSpecificStatQuery(stat: string, playerName: string):
       const tpm = rawData?.fg3m || rawData?.three_pointers_made;
       const gp = s.games_played || 1;
       const tpmPerGame = tpm ? (Number(tpm) / gp).toFixed(1) : "—";
-      const pct = s.three_point_pct ? (s.three_point_pct * 100).toFixed(1) + "%" : "—";
+      const pct = s.three_point_pct ? s.three_point_pct.toFixed(1) + "%" : "—";
       return `🏀 **${player.name}** (${team}) averages **${tpmPerGame} three-pointers per game** this season on ${pct} shooting.`;
     
     case "points":

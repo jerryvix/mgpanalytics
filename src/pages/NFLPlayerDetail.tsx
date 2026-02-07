@@ -1,15 +1,28 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, User, TrendingUp, Zap, Calendar, Target } from "lucide-react";
+import { ArrowLeft, User, TrendingUp, Zap, Calendar, Target, BarChart3 } from "lucide-react";
 import { NFLPlayerStatsCard } from "@/components/players/NFLPlayerStatsCard";
 import { NFLGameLog } from "@/components/players/NFLGameLog";
 import { NFLAdvancedStats } from "@/components/players/NFLAdvancedStats";
+import { getPositionGroup } from "@/utils/nflStatsFormatters";
+
+/** Normalize full position names (e.g. "Quarterback") to abbreviations (e.g. "QB") */
+function normalizePosition(pos: string): string {
+  const map: Record<string, string> = {
+    quarterback: "QB",
+    "running back": "RB",
+    fullback: "FB",
+    "wide receiver": "WR",
+    "tight end": "TE",
+  };
+  return map[pos.toLowerCase()] || pos;
+}
 
 export default function NFLPlayerDetail() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -96,8 +109,47 @@ export default function NFLPlayerDetail() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch upcoming props
+  const { data: props = [] } = useQuery({
+    queryKey: ["nfl-player-props", player?.id],
+    queryFn: async () => {
+      if (!player?.id) return [];
+      const today = new Date().toISOString().split("T")[0];
+      const { data, error } = await supabase
+        .from("player_props")
+        .select("*")
+        .eq("player_id", player.id)
+        .eq("sport", "NFL")
+        .gte("game_date", today)
+        .eq("is_active", true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!player?.id,
+  });
+
+  // Fetch graded prop results
+  const { data: propResults = [] } = useQuery({
+    queryKey: ["nfl-player-prop-results", player?.id],
+    queryFn: async () => {
+      if (!player?.id) return [];
+      const { data, error } = await supabase
+        .from("player_props")
+        .select("*")
+        .eq("player_id", player.id)
+        .eq("sport", "NFL")
+        .eq("graded", true)
+        .order("game_date", { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!player?.id,
+  });
+
   const getPositionColor = (pos: string) => {
-    switch (pos) {
+    const norm = normalizePosition(pos);
+    switch (norm) {
       case "QB":
         return "bg-red-500/20 text-red-400 border-red-500/30";
       case "RB":
@@ -156,7 +208,8 @@ export default function NFLPlayerDetail() {
   }
 
   const fullName = player.name || `${player.first_name || ""} ${player.last_name || ""}`.trim();
-  const posAbbr = player.position || "";
+  const posAbbr = normalizePosition(player.position || "");
+  const posGroup = getPositionGroup(posAbbr);
 
   // Calculate season averages for highlighting in game log
   const seasonAverages = stats ? {
@@ -165,6 +218,23 @@ export default function NFLPlayerDetail() {
     rec_yards: stats.games_played && stats.rec_yards ? stats.rec_yards / stats.games_played : undefined,
     receptions: stats.games_played && stats.receptions ? stats.receptions / stats.games_played : undefined,
   } : undefined;
+
+  // Season label
+  const seasonLabel = stats?.season ? String(stats.season) : (() => {
+    const now = new Date();
+    return String(now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1);
+  })();
+
+  // Prop type display labels
+  const propLabel = (type: string) => ({
+    pass_yards: "Pass Yards", rush_yards: "Rush Yards", rec_yards: "Rec Yards",
+    pass_td: "Pass TDs", rush_td: "Rush TDs", receptions: "Receptions",
+    pass_completions: "Completions", pass_attempts: "Pass Attempts",
+    interceptions: "Interceptions", points: "Points", assists: "Assists",
+    "pass+rush_yards": "Pass+Rush Yds", anytime_td: "Anytime TD",
+  }[type] || type);
+
+  const fmtOdds = (o: number | null) => o === null ? "—" : o > 0 ? `+${o}` : `${o}`;
 
   return (
     <div className="space-y-6">
@@ -177,76 +247,153 @@ export default function NFLPlayerDetail() {
       </Link>
 
       {/* Player Header */}
-      <Card className="bg-card border-border">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Avatar with jersey number */}
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                <User className="w-12 h-12 text-muted-foreground" />
+      <Card className="bg-card border-border overflow-hidden">
+        <div className="flex flex-col md:flex-row">
+          {/* Photo/Avatar */}
+          <div className="w-full md:w-48 bg-gradient-to-br from-red-500/10 to-terminal-green/10 flex items-center justify-center p-6">
+            {player.headshot_url ? (
+              <img
+                src={player.headshot_url}
+                alt={fullName}
+                className="w-32 h-32 rounded-full object-cover border-2 border-terminal-cyan/50"
+              />
+            ) : (
+              <div className="w-32 h-32 rounded-full bg-muted flex items-center justify-center">
+                <User className="w-16 h-16 text-muted-foreground" />
               </div>
-              {player.jersey_number && (
-                <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-terminal-green flex items-center justify-center">
-                  <span className="text-xs font-bold text-background">#{player.jersey_number}</span>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="flex-1 p-6">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  {player.jersey_number && (
+                    <span className="text-3xl font-bold text-terminal-cyan">#{player.jersey_number}</span>
+                  )}
+                  <h1 className="text-2xl font-bold text-foreground">{fullName}</h1>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Badge variant="outline" className={getPositionColor(posAbbr)}>
+                    {posAbbr}
+                  </Badge>
+                  <span>|</span>
+                  <span className="font-medium">{player.team_name || "Free Agent"}</span>
+                </div>
+              </div>
+
+              {/* Injury badge */}
+              {player.injury_status && player.injury_status !== "Healthy" && (
+                <Badge className="bg-destructive/20 text-destructive border-destructive/50">
+                  {player.injury_designation || player.injury_status}
+                </Badge>
+              )}
+            </div>
+
+            {/* Bio Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm pt-4">
+              {player.height && (
+                <div className="bg-muted/30 rounded-lg p-2">
+                  <span className="text-muted-foreground block text-xs">Height</span>
+                  <span className="text-foreground font-medium">{player.height}</span>
+                </div>
+              )}
+              {player.weight && (
+                <div className="bg-muted/30 rounded-lg p-2">
+                  <span className="text-muted-foreground block text-xs">Weight</span>
+                  <span className="text-foreground font-medium">{player.weight} lbs</span>
+                </div>
+              )}
+              {player.age && (
+                <div className="bg-muted/30 rounded-lg p-2">
+                  <span className="text-muted-foreground block text-xs">Age</span>
+                  <span className="text-foreground font-medium">{player.age}</span>
+                </div>
+              )}
+              {player.college && (
+                <div className="bg-muted/30 rounded-lg p-2">
+                  <span className="text-muted-foreground block text-xs">College</span>
+                  <span className="text-foreground font-medium">{player.college}</span>
+                </div>
+              )}
+              {player.experience !== null && player.experience !== undefined && (
+                <div className="bg-muted/30 rounded-lg p-2">
+                  <span className="text-muted-foreground block text-xs">Experience</span>
+                  <span className="text-foreground font-medium">
+                    {player.experience === 0 ? "Rookie" : `${player.experience} yr${player.experience !== 1 ? "s" : ""}`}
+                  </span>
                 </div>
               )}
             </div>
 
-            {/* Info */}
-            <div className="flex-1 space-y-3">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">{fullName}</h1>
-                <div className="flex items-center gap-3 text-muted-foreground mt-1">
-                  <Badge variant="outline" className={getPositionColor(posAbbr)}>
-                    {posAbbr}
-                  </Badge>
-                  {player.team_name && (
-                    <>
-                      <span>|</span>
-                      <span className="font-medium">{player.team_name}</span>
-                    </>
-                  )}
-                </div>
+            {/* Quick Stats Summary */}
+            {stats && (
+              <div className="grid grid-cols-4 md:grid-cols-5 gap-3 mt-4">
+                {posGroup === "QB" && (
+                  <>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-terminal-green">{stats.pass_yards?.toLocaleString() || "—"}</p>
+                      <p className="text-xs text-muted-foreground">Pass Yds</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-foreground">{stats.pass_td || "—"}</p>
+                      <p className="text-xs text-muted-foreground">TDs</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-foreground">{stats.passer_rating?.toFixed(1) || "—"}</p>
+                      <p className="text-xs text-muted-foreground">Rating</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-foreground">{stats.games_played || 0}</p>
+                      <p className="text-xs text-muted-foreground">GP</p>
+                    </div>
+                  </>
+                )}
+                {posGroup === "RB" && (
+                  <>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-terminal-green">{stats.rush_yards?.toLocaleString() || "—"}</p>
+                      <p className="text-xs text-muted-foreground">Rush Yds</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-foreground">{stats.rush_td || "—"}</p>
+                      <p className="text-xs text-muted-foreground">Rush TDs</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-foreground">{stats.rec_yards?.toLocaleString() || "—"}</p>
+                      <p className="text-xs text-muted-foreground">Rec Yds</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-foreground">{stats.games_played || 0}</p>
+                      <p className="text-xs text-muted-foreground">GP</p>
+                    </div>
+                  </>
+                )}
+                {posGroup === "WR_TE" && (
+                  <>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-terminal-green">{stats.rec_yards?.toLocaleString() || "—"}</p>
+                      <p className="text-xs text-muted-foreground">Rec Yds</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-foreground">{stats.receptions || "—"}</p>
+                      <p className="text-xs text-muted-foreground">Rec</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-foreground">{stats.rec_td || "—"}</p>
+                      <p className="text-xs text-muted-foreground">TDs</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-2xl font-bold text-foreground">{stats.games_played || 0}</p>
+                      <p className="text-xs text-muted-foreground">GP</p>
+                    </div>
+                  </>
+                )}
               </div>
-
-              {/* Bio Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm pt-2">
-                {player.height && (
-                  <div className="bg-muted/30 rounded-lg p-2">
-                    <span className="text-muted-foreground block text-xs">Height</span>
-                    <span className="text-foreground font-medium">{player.height}</span>
-                  </div>
-                )}
-                {player.weight && (
-                  <div className="bg-muted/30 rounded-lg p-2">
-                    <span className="text-muted-foreground block text-xs">Weight</span>
-                    <span className="text-foreground font-medium">{player.weight} lbs</span>
-                  </div>
-                )}
-                {player.age && (
-                  <div className="bg-muted/30 rounded-lg p-2">
-                    <span className="text-muted-foreground block text-xs">Age</span>
-                    <span className="text-foreground font-medium">{player.age}</span>
-                  </div>
-                )}
-                {player.college && (
-                  <div className="bg-muted/30 rounded-lg p-2">
-                    <span className="text-muted-foreground block text-xs">College</span>
-                    <span className="text-foreground font-medium">{player.college}</span>
-                  </div>
-                )}
-                {player.experience !== null && player.experience !== undefined && (
-                  <div className="bg-muted/30 rounded-lg p-2">
-                    <span className="text-muted-foreground block text-xs">Experience</span>
-                    <span className="text-foreground font-medium">
-                      {player.experience === 0 ? "Rookie" : `${player.experience} yr${player.experience !== 1 ? "s" : ""}`}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+            )}
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       {/* Stats Tabs */}
@@ -297,20 +444,138 @@ export default function NFLPlayerDetail() {
         </TabsContent>
 
         <TabsContent value="betting">
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <div className="text-center py-8">
-                <Target className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Betting Trends Coming Soon
-                </h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Player prop betting history, line movements, and performance
-                  against closing lines will be available here.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {/* Upcoming Props */}
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Upcoming Props
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {props.length > 0 ? (
+                  <div className="space-y-3">
+                    {Object.entries(
+                      props.reduce((acc: Record<string, typeof props>, p) => {
+                        if (!acc[p.prop_type]) acc[p.prop_type] = [];
+                        acc[p.prop_type].push(p);
+                        return acc;
+                      }, {})
+                    ).map(([propType, typeProps]) => {
+                      const primary = typeProps.find((p) => p.sportsbook === "draftkings") || typeProps[0];
+                      return (
+                        <div key={propType} className="border border-border rounded-lg p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-mono text-sm text-foreground font-semibold">{propLabel(propType)}</span>
+                            <span className="font-mono text-lg text-terminal-cyan font-bold">O/U {primary.line}</span>
+                          </div>
+                          <div className="space-y-1">
+                            {typeProps.map((prop) => {
+                              const bookLabel = {
+                                draftkings: "DraftKings", fanduel: "FanDuel",
+                                betmgm: "BetMGM", caesars: "Caesars",
+                              }[prop.sportsbook.toLowerCase()] || prop.sportsbook;
+                              return (
+                                <div key={`${prop.prop_type}-${prop.sportsbook}`} className="flex items-center justify-between text-xs font-mono">
+                                  <span className="text-muted-foreground">{bookLabel}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-terminal-green">{fmtOdds(prop.over_odds)}</span>
+                                    <span className="text-muted-foreground">/</span>
+                                    <span className="text-terminal-amber">{fmtOdds(prop.under_odds)}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No upcoming props available. Props typically release on game day around 10 AM ET.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Prop Results History */}
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5" />
+                  Prop Results
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {propResults.length > 0 ? (
+                  <>
+                    {/* Hit Rate Summary */}
+                    {(() => {
+                      const scored = propResults.filter((p) => p.result === "over" || p.result === "under");
+                      const overs = scored.filter((p) => p.result === "over").length;
+                      return scored.length > 0 ? (
+                        <div className="bg-terminal-cyan/5 border border-terminal-cyan/20 rounded-lg p-3 mb-4">
+                          <p className="font-mono text-xs text-terminal-cyan">
+                            Overall: {overs}/{scored.length} Overs hit ({((overs / scored.length) * 100).toFixed(0)}%)
+                          </p>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* Results Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs font-mono">
+                        <thead>
+                          <tr className="border-b border-border text-muted-foreground">
+                            <th className="text-left py-2 pr-2">Date</th>
+                            <th className="text-left py-2 pr-2">Prop</th>
+                            <th className="text-right py-2 pr-2">Line</th>
+                            <th className="text-right py-2 pr-2">Actual</th>
+                            <th className="text-right py-2">Result</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {propResults.map((prop) => {
+                            const date = prop.game_date
+                              ? new Date(prop.game_date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                              : "—";
+                            return (
+                              <tr key={prop.id} className="border-b border-border/50">
+                                <td className="py-1.5 pr-2 text-muted-foreground">{date}</td>
+                                <td className="py-1.5 pr-2">{propLabel(prop.prop_type)}</td>
+                                <td className="py-1.5 pr-2 text-right">{prop.line}</td>
+                                <td className="py-1.5 pr-2 text-right font-semibold">{prop.actual_value ?? "—"}</td>
+                                <td className="py-1.5 text-right">
+                                  {prop.result === "over" && (
+                                    <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green/50 text-[10px]">OVER</Badge>
+                                  )}
+                                  {prop.result === "under" && (
+                                    <Badge className="bg-terminal-amber/20 text-terminal-amber border-terminal-amber/50 text-[10px]">UNDER</Badge>
+                                  )}
+                                  {prop.result === "push" && (
+                                    <Badge variant="outline" className="text-[10px]">PUSH</Badge>
+                                  )}
+                                  {prop.result === "void" && (
+                                    <Badge variant="outline" className="text-[10px] text-muted-foreground">VOID</Badge>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No prop results yet. Results appear after games are completed and graded.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

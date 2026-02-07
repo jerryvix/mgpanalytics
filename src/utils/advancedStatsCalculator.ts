@@ -2,6 +2,7 @@
 // Calculates derived stats from game logs and season data
 
 import { NFLPlayerStats, NFLGameLogEntry } from "@/services/balldontlie/nflPlayers";
+import { getPositionGroup } from "@/utils/nflStatsFormatters";
 
 export interface AdvancedStats {
   // QB
@@ -125,19 +126,23 @@ export function calculateAdvancedStats(
   const advanced: AdvancedStats = {};
   
   if (!stats) return advanced;
-  
+
   const games = stats.games_played || 1;
-  
-  switch (position.toUpperCase()) {
+  // Normalize position: DB may store "Quarterback" but switch expects "QB"
+  const posGroup = getPositionGroup(position);
+  // Handle both DB column name (pass_int) and interface name (interceptions)
+  const ints = (stats as any).pass_int ?? stats.interceptions ?? 0;
+
+  switch (posGroup) {
     case "QB":
       // Passer rating is already available
       advanced.passer_rating = stats.passer_rating;
-      
+
       // EPA per play (simulated - would need PBP data)
       if (stats.pass_yards && stats.pass_td && stats.pass_attempts) {
         const yardsOverExpected = stats.pass_yards - (stats.pass_attempts * 6.5);
         const tdBonus = (stats.pass_td || 0) * 20;
-        const intPenalty = (stats.interceptions || 0) * 45;
+        const intPenalty = ints * 45;
         advanced.epa_per_play = ((yardsOverExpected + tdBonus - intPenalty) / stats.pass_attempts) * 0.15;
       }
       
@@ -173,7 +178,6 @@ export function calculateAdvancedStats(
       break;
       
     case "RB":
-    case "FB":
       // Yards after contact (simulated ~55% of rushing yards)
       if (stats.rush_yards && stats.rush_attempts) {
         advanced.yards_after_contact = (stats.rush_yards * 0.55) / stats.rush_attempts;
@@ -209,8 +213,7 @@ export function calculateAdvancedStats(
       advanced.target_share = calcTargetShare(stats.targets, games);
       break;
       
-    case "WR":
-    case "TE":
+    case "WR_TE":
       // Target share
       advanced.target_share = calcTargetShare(stats.targets, games);
       
@@ -243,12 +246,7 @@ export function calculateAdvancedStats(
       advanced.routes_run = Math.floor(games * 28);
       break;
       
-    case "DE":
-    case "DT":
-    case "LB":
-    case "CB":
-    case "S":
-    case "DB":
+    case "DEF":
       // Tackles per game
       if (stats.tackles) {
         advanced.tackles_per_game = stats.tackles / games;
@@ -279,8 +277,8 @@ export function calculateAdvancedStats(
       advanced.coverage_snaps = Math.floor(games * 35);
       
       // Passer rating allowed (simulated)
-      if (stats.interceptions) {
-        advanced.passer_rating_allowed = 95 - (stats.interceptions * 8) + Math.random() * 20;
+      if (ints) {
+        advanced.passer_rating_allowed = 95 - (ints * 8) + Math.random() * 20;
       } else {
         advanced.passer_rating_allowed = 88 + Math.random() * 25;
       }
