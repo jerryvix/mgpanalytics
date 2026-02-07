@@ -78,16 +78,16 @@ export function GamePreviewModal({ game, open, onOpenChange }: GamePreviewModalP
             p_team1: game.home_team_name,
             p_team2: game.visitor_team_name,
           }),
-          // Home last 5
+          // Home last 10
           supabase.rpc("get_nba_team_last_n_games", {
             p_team_name: game.home_team_name,
-            p_n: 5,
+            p_n: 10,
             p_before_date: game.date,
           }),
-          // Away last 5
+          // Away last 10
           supabase.rpc("get_nba_team_last_n_games", {
             p_team_name: game.visitor_team_name,
-            p_n: 5,
+            p_n: 10,
             p_before_date: game.date,
           }),
         ]);
@@ -223,7 +223,7 @@ export function GamePreviewModal({ game, open, onOpenChange }: GamePreviewModalP
             {/* Last 5 Games */}
             {stats.last5.length > 0 && (
               <div className="pt-2 border-t border-border/30">
-                <span className="text-muted-foreground text-[10px] uppercase">Last 5 Games:</span>
+                <span className="text-muted-foreground text-[10px] uppercase">Last 10 Games:</span>
                 <div className="flex gap-1 mt-1">
                   {stats.last5.map((g, idx) => (
                     <Tooltip key={idx}>

@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { 
-  Play, 
-  Square, 
-  Loader2, 
-  ChevronDown, 
+import {
+  Play,
+  Square,
+  Loader2,
+  ChevronDown,
   ChevronRight,
   Users,
   BarChart3,
@@ -18,7 +18,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  RefreshCw
+  RefreshCw,
+  Database
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -267,6 +268,41 @@ export function NBASyncCard() {
     }
   };
 
+  // Backfill NBA Games (via edge function)
+  const [backfillSyncState, setBackfillSyncState] = useState<SyncState>("idle");
+  const syncBackfillGames = async (): Promise<boolean> => {
+    setBackfillSyncState("syncing");
+
+    try {
+      toast({ title: "Backfilling NBA Games...", description: "Fetching full season from BallDontLie API" });
+
+      const { data, error } = await supabase.functions.invoke("backfill-nba-games");
+
+      if (error) {
+        console.log("[NBA Sync] Backfill edge error:", error.message);
+        throw error;
+      }
+
+      await updateSyncSchedule("backfill", "success");
+      await fetchCounts();
+      setBackfillSyncState("done");
+
+      toast({
+        title: "NBA Games Backfilled",
+        description: data?.message || `${data?.inserted || 0} games added, ${data?.updated || 0} updated`,
+      });
+
+      setTimeout(() => setBackfillSyncState("idle"), 3000);
+      return true;
+    } catch (error) {
+      console.error("[NBA Sync] Backfill error:", error);
+      setBackfillSyncState("error");
+      await updateSyncSchedule("backfill", "failed");
+      toast({ title: "Backfill Failed", description: "Check console for details", variant: "destructive" });
+      return false;
+    }
+  };
+
   // Full NBA Sync
   const handleFullSync = async () => {
     setIsFullSyncing(true);
@@ -336,8 +372,9 @@ export function NBASyncCard() {
     return String(n);
   };
 
-  const isSyncing = playersSyncState === "syncing" || statsSyncState === "syncing" || 
-                    logsSyncState === "syncing" || propsSyncState === "syncing" || isFullSyncing;
+  const isSyncing = playersSyncState === "syncing" || statsSyncState === "syncing" ||
+                    logsSyncState === "syncing" || propsSyncState === "syncing" ||
+                    backfillSyncState === "syncing" || isFullSyncing;
 
   // Calculate data health score
   const calculateHealthScore = (): number => {
@@ -565,6 +602,29 @@ export function NBASyncCard() {
                     disabled={isSyncing}
                   >
                     {propsSyncState === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : <RefreshCw className="w-2 h-2" />}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Backfill Games Section */}
+              <div className="flex items-center justify-between bg-terminal-amber/5 border border-terminal-amber/20 rounded px-2 py-1.5">
+                <div className="flex items-center gap-2">
+                  {getStatusIcon(backfillSyncState)}
+                  <Database className="w-3 h-3 text-terminal-amber" />
+                  <span className="font-mono text-[10px]">Backfill Games</span>
+                  <span className="text-[9px] text-muted-foreground">
+                    Full season history
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="font-mono text-[9px] h-5 px-2 border-terminal-amber/50 hover:bg-terminal-amber/10"
+                    onClick={syncBackfillGames}
+                    disabled={isSyncing}
+                  >
+                    {backfillSyncState === "syncing" ? <Loader2 className="w-2 h-2 animate-spin" /> : <><Database className="w-2 h-2 mr-1" />Backfill</>}
                   </Button>
                 </div>
               </div>

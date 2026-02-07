@@ -525,274 +525,40 @@ export function AdminPanel() {
     setIsSyncingNFLGameLogs(true);
     setGameLogsSyncProgress(null);
     setGameLogsSyncInfo(null);
-    stopGameLogsSyncRef.current = false;
-    const season = 2025;
-    const GAME_BATCH_SIZE = 5;
-    const BATCH_DELAY = 500;
-    
+
     try {
-      // Step 1: Build player lookup map from our database
-      toast({ title: "Loading players...", description: "Building player lookup map" });
-      
-      let allPlayers: { id: string; external_id: string }[] = [];
-      let offset = 0;
-      const pageSize = 1000;
-      
-      const { count: playerCount } = await supabase
-        .from("players")
-        .select("*", { count: "exact", head: true })
-        .eq("sport", "NFL");
-      
-      if (!playerCount || playerCount === 0) {
-        throw new Error("No NFL players in database - sync players first");
-      }
+      toast({ title: "Syncing NFL Game Logs...", description: "Running via edge function" });
 
-      while (offset < playerCount) {
-        const { data: batch } = await supabase
-          .from("players")
-          .select("id, external_id")
-          .eq("sport", "NFL")
-          .range(offset, offset + pageSize - 1);
-        
-        if (batch) allPlayers = [...allPlayers, ...batch];
-        offset += pageSize;
-      }
+      const { data, error } = await supabase.functions.invoke("sync-nfl-game-logs", {
+        body: { season: 2024 },
+      });
 
-      const playerMap = new Map(allPlayers.map(p => [String(p.external_id), p.id]));
-      console.log(`[Admin] Loaded ${playerMap.size} NFL players into lookup map`);
-
-      // Step 2: Fetch all games for the season from Ball Don't Lie API via edge function
-      toast({ title: "Fetching games...", description: `Loading ${season} NFL games from API` });
-      
-      let allGames: Array<{ id: number; week: number; date: string; status: string; home_team: { abbreviation: string; full_name: string }; away_team: { abbreviation: string; full_name: string }; home_team_score: number; away_team_score: number }> = [];
-      let nextCursor: string | null = null;
-      
-      do {
-        const params: Record<string, string | number> = { season, per_page: 50 };
-        if (nextCursor) params.cursor = nextCursor;
-        
-        const result = await bdlFetch("nfl", "/games", params);
-        allGames = [...allGames, ...((result.data || []) as typeof allGames)];
-        nextCursor = result.meta?.next_cursor || null;
-        
-        await new Promise(r => setTimeout(r, 100));
-      } while (nextCursor);
-
-      console.log(`[Admin] Found ${allGames.length} games for ${season} season`);
-      
-      if (allGames.length === 0) {
-        toast({ title: "No games found", description: `No NFL games found for ${season} season` });
-        return false;
-      }
-
-      // Sort games by week for better progress display
-      allGames.sort((a, b) => (a.week || 0) - (b.week || 0));
-
-      setGameLogsSyncProgress({ current: 0, total: allGames.length });
-      setGameLogsSyncInfo({ current: 0, total: allGames.length, week: allGames[0]?.week });
-
-      let totalSynced = 0;
-      let gamesProcessed = 0;
-      let skippedPlayers = 0;
-
-      // Step 3: Process games in batches
-      for (let i = 0; i < allGames.length; i += GAME_BATCH_SIZE) {
-        if (stopSyncRef.current || stopGameLogsSyncRef.current) {
-          await updateSyncTimestamp("NFL", "game_logs", "stopped");
-          toast({ title: "Game Logs Sync Stopped", description: `Stopped by admin. ${totalSynced} logs saved from ${gamesProcessed} games.` });
-          break;
-        }
-
-        const gameBatch = allGames.slice(i, i + GAME_BATCH_SIZE);
-        
-        // Fetch stats for each game in the batch via edge function
-        const batchPromises = gameBatch.map(async (game) => {
-          try {
-            const result = await bdlFetch("nfl", "/stats", { game_ids: game.id });
-            return { game, stats: (result.data || []) as Record<string, unknown>[] };
-          } catch (err) {
-            console.warn(`[Admin] Error fetching game ${game.id}:`, err);
-            return { game, stats: [] as Record<string, unknown>[] };
-          }
-        });
-
-        const batchResults = await Promise.all(batchPromises);
-        const logsToUpsert: Array<{
-          player_id: string;
-          sport: string;
-          season: number;
-          week: number | null;
-          game_date: string | null;
-          game_id: string;
-          opponent_abbr: string | null;
-          opponent_name: string | null;
-          home_away: string;
-          team_score: number;
-          opponent_score: number;
-          result: string | null;
-          pass_attempts: number;
-          pass_completions: number;
-          pass_yards: number;
-          pass_td: number;
-          pass_int: number;
-          passer_rating: number | null;
-          rush_attempts: number;
-          rush_yards: number;
-          rush_td: number;
-          targets: number;
-          receptions: number;
-          rec_yards: number;
-          rec_td: number;
-          fantasy_points: number;
-          fantasy_points_ppr: number;
-          raw_data: Json;
-        }> = [];
-
-        for (const { game, stats } of batchResults) {
-          for (const stat of stats) {
-            const statObj = stat as Record<string, unknown>;
-            const playerObj = statObj.player as Record<string, unknown> | undefined;
-            const teamObj = playerObj?.team as Record<string, unknown> | undefined;
-            
-            // Find player in our database
-            const externalPlayerId = String(playerObj?.id);
-            const playerId = playerMap.get(externalPlayerId);
-            
-            if (!playerId) {
-              skippedPlayers++;
-              continue;
-            }
-
-            // Determine home/away and opponent
-            const playerTeamAbbr = (teamObj?.abbreviation as string) || "";
-            const isHome = game.home_team?.abbreviation === playerTeamAbbr;
-            const homeAway = isHome ? "home" : "away";
-            const opponentAbbr = isHome ? game.away_team?.abbreviation : game.home_team?.abbreviation;
-            const opponentName = isHome ? game.away_team?.full_name : game.home_team?.full_name;
-            
-            // Get scores
-            const homeScore = game.home_team_score || 0;
-            const awayScore = game.away_team_score || 0;
-            const teamScore = isHome ? homeScore : awayScore;
-            const opponentScore = isHome ? awayScore : homeScore;
-            
-            // Determine result
-            let result: string | null = null;
-            if (game.status === "Final" || game.status === "final") {
-              if (teamScore > opponentScore) result = "W";
-              else if (teamScore < opponentScore) result = "L";
-              else result = "T";
-            }
-
-            // Extract stats with API field name variations
-            const passYards = ((statObj.pass_yards || statObj.passing_yards || 0) as number);
-            const passTd = ((statObj.pass_touchdowns || statObj.passing_touchdowns || statObj.pass_td || 0) as number);
-            const passInt = ((statObj.pass_interceptions || statObj.passing_interceptions || statObj.pass_int || 0) as number);
-            const rushYards = ((statObj.rush_yards || statObj.rushing_yards || 0) as number);
-            const rushTd = ((statObj.rush_touchdowns || statObj.rushing_touchdowns || statObj.rush_td || 0) as number);
-            const recYards = ((statObj.receiving_yards || statObj.rec_yards || 0) as number);
-            const recTd = ((statObj.receiving_touchdowns || statObj.rec_td || 0) as number);
-            const receptions = ((statObj.receptions || 0) as number);
-            const targets = ((statObj.targets || 0) as number);
-
-            // Calculate fantasy points
-            const fantasyPoints = 
-              (passYards * 0.04) + 
-              (passTd * 4) - 
-              (passInt * 2) + 
-              (rushYards * 0.1) + 
-              (rushTd * 6) + 
-              (recYards * 0.1) + 
-              (recTd * 6);
-
-            const fantasyPointsPpr = fantasyPoints + receptions;
-
-            logsToUpsert.push({
-              player_id: playerId,
-              sport: "NFL",
-              season: season,
-              week: game.week || null,
-              game_date: game.date ? new Date(game.date).toISOString().split('T')[0] : null,
-              game_id: String(game.id),
-              opponent_abbr: opponentAbbr || null,
-              opponent_name: opponentName || null,
-              home_away: homeAway,
-              team_score: teamScore,
-              opponent_score: opponentScore,
-              result: result,
-              pass_attempts: ((statObj.pass_attempts || 0) as number),
-              pass_completions: ((statObj.pass_completions || 0) as number),
-              pass_yards: passYards,
-              pass_td: passTd,
-              pass_int: passInt,
-              passer_rating: ((statObj.passer_rating || null) as number | null),
-              rush_attempts: ((statObj.rush_attempts || 0) as number),
-              rush_yards: rushYards,
-              rush_td: rushTd,
-              targets: targets,
-              receptions: receptions,
-              rec_yards: recYards,
-              rec_td: recTd,
-              fantasy_points: Math.round(fantasyPoints * 100) / 100,
-              fantasy_points_ppr: Math.round(fantasyPointsPpr * 100) / 100,
-              raw_data: statObj as Json,
-            });
-          }
-        }
-
-        // Upsert logs to database
-        if (logsToUpsert.length > 0) {
-          const { error: upsertError } = await supabase.from("player_game_logs").upsert(logsToUpsert, {
-            onConflict: "player_id,sport,game_id",
-            ignoreDuplicates: false,
-          });
-          
-          if (upsertError) {
-            console.error("[Admin] Upsert error:", upsertError);
-          } else {
-            totalSynced += logsToUpsert.length;
-          }
-        }
-
-        gamesProcessed += gameBatch.length;
-        const currentWeek = gameBatch[gameBatch.length - 1]?.week;
-        setGameLogsSyncProgress({ current: gamesProcessed, total: allGames.length });
-        setGameLogsSyncInfo({ current: gamesProcessed, total: allGames.length, week: currentWeek });
-
-        // Log progress every 20 games
-        if (gamesProcessed % 20 === 0 || gamesProcessed === allGames.length) {
-          console.log(`[Admin] Progress: ${gamesProcessed}/${allGames.length} games, ${totalSynced} logs synced`);
-        }
-
-        // Rate limit delay between batches
-        if (i + GAME_BATCH_SIZE < allGames.length) {
-          await new Promise(r => setTimeout(r, BATCH_DELAY));
-        }
+      if (error) {
+        console.error("[Admin] NFL game logs edge error:", error.message);
+        throw error;
       }
 
       await fetchNFLGameLogsCount();
       await updateSyncTimestamp("NFL", "game_logs", "success");
 
-      if (!isFullSyncing && totalSynced > 0) {
+      if (!isFullSyncing) {
         toast({
-          title: "✓ Game Logs Synced",
-          description: `${totalSynced.toLocaleString()} logs from ${gamesProcessed} games`,
+          title: "✓ NFL Game Logs Synced",
+          description: data?.message || `${data?.synced || 0} game logs synced`,
         });
       }
-      
-      if (skippedPlayers > 0) {
-        console.log(`[Admin] Note: ${skippedPlayers} stat entries skipped (players not in database)`);
-      }
-      
-      return totalSynced > 0;
+
+      return true;
     } catch (error) {
       console.error("[Admin] Game logs error:", error);
       await updateSyncTimestamp("NFL", "game_logs", "failed");
+      if (!isFullSyncing) {
+        toast({ title: "NFL Game Logs Failed", description: "Check console for details", variant: "destructive" });
+      }
       return false;
     } finally {
       setIsSyncingNFLGameLogs(false);
       setGameLogsSyncProgress(null);
-      stopGameLogsSyncRef.current = false;
     }
   };
 

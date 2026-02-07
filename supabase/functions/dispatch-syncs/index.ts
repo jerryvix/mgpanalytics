@@ -12,7 +12,7 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "NFL:players": "sync-nfl-players",
   "NFL:season_stats": "sync-nfl-season-stats",
   "NFL:players_slate": "sync-nfl-players-slate",
-  // NFL:game_logs — no dedicated NFL game log sync yet; skip
+  "NFL:game_logs": "sync-nfl-game-logs",
   // NFL:advanced_stats — no dedicated function yet; skip
   // NFL:props — handled by ALL:player_props
   "NBA:games": "sync-nba-games",
