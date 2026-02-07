@@ -25,6 +25,14 @@ const formatOdds = (odds: number | null): string => {
   return odds > 0 ? `+${odds}` : `${odds}`;
 };
 
+const formatShortName = (fullName: string): string => {
+  const parts = fullName.split(' ');
+  if (parts.length > 1) {
+    return `${parts[0][0]}. ${parts[parts.length - 1]}`;
+  }
+  return fullName;
+};
+
 const getPropTypeShort = (propType: string): string => {
   const shorts: Record<string, string> = {
     points: "pts",
@@ -41,11 +49,10 @@ export function GamePropsPreview({ gameId, homeTeam, awayTeam }: GamePropsPrevie
   const { data: topProps = [], isLoading } = useQuery({
     queryKey: ["game-props-preview", gameId],
     queryFn: async () => {
-      // Get today's date
       const today = new Date().toISOString().split('T')[0];
 
-      // Fetch props for players on these teams
-      const { data: props, error } = await supabase
+      // Fetch props by team names for this game (with date filter to avoid stale props)
+      const { data: playerProps, error: playerError } = await supabase
         .from("player_props")
         .select(`
           id,
@@ -60,57 +67,20 @@ export function GamePropsPreview({ gameId, homeTeam, awayTeam }: GamePropsPrevie
             team_name
           )
         `)
-        .eq("game_id", gameId)
         .eq("sport", "NBA")
         .eq("is_active", true)
-        .eq("prop_type", "points") // Focus on points props for preview
+        .eq("prop_type", "points")
+        .gte("game_date", today)
+        .in("players.team_name", [homeTeam, awayTeam])
         .order("line", { ascending: false })
         .limit(4);
 
-      if (error) {
-        console.error("Error fetching game props:", error);
+      if (playerError || !playerProps) {
+        if (playerError) console.error("Error fetching game props:", playerError);
         return [];
       }
 
-      // If no props by game_id, try by team names
-      if (!props || props.length === 0) {
-        const { data: playerProps, error: playerError } = await supabase
-          .from("player_props")
-          .select(`
-            id,
-            prop_type,
-            line,
-            over_odds,
-            sportsbook,
-            player_id,
-            players!inner (
-              id,
-              name,
-              team_name
-            )
-          `)
-          .eq("sport", "NBA")
-          .eq("is_active", true)
-          .eq("prop_type", "points")
-          .in("players.team_name", [homeTeam, awayTeam])
-          .order("line", { ascending: false })
-          .limit(4);
-
-        if (playerError || !playerProps) {
-          return [];
-        }
-
-        return playerProps.map((p: any) => ({
-          playerName: p.players.name,
-          playerId: p.players.id || null,
-          propType: p.prop_type,
-          line: p.line,
-          odds: p.over_odds,
-          team: p.players.team_name,
-        }));
-      }
-
-      return props.map((p: any) => ({
+      return playerProps.map((p: any) => ({
         playerName: p.players.name,
         playerId: p.players.id || null,
         propType: p.prop_type,
@@ -156,12 +126,12 @@ export function GamePropsPreview({ gameId, homeTeam, awayTeam }: GamePropsPrevie
                   to={`/dashboard/nba/players/${prop.playerId}`}
                   className="text-foreground truncate hover:text-terminal-cyan transition-colors"
                 >
-                  {prop.playerName.split(' ').pop()}
+                  {formatShortName(prop.playerName)}
                 </Link>
               ) : (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="text-foreground truncate cursor-default">{prop.playerName.split(' ').pop()}</span>
+                    <span className="text-foreground truncate cursor-default">{formatShortName(prop.playerName)}</span>
                   </TooltipTrigger>
                   <TooltipContent>Player profile not available yet</TooltipContent>
                 </Tooltip>

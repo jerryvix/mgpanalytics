@@ -26,6 +26,7 @@ import {
   Square,
   Play,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -1058,7 +1059,15 @@ export function AdminPanel() {
         <div>
           <h1 className="text-xl font-bold text-foreground tracking-wide">ADMIN PANEL</h1>
         </div>
-        <Badge variant="outline" className="border-terminal-red text-terminal-red text-[10px]">ADMIN ACCESS</Badge>
+        <div className="flex items-center gap-2">
+          <Link to="/dashboard/admin/observatory">
+            <Button variant="outline" size="sm" className="gap-1.5 font-mono text-[10px] border-terminal-cyan/50 hover:bg-terminal-cyan/10 text-terminal-cyan">
+              <BarChart3 className="w-3 h-3" />
+              Sync Observatory
+            </Button>
+          </Link>
+          <Badge variant="outline" className="border-terminal-red text-terminal-red text-[10px]">ADMIN ACCESS</Badge>
+        </div>
       </motion.div>
 
       {/* Compact Status Bars */}

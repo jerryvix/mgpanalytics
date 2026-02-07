@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -168,6 +169,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let syncLogId: string | null = null;
+  const syncStartTime = Date.now();
+  let supabase: any;
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -183,7 +188,7 @@ Deno.serve(async (req) => {
     }
 
     // Service client for database operations (used by both auth paths)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Cron auth bypass — allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
@@ -228,6 +233,15 @@ Deno.serve(async (req) => {
 
       console.log(`[sync-nba-stats] Admin user ${userId} authenticated, starting NBA stats sync via Ball Don't Lie...`);
     }
+
+    const triggerSource = detectTriggerSource(req);
+    syncLogId = await startSyncLog(supabase, {
+      sport: "NBA",
+      data_type: "stats",
+      function_name: "sync-nba-stats",
+      trigger_source: triggerSource,
+      api_source: "balldontlie",
+    });
 
     // Get all featured NBA players
     const { data: players, error: playersError } = await supabase
@@ -416,6 +430,12 @@ Deno.serve(async (req) => {
 
     console.log(`[sync-nba-stats] Sync complete: ${synced} synced, ${noData} no data, ${errors.length} errors`);
 
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: errors.length > 0 ? "partial" : "success",
+      records_added: synced,
+      details: { no_data: noData, total_players: players.length, mapped: bdlPlayerIds.length, errors: errors.length > 0 ? errors.slice(0, 10) : undefined, season: { bdl: bdlSeason, db: dbSeason } },
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -435,7 +455,12 @@ Deno.serve(async (req) => {
       stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     });
-    
+
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "failed",
+      error_message: error instanceof Error ? error.message : "Unknown error",
+    });
+
     // Return generic error to client
     return new Response(
       JSON.stringify({

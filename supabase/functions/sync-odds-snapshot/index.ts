@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +27,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let syncLogId: string | null = null;
+  const syncStartTime = Date.now();
+  let supabase: any;
+
   try {
     // Parse request body for test mode
     let testOnly = false;
@@ -50,7 +55,7 @@ serve(async (req) => {
     }
 
     // Service client for database operations (used by both auth paths)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Cron auth bypass — allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
@@ -123,6 +128,14 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    syncLogId = await startSyncLog(supabase, {
+      sport: "ALL",
+      data_type: "odds_snapshot",
+      function_name: "sync-odds-snapshot",
+      trigger_source: detectTriggerSource(req),
+      api_source: "the_odds_api",
+    });
 
     const sportsToSync = [
       { key: "americanfootball_nfl", name: "NFL" },
@@ -308,11 +321,21 @@ serve(async (req) => {
       message: `Created ${allSnapshots.length} odds snapshots from ${totalProcessed} games`,
     };
 
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "success",
+      records_added: allSnapshots.length,
+      details: { games_processed: totalProcessed, sports: ["NFL", "NBA", "NCAAB"] },
+    });
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
     console.error("Error in sync-odds-snapshot:", error);
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "failed",
+      error_message: error instanceof Error ? error.message : String(error),
+    });
     return new Response(
       JSON.stringify({
         success: false,

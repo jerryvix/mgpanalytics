@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,6 +51,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let syncLogId: string | null = null;
+  const syncStartTime = Date.now();
+  let supabase: any;
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -61,7 +66,7 @@ serve(async (req) => {
     }
 
     // Service client for database operations (used by both auth paths)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Cron auth bypass — allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
@@ -106,6 +111,14 @@ serve(async (req) => {
 
       console.log(`[sync-mlb-games] Admin user ${userId} authenticated, starting MLB games sync via ESPN...`);
     }
+
+    syncLogId = await startSyncLog(supabase, {
+      sport: "MLB",
+      data_type: "games",
+      function_name: "sync-mlb-games",
+      trigger_source: detectTriggerSource(req),
+      api_source: "espn",
+    });
 
     // Calculate date range: now to +24 hours
     const now = new Date();
@@ -323,11 +336,21 @@ serve(async (req) => {
 
     console.log("MLB sync completed:", response);
 
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "success",
+      records_added: insertedCount,
+      details: { total_espn_games: allGames.length, filtered_24h: upcomingGames.length },
+    });
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
     console.error("Error in sync-mlb-games:", error);
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "failed",
+      error_message: error instanceof Error ? error.message : String(error),
+    });
     return new Response(
       JSON.stringify({
         success: false,

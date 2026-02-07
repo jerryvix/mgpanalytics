@@ -838,7 +838,7 @@ serve(async (req) => {
       isSuperBowl,
       isPlayoffs,
       seasonComplete: false,
-      statsSource: `${CURRENT_SEASON} Regular Season`
+      statsSource: isSuperBowl ? `Super Bowl LX` : isPlayoffs ? `${CURRENT_SEASON} Postseason` : `${CURRENT_SEASON} Regular Season`
     };
 
     console.log(`[NFL-Slate] Success - ${awayTeam.abbreviation} @ ${homeTeam.abbreviation} (Super Bowl: ${isSuperBowl})`);

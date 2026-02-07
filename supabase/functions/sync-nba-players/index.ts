@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -216,6 +217,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let syncLogId: string | null = null;
+  const syncStartTime = Date.now();
+  let supabase: any;
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -226,7 +231,7 @@ Deno.serve(async (req) => {
     }
 
     // Service client for database operations (used by both auth paths)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Cron auth bypass — allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
@@ -271,6 +276,15 @@ Deno.serve(async (req) => {
 
       console.log(`[sync-nba-players] Admin user ${userId} authenticated, starting NBA players sync using ESPN API...`);
     }
+
+    const triggerSource = detectTriggerSource(req);
+    syncLogId = await startSyncLog(supabase, {
+      sport: "NBA",
+      data_type: "players",
+      function_name: "sync-nba-players",
+      trigger_source: triggerSource,
+      api_source: "espn",
+    });
 
     // Step 1: Get NBA games in slate window (NOW → +48h)
     const now = new Date();
@@ -535,6 +549,12 @@ Deno.serve(async (req) => {
 
     console.log("[sync-nba-players] Sync completed:", response);
 
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "success",
+      records_added: playersAdded,
+      details: { teams_processed: teamsProcessed.length, players_with_stats: playersWithStats, featured: featuredCount, games_linked: gamesLinked, errors: errors.length > 0 ? errors : undefined },
+    });
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -546,7 +566,12 @@ Deno.serve(async (req) => {
       stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     });
-    
+
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "failed",
+      error_message: error instanceof Error ? error.message : "Unknown error",
+    });
+
     // Return generic error to client
     return new Response(
       JSON.stringify({
