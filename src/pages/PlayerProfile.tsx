@@ -218,7 +218,7 @@ export default function PlayerProfile() {
       {/* Player Header */}
       <Card className="bg-card border-border">
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-6">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-6">
             {/* Avatar with jersey number */}
             <div className="relative">
               {player.headshot_url ? (

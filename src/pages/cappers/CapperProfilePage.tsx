@@ -85,7 +85,7 @@ export default function CapperProfilePage() {
 
         <Card>
           <CardHeader>
-            <div className="flex items-start gap-6">
+            <div className="flex items-start gap-4 md:gap-6 flex-wrap sm:flex-nowrap">
               <Avatar className="h-24 w-24 ring-4 ring-border">
                 <AvatarImage src={capper.x_profile_image || undefined} alt={capper.x_display_name} />
                 <AvatarFallback className="bg-primary/10 text-primary text-2xl">

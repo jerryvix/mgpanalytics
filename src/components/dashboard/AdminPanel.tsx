@@ -1072,8 +1072,8 @@ export function AdminPanel() {
 
       {/* Compact Status Bars */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <div className="bg-muted/30 rounded-lg p-2 flex items-center justify-between font-mono text-[10px] border border-border">
-          <div className="flex items-center gap-3">
+        <div className="bg-muted/30 rounded-lg p-2 flex flex-wrap items-center justify-between gap-1 font-mono text-[10px] border border-border">
+          <div className="flex flex-wrap items-center gap-3">
             <span className="text-muted-foreground">System:</span>
             <span className="text-terminal-green">DB ✓</span>
             <span className="text-terminal-green">Edge ✓</span>
@@ -1085,8 +1085,8 @@ export function AdminPanel() {
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
-        <div className="bg-muted/30 rounded-lg p-2 flex items-center justify-between font-mono text-[10px] border border-border">
-          <div className="flex items-center gap-4">
+        <div className="bg-muted/30 rounded-lg p-2 flex flex-wrap items-center justify-between gap-1 font-mono text-[10px] border border-border">
+          <div className="flex flex-wrap items-center gap-4">
             <span className="text-muted-foreground">Data:</span>
             <span>NFL: <span className="text-terminal-green">{gamesCount ?? "—"}</span></span>
             <span>NBA: <span className="text-terminal-cyan">{nbaGamesCount ?? "—"}</span></span>
@@ -1179,7 +1179,7 @@ export function AdminPanel() {
               </div>
 
               {/* Compact Sync Buttons */}
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
                 {isSyncingNFLPlayers ? (
                   <Button variant="destructive" size="sm" className="font-mono text-[10px] h-6" onClick={() => openStopModal("players")}>
                     <Square className="w-2 h-2 mr-1" />Stop

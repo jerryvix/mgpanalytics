@@ -234,7 +234,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
 
             {/* Quick Stats */}
             {stats && (
-              <div className="grid grid-cols-4 md:grid-cols-5 gap-3 mt-6">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-6">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-terminal-green">
                     {stats.points_per_game?.toFixed(1) || "—"}

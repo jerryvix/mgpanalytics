@@ -64,13 +64,13 @@ export default function NFLPlayers() {
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search")}>
         <TabsList className="bg-muted/50">
-          <TabsTrigger value="slate" className="gap-2">
+          <TabsTrigger value="slate" className="gap-2 text-xs sm:text-sm">
             <Trophy className="w-4 h-4" />
-            Top Leaders
+            <span className="hidden sm:inline">Top </span>Leaders
           </TabsTrigger>
-          <TabsTrigger value="search" className="gap-2">
+          <TabsTrigger value="search" className="gap-2 text-xs sm:text-sm">
             <Globe className="w-4 h-4" />
-            Search All Players
+            <span className="hidden sm:inline">Search All </span>Players
           </TabsTrigger>
         </TabsList>
 

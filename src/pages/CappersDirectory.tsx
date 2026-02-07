@@ -76,7 +76,7 @@ export default function CappersDirectory() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Users className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">Cappers Directory</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Cappers Directory</h1>
           </div>
           <p className="text-muted-foreground text-lg">
             Find and follow the best sports betting minds on X
@@ -88,7 +88,7 @@ export default function CappersDirectory() {
           {categoryLinks.map((cat) => (
             <Link key={cat.to} to={cat.to}>
               <Card className="hover:border-primary/50 hover:bg-muted/50 transition-colors cursor-pointer">
-                <CardContent className="px-4 py-3 flex items-center gap-3">
+                <CardContent className="px-4 py-3 flex items-center gap-3 min-w-0">
                   <span className="text-2xl">{cat.emoji}</span>
                   <div>
                     <h3 className="font-semibold text-sm">{cat.label}</h3>

@@ -313,7 +313,7 @@ export default function NFLPlayerDetail() {
       <Card className="bg-card border-border overflow-hidden">
         <div className="flex flex-col md:flex-row">
           {/* Photo/Avatar */}
-          <div className="w-full md:w-48 bg-gradient-to-br from-red-500/10 to-terminal-green/10 flex items-center justify-center p-6">
+          <div className="w-full md:w-48 bg-gradient-to-br from-red-500/10 to-terminal-green/10 flex items-center justify-center p-4 md:p-6">
             {player.headshot_url ? (
               <img
                 src={player.headshot_url}
@@ -328,7 +328,7 @@ export default function NFLPlayerDetail() {
           </div>
 
           {/* Info */}
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-4 md:p-6">
             <div className="flex items-start justify-between flex-wrap gap-4">
               <div>
                 <div className="flex items-center gap-3 mb-2">
@@ -355,7 +355,7 @@ export default function NFLPlayerDetail() {
             </div>
 
             {/* Bio Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm pt-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 text-sm pt-4">
               {player.height && (
                 <div className="bg-muted/30 rounded-lg p-2">
                   <span className="text-muted-foreground block text-xs">Height</span>
@@ -392,7 +392,7 @@ export default function NFLPlayerDetail() {
 
             {/* Quick Stats Summary */}
             {stats && (
-              <div className="grid grid-cols-4 md:grid-cols-5 gap-3 mt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
                 {posGroup === "QB" && (
                   <>
                     <div className="text-center">
@@ -481,7 +481,7 @@ export default function NFLPlayerDetail() {
 
       {/* Stats Tabs */}
       <Tabs defaultValue="traditional" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-4">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-4">
           <TabsTrigger value="traditional" className="text-xs sm:text-sm">
             <TrendingUp className="w-4 h-4 mr-1.5 hidden sm:inline" />
             Traditional

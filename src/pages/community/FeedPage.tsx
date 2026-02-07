@@ -139,7 +139,7 @@ export default function FeedPage() {
                     </Button>
                   </div>
                 ) : (
-                  <ScrollArea className="h-[300px]">
+                  <ScrollArea className="h-[200px] sm:h-[300px]">
                     <div className="p-2 space-y-1">
                       {followedCappers.map((capper) => (
                         <button
