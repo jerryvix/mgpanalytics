@@ -207,7 +207,7 @@ export function NBAAdvancedStats({ stats, gameLogs, position, isLoading }: NBAAd
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            Advanced stats require season data. Try syncing player stats from the Admin Panel.
+            Advanced stats require season data. This data will appear once stats are available.
           </p>
         </CardContent>
       </Card>

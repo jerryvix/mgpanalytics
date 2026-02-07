@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 const BDL_BASE_URL = "https://api.balldontlie.io/v1";
+const BDL_NBA_STATS_URL = "https://api.balldontlie.io/nba/v1";
 const RATE_LIMIT_DELAY = 100;
 let lastCallTime = 0;
 
@@ -22,11 +23,12 @@ async function rateLimitedDelay(): Promise<void> {
 async function bdlFetch(
   apiKey: string,
   endpoint: string,
-  params?: Record<string, string | number | number[]>
+  params?: Record<string, string | number | number[]>,
+  baseUrl: string = BDL_BASE_URL
 ): Promise<{ data: any[]; meta?: { next_cursor?: string } }> {
   await rateLimitedDelay();
 
-  const url = new URL(`${BDL_BASE_URL}${endpoint}`);
+  const url = new URL(`${baseUrl}${endpoint}`);
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (Array.isArray(value)) {
@@ -225,6 +227,12 @@ Deno.serve(async (req) => {
 
     console.log(`[sync-nba-game-logs] Mapped ${playerBdlMap.length}/${players.length} players to BDL IDs`);
 
+    // Log first few mapped players for diagnostics
+    if (playerBdlMap.length > 0) {
+      const sample = playerBdlMap.slice(0, 5).map(p => `${p.name} → BDL ${p.bdlId}`);
+      console.log(`[sync-nba-game-logs] Sample mappings: ${sample.join(", ")}`);
+    }
+
     if (playerBdlMap.length === 0) {
       const msg = "Could not map any players to BDL IDs.";
       await completeSyncLog(supabase, syncLogId, syncStartTime, {
@@ -235,8 +243,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Step 3: Fetch per-game stats from BDL in batches of player IDs
-    // BDL /v1/stats accepts seasons[] and player_ids[] params
+    // Step 3: Fetch per-game stats from BDL /nba/v1/stats in batches of player IDs
     const BATCH_SIZE = 25;
     const allBdlIds = playerBdlMap.map((p) => p.bdlId);
     const batches: number[][] = [];
@@ -271,7 +278,9 @@ Deno.serve(async (req) => {
         if (cursor) params.cursor = cursor as unknown as string;
 
         try {
-          const result = await bdlFetch(BDL_API_KEY, "/stats", params);
+          const result = await bdlFetch(BDL_API_KEY, "/stats", params, BDL_NBA_STATS_URL);
+
+          console.log(`[sync-nba-game-logs] Batch ${batchIdx + 1} page ${pages + 1}: ${result.data?.length || 0} stat records`);
 
           for (const stat of result.data || []) {
             const bdlPlayerId = stat.player?.id;
@@ -340,7 +349,7 @@ Deno.serve(async (req) => {
           cursor = result.meta?.next_cursor;
           pages++;
         } catch (err) {
-          console.error(`[sync-nba-game-logs] Batch ${batchIdx + 1} page ${pages + 1} error:`, err);
+          console.error(`[sync-nba-game-logs] Batch ${batchIdx + 1} page ${pages + 1} error:`, err instanceof Error ? err.message : err);
           break;
         }
       } while (cursor && pages < MAX_PAGES);

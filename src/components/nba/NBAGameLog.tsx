@@ -162,7 +162,7 @@ export function NBAGameLog({ gameLogs, playerName, seasonAverages, isLoading }: 
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            No game log data available for the {new Date().getMonth() >= 9 ? new Date().getFullYear() : new Date().getFullYear() - 1}-{new Date().getMonth() >= 9 ? String(new Date().getFullYear() + 1).slice(2) : String(new Date().getFullYear()).slice(2)} season. Try syncing game logs from the Admin Panel.
+            No game log data available for the {new Date().getMonth() >= 9 ? new Date().getFullYear() : new Date().getFullYear() - 1}-{new Date().getMonth() >= 9 ? String(new Date().getFullYear() + 1).slice(2) : String(new Date().getFullYear()).slice(2)} season. Game log data will appear here once it becomes available.
           </p>
         </CardContent>
       </Card>

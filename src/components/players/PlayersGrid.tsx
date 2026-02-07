@@ -170,7 +170,7 @@ export function PlayersGrid({
             <h3 className="text-lg font-semibold text-foreground mb-2">No Players Found</h3>
             <p className="text-muted-foreground text-sm">
               {players.length === 0
-                ? `No players found for upcoming games. Sync players from Admin Panel.`
+                ? `No players found for upcoming games. Player data will appear when games are scheduled.`
                 : "No players match your current filters. Try adjusting your search."}
             </p>
           </CardContent>

@@ -329,7 +329,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
                 </div>
               ) : (
                 <p className="text-muted-foreground text-sm">
-                  No season stats available. Try syncing from the Admin Panel.
+                  No season stats available yet. Check back soon.
                 </p>
               )}
             </CardContent>

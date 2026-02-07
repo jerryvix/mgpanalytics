@@ -255,7 +255,7 @@ export function NFLGameLog({ gameLogs, position, seasonAverages, isLoading }: NF
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            No game log data available. Game logs appear after games are synced from the Admin Panel.
+            No game log data available. Game log data will appear here once it becomes available.
           </p>
         </CardContent>
       </Card>

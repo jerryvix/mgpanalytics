@@ -136,7 +136,7 @@ export function NBASplits({ gameLogs, playerName, isLoading }: NBASplitsProps) {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            Splits require game log data. Try syncing game logs from the Admin Panel.
+            Splits require game log data. This data will appear once game logs are available.
           </p>
         </CardContent>
       </Card>

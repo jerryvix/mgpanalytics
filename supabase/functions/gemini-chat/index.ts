@@ -148,7 +148,7 @@ interface FetchedData {
 // ============================================================
 function detectLeague(message: string): string {
   const m = message.toLowerCase();
-  if (/\b(nfl|football|chiefs|eagles|bills|ravens|cowboys|niners|packers|lions|texans|commanders|dolphins|broncos|raiders|jets|giants|bears|vikings|colts|jaguars|titans|bengals|browns|steelers|saints|buccaneers|panthers|falcons|cardinals|seahawks|rams|chargers)\b/.test(m)) return "NFL";
+  if (/\b(nfl|football|super\s*bowl|superbowl|chiefs|eagles|bills|ravens|cowboys|niners|packers|lions|texans|commanders|dolphins|broncos|raiders|jets|giants|bears|vikings|colts|jaguars|titans|bengals|browns|steelers|saints|buccaneers|panthers|falcons|cardinals|seahawks|rams|chargers)\b/.test(m)) return "NFL";
   if (/\b(nba|basketball|lakers|celtics|warriors|bucks|heat|nuggets|suns|clippers|sixers|knicks|nets|bulls|mavericks|grizzlies|kings|pelicans|timberwolves|thunder|rockets|spurs|magic|hawks|hornets|pistons|pacers|wizards|blazers|jazz|raptors|cavaliers)\b/.test(m)) return "NBA";
   if (/\b(ncaab|ncaamb|college basketball|march madness|duke|kentucky|kansas|gonzaga|purdue|uconn|houston|tennessee|auburn|alabama|arizona|baylor|creighton|marquette)\b/.test(m)) return "NCAAB";
   if (/\b(ncaaf|college football|cfb|playoff|buckeyes|crimson tide|bulldogs|wolverines|longhorns|gators|seminoles|tigers|sooners)\b/.test(m)) return "NCAAF";
@@ -599,10 +599,11 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
       parts: [{ text: msg.content }],
     }));
 
-    // Auto-enable Google Search for FACTUAL questions so Gemini can fetch current stats
-    const useSearch = webSearchEnabled || questionType === "FACTUAL";
+    // Auto-enable Google Search for FACTUAL and CONTEXTUAL questions so Gemini can fetch
+    // current stats, weather, real-time matchup data, and other live information
+    const useSearch = webSearchEnabled || questionType === "FACTUAL" || questionType === "CONTEXTUAL";
 
-    // Call Gemini (Google Search grounding enabled for FACTUAL questions or when user opts in)
+    // Call Gemini (Google Search grounding enabled for FACTUAL/CONTEXTUAL questions or when user opts in)
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
       {
