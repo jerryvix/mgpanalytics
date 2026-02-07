@@ -10,13 +10,19 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "NFL:games": "sync-nfl-games",
   "NFL:players": "sync-nfl-players",
   "NFL:season_stats": "sync-nfl-season-stats",
-  "NFL:game_logs": "sync-nba-game-logs", // Uses BDL game-by-game approach
+  "NFL:players_slate": "sync-nfl-players-slate",
+  // NFL:game_logs — no dedicated NFL game log sync yet; skip
+  // NFL:advanced_stats — no dedicated function yet; skip
+  // NFL:props — handled by ALL:player_props
   "NBA:games": "sync-nba-games",
   "NBA:odds": "sync-nba-odds",
   "NBA:players": "sync-nba-players",
   "NBA:stats": "sync-nba-stats",
   "NBA:game_logs": "sync-nba-game-logs",
+  // NBA:season_stats — same as NBA:stats; skip duplicate
+  // NBA:props — handled by ALL:player_props
   "NCAAB:games": "sync-ncaab-games",
+  "NCAAB:players": "sync-ncaab-players",
   "NCAAF:games": "sync-ncaaf-games",
   "MLB:games": "sync-mlb-games",
   "ALL:player_props": "sync-player-props",
