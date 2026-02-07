@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+const DEFAULT_SPORTS = ["NFL", "NBA", "NCAAB"];
+
 interface TrialStatus {
   isInTrial: boolean;
   trialEndsAt: Date | null;
   daysRemaining: number;
   onboardingCompleted: boolean;
   onboardingPath: string | null;
+  preferredSports: string[];
   loading: boolean;
 }
 
@@ -17,6 +20,7 @@ export function useTrialStatus(): TrialStatus {
     daysRemaining: 0,
     onboardingCompleted: false,
     onboardingPath: null,
+    preferredSports: DEFAULT_SPORTS,
     loading: true,
   });
 
@@ -30,7 +34,7 @@ export function useTrialStatus(): TrialStatus {
 
         const { data: profile, error } = await supabase
           .from("profiles")
-          .select("trial_started_at, trial_ends_at, onboarding_completed, onboarding_path")
+          .select("trial_started_at, trial_ends_at, onboarding_completed, onboarding_path, preferred_sports")
           .eq("id", user.id)
           .single();
 
@@ -48,12 +52,17 @@ export function useTrialStatus(): TrialStatus {
           ? Math.max(0, Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
           : 0;
 
+        const preferredSports = (profile.preferred_sports && profile.preferred_sports.length > 0)
+          ? profile.preferred_sports
+          : DEFAULT_SPORTS;
+
         setStatus({
           isInTrial,
           trialEndsAt,
           daysRemaining,
           onboardingCompleted: profile.onboarding_completed ?? false,
           onboardingPath: profile.onboarding_path ?? null,
+          preferredSports,
           loading: false,
         });
       } catch {

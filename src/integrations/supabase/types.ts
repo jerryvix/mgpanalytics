@@ -1456,6 +1456,7 @@ export type Database = {
           id: string
           onboarding_completed: boolean
           onboarding_path: string | null
+          preferred_sports: string[] | null
           trial_ended_at: string | null
           trial_ends_at: string | null
           trial_started_at: string | null
@@ -1467,6 +1468,7 @@ export type Database = {
           id: string
           onboarding_completed?: boolean
           onboarding_path?: string | null
+          preferred_sports?: string[] | null
           trial_ends_at?: string | null
           trial_started_at?: string | null
           updated_at?: string
@@ -1477,6 +1479,7 @@ export type Database = {
           id?: string
           onboarding_completed?: boolean
           onboarding_path?: string | null
+          preferred_sports?: string[] | null
           trial_ends_at?: string | null
           trial_started_at?: string | null
           updated_at?: string

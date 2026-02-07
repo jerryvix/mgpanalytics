@@ -14,7 +14,8 @@ import { useTrialStatus } from "@/hooks/useTrialStatus";
 
 interface OnboardingModalProps {
   open: boolean;
-  onComplete: () => void;
+  onComplete: (selectedSports?: string[]) => void;
+  dismissible?: boolean;
 }
 
 const ORIENTATION_OPTIONS = [
@@ -26,14 +27,32 @@ const ORIENTATION_OPTIONS = [
 
 type OrientationId = typeof ORIENTATION_OPTIONS[number]["id"];
 
-export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
+const AVAILABLE_SPORTS = [
+  { id: "NFL", label: "NFL", emoji: "\uD83C\uDFC8" },
+  { id: "NBA", label: "NBA", emoji: "\uD83C\uDFC0" },
+  { id: "NCAAB", label: "NCAAB", emoji: "\uD83C\uDFC0" },
+] as const;
+
+export function OnboardingModal({ open, onComplete, dismissible = false }: OnboardingModalProps) {
   const [step, setStep] = useState(1);
   const [selectedPath, setSelectedPath] = useState<OrientationId | null>(null);
+  const [selectedSports, setSelectedSports] = useState<string[]>(["NFL", "NBA", "NCAAB"]);
   const [saving, setSaving] = useState(false);
   const { trialEndsAt } = useTrialStatus();
 
+  const toggleSport = (sportId: string) => {
+    setSelectedSports(prev => {
+      if (prev.includes(sportId)) {
+        // Don't allow deselecting all
+        if (prev.length <= 1) return prev;
+        return prev.filter(s => s !== sportId);
+      }
+      return [...prev, sportId];
+    });
+  };
+
   const handleFinish = async () => {
-    if (!selectedPath) return;
+    if (!selectedPath || selectedSports.length === 0) return;
     setSaving(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -43,6 +62,7 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
           .update({
             onboarding_completed: true,
             onboarding_path: selectedPath,
+            preferred_sports: selectedSports,
           })
           .eq("id", user.id);
       }
@@ -50,7 +70,7 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
       console.error("Error saving onboarding:", e);
     } finally {
       setSaving(false);
-      onComplete();
+      onComplete(selectedSports);
     }
   };
 
@@ -59,12 +79,12 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
     : "14 days from now";
 
   return (
-    <Dialog open={open} onOpenChange={() => { /* non-dismissible */ }}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (dismissible && !isOpen) onComplete(); }}>
       <DialogContent
-        className="sm:max-w-md bg-card border-border [&>button]:hidden"
-        onPointerDownOutside={(e) => e.preventDefault()}
-        onEscapeKeyDown={(e) => e.preventDefault()}
-        onInteractOutside={(e) => e.preventDefault()}
+        className={`sm:max-w-md bg-card border-border ${!dismissible ? "[&>button]:hidden" : ""}`}
+        onPointerDownOutside={(e) => { if (!dismissible) e.preventDefault(); }}
+        onEscapeKeyDown={(e) => { if (!dismissible) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (!dismissible) e.preventDefault(); }}
       >
         <AnimatePresence mode="wait">
           {step === 1 && (
@@ -175,8 +195,61 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
               </div>
               <div className="mt-6">
                 <Button
+                  onClick={() => setStep(4)}
+                  disabled={!selectedPath}
+                  className="w-full bg-terminal-green hover:bg-terminal-green/90 text-background font-semibold disabled:opacity-50"
+                >
+                  Continue
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              <DialogHeader>
+                <DialogTitle className="text-xl text-foreground font-bold">
+                  Which sports do you follow?
+                </DialogTitle>
+                <DialogDescription className="text-muted-foreground text-sm mt-2">
+                  We'll prioritize these on your dashboard. You can change this anytime.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="mt-4 flex flex-col gap-3">
+                {AVAILABLE_SPORTS.map((sport) => {
+                  const isSelected = selectedSports.includes(sport.id);
+                  return (
+                    <button
+                      key={sport.id}
+                      onClick={() => toggleSport(sport.id)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-all ${
+                        isSelected
+                          ? "border-terminal-green bg-terminal-green/10 text-foreground"
+                          : "border-border bg-card/50 text-muted-foreground hover:border-terminal-green/50 hover:text-foreground"
+                      }`}
+                    >
+                      <span className="text-xl">{sport.emoji}</span>
+                      <span className="text-sm font-medium">{sport.label}</span>
+                      {isSelected && (
+                        <span className="ml-auto text-terminal-green text-sm">&#10003;</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-[10px] text-muted-foreground text-center">
+                At least 1 sport must be selected
+              </p>
+              <div className="mt-4">
+                <Button
                   onClick={handleFinish}
-                  disabled={!selectedPath || saving}
+                  disabled={selectedSports.length === 0 || saving}
                   className="w-full bg-terminal-green hover:bg-terminal-green/90 text-background font-semibold disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Let's Go"}
