@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let syncLogId: string | null = null;
+  const syncStartTime = Date.now();
+  let supabase: any;
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -50,7 +55,7 @@ serve(async (req) => {
     }
 
     // Service client for database operations (used by both auth paths)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Cron auth bypass — allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
@@ -101,6 +106,16 @@ serve(async (req) => {
     const bdlSeason = now.getMonth() >= 9 ? now.getFullYear() : now.getFullYear() - 1;
     const dbSeason = bdlSeason + 1;
     console.log(`[sync-nba-games] Season: BDL=${bdlSeason}, DB=${dbSeason}`);
+
+    // Start sync log
+    const triggerSource = detectTriggerSource(req);
+    syncLogId = await startSyncLog(supabase, {
+      sport: "NBA",
+      data_type: "games",
+      function_name: "sync-nba-games",
+      trigger_source: triggerSource,
+      api_source: "espn",
+    });
 
     // Calculate date range: now to +48 hours
     const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
@@ -306,11 +321,30 @@ serve(async (req) => {
 
     console.log("NBA sync completed:", response);
 
+    // Complete sync log — success
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "success",
+      records_added: insertedCount,
+      details: {
+        dates_fetched: dates,
+        total_espn_games: allGames.length,
+        filtered_48h: upcomingGames.length,
+        season: { bdl: bdlSeason, db: dbSeason },
+      },
+    });
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
     console.error("Error in sync-nba-games:", error);
+
+    // Complete sync log — failure
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "failed",
+      error_message: error instanceof Error ? error.message : "Unknown error",
+    });
+
     return new Response(
       JSON.stringify({
         success: false,

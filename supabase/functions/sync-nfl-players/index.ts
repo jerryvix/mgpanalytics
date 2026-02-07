@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -131,6 +132,8 @@ Deno.serve(async (req) => {
   }
 
   const startTime = Date.now();
+  let syncLogId: string | null = null;
+  let supabase: any;
 
   try {
     const apiKey = Deno.env.get("BALLDONTLIE_API_KEY");
@@ -146,7 +149,7 @@ Deno.serve(async (req) => {
     }
 
     // Service client for database operations (used by both auth paths)
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Cron auth bypass — allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
@@ -191,6 +194,16 @@ Deno.serve(async (req) => {
 
       console.log(`[Sync NFL Players] Admin user ${userId} authenticated, starting sync...`);
     }
+
+    // Start sync log
+    const triggerSource = detectTriggerSource(req);
+    syncLogId = await startSyncLog(supabase, {
+      sport: "NFL",
+      data_type: "players",
+      function_name: "sync-nfl-players",
+      trigger_source: triggerSource,
+      api_source: "balldontlie",
+    });
 
     // Step 1: Update sync_schedule to 'in_progress'
     console.log("[Sync NFL Players] Updating sync_schedule to in_progress...");
@@ -298,6 +311,13 @@ Deno.serve(async (req) => {
 
     console.log(`[Sync NFL Players] Sync completed: ${successCount} players in ${duration}s`);
 
+    // Complete sync log — success
+    await completeSyncLog(supabase, syncLogId, startTime, {
+      status: finalStatus === "failed" ? "failed" : finalStatus === "partial" ? "partial" : "success",
+      records_added: successCount,
+      details: { total_players: playersToUpsert.length, status: finalStatus, errors: errorMessages.length > 0 ? errorMessages : undefined },
+    });
+
     // Step 5: Return summary
     return new Response(
       JSON.stringify({
@@ -316,6 +336,13 @@ Deno.serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("[Sync NFL Players] Error:", errorMessage);
+
+    // Complete sync log — failure
+    await completeSyncLog(supabase, syncLogId, startTime, {
+      status: "failed",
+      error_message: errorMessage,
+    });
+
     return new Response(
       JSON.stringify({ success: false, error: "An unexpected error occurred. Please try again later." }),
       {

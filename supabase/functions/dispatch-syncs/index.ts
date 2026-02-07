@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,6 +64,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let syncLogId: string | null = null;
+  const syncStartTime = Date.now();
+  let supabase: any;
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -116,8 +121,16 @@ Deno.serve(async (req) => {
 
     console.log("[dispatch-syncs] Authenticated, checking schedules...");
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const now = new Date();
+
+    syncLogId = await startSyncLog(supabase, {
+      sport: "ALL",
+      data_type: "dispatch",
+      function_name: "dispatch-syncs",
+      trigger_source: detectTriggerSource(req),
+      api_source: "supabase",
+    });
 
     // Check for force-sync parameter (run specific functions regardless of schedule)
     let forceSync: string[] = [];
@@ -139,6 +152,11 @@ Deno.serve(async (req) => {
     }
 
     if (!schedules || schedules.length === 0) {
+      await completeSyncLog(supabase, syncLogId, syncStartTime, {
+        status: "success",
+        records_added: 0,
+        details: { syncs: [] },
+      });
       return new Response(
         JSON.stringify({ success: true, dispatched: 0, message: "No enabled schedules" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -176,6 +194,11 @@ Deno.serve(async (req) => {
     console.log(`[dispatch-syncs] ${dueSchedules.length} syncs due out of ${schedules.length} enabled`);
 
     if (dueSchedules.length === 0) {
+      await completeSyncLog(supabase, syncLogId, syncStartTime, {
+        status: "success",
+        records_added: 0,
+        details: { syncs: [] },
+      });
       return new Response(
         JSON.stringify({ success: true, dispatched: 0, message: "No syncs due" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -251,11 +274,21 @@ Deno.serve(async (req) => {
 
     console.log("[dispatch-syncs] Complete:", response.message);
 
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "success",
+      records_added: dispatched.length,
+      details: { syncs: dispatched },
+    });
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     console.error("[dispatch-syncs] Error:", error);
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "failed",
+      error_message: error instanceof Error ? error.message : String(error),
+    });
     return new Response(
       JSON.stringify({
         success: false,

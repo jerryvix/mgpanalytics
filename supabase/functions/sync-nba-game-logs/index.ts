@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,6 +50,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let syncLogId: string | null = null;
+  const syncStartTime = Date.now();
+  let supabase: any;
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -64,7 +69,7 @@ serve(async (req) => {
     }
 
     // Service client for database operations (used by both auth paths)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Cron auth bypass — allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
@@ -109,6 +114,15 @@ serve(async (req) => {
 
       console.log(`[sync-nba-game-logs] Admin user ${userId} authenticated, starting sync...`);
     }
+
+    const triggerSource = detectTriggerSource(req);
+    syncLogId = await startSyncLog(supabase, {
+      sport: "NBA",
+      data_type: "game_logs",
+      function_name: "sync-nba-game-logs",
+      trigger_source: triggerSource,
+      api_source: "balldontlie",
+    });
 
     // Parse request body for options
     let syncDays = 7; // Default: last 7 days
@@ -324,6 +338,12 @@ serve(async (req) => {
 
     console.log("NBA game logs sync completed:", response);
 
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "success",
+      records_added: totalLogsInserted,
+      details: { players_processed: bdlPlayerMap.size, date_range: { start: startDateStr, end: endDateStr } },
+    });
+
     return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -334,7 +354,12 @@ serve(async (req) => {
       stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     });
-    
+
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "failed",
+      error_message: error instanceof Error ? error.message : "Unknown error",
+    });
+
     // Return generic error to client
     return new Response(
       JSON.stringify({

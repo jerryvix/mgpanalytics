@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +37,18 @@ const SPORT_MARKETS: Record<string, { key: string; markets: string[] }> = {
 
 const ALLOWED_BOOKS = ["draftkings", "fanduel", "betmgm", "caesars", "betrivers"];
 
+// Normalize a player name for fuzzy matching:
+// lowercase, strip periods/apostrophes, strip suffixes (Jr, Sr, II, III, IV, V),
+// collapse whitespace
+function normalizeName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[.']/g, "")          // "T.J." → "TJ", "De'Aaron" → "DeAaron"
+    .replace(/\s+(jr|sr|ii|iii|iv|v)$/i, "") // strip suffixes
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // Normalize The Odds API market keys to our prop_type values
 function normalizePropType(market: string): string {
   const map: Record<string, string> = {
@@ -59,6 +72,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let syncLogId: string | null = null;
+  const syncStartTime = Date.now();
+  let totalPropsAdded = 0;
+  let requestsUsed = 0;
+  let requestsRemaining = 0;
+  let supabase: any;
+
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -76,7 +96,7 @@ serve(async (req) => {
     }
 
     // Service client for database operations (used by both auth paths)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Cron auth bypass — allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
@@ -150,10 +170,19 @@ serve(async (req) => {
       `[sync-player-props] Starting props sync for: ${sportsToSync.map(([k]) => k).join(", ")}`
     );
 
-    let totalPropsAdded = 0;
+    // Start sync log
+    const triggerSource = detectTriggerSource(req);
+    syncLogId = await startSyncLog(supabase, {
+      sport: sportFilter || "ALL",
+      data_type: "player_props",
+      function_name: "sync-player-props",
+      trigger_source: triggerSource,
+      api_source: "the_odds_api",
+    });
+
     let totalEventsProcessed = 0;
-    let requestsUsed = 0;
-    let requestsRemaining = 0;
+    const unmatchedNames: string[] = [];
+    const fuzzyMatchedNames: string[] = [];
 
     for (const [sport, config] of sportsToSync) {
       try {
@@ -301,16 +330,49 @@ serve(async (req) => {
                 ...new Set(propsToUpsert.map((p) => p.player_name)),
               ];
 
-              // Fetch player IDs by name for this sport
-              const { data: players } = await supabase
+              // Pass 1: Exact match by name
+              const { data: exactPlayers } = await supabase
                 .from("players")
                 .select("id, name")
                 .eq("sport", sport)
                 .in("name", uniqueNames);
 
               const nameToId: Record<string, string> = {};
-              for (const p of players || []) {
+              for (const p of exactPlayers || []) {
                 nameToId[p.name] = p.id;
+              }
+
+              // Pass 2: Fuzzy match for unmatched names
+              const stillUnmatched = uniqueNames.filter((n) => !nameToId[n]);
+              if (stillUnmatched.length > 0) {
+                // Fetch all players for this sport to build normalized lookup
+                const { data: allPlayers } = await supabase
+                  .from("players")
+                  .select("id, name")
+                  .eq("sport", sport);
+
+                const normalizedMap = new Map<string, { id: string; name: string }>();
+                for (const p of allPlayers || []) {
+                  normalizedMap.set(normalizeName(p.name), p);
+                }
+
+                for (const apiName of stillUnmatched) {
+                  const normalized = normalizeName(apiName);
+                  const match = normalizedMap.get(normalized);
+                  if (match) {
+                    nameToId[apiName] = match.id;
+                    fuzzyMatchedNames.push(`${apiName} → ${match.name}`);
+                  } else {
+                    unmatchedNames.push(apiName);
+                  }
+                }
+
+                if (stillUnmatched.length > 0) {
+                  console.log(
+                    `[sync-player-props] ${sport}: ${stillUnmatched.length} names needed fuzzy match, ` +
+                    `${stillUnmatched.length - unmatchedNames.length} resolved, ${unmatchedNames.length} unmatched`
+                  );
+                }
               }
 
               // Upsert props in batches
@@ -394,11 +456,35 @@ serve(async (req) => {
 
     console.log(`[sync-player-props] Complete:`, result);
 
+    // Complete sync log — success
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "success",
+      records_added: totalPropsAdded,
+      api_requests_used: requestsUsed,
+      api_requests_remaining: requestsRemaining,
+      details: {
+        events_processed: totalEventsProcessed,
+        sports_synced: sportsToSync.map(([k]) => k),
+        fuzzy_matched: fuzzyMatchedNames.length > 0 ? fuzzyMatchedNames : undefined,
+        unmatched_names: unmatchedNames.length > 0 ? unmatchedNames : undefined,
+      },
+    });
+
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
     console.error("[sync-player-props] Error:", error);
+
+    // Complete sync log — failure
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "failed",
+      records_added: totalPropsAdded,
+      api_requests_used: requestsUsed,
+      api_requests_remaining: requestsRemaining,
+      error_message: error instanceof Error ? error.message : "Unknown error",
+    });
+
     return new Response(
       JSON.stringify({
         success: false,

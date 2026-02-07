@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
+import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,6 +92,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let syncLogId: string | null = null;
+  const syncStartTime = Date.now();
+  let supabase: any;
+
   try {
     const ballDontLieApiKey = Deno.env.get("BALLDONTLIE_API_KEY");
     const oddsApiKey = Deno.env.get("THE_ODDS_API_KEY");
@@ -109,7 +114,7 @@ Deno.serve(async (req) => {
     }
 
     // Service client for database operations (used by both auth paths)
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Cron auth bypass — allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
@@ -154,6 +159,16 @@ Deno.serve(async (req) => {
 
       console.log(`Admin user ${userId} authenticated, proceeding with sync...`);
     }
+
+    // Start sync log
+    const triggerSource = detectTriggerSource(req);
+    syncLogId = await startSyncLog(supabase, {
+      sport: "NFL",
+      data_type: "games",
+      function_name: "sync-nfl-games",
+      trigger_source: triggerSource,
+      api_source: "mixed",
+    });
 
     // Dynamic season: NFL BDL uses end-year (2025 = 2024-25 season)
     const now = new Date();
@@ -386,6 +401,13 @@ Deno.serve(async (req) => {
       ? `Synced ${gamesToUpsert.length} games. Odds error: ${oddsError}`
       : `Synced ${gamesToUpsert.length} games with live odds from ${sportsbooksMessage}`;
 
+    // Complete sync log — success
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: oddsError ? "partial" : "success",
+      records_added: gamesToUpsert.length,
+      details: { games_upserted: gamesToUpsert.length, odds_count: oddsCount, odds_error: oddsError },
+    });
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -406,7 +428,13 @@ Deno.serve(async (req) => {
       stack: error instanceof Error ? error.stack : undefined,
       timestamp: new Date().toISOString()
     });
-    
+
+    // Complete sync log — failure
+    await completeSyncLog(supabase, syncLogId, syncStartTime, {
+      status: "failed",
+      error_message: error instanceof Error ? error.message : "Unknown error",
+    });
+
     // Return generic error to client
     return new Response(
       JSON.stringify({ 

@@ -4,6 +4,7 @@ import { NFLSlate } from "@/components/dashboard/NFLSlate";
 import { NBASlate } from "@/components/dashboard/NBASlate";
 import { NCAABSlate } from "@/components/dashboard/NCAABSlate";
 import { AdminPanel } from "@/components/dashboard/AdminPanel";
+import SyncObservatory from "@/pages/SyncObservatory";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
 import Analyst from "@/pages/Analyst";
 import NFLPlayers from "@/pages/NFLPlayers";
@@ -56,6 +57,10 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="community/cappers/media" element={<MediaPage />} />
         <Route path="community/cappers/insiders" element={<InsidersPage />} />
         <Route path="community/cappers/:username" element={<CapperProfilePage />} />
+        <Route
+          path="admin/observatory"
+          element={isAdmin ? <SyncObservatory /> : <Navigate to="/dashboard" replace />}
+        />
         <Route
           path="admin"
           element={isAdmin ? <AdminPanel /> : <Navigate to="/dashboard" replace />}
