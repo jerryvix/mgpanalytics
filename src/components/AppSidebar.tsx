@@ -398,8 +398,8 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Admin - Always show for admins, regardless of preview mode */}
-        {isAdmin && (
+        {/* Admin - hidden when previewing as user */}
+        {isAdmin && !isPreviewingAsUser && (
           <SidebarGroup className="mt-1">
             {!collapsed && (
               <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-1">
