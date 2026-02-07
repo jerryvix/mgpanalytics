@@ -143,12 +143,16 @@ Deno.serve(async (req) => {
 
     supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Auth: cron secret or admin JWT
+    // Auth: cron secret, service role key, or admin JWT
     const cronSecret = req.headers.get("x-cron-secret");
+    const authHeader = req.headers.get("Authorization");
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[sync-nfl-game-logs] Authenticated via cron secret`);
+    } else if (bearerToken === supabaseServiceKey) {
+      console.log(`[sync-nfl-game-logs] Authenticated via service role key`);
     } else {
-      const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
         return new Response(
           JSON.stringify({ success: false, error: "Unauthorized - no token provided" }),

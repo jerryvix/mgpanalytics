@@ -56,13 +56,17 @@ serve(async (req) => {
 
     supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Cron auth bypass
+    // Auth: cron secret, service role key, or admin JWT
     const cronSecret = req.headers.get("x-cron-secret");
+    const authHeader = req.headers.get("Authorization");
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[backfill-nba-games] Authenticated via cron secret`);
+    } else if (bearerToken === SUPABASE_SERVICE_ROLE_KEY) {
+      console.log(`[backfill-nba-games] Authenticated via service role key`);
     } else {
       // Authenticate user - require admin role
-      const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
         return new Response(
           JSON.stringify({ success: false, error: "Unauthorized - no token provided" }),
