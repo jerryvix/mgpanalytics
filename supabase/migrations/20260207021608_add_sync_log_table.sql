@@ -2,7 +2,10 @@
 -- Previous system only stored the LAST sync result in sync_schedule.
 -- This table retains all sync runs for observability and debugging.
 
-CREATE TABLE IF NOT EXISTS sync_log (
+-- Drop old sync_log table (had incompatible schema from earlier manual creation)
+DROP TABLE IF EXISTS sync_log CASCADE;
+
+CREATE TABLE sync_log (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   sport text NOT NULL,
   data_type text NOT NULL,
