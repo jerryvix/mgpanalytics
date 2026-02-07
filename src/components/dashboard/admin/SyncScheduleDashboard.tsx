@@ -9,6 +9,7 @@ import {
   XCircle,
   Loader2,
   CalendarClock,
+  Play,
   Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,7 @@ interface ScheduleRow {
 export function SyncScheduleDashboard() {
   const [schedules, setSchedules] = useState<ScheduleRow[]>([]);
   const [isDispatching, setIsDispatching] = useState(false);
+  const [runningSync, setRunningSync] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchSchedules = async () => {
@@ -77,6 +79,32 @@ export function SyncScheduleDashboard() {
       toast({ title: "Error", description: "Failed to dispatch syncs", variant: "destructive" });
     } finally {
       setIsDispatching(false);
+    }
+  };
+
+  const handleForceSync = async (sport: string, dataType: string) => {
+    const key = `${sport}:${dataType}`;
+    setRunningSync(key);
+    try {
+      const { data, error } = await supabase.functions.invoke("dispatch-syncs", {
+        body: { force: [key] },
+      });
+
+      if (error) {
+        toast({ title: `${key} Failed`, description: error.message, variant: "destructive" });
+      } else {
+        toast({
+          title: `${key} Dispatched`,
+          description: data?.message || "Sync started — check back in 30s for results.",
+        });
+        // Refresh after a short delay to show results
+        setTimeout(() => fetchSchedules(), 5000);
+      }
+    } catch (err) {
+      toast({ title: "Error", description: `Failed to run ${key}`, variant: "destructive" });
+    } finally {
+      setRunningSync(null);
+      await fetchSchedules();
     }
   };
 
@@ -155,6 +183,7 @@ export function SyncScheduleDashboard() {
                 <th className="text-left py-1 px-1">Status</th>
                 <th className="text-right py-1 px-1">Records</th>
                 <th className="text-left py-1 px-1">Next</th>
+                <th className="text-center py-1 px-1"></th>
               </tr>
             </thead>
             <tbody>
@@ -184,6 +213,21 @@ export function SyncScheduleDashboard() {
                   <td className="py-1 px-1">{getStatusBadge(row.last_sync_status)}</td>
                   <td className="py-1 px-1 text-right">{row.records_synced ?? "—"}</td>
                   <td className="py-1 px-1 text-terminal-cyan">{getNextSync(row)}</td>
+                  <td className="py-1 px-1 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 px-2 text-[9px] font-mono text-terminal-cyan hover:text-terminal-green hover:bg-terminal-green/10"
+                      disabled={runningSync === `${row.sport}:${row.data_type}` || !row.is_enabled}
+                      onClick={() => handleForceSync(row.sport, row.data_type)}
+                    >
+                      {runningSync === `${row.sport}:${row.data_type}` ? (
+                        <Loader2 className="w-2 h-2 animate-spin" />
+                      ) : (
+                        <><Play className="w-2 h-2 mr-0.5" />Run</>
+                      )}
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
