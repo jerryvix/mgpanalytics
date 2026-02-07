@@ -75,17 +75,37 @@ Deno.serve(async (req) => {
       throw new Error("CRON_SECRET not configured");
     }
 
-    // Auth: accept cron secret, service role key (Bearer or apikey header)
+    // Auth: accept cron secret, service role key, OR admin user JWT
     const cronSecret = req.headers.get("x-cron-secret");
     const authHeader = req.headers.get("Authorization");
     const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
     const apikeyHeader = req.headers.get("apikey");
 
-    const isAuthed =
+    let isAuthed =
       cronSecret === CRON_SECRET ||
       bearerToken === CRON_SECRET ||
       bearerToken === SUPABASE_SERVICE_ROLE_KEY ||
       apikeyHeader === SUPABASE_SERVICE_ROLE_KEY;
+
+    // If not authed via secret/key, check if caller is an admin user
+    if (!isAuthed && authHeader) {
+      const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || apikeyHeader || "";
+      const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await authClient.auth.getUser();
+      if (user) {
+        const serviceClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data: roleData } = await serviceClient
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .single();
+        if (roleData?.role === "admin") {
+          isAuthed = true;
+        }
+      }
+    }
 
     if (!isAuthed) {
       return new Response(
