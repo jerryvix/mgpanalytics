@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Flame, Zap } from "lucide-react";
+import { Activity, Flame, Target, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, isToday, isTomorrow } from "date-fns";
 import { DeltaResult } from "@/utils/performanceDelta";
@@ -26,6 +26,7 @@ interface NBASlatePlayerCardProps {
   minutesPerGame?: number;
   gameContext?: GameContext;
   showRank?: boolean;
+  hasProps?: boolean;
   performanceDelta?: DeltaResult | null;
 }
 
@@ -43,6 +44,7 @@ export function NBASlatePlayerCard({
   minutesPerGame,
   gameContext,
   showRank = true,
+  hasProps,
   performanceDelta,
 }: NBASlatePlayerCardProps) {
   const isInjured = injuryStatus !== "Healthy";
@@ -203,6 +205,14 @@ export function NBASlatePlayerCard({
               {formatGameContext()}
             </div>
           </div>
+
+          {/* Props Available Badge */}
+          {hasProps && (
+            <Badge className="bg-terminal-cyan/15 text-terminal-cyan border-terminal-cyan/30 text-xs">
+              <Target className="w-3 h-3 mr-1" />
+              Props Available
+            </Badge>
+          )}
 
           {/* Injury Status */}
           {isInjured && (

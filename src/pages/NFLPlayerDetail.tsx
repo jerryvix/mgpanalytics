@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,11 +7,31 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ArrowLeft, User, TrendingUp, Zap, Calendar, Target, BarChart3 } from "lucide-react";
 import { NFLPlayerStatsCard } from "@/components/players/NFLPlayerStatsCard";
 import { NFLGameLog } from "@/components/players/NFLGameLog";
 import { NFLAdvancedStats } from "@/components/players/NFLAdvancedStats";
 import { getPositionGroup } from "@/utils/nflStatsFormatters";
+
+/** Detect if we're currently in a sport's postseason period */
+function isInPostseason(sport: "NFL" | "NBA" | "NCAAB" | "MLB"): boolean {
+  const month = new Date().getMonth(); // 0=Jan
+  const day = new Date().getDate();
+  switch (sport) {
+    case "NFL":   return month === 0 || (month === 1 && day <= 15); // Jan 1 – Feb 15
+    case "NBA":   return month >= 3 && month <= 5;                  // Apr – Jun
+    case "NCAAB": return month === 2 || month === 3;                // Mar – Apr (March Madness)
+    case "MLB":   return month === 9 || month === 10;               // Oct – Nov (World Series)
+    default:      return false;
+  }
+}
 
 /** Normalize full position names (e.g. "Quarterback") to abbreviations (e.g. "QB") */
 function normalizePosition(pos: string): string {
@@ -26,6 +47,9 @@ function normalizePosition(pos: string): string {
 
 export default function NFLPlayerDetail() {
   const { playerId } = useParams<{ playerId: string }>();
+  const [seasonType, setSeasonType] = useState<"regular" | "postseason">(
+    isInPostseason("NFL") ? "postseason" : "regular"
+  );
 
   // Support both ID formats: "bdl-123" (BDL external_id) or UUID (Supabase ID)
   const isBdlId = playerId?.startsWith("bdl-");
@@ -71,18 +95,56 @@ export default function NFLPlayerDetail() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch game logs from DB
+  // Fetch postseason stats from DB
+  const { data: postseasonStats, isLoading: postseasonLoading } = useQuery({
+    queryKey: ["nfl-player-postseason-stats-db", player?.id],
+    queryFn: async () => {
+      if (!player?.id) return null;
+      const { data, error } = await supabase
+        .from("player_season_stats")
+        .select("*")
+        .eq("player_id", player.id)
+        .eq("sport", "NFL")
+        .eq("season_type", "postseason")
+        .order("season", { ascending: false })
+        .limit(1)
+        .single();
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+    enabled: !!player?.id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Auto-fallback: if defaulted to postseason but no data, switch to regular
+  useEffect(() => {
+    if (seasonType === "postseason" && !postseasonLoading && !postseasonStats) {
+      setSeasonType("regular");
+    }
+  }, [postseasonStats, postseasonLoading, seasonType]);
+
+  // Fetch game logs from DB — filtered by season type
+  // NFL regular season = weeks 1-18, postseason = weeks 19+ (or null week with Jan/Feb dates)
   const { data: gameLogs = [], isLoading: gameLogsLoading } = useQuery({
-    queryKey: ["nfl-player-gamelogs-db", player?.id],
+    queryKey: ["nfl-player-gamelogs-db", player?.id, seasonType],
     queryFn: async () => {
       if (!player?.id) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from("player_game_logs")
         .select("*")
         .eq("player_id", player.id)
         .eq("sport", "NFL")
         .order("game_date", { ascending: false })
         .limit(20);
+
+      // Filter by week if the column is available
+      if (seasonType === "postseason") {
+        query = query.gt("week", 18);
+      } else {
+        query = query.lte("week", 18);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       // Map DB columns to the format NFLGameLog component expects
       return (data || []).map((log: any) => ({
@@ -211,12 +273,13 @@ export default function NFLPlayerDetail() {
   const posAbbr = normalizePosition(player.position || "");
   const posGroup = getPositionGroup(posAbbr);
 
-  // Calculate season averages for highlighting in game log
-  const seasonAverages = stats ? {
-    pass_yards: stats.games_played && stats.pass_yards ? stats.pass_yards / stats.games_played : undefined,
-    rush_yards: stats.games_played && stats.rush_yards ? stats.rush_yards / stats.games_played : undefined,
-    rec_yards: stats.games_played && stats.rec_yards ? stats.rec_yards / stats.games_played : undefined,
-    receptions: stats.games_played && stats.receptions ? stats.receptions / stats.games_played : undefined,
+  // Calculate season averages for highlighting in game log (uses selected season type)
+  const activeStats = seasonType === "postseason" && postseasonStats ? postseasonStats : stats;
+  const seasonAverages = activeStats ? {
+    pass_yards: activeStats.games_played && activeStats.pass_yards ? activeStats.pass_yards / activeStats.games_played : undefined,
+    rush_yards: activeStats.games_played && activeStats.rush_yards ? activeStats.rush_yards / activeStats.games_played : undefined,
+    rec_yards: activeStats.games_played && activeStats.rec_yards ? activeStats.rec_yards / activeStats.games_played : undefined,
+    receptions: activeStats.games_played && activeStats.receptions ? activeStats.receptions / activeStats.games_played : undefined,
   } : undefined;
 
   // Season label
@@ -341,6 +404,10 @@ export default function NFLPlayerDetail() {
                       <p className="text-xs text-muted-foreground">TDs</p>
                     </div>
                     <div className="text-center">
+                      <p className="text-2xl font-bold text-destructive">{(stats as any).pass_int || "—"}</p>
+                      <p className="text-xs text-muted-foreground">INTs</p>
+                    </div>
+                    <div className="text-center">
                       <p className="text-2xl font-bold text-foreground">{stats.passer_rating?.toFixed(1) || "—"}</p>
                       <p className="text-xs text-muted-foreground">Rating</p>
                     </div>
@@ -396,6 +463,22 @@ export default function NFLPlayerDetail() {
         </div>
       </Card>
 
+      {/* Season Type Filter */}
+      {postseasonStats && (
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-sm text-muted-foreground">Viewing:</span>
+          <Select value={seasonType} onValueChange={(v) => setSeasonType(v as "regular" | "postseason")}>
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="regular">Regular Season</SelectItem>
+              <SelectItem value="postseason">Postseason</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Stats Tabs */}
       <Tabs defaultValue="traditional" className="w-full">
         <TabsList className="grid w-full grid-cols-4 mb-4">
@@ -419,18 +502,18 @@ export default function NFLPlayerDetail() {
 
         <TabsContent value="traditional">
           <NFLPlayerStatsCard
-            stats={stats}
+            stats={seasonType === "postseason" && postseasonStats ? postseasonStats : stats}
             position={posAbbr}
-            isLoading={statsLoading}
+            isLoading={seasonType === "postseason" ? postseasonLoading : statsLoading}
           />
         </TabsContent>
 
         <TabsContent value="advanced">
           <NFLAdvancedStats
-            stats={stats}
+            stats={seasonType === "postseason" && postseasonStats ? postseasonStats : stats}
             gameLogs={gameLogs}
             position={posAbbr}
-            isLoading={statsLoading || gameLogsLoading}
+            isLoading={(seasonType === "postseason" ? postseasonLoading : statsLoading) || gameLogsLoading}
           />
         </TabsContent>
 

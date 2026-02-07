@@ -85,11 +85,11 @@ function QBStats({ stats }: { stats: NFLPlayerStats }) {
           value={formatNumber(stats.pass_td)}
           perGame={calcPerGame(stats.pass_td, games)}
         />
-        <StatRow 
-          label="Interceptions" 
-          value={formatNumber(stats.interceptions)}
+        <StatRow
+          label="Interceptions"
+          value={formatNumber((stats as any).pass_int ?? stats.interceptions)}
         />
-        <StatRow 
+        <StatRow
           label="Passer Rating" 
           value={formatDecimal(stats.passer_rating)}
           highlight={(stats.passer_rating || 0) > 100}
@@ -281,13 +281,21 @@ function DEFStats({ stats }: { stats: NFLPlayerStats }) {
 }
 
 export function NFLPlayerStatsCard({ stats, position, isLoading }: NFLPlayerStatsCardProps) {
+  // NFL uses start-year convention (e.g. 2025 = 2025-26 season)
+  const isPostseason = (stats as any)?.season_type === "postseason";
+  const seasonYear = stats?.season
+    ?? (new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1);
+  const seasonLabel = isPostseason
+    ? `${seasonYear} Postseason Stats`
+    : `${seasonYear} Season Stats`;
+
   if (isLoading) {
     return (
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            2024 Season Stats
+            {seasonLabel}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -306,12 +314,12 @@ export function NFLPlayerStatsCard({ stats, position, isLoading }: NFLPlayerStat
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            2024 Season Stats
+            {seasonLabel}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm">
-            No stats available for the 2024 season.
+            No stats available. Stats appear after season data is synced.
           </p>
         </CardContent>
       </Card>
@@ -327,7 +335,7 @@ export function NFLPlayerStatsCard({ stats, position, isLoading }: NFLPlayerStat
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            2024 Season Stats
+            {seasonLabel}
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="border-muted-foreground/30">
