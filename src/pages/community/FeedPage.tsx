@@ -1,8 +1,8 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ExternalLink, Users, Plus, Twitter, ArrowLeft } from "lucide-react";
+import { ExternalLink, Users, Plus, Twitter, ArrowLeft, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,6 +60,34 @@ export default function FeedPage() {
       return data as Capper;
     },
   });
+
+  // Detect if Twitter widgets.js failed to load
+  const [widgetsAvailable, setWidgetsAvailable] = useState<boolean | null>(null);
+  useEffect(() => {
+    const check = () => {
+      if ((window as any).twttr?.widgets?.createTimeline) {
+        setWidgetsAvailable(true);
+        return true;
+      }
+      return false;
+    };
+    if (check()) return;
+
+    const interval = setInterval(() => {
+      if (check()) clearInterval(interval);
+    }, 500);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      if (!(window as any).twttr?.widgets?.createTimeline) {
+        setWidgetsAvailable(false);
+      }
+    }, 8000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []);
 
   const isLoading = followsLoading || cappersLoading;
 
@@ -236,6 +264,26 @@ export default function FeedPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {widgetsAvailable === false && (
+                  <Card className="border-amber-500/30 bg-amber-500/5">
+                    <CardContent className="py-4">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium font-mono text-amber-500">
+                            X WIDGET UNAVAILABLE
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            The X (Twitter) embed service could not be reached. This may be due to
+                            an ad blocker, network restriction, or temporary X outage.
+                            You can still view each capper directly on X using the links below.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Timeline Cards with Lazy Loading */}
                 {followedCappers.map((capper) => (

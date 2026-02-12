@@ -82,7 +82,7 @@ export function NativeTwitterTimeline({ capper, tweetLimit = 3 }: NativeTwitterT
       }, 100);
 
       // Timeout after 10 seconds
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         clearInterval(checkTwitter);
         if (!hasInitialized.current) {
           setError('Twitter widget failed to load');
@@ -90,7 +90,10 @@ export function NativeTwitterTimeline({ capper, tweetLimit = 3 }: NativeTwitterT
         }
       }, 10000);
 
-      return () => clearInterval(checkTwitter);
+      return () => {
+        clearInterval(checkTwitter);
+        clearTimeout(timeoutId);
+      };
     }
   }, [isVisible, capper.x_username, tweetLimit]);
 
@@ -137,16 +140,17 @@ export function NativeTwitterTimeline({ capper, tweetLimit = 3 }: NativeTwitterT
             <Skeleton className="h-20 w-full" />
           </div>
         ) : error ? (
-          <div className="p-6 text-center">
-            <AlertCircle className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground mb-3">{error}</p>
+          <div className="p-8 text-center space-y-4">
+            <AlertCircle className="h-10 w-10 mx-auto text-amber-500" />
+            <p className="text-sm text-muted-foreground font-mono">{error}</p>
             <a
               href={`https://x.com/${capper.x_username}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline text-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-primary/50 text-primary hover:bg-primary/10 transition-colors text-sm font-mono"
             >
-              View @{capper.x_username} on X →
+              View @{capper.x_username} on X
+              <ExternalLink className="h-3 w-3" />
             </a>
           </div>
         ) : (

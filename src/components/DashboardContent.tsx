@@ -24,6 +24,7 @@ import {
   CapperProfilePage,
 } from "@/pages/cappers";
 import { FeedPage } from "@/pages/community";
+import Profile from "@/pages/Profile";
 import { MobileSportNav } from "@/components/ui/MobileSportNav";
 
 interface DashboardContentProps {
@@ -51,6 +52,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="ncaaf" element={<ComingSoon sport="NCAAF" emoji="🏈" />} />
         <Route path="ncaab" element={<NCAABSlate />} />
         {/* NCAAB players routes removed — no props data available */}
+        <Route path="profile" element={<Profile />} />
         {/* Community routes — inside dashboard for sidebar nav */}
         <Route path="community/feed" element={<FeedPage />} />
         <Route path="community/cappers" element={<CappersDirectory />} />

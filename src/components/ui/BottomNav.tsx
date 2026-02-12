@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Trophy, MessageCircle, Users } from "lucide-react";
+import { Home, Trophy, MessageCircle, Users, UserCircle } from "lucide-react";
 import { useChat } from "@/contexts/ChatContext";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +40,13 @@ const navItems: NavItem[] = [
     action: "navigate",
     path: "/dashboard/community/feed",
     matchPaths: ["/dashboard/community"],
+  },
+  {
+    label: "Profile",
+    icon: UserCircle,
+    action: "navigate",
+    path: "/dashboard/profile",
+    matchPaths: ["/dashboard/profile"],
   },
 ];
 
