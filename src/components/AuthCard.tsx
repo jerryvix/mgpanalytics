@@ -136,6 +136,31 @@ export function AuthCard() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <Button
+          variant="outline"
+          type="button"
+          className="w-full font-mono tracking-wider mb-4 border-border hover:border-primary"
+          onClick={async () => {
+            const { error } = await supabase.auth.signInWithOAuth({
+              provider: "google",
+              options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+              },
+            });
+            if (error) toast.error(error.message);
+          }}
+        >
+          <img src="/logos/google.svg" className="w-4 h-4 mr-2" alt="" />
+          CONTINUE WITH GOOGLE
+        </Button>
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-card px-2 text-muted-foreground font-mono">OR</span>
+          </div>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email" className="text-xs font-mono text-muted-foreground uppercase tracking-wider">

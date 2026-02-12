@@ -59,7 +59,7 @@ export function NativeFeaturedTimeline({
         }
       }, 100);
 
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         clearInterval(checkTwitter);
         if (!hasInitialized.current) {
           setError('Twitter widget failed to load');
@@ -67,7 +67,10 @@ export function NativeFeaturedTimeline({
         }
       }, 10000);
 
-      return () => clearInterval(checkTwitter);
+      return () => {
+        clearInterval(checkTwitter);
+        clearTimeout(timeoutId);
+      };
     }
   }, [username, tweetLimit]);
 

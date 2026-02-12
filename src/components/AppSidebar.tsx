@@ -23,6 +23,7 @@ import {
   LogOut,
   Eye,
   EyeOff,
+  UserCircle,
   PenLine,
   MessageSquare,
   Trash2,
@@ -436,7 +437,28 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
             {user.email}
           </div>
         )}
-        
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size={collapsed ? "icon" : "sm"}
+              onClick={() => navigate("/dashboard/profile")}
+              className={`w-full justify-start ${
+                location.pathname === "/dashboard/profile"
+                  ? "text-terminal-green bg-sidebar-accent"
+                  : "text-sidebar-foreground hover:text-terminal-green hover:bg-sidebar-accent"
+              }`}
+            >
+              <UserCircle className="w-4 h-4 shrink-0" />
+              {!collapsed && <span className="ml-2">Profile</span>}
+            </Button>
+          </TooltipTrigger>
+          {collapsed && (
+            <TooltipContent side="right">Profile</TooltipContent>
+          )}
+        </Tooltip>
+
         {/* Admin Preview Toggle - only show for actual admins */}
         {isAdmin && !collapsed && onTogglePreview && (
           <div className="mb-1 flex items-center justify-between gap-2 p-1.5 rounded bg-sidebar-accent/50 border border-dashed border-terminal-green/30">
