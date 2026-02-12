@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
+import AuthCallback from "./pages/AuthCallback";
 import { ChatProvider } from "./contexts/ChatContext";
 
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
             {/* Redirect old /community/* paths to /dashboard/community/* */}
             <Route path="/community/*" element={<Navigate to="/dashboard/community/cappers" replace />} />
