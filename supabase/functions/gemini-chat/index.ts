@@ -20,6 +20,81 @@ function checkRateLimit(userId: string): boolean {
 }
 
 // ============================================================
+// TEAM NAME MAPPING (informal -> DB displayName)
+// ============================================================
+const NBA_TEAMS: Record<string, string> = {
+  "lakers": "Los Angeles Lakers", "celtics": "Boston Celtics",
+  "warriors": "Golden State Warriors", "bucks": "Milwaukee Bucks",
+  "heat": "Miami Heat", "nuggets": "Denver Nuggets",
+  "suns": "Phoenix Suns", "clippers": "LA Clippers",
+  "sixers": "Philadelphia 76ers", "76ers": "Philadelphia 76ers",
+  "knicks": "New York Knicks", "nets": "Brooklyn Nets",
+  "bulls": "Chicago Bulls", "mavericks": "Dallas Mavericks",
+  "mavs": "Dallas Mavericks", "grizzlies": "Memphis Grizzlies",
+  "kings": "Sacramento Kings", "pelicans": "New Orleans Pelicans",
+  "timberwolves": "Minnesota Timberwolves", "wolves": "Minnesota Timberwolves",
+  "thunder": "Oklahoma City Thunder", "okc": "Oklahoma City Thunder",
+  "rockets": "Houston Rockets", "spurs": "San Antonio Spurs",
+  "magic": "Orlando Magic", "hawks": "Atlanta Hawks",
+  "hornets": "Charlotte Hornets", "pistons": "Detroit Pistons",
+  "pacers": "Indiana Pacers", "wizards": "Washington Wizards",
+  "blazers": "Portland Trail Blazers", "trail blazers": "Portland Trail Blazers",
+  "jazz": "Utah Jazz", "raptors": "Toronto Raptors",
+  "cavaliers": "Cleveland Cavaliers", "cavs": "Cleveland Cavaliers",
+};
+
+const NFL_TEAMS: Record<string, string> = {
+  "chiefs": "Kansas City Chiefs", "eagles": "Philadelphia Eagles",
+  "bills": "Buffalo Bills", "ravens": "Baltimore Ravens",
+  "cowboys": "Dallas Cowboys", "niners": "San Francisco 49ers",
+  "49ers": "San Francisco 49ers", "packers": "Green Bay Packers",
+  "lions": "Detroit Lions", "texans": "Houston Texans",
+  "commanders": "Washington Commanders", "dolphins": "Miami Dolphins",
+  "broncos": "Denver Broncos", "raiders": "Las Vegas Raiders",
+  "jets": "New York Jets", "giants": "New York Giants",
+  "bears": "Chicago Bears", "vikings": "Minnesota Vikings",
+  "colts": "Indianapolis Colts", "jaguars": "Jacksonville Jaguars",
+  "titans": "Tennessee Titans", "bengals": "Cincinnati Bengals",
+  "browns": "Cleveland Browns", "steelers": "Pittsburgh Steelers",
+  "saints": "New Orleans Saints", "buccaneers": "Tampa Bay Buccaneers",
+  "bucs": "Tampa Bay Buccaneers", "panthers": "Carolina Panthers",
+  "falcons": "Atlanta Falcons", "cardinals": "Arizona Cardinals",
+  "seahawks": "Seattle Seahawks", "rams": "Los Angeles Rams",
+  "chargers": "Los Angeles Chargers",
+};
+
+const TEAM_MAPS: Record<string, Record<string, string>> = {
+  NBA: NBA_TEAMS,
+  NFL: NFL_TEAMS,
+};
+
+function extractTeamNames(
+  message: string,
+  league: string
+): { team1: string | null; team2: string | null } {
+  const m = message.toLowerCase();
+  const teamMap = TEAM_MAPS[league] || {};
+  const sortedKeys = Object.keys(teamMap).sort((a, b) => b.length - a.length);
+
+  const found: string[] = [];
+  let remaining = m;
+
+  for (const key of sortedKeys) {
+    const pattern = new RegExp(`\\b${key.replace(/\s+/g, "\\s+")}\\b`);
+    if (pattern.test(remaining)) {
+      const dbName = teamMap[key];
+      if (!found.includes(dbName)) {
+        found.push(dbName);
+        remaining = remaining.replace(pattern, "___");
+      }
+      if (found.length >= 2) break;
+    }
+  }
+
+  return { team1: found[0] || null, team2: found[1] || null };
+}
+
+// ============================================================
 // SYSTEM PROMPT — BASE + QUESTION-TYPE-SPECIFIC RULES
 // ============================================================
 const SYSTEM_INSTRUCTION_BASE = `You are the MGP Analyst, a sports analytics assistant designed to help users explore and understand sports data. You operate as a teacher-student model: your job is to surface information, ask clarifying questions, and empower the user to draw their own conclusions.
@@ -154,6 +229,8 @@ interface FetchedData {
   injuries?: unknown[];
   props?: unknown[];
   prop_results?: unknown[];
+  head_to_head?: unknown;
+  head_to_head_games?: unknown[];
 }
 
 // ============================================================
@@ -173,10 +250,13 @@ function detectIntent(message: string): string {
   const m = message.toLowerCase();
   if (/\b(props?|player prop|over\s*\/?\s*under\s+\d|o\/u\s+\d)\b/.test(m)) return "props";
   if (/\b(odds|line|spread|total|over|under|moneyline|ml|ats|point spread)\b/.test(m)) return "odds";
+  // Head-to-head: must come before "results" since "record vs" shouldn't fall into 7-day window results
+  if (/\b(record\s+(vs|against|versus)|head[\s-]?to[\s-]?head|h2h|season\s+series|how\s+many\s+(wins?|losses?|times?)\s+(vs|against|versus)|(series|matchup)\s+(record|history))\b/.test(m)) return "head_to_head";
   if (/\b(who won|final score|result|score of|did .+ (win|lose|cover|beat)|last night|yesterday|recap|box score)\b/.test(m)) return "results";
   if (/\b(game|schedule|when|playing|tonight|today|upcoming|matchup)\b/.test(m)) return "games";
   if (/\b(player|stats?|average|scoring|points|yards|rushing|passing|receiving)\b/.test(m)) return "player_stats";
   if (/\b(injur|out|questionable|doubtful|status|health)\b/.test(m)) return "injuries";
+  if (/\b(favou?red|favou?rite|underdog|who.*(fav|dog))\b/.test(m)) return "favored";
   return "general";
 }
 
@@ -209,7 +289,8 @@ function classifyQuestionType(message: string): QuestionType {
 async function fetchRelevantData(
   supabase: any,
   league: string,
-  intent: string
+  intent: string,
+  message: string
 ): Promise<{ data: FetchedData; sources: SourceRef[] }> {
   const fetchedData: FetchedData = {};
   const sources: SourceRef[] = [];
@@ -272,7 +353,7 @@ async function fetchRelevantData(
   }
 
   // Fetch odds if relevant (also for games/results/props intents as fallback context)
-  if (intent === "odds" || intent === "general" || intent === "games" || intent === "results" || intent === "props") {
+  if (intent === "odds" || intent === "general" || intent === "games" || intent === "results" || intent === "props" || intent === "favored") {
     const oddsTable = league === "NFL" ? "odds" : 
                       league === "NBA" ? "nba_odds" :
                       league === "NCAAB" ? "ncaab_odds" :
@@ -401,6 +482,123 @@ async function fetchRelevantData(
     }
   }
 
+  // Fetch head-to-head data
+  if (intent === "head_to_head" || intent === "favored") {
+    const { team1, team2 } = extractTeamNames(message, league);
+
+    if (team1 && team2) {
+      // NBA: use the existing RPC function
+      if (league === "NBA") {
+        try {
+          const { data: h2hData, error: h2hError } = await supabase
+            .rpc("get_nba_head_to_head", { p_team1: team1, p_team2: team2 });
+
+          if (!h2hError && h2hData) {
+            fetchedData.head_to_head = h2hData;
+            sources.push({
+              provider: "mgp_database",
+              endpoint: `${league}/head_to_head`,
+              fetched_at: now.toISOString(),
+              ids: { team1, team2 },
+            });
+          }
+        } catch (e) {
+          console.error("Error fetching NBA H2H RPC:", e);
+        }
+      }
+
+      // All leagues: fetch game-by-game results for the matchup
+      try {
+        const { data: gamesA } = await supabase
+          .from(gameTable)
+          .select("*")
+          .eq("is_final", true)
+          .eq("home_team_name", team1)
+          .eq("visitor_team_name", team2)
+          .order("date", { ascending: false });
+
+        const { data: gamesB } = await supabase
+          .from(gameTable)
+          .select("*")
+          .eq("is_final", true)
+          .eq("home_team_name", team2)
+          .eq("visitor_team_name", team1)
+          .order("date", { ascending: false });
+
+        const h2hGames = [...(gamesA || []), ...(gamesB || [])].sort(
+          (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
+        if (h2hGames.length > 0) {
+          fetchedData.head_to_head_games = h2hGames;
+
+          // Build summary for non-NBA leagues (NBA already has RPC data)
+          if (!fetchedData.head_to_head) {
+            let team1Wins = 0, team2Wins = 0;
+            for (const g of h2hGames as any[]) {
+              const homeWon = (g.home_score ?? 0) > (g.away_score ?? 0);
+              if (
+                (g.home_team_name === team1 && homeWon) ||
+                (g.visitor_team_name === team1 && !homeWon)
+              ) {
+                team1Wins++;
+              } else {
+                team2Wins++;
+              }
+            }
+            fetchedData.head_to_head = {
+              team1, team2,
+              team1_wins: team1Wins,
+              team2_wins: team2Wins,
+              total_games: team1Wins + team2Wins,
+              summary: `${team1Wins}-${team2Wins} this season`,
+            };
+          }
+
+          sources.push({
+            provider: "mgp_database",
+            endpoint: `${league}/h2h_games`,
+            fetched_at: now.toISOString(),
+            ids: { team1, team2 },
+          });
+        }
+      } catch (e) {
+        console.error("Error fetching H2H games:", e);
+      }
+
+      // Also fetch upcoming games between the two teams
+      try {
+        const { data: upcomingA } = await supabase
+          .from(gameTable)
+          .select("*")
+          .eq("home_team_name", team1)
+          .eq("visitor_team_name", team2)
+          .gte("date", now.toISOString())
+          .order("date", { ascending: true })
+          .limit(3);
+
+        const { data: upcomingB } = await supabase
+          .from(gameTable)
+          .select("*")
+          .eq("home_team_name", team2)
+          .eq("visitor_team_name", team1)
+          .gte("date", now.toISOString())
+          .order("date", { ascending: true })
+          .limit(3);
+
+        const upcomingH2H = [...(upcomingA || []), ...(upcomingB || [])].sort(
+          (a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime()
+        );
+
+        if (upcomingH2H.length > 0) {
+          fetchedData.games = [...(fetchedData.games || []), ...upcomingH2H];
+        }
+      } catch (e) {
+        console.error("Error fetching upcoming H2H games:", e);
+      }
+    }
+  }
+
   return { data: fetchedData, sources };
 }
 
@@ -431,6 +629,28 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[]): string {
       const awayScore = g.away_score ?? "?";
       prompt += `• ${date}: ${g.visitor_team_name} ${awayScore} @ ${g.home_team_name} ${homeScore} (FINAL)\n`;
     });
+  }
+
+  if (data.head_to_head) {
+    const h2h = data.head_to_head as any;
+    prompt += `\n🆚 HEAD-TO-HEAD: ${h2h.team1} vs ${h2h.team2}${h2h.season ? ` (${h2h.season})` : ""}\n`;
+    prompt += `Season Series: ${h2h.team1} ${h2h.team1_wins} - ${h2h.team2_wins} ${h2h.team2}\n`;
+    prompt += `Total games played: ${h2h.total_games}\n`;
+
+    if (data.head_to_head_games?.length) {
+      prompt += "\nGame-by-game results:\n";
+      (data.head_to_head_games as any[]).forEach((g: any) => {
+        const date = new Date(g.date).toLocaleDateString("en-US", {
+          weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York"
+        });
+        const homeScore = g.home_score ?? "?";
+        const awayScore = g.away_score ?? "?";
+        const winner = (g.home_score ?? 0) > (g.away_score ?? 0)
+          ? g.home_team_name
+          : g.visitor_team_name;
+        prompt += `  • ${date}: ${g.visitor_team_name} ${awayScore} @ ${g.home_team_name} ${homeScore} — ${winner} win\n`;
+      });
+    }
   }
 
   if (data.odds?.length) {
@@ -574,7 +794,7 @@ serve(async (req) => {
     console.log(`[gemini-chat] Detected league: ${league}, intent: ${intent}, questionType: ${questionType}`);
 
     // Fetch relevant data from our database
-    const { data: fetchedData, sources } = await fetchRelevantData(supabase, league, intent);
+    const { data: fetchedData, sources } = await fetchRelevantData(supabase, league, intent, lastUserMessage);
     const dataPrompt = formatDataForPrompt(fetchedData, sources);
 
     // Get current date/time for context
