@@ -64,7 +64,7 @@ const freshnessColors: Record<FreshnessLevel, string> = {
 
 const EXAMPLE_PROMPTS = [
   "What's on tonight's slate?",
-  "Which games have the most line movement?",
+  "Who are tonight's biggest favorites?",
   "How do the spreads look this week?",
 ];
 
@@ -184,6 +184,7 @@ export function DashboardHome() {
         let { data } = await supabase
           .from("games")
           .select("*")
+          .eq("league", "NFL")
           .not("status", "ilike", "%final%")
           .gte("date", now.toISOString())
           .lte("date", in48Hours.toISOString())
@@ -194,6 +195,7 @@ export function DashboardHome() {
           const { data: extended } = await supabase
             .from("games")
             .select("*")
+            .eq("league", "NFL")
             .not("status", "ilike", "%final%")
             .gte("date", now.toISOString())
             .lte("date", in7Days.toISOString())
