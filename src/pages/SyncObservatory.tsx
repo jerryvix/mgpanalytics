@@ -51,7 +51,7 @@ export default function SyncObservatory() {
         console.error("Error fetching sync logs:", error);
         return { logs: [], count: 0 };
       }
-      return { logs: (data || []) as SyncLogEntry[], count: count || 0 };
+      return { logs: (data || []) as unknown as SyncLogEntry[], count: count || 0 };
     },
     refetchInterval: 30000, // Auto-refresh every 30s
   });
@@ -71,7 +71,7 @@ export default function SyncObservatory() {
         console.error("Error fetching recent logs:", error);
         return [];
       }
-      return (data || []) as SyncLogEntry[];
+      return (data || []) as unknown as SyncLogEntry[];
     },
     refetchInterval: 30000,
   });

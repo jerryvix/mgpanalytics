@@ -89,7 +89,7 @@ export default function NBAPlayers() {
       }>();
       
       for (const stat of statsData || []) {
-        if (stat.points_per_game !== null) {
+        if (stat.points_per_game !== null && stat.player_id) {
           statsMap.set(stat.player_id, stat);
         }
       }
@@ -126,7 +126,7 @@ export default function NBAPlayers() {
       const playersWithStats = playersData
         .map(player => {
           const stats = statsMap.get(player.id);
-          const gameContext = gameContextMap.get(player.team_name);
+          const gameContext = player.team_name ? gameContextMap.get(player.team_name) : undefined;
           return {
             ...player,
             stats,
@@ -166,7 +166,7 @@ export default function NBAPlayers() {
 
   return (
     <NBASlatePlayersGrid
-      players={players}
+      players={players as never}
       games={games}
       teams={teams}
       hasGames={hasGames}

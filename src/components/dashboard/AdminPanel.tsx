@@ -395,7 +395,7 @@ export function AdminPanel() {
 
       // Helper to transform stats for upsert
       const transformStats = (stats: Record<string, unknown>[], seasonType: "regular" | "postseason", fallbackSeason: number) => {
-        const result = [];
+        const result: Record<string, unknown>[] = [];
         for (const stat of stats) {
           const playerId = playerMap.get(String((stat.player as Record<string, unknown>)?.id));
           if (!playerId) continue;
@@ -475,7 +475,7 @@ export function AdminPanel() {
           if (statsToUpsert.length > 0) {
             for (let i = 0; i < statsToUpsert.length; i += 50) {
               const batch = statsToUpsert.slice(i, i + 50);
-              await supabase.from("player_season_stats").upsert(batch, {
+              await supabase.from("player_season_stats").upsert(batch as never, {
                 onConflict: "player_id,sport,season,season_type",
               });
               totalSynced += batch.length;
@@ -625,7 +625,7 @@ export function AdminPanel() {
             playerExternalIds.has(String((stat.player as Record<string, unknown>)?.id))
           );
 
-          const statsToUpsert = [];
+          const statsToUpsert: Record<string, unknown>[] = [];
           for (const stat of relevantStats) {
             const player = uniquePlayers.find(p => String(p.external_id) === String((stat.player as Record<string, unknown>)?.id));
             if (!player) continue;
@@ -659,7 +659,7 @@ export function AdminPanel() {
           }
 
           if (statsToUpsert.length > 0) {
-            await supabase.from("player_advanced_stats").upsert(statsToUpsert, {
+            await supabase.from("player_advanced_stats").upsert(statsToUpsert as never, {
               onConflict: "player_id,sport,season",
             });
             totalSynced += statsToUpsert.length;

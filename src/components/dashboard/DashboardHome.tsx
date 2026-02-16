@@ -35,8 +35,8 @@ interface OddsMovement {
 }
 
 interface GameWithOdds extends Game {
-  spread?: number | null;
-  total?: number | null;
+  spread: number | null;
+  total: number | null;
   hasOdds: boolean;
 }
 
@@ -408,8 +408,8 @@ export function DashboardHome() {
               team: game.home_team_name,
               opponent: game.visitor_team_name,
               market: "spread",
-              openValue: game.spread,
-              currentValue: game.spread,
+              openValue: game.spread ?? null,
+              currentValue: game.spread ?? null,
               movement: null,
               lastUpdated: "now",
               sport: game.league,

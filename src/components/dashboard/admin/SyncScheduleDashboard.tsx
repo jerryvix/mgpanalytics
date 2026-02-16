@@ -47,7 +47,7 @@ export function SyncScheduleDashboard() {
       .order("data_type");
 
     if (!error && data) {
-      setSchedules(data as ScheduleRow[]);
+      setSchedules(data as unknown as ScheduleRow[]);
     }
     setLoading(false);
   };
@@ -59,7 +59,7 @@ export function SyncScheduleDashboard() {
   const toggleEnabled = async (sport: string, dataType: string, enabled: boolean) => {
     await supabase
       .from("sync_schedule")
-      .update({ is_enabled: enabled })
+      .update({ is_enabled: enabled } as never)
       .eq("sport", sport)
       .eq("data_type", dataType);
     await fetchSchedules();

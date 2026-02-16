@@ -67,7 +67,7 @@ export default function NCAABPlayers() {
   // Extract unique teams from players
   useEffect(() => {
     if (players.length > 0) {
-      const uniqueTeams = [...new Set(players.map((p) => p.team_name))].sort();
+      const uniqueTeams = [...new Set(players.map((p) => p.team_name))].filter((t): t is string => t !== null).sort();
       setTeams(uniqueTeams);
     }
   }, [players]);
@@ -83,7 +83,7 @@ export default function NCAABPlayers() {
 
       <PlayersGrid
         sport="NCAAB"
-        players={players}
+        players={players as never}
         teams={teams}
         positions={NCAAB_POSITIONS}
         slateWindow="24 hours"

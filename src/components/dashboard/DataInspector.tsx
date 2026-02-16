@@ -78,7 +78,7 @@ export function DataInspector() {
         .order("sport")
         .order("data_type");
 
-      setSyncStatuses(schedules || []);
+      setSyncStatuses((schedules || []) as unknown as SyncStatus[]);
 
       // 2. Data coverage counts per sport
       const sports = ["NFL", "NBA", "NCAAB"];

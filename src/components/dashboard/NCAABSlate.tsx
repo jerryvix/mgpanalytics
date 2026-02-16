@@ -90,7 +90,7 @@ export function NCAABSlate() {
     setHasRankedGames(rankedGames.length > 0);
 
     console.log("NCAAB games:", upcomingGames.length, "ranked:", rankedGames.length);
-    setGames(upcomingGames);
+    setGames(upcomingGames as unknown as Game[]);
 
     // Fetch DraftKings odds for all games
     if (upcomingGames.length > 0) {

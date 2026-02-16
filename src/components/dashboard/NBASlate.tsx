@@ -85,7 +85,7 @@ export function NBASlate() {
       return;
     }
 
-    const allFetchedGames = gamesData || [];
+    const allFetchedGames = (gamesData || []) as unknown as Game[];
     setAllGames(allFetchedGames);
     console.log("NBA games in 48h window:", allFetchedGames.length);
 
@@ -139,7 +139,7 @@ export function NBASlate() {
         // Close spreads = games with spread < 5
         filteredGames = filteredGames.filter((game) => {
           const odds = gameOddsMap[game.id];
-          return odds?.spread_value !== null && Math.abs(odds.spread_value) < 5;
+          return odds && odds.spread_value !== null && Math.abs(odds.spread_value) < 5;
         });
         break;
     }

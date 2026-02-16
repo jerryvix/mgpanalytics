@@ -28,7 +28,7 @@ export default function CapperProfilePage() {
       const { data, error } = await supabase
         .from('cappers')
         .select('*')
-        .eq('x_username', username)
+        .eq('x_username', username!)
         .single();
 
       if (error) throw error;

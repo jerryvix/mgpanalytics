@@ -60,6 +60,8 @@ export function GamePreviewModal({ game, open, onOpenChange }: GamePreviewModalP
 
     try {
       // Parallel fetch: injuries + team records + head-to-head + last 5 games
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rpc = supabase.rpc as unknown as (fn: string, params: Record<string, unknown>) => Promise<{ data: any; error: any }>;
       const [injuriesResult, homeRecord, awayRecord, h2h, homeLast5, awayLast5] =
         await Promise.all([
           // Injuries (real data from players table)
@@ -70,22 +72,22 @@ export function GamePreviewModal({ game, open, onOpenChange }: GamePreviewModalP
             .or(`team_name.ilike.%${game.home_team_name}%,team_name.ilike.%${game.visitor_team_name}%`)
             .not("injury_status", "is", null),
           // Home team record
-          supabase.rpc("get_nba_team_record", { p_team_name: game.home_team_name }),
+          rpc("get_nba_team_record", { p_team_name: game.home_team_name }),
           // Away team record
-          supabase.rpc("get_nba_team_record", { p_team_name: game.visitor_team_name }),
+          rpc("get_nba_team_record", { p_team_name: game.visitor_team_name }),
           // Head to head
-          supabase.rpc("get_nba_head_to_head", {
+          rpc("get_nba_head_to_head", {
             p_team1: game.home_team_name,
             p_team2: game.visitor_team_name,
           }),
           // Home last 10
-          supabase.rpc("get_nba_team_last_n_games", {
+          rpc("get_nba_team_last_n_games", {
             p_team_name: game.home_team_name,
             p_n: 10,
             p_before_date: game.date,
           }),
           // Away last 10
-          supabase.rpc("get_nba_team_last_n_games", {
+          rpc("get_nba_team_last_n_games", {
             p_team_name: game.visitor_team_name,
             p_n: 10,
             p_before_date: game.date,

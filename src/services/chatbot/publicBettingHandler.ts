@@ -216,7 +216,7 @@ export async function handlePublicBettingQuery(query: string): Promise<string> {
  * Generate follow-up suggestions for public betting queries
  */
 export function getPublicBettingSuggestions(teamA: string | null, teamB: string | null): Array<{text: string; query: string}> {
-  const suggestions = [];
+  const suggestions: Array<{text: string; query: string}> = [];
   
   if (teamA) {
     suggestions.push({

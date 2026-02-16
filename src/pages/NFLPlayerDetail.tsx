@@ -502,7 +502,7 @@ export default function NFLPlayerDetail() {
 
         <TabsContent value="traditional">
           <NFLPlayerStatsCard
-            stats={seasonType === "postseason" && postseasonStats ? postseasonStats : stats}
+            stats={(seasonType === "postseason" && postseasonStats ? postseasonStats : stats) as never}
             position={posAbbr}
             isLoading={seasonType === "postseason" ? postseasonLoading : statsLoading}
           />
@@ -510,7 +510,7 @@ export default function NFLPlayerDetail() {
 
         <TabsContent value="advanced">
           <NFLAdvancedStats
-            stats={seasonType === "postseason" && postseasonStats ? postseasonStats : stats}
+            stats={(seasonType === "postseason" && postseasonStats ? postseasonStats : stats) as never}
             gameLogs={gameLogs}
             position={posAbbr}
             isLoading={(seasonType === "postseason" ? postseasonLoading : statsLoading) || gameLogsLoading}

@@ -26,7 +26,7 @@ export default function PlayerProfile() {
       const { data, error } = await supabase
         .from("players")
         .select("*")
-        .eq("id", playerId)
+        .eq("id", playerId!)
         .single();
 
       if (error) throw error;
@@ -41,7 +41,7 @@ export default function PlayerProfile() {
       const { data, error } = await supabase
         .from("player_season_stats")
         .select("*")
-        .eq("player_id", playerId)
+        .eq("player_id", playerId!)
         .eq("sport", sportUpper)
         .order("season", { ascending: false })
         .limit(1)
@@ -59,7 +59,7 @@ export default function PlayerProfile() {
       const { data: associations } = await supabase
         .from("player_game_associations")
         .select("nfl_game_id, nba_game_id, ncaab_game_id, is_starter")
-        .eq("player_id", playerId)
+        .eq("player_id", playerId!)
         .eq("sport", sportUpper);
 
       if (!associations || associations.length === 0) return [];

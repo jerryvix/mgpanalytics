@@ -339,8 +339,8 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
         {/* Advanced Stats */}
         <TabsContent value="advanced">
           <NBAAdvancedStats
-            stats={stats}
-            gameLogs={gameLogs}
+            stats={stats as never}
+            gameLogs={gameLogs as never}
             position={player.position || ""}
             isLoading={statsLoading}
           />
@@ -349,7 +349,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
         {/* Game Log */}
         <TabsContent value="gamelog">
           <NBAGameLog
-            gameLogs={gameLogs}
+            gameLogs={gameLogs as never}
             playerName={player.name}
             seasonAverages={seasonAverages}
             isLoading={gameLogsLoading}
@@ -359,7 +359,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
         {/* Splits */}
         <TabsContent value="splits">
           <NBASplits
-            gameLogs={gameLogs}
+            gameLogs={gameLogs as never}
             playerName={player.name}
             isLoading={gameLogsLoading}
           />
