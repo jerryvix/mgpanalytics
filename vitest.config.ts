@@ -2,6 +2,10 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
+// Ensure React loads its development build during tests
+// (the shell may have NODE_ENV=production which breaks jsxDEV)
+process.env.NODE_ENV = "test";
+
 export default defineConfig({
   plugins: [react()],
   test: {

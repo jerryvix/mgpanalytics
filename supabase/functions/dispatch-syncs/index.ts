@@ -20,6 +20,7 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   // NBA:season_stats — same as NBA:stats; skip duplicate
   // NBA:props — handled by ALL:player_props
   "NCAAB:games": "sync-ncaab-games",
+  "NCAAB:odds": "sync-ncaab-games",
   "NCAAB:players": "sync-ncaab-players",
   "NCAAF:games": "sync-ncaaf-games",
   "MLB:games": "sync-mlb-games",

@@ -8,6 +8,39 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
+// Normalize team names for matching (ported from sync-nba-odds)
+function normalizeTeamName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Try to match odds game to our database game
+function findMatchingGame(
+  oddsHome: string,
+  oddsAway: string,
+  games: { id: string; home_team_name: string; visitor_team_name: string }[]
+): { id: string; home_team_name: string; visitor_team_name: string } | null {
+  const normOddsHome = normalizeTeamName(oddsHome);
+  const normOddsAway = normalizeTeamName(oddsAway);
+
+  for (const game of games) {
+    const dbHome = normalizeTeamName(game.home_team_name);
+    const dbAway = normalizeTeamName(game.visitor_team_name);
+
+    const homeMatch = normOddsHome.includes(dbHome) || dbHome.includes(normOddsHome) ||
+      normOddsHome.split(" ").some((part: string) => dbHome.includes(part) && part.length > 3);
+    const awayMatch = normOddsAway.includes(dbAway) || dbAway.includes(normOddsAway) ||
+      normOddsAway.split(" ").some((part: string) => dbAway.includes(part) && part.length > 3);
+
+    if (homeMatch && awayMatch) return game;
+  }
+
+  return null;
+}
+
 // High-profile conferences for featured games
 const TOP_CONFERENCES = ["ACC", "Big Ten", "Big 12", "SEC", "Big East", "Pac-12", "American"];
 
@@ -302,25 +335,22 @@ serve(async (req) => {
               total_under_odds: number | null;
             }> = [];
 
+            let matchedCount = 0;
+            let unmatchedCount = 0;
+
             for (const oddsGame of oddsData) {
-              // Match by team names (fuzzy match)
-              const matchedGame = insertedData.find((g) => {
-                const normalizeTeam = (name: string) =>
-                  name.toLowerCase().replace(/[^a-z]/g, "");
-                const homeNorm = normalizeTeam(g.home_team_name);
-                const awayNorm = normalizeTeam(g.visitor_team_name);
-                const oddsHomeNorm = normalizeTeam(oddsGame.home_team);
-                const oddsAwayNorm = normalizeTeam(oddsGame.away_team);
+              const matchedGame = findMatchingGame(
+                oddsGame.home_team,
+                oddsGame.away_team,
+                insertedData
+              );
 
-                return (
-                  (homeNorm.includes(oddsHomeNorm.slice(-8)) ||
-                    oddsHomeNorm.includes(homeNorm.slice(-8))) &&
-                  (awayNorm.includes(oddsAwayNorm.slice(-8)) ||
-                    oddsAwayNorm.includes(awayNorm.slice(-8)))
-                );
-              });
-
-              if (!matchedGame) continue;
+              if (!matchedGame) {
+                unmatchedCount++;
+                console.log(`No NCAAB match for: ${oddsGame.home_team} vs ${oddsGame.away_team}`);
+                continue;
+              }
+              matchedCount++;
 
               const allowedBooks = ["draftkings", "fanduel", "caesars", "betrivers"];
               for (const bookmaker of oddsGame.bookmakers || []) {
@@ -378,6 +408,8 @@ serve(async (req) => {
                 });
               }
             }
+
+            console.log(`NCAAB odds matching: ${matchedCount} matched, ${unmatchedCount} unmatched out of ${oddsData.length} odds games`);
 
             if (oddsToUpsert.length > 0) {
               const { error: oddsError } = await supabase
