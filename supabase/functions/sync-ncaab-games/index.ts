@@ -299,6 +299,7 @@ serve(async (req) => {
     // Historical data preserved — no longer deleting old games
 
     let insertedCount = 0;
+    let oddsInsertedCount = 0;
     if (gamesToInsert.length > 0) {
       const { data: insertedData, error: insertError } = await supabase
         .from("ncaab_games")
@@ -419,7 +420,8 @@ serve(async (req) => {
               if (oddsError) {
                 console.error("Error inserting odds:", oddsError);
               } else {
-                console.log(`Upserted ${oddsToUpsert.length} NCAAB odds records`);
+                oddsInsertedCount = oddsToUpsert.length;
+                console.log(`Upserted ${oddsInsertedCount} NCAAB odds records`);
               }
             }
           }
@@ -432,9 +434,10 @@ serve(async (req) => {
     const response = {
       success: true,
       gamesCount: insertedCount,
+      oddsCount: oddsInsertedCount,
       rankedGamesCount: rankedGames.length,
       featuredGamesCount: gamesToInsert.length - rankedGames.length,
-      message: `Synced ${insertedCount} NCAAB games (${rankedGames.length} ranked) for next 24 hours`,
+      message: `Synced ${insertedCount} NCAAB games (${rankedGames.length} ranked), ${oddsInsertedCount} odds records for next 24 hours`,
     };
 
     console.log("NCAAB sync completed:", response);
@@ -442,7 +445,7 @@ serve(async (req) => {
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success",
       records_added: insertedCount,
-      details: { total_espn_games: allGames.length, filtered_24h: upcomingGames.length, ranked_games: rankedGames.length },
+      details: { total_espn_games: allGames.length, filtered_24h: upcomingGames.length, ranked_games: rankedGames.length, odds_synced: oddsInsertedCount },
     });
 
     return new Response(JSON.stringify(response), {

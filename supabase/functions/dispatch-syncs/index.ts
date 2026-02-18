@@ -34,7 +34,7 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
 function isSportInSeason(sport: string): boolean {
   const month = new Date().getMonth(); // 0=Jan, 11=Dec
   switch (sport) {
-    case "NFL":   return month >= 8 || month <= 1;   // Sep–Feb (reg season + playoffs)
+    case "NFL":   return month >= 8 || month <= 0;   // Sep–Jan (Super Bowl is late Jan/early Feb)
     case "NBA":   return month >= 9 || month <= 5;    // Oct–Jun
     case "NCAAB": return month >= 10 || month <= 3;   // Nov–Apr (March Madness)
     case "NCAAF": return month >= 7 || month <= 0;    // Aug–Jan (bowls)
@@ -230,7 +230,9 @@ Deno.serve(async (req) => {
             data_type: schedule.data_type,
             last_sync_at: new Date().toISOString(),
             last_sync_status: success ? "success" : "failed",
-            records_synced: responseData.gamesCount || responseData.oddsCount || responseData.count || 0,
+            records_synced: schedule.data_type === "odds"
+              ? (responseData.oddsCount || responseData.count || 0)
+              : (responseData.gamesCount || responseData.oddsCount || responseData.count || 0),
             error_message: success ? null : (responseData.error || `HTTP ${response.status}`),
           }, { onConflict: "sport,data_type" });
         console.log(`[dispatch-syncs] ${key}: ${success ? "success" : "failed"}`);

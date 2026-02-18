@@ -22,6 +22,21 @@ interface OddsSyncControlsProps {
   onSyncComplete?: () => void;
 }
 
+const ODDS_SPORTS_KEY = "mgp_odds_enabled_sports";
+const ALL_ODDS_SPORTS = ["NFL", "NBA", "NCAAB"] as const;
+
+function loadEnabledSports(): Record<string, boolean> {
+  try {
+    const stored = localStorage.getItem(ODDS_SPORTS_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore */ }
+  return { NFL: true, NBA: true, NCAAB: true };
+}
+
+function saveEnabledSports(sports: Record<string, boolean>) {
+  localStorage.setItem(ODDS_SPORTS_KEY, JSON.stringify(sports));
+}
+
 export function OddsSyncControls({ onSyncComplete }: OddsSyncControlsProps) {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -31,6 +46,7 @@ export function OddsSyncControls({ onSyncComplete }: OddsSyncControlsProps) {
   const [nextSyncIn, setNextSyncIn] = useState<string>("15:00");
   const [failedSyncsToday, setFailedSyncsToday] = useState(0);
   const [snapshotCount, setSnapshotCount] = useState<number | null>(null);
+  const [enabledSports, setEnabledSports] = useState<Record<string, boolean>>(loadEnabledSports);
 
   const fetchStats = async () => {
     // Get last sync time
@@ -87,10 +103,19 @@ export function OddsSyncControls({ onSyncComplete }: OddsSyncControlsProps) {
     return () => clearInterval(countdownInterval);
   }, []);
 
+  const toggleSport = (sport: string, enabled: boolean) => {
+    const updated = { ...enabledSports, [sport]: enabled };
+    setEnabledSports(updated);
+    saveEnabledSports(updated);
+  };
+
   const handleSyncAll = async () => {
     setIsSyncing(true);
+    const excludeSports = ALL_ODDS_SPORTS.filter(s => !enabledSports[s]);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-odds-snapshot");
+      const { data, error } = await supabase.functions.invoke("sync-odds-snapshot", {
+        body: excludeSports.length > 0 ? { excludeSports } : undefined,
+      });
 
       if (error) {
         toast({ title: "Sync Error", description: error.message, variant: "destructive" });
@@ -172,6 +197,24 @@ export function OddsSyncControls({ onSyncComplete }: OddsSyncControlsProps) {
               checked={autoSyncEnabled}
               onCheckedChange={setAutoSyncEnabled}
             />
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-xs text-muted-foreground">Sports</span>
+            <div className="flex items-center gap-3">
+              {ALL_ODDS_SPORTS.map(sport => (
+                <label key={sport} className="flex items-center gap-1 cursor-pointer">
+                  <Switch
+                    checked={enabledSports[sport] ?? true}
+                    onCheckedChange={(checked) => toggleSport(sport, checked)}
+                    className="scale-75"
+                  />
+                  <span className={`font-mono text-[10px] ${enabledSports[sport] ? "text-foreground" : "text-muted-foreground line-through"}`}>
+                    {sport}
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 font-mono text-xs">

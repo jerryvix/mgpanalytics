@@ -32,11 +32,15 @@ serve(async (req) => {
   let supabase: any;
 
   try {
-    // Parse request body for test mode
+    // Parse request body for test mode and sport exclusions
     let testOnly = false;
+    let excludeSports: string[] = [];
     try {
       const body = await req.json();
       testOnly = body?.testOnly === true;
+      if (Array.isArray(body?.excludeSports)) {
+        excludeSports = body.excludeSports;
+      }
     } catch {
       // No body or invalid JSON, continue with full sync
     }
@@ -137,15 +141,40 @@ serve(async (req) => {
       api_source: "the_odds_api",
     });
 
-    const sportsToSync = [
+    // Skip out-of-season sports to save API quota
+    function isSportInSeason(sport: string): boolean {
+      const month = new Date().getMonth(); // 0=Jan, 11=Dec
+      switch (sport) {
+        case "NFL":   return month >= 8 || month <= 0;   // Sep–Jan
+        case "NBA":   return month >= 9 || month <= 5;    // Oct–Jun
+        case "NCAAB": return month >= 10 || month <= 3;   // Nov–Apr
+        default:      return true;
+      }
+    }
+
+    const allSports = [
       { key: "americanfootball_nfl", name: "NFL" },
       { key: "basketball_nba", name: "NBA" },
       { key: "basketball_ncaab", name: "NCAAB" },
     ];
+    const sportsToSync = allSports.filter(s => {
+      if (excludeSports.includes(s.name)) return false;
+      if (!isSportInSeason(s.name)) return false;
+      return true;
+    });
+    const skippedOffseason = allSports.filter(s => !isSportInSeason(s.name)).map(s => s.name);
+    const skippedManual = allSports.filter(s => excludeSports.includes(s.name) && isSportInSeason(s.name)).map(s => s.name);
+    if (skippedOffseason.length > 0) {
+      console.log(`[sync-odds-snapshot] Skipping out-of-season: ${skippedOffseason.join(", ")}`);
+    }
+    if (skippedManual.length > 0) {
+      console.log(`[sync-odds-snapshot] Skipping manually disabled: ${skippedManual.join(", ")}`);
+    }
 
     const allowedBooks = ["draftkings", "fanduel", "caesars", "betrivers"];
     const allSnapshots: OddsSnapshot[] = [];
     let totalProcessed = 0;
+    const perSportCounts: Record<string, number> = {};
 
     for (const sport of sportsToSync) {
       try {
@@ -209,6 +238,7 @@ serve(async (req) => {
         }
 
         totalProcessed += oddsData.length;
+        perSportCounts[sport.name] = oddsData.length;
       } catch (err) {
         console.error(`Error processing ${sport.name}:`, err);
       }
@@ -324,7 +354,7 @@ serve(async (req) => {
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success",
       records_added: allSnapshots.length,
-      details: { games_processed: totalProcessed, sports: ["NFL", "NBA", "NCAAB"] },
+      details: { games_processed: totalProcessed, per_sport: perSportCounts, skipped_offseason: skippedOffseason, skipped_manual: skippedManual },
     });
 
     return new Response(JSON.stringify(result), {
