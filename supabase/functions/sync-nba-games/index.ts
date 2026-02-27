@@ -8,6 +8,38 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
+// Normalize team names for matching (same approach as NCAAB sync)
+function normalizeTeamName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function findMatchingGame(
+  oddsHome: string,
+  oddsAway: string,
+  games: { id: string; home_team_name: string; visitor_team_name: string }[]
+): { id: string; home_team_name: string; visitor_team_name: string } | null {
+  const normOddsHome = normalizeTeamName(oddsHome);
+  const normOddsAway = normalizeTeamName(oddsAway);
+
+  for (const game of games) {
+    const dbHome = normalizeTeamName(game.home_team_name);
+    const dbAway = normalizeTeamName(game.visitor_team_name);
+
+    const homeMatch = normOddsHome.includes(dbHome) || dbHome.includes(normOddsHome) ||
+      normOddsHome.split(" ").some((part: string) => dbHome.includes(part) && part.length > 3);
+    const awayMatch = normOddsAway.includes(dbAway) || dbAway.includes(normOddsAway) ||
+      normOddsAway.split(" ").some((part: string) => dbAway.includes(part) && part.length > 3);
+
+    if (homeMatch && awayMatch) return game;
+  }
+
+  return null;
+}
+
 interface ESPNGame {
   id: string;
   date: string;
@@ -188,6 +220,10 @@ serve(async (req) => {
     });
 
     let insertedCount = 0;
+    let oddsInsertedCount = 0;
+    let oddsRequestsUsed = 0;
+    let oddsRequestsRemaining = 0;
+
     if (gamesToUpsert.length > 0) {
       const { data: insertedData, error: insertError } = await supabase
         .from("nba_games")
@@ -201,12 +237,23 @@ serve(async (req) => {
 
       insertedCount = insertedData?.length || 0;
       console.log(`Upserted ${insertedCount} NBA games`);
+    }
 
-      // Fetch odds from The Odds API if available
-      if (THE_ODDS_API_KEY && insertedData && insertedData.length > 0) {
+    // Fetch odds independently of game insert — query existing games from DB
+    if (THE_ODDS_API_KEY) {
+      const { data: gamesForOdds } = await supabase
+        .from("nba_games")
+        .select("id, home_team_name, visitor_team_name")
+        .gte("date", yesterday.toISOString())
+        .lte("date", in48Hours.toISOString());
+
+      if (gamesForOdds && gamesForOdds.length > 0) {
         try {
           const oddsUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds?apiKey=${THE_ODDS_API_KEY}&markets=spreads,h2h,totals&regions=us&oddsFormat=american`;
           const oddsResponse = await fetch(oddsUrl);
+
+          oddsRequestsUsed = parseInt(oddsResponse.headers.get("x-requests-used") || "0");
+          oddsRequestsRemaining = parseInt(oddsResponse.headers.get("x-requests-remaining") || "0");
 
           if (oddsResponse.ok) {
             const oddsData = await oddsResponse.json();
@@ -226,18 +273,17 @@ serve(async (req) => {
             }> = [];
 
             for (const oddsGame of oddsData) {
-              // Try to match by team names
-              const matchedGame = insertedData.find((g) => {
-                const homeMatch =
-                  g.home_team_name.toLowerCase().includes(oddsGame.home_team.toLowerCase().split(" ").pop()) ||
-                  oddsGame.home_team.toLowerCase().includes(g.home_team_name.toLowerCase().split(" ").pop());
-                const awayMatch =
-                  g.visitor_team_name.toLowerCase().includes(oddsGame.away_team.toLowerCase().split(" ").pop()) ||
-                  oddsGame.away_team.toLowerCase().includes(g.visitor_team_name.toLowerCase().split(" ").pop());
-                return homeMatch && awayMatch;
-              });
+              // Match odds game to DB game using robust normalized name matching
+              const matchedGame = findMatchingGame(
+                oddsGame.home_team,
+                oddsGame.away_team,
+                gamesForOdds
+              );
 
-              if (!matchedGame) continue;
+              if (!matchedGame) {
+                console.log(`[sync-nba-games] No match for odds: ${oddsGame.away_team} @ ${oddsGame.home_team}`);
+                continue;
+              }
 
               // Process each bookmaker
               const allowedBooks = ["draftkings", "fanduel", "caesars", "betrivers"];
@@ -252,11 +298,15 @@ serve(async (req) => {
                 let totalOverOdds: number | null = null;
                 let totalUnderOdds: number | null = null;
 
+                const normHome = normalizeTeamName(oddsGame.home_team);
+
                 for (const market of bookmaker.markets || []) {
                   if (market.key === "spreads") {
-                    const homeOutcome = market.outcomes.find((o: { name: string }) =>
-                      oddsGame.home_team.toLowerCase().includes(o.name.toLowerCase().split(" ").pop())
-                    );
+                    const homeOutcome = market.outcomes.find((o: { name: string }) => {
+                      const normOutcome = normalizeTeamName(o.name);
+                      return normHome.includes(normOutcome) || normOutcome.includes(normHome) ||
+                        normOutcome.split(" ").some((p: string) => normHome.includes(p) && p.length > 3);
+                    });
                     if (homeOutcome) {
                       spreadValue = homeOutcome.point || null;
                       spreadOdds = homeOutcome.price;
@@ -264,7 +314,10 @@ serve(async (req) => {
                   }
                   if (market.key === "h2h") {
                     for (const outcome of market.outcomes) {
-                      if (oddsGame.home_team.toLowerCase().includes(outcome.name.toLowerCase().split(" ").pop())) {
+                      const normOutcome = normalizeTeamName(outcome.name);
+                      const isHome = normHome.includes(normOutcome) || normOutcome.includes(normHome) ||
+                        normOutcome.split(" ").some((p: string) => normHome.includes(p) && p.length > 3);
+                      if (isHome) {
                         moneylineHome = outcome.price;
                       } else {
                         moneylineAway = outcome.price;
@@ -305,20 +358,26 @@ serve(async (req) => {
               if (oddsError) {
                 console.error("Error inserting odds:", oddsError);
               } else {
-                console.log(`Upserted ${oddsToUpsert.length} NBA odds records`);
+                oddsInsertedCount = oddsToUpsert.length;
+                console.log(`Upserted ${oddsInsertedCount} NBA odds records`);
               }
             }
+          } else {
+            console.error(`NBA odds API returned ${oddsResponse.status}: quota may be exhausted`);
           }
         } catch (oddsErr) {
           console.error("Error fetching odds:", oddsErr);
         }
+      } else {
+        console.log("No NBA games in window for odds matching");
       }
     }
 
     const response = {
       success: true,
       gamesCount: insertedCount,
-      message: `Synced ${insertedCount} NBA games for next 48 hours`,
+      oddsCount: oddsInsertedCount,
+      message: `Synced ${insertedCount} NBA games, ${oddsInsertedCount} odds records for next 48 hours`,
     };
 
     console.log("NBA sync completed:", response);
@@ -327,11 +386,14 @@ serve(async (req) => {
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success",
       records_added: insertedCount,
+      api_requests_used: oddsRequestsUsed || undefined,
+      api_requests_remaining: oddsRequestsRemaining || undefined,
       details: {
         dates_fetched: dates,
         total_espn_games: allGames.length,
         filtered_48h: upcomingGames.length,
         season: { bdl: bdlSeason, db: dbSeason },
+        odds_synced: oddsInsertedCount,
       },
     });
 

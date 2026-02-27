@@ -339,7 +339,7 @@ export function DashboardHome() {
 
       setUpcomingGames(gamesWithOdds.slice(0, 6));
 
-      // Fetch Money Flows from odds_snapshots
+      // Fetch Money Flows from odds_history
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
       const allGameIds = [
         ...nflGameIds.map(id => String(id)),
@@ -351,12 +351,12 @@ export function DashboardHome() {
 
       if (allGameIds.length > 0) {
         const { data: snapshots } = await supabase
-          .from("odds_snapshots")
+          .from("odds_history")
           .select("*")
           .in("game_id", allGameIds)
-          .eq("market_type", "spread")
-          .gte("pulled_at", sevenDaysAgo.toISOString())
-          .order("pulled_at", { ascending: true });
+          .eq("odds_type", "spread")
+          .gte("timestamp", sevenDaysAgo.toISOString())
+          .order("timestamp", { ascending: true });
 
         if (snapshots && snapshots.length > 0) {
           const snapshotsByGame: Record<string, typeof snapshots> = {};
@@ -372,7 +372,7 @@ export function DashboardHome() {
 
             const openSnapshot = gameSnapshots[0];
             const currentSnapshot = gameSnapshots[gameSnapshots.length - 1];
-            const movement = (currentSnapshot.line_value ?? 0) - (openSnapshot.line_value ?? 0);
+            const movement = (currentSnapshot.current_line ?? 0) - (openSnapshot.current_line ?? 0);
 
             const nflGame = nflGames?.find(g => String(g.id) === gameId);
             const nbaGame = nbaGames?.find(g => String(g.id) === gameId);
@@ -386,10 +386,10 @@ export function DashboardHome() {
                 team: game.home_team_name,
                 opponent: game.visitor_team_name,
                 market: "spread",
-                openValue: openSnapshot.line_value,
-                currentValue: currentSnapshot.line_value,
+                openValue: openSnapshot.current_line,
+                currentValue: currentSnapshot.current_line,
                 movement: movement,
-                lastUpdated: new Date(currentSnapshot.pulled_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+                lastUpdated: new Date(currentSnapshot.timestamp).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
                 sport: nflGame ? "NFL" : nbaGame ? "NBA" : "NCAAB",
                 hasMovement: true,
               });
@@ -712,7 +712,9 @@ export function DashboardHome() {
                   <span className="flex items-center gap-1.5 text-muted-foreground shrink-0">
                     <span className="text-xs">{formatGameTime(game.date)}</span>
                     {game.hasOdds && game.spread !== null ? (
-                      <span className="text-primary">{formatLine(game.spread)}</span>
+                      <span className="text-primary">
+                        {getTeamAbbrev(game.home_team_name, game.league)} {formatLine(game.spread)}
+                      </span>
                     ) : (
                       <span className="text-muted-foreground/50">{"\u2014"}</span>
                     )}
