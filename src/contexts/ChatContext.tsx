@@ -16,6 +16,9 @@ interface ChatContextType {
   pendingQuery: string;
   setPendingQuery: (query: string) => void;
   openWithQuery: (query: string) => void;
+  // Active sports for multi-sport chat queries
+  activeSports: string[];
+  setActiveSports: (sports: string[]) => void;
   // Chat history
   conversations: Conversation[];
   conversationsLoading: boolean;
@@ -33,6 +36,7 @@ const CHAT_OPEN_KEY = "mgp-chat-open";
 export function ChatProvider({ children }: { children: ReactNode }) {
   
   const [pendingQuery, setPendingQuery] = useState("");
+  const [activeSports, setActiveSports] = useState<string[]>(["NFL", "NBA", "NCAAB"]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -116,14 +120,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <ChatContext.Provider value={{ 
-      isOpen, 
-      setIsOpen, 
-      toggleChat, 
-      openChat, 
-      pendingQuery, 
-      setPendingQuery, 
+    <ChatContext.Provider value={{
+      isOpen,
+      setIsOpen,
+      toggleChat,
+      openChat,
+      pendingQuery,
+      setPendingQuery,
       openWithQuery,
+      activeSports,
+      setActiveSports,
       conversations,
       conversationsLoading,
       activeConversationId,

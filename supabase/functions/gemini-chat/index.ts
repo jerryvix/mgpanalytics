@@ -234,16 +234,37 @@ interface FetchedData {
 }
 
 // ============================================================
+// TABLE LOOKUP MAPS + SEASON HELPER
+// ============================================================
+const GAME_TABLE: Record<string, string> = {
+  NFL: "games", NBA: "nba_games", NCAAB: "ncaab_games",
+  NCAAF: "ncaaf_games", MLB: "mlb_games",
+};
+const ODDS_TABLE: Record<string, string> = {
+  NFL: "odds", NBA: "nba_odds", NCAAB: "ncaab_odds",
+  NCAAF: "ncaaf_odds", MLB: "mlb_odds",
+};
+
+function getInSeasonSports(): string[] {
+  const month = new Date().getMonth(); // 0-indexed
+  const sports: string[] = [];
+  if (month >= 8 || month <= 1) sports.push("NFL");
+  if (month >= 9 || month <= 5) sports.push("NBA");
+  if (month >= 10 || month <= 3) sports.push("NCAAB");
+  return sports.length > 0 ? sports : ["NBA"]; // fallback
+}
+
+// ============================================================
 // INTENT CLASSIFICATION
 // ============================================================
-function detectLeague(message: string): string {
+function detectLeague(message: string): string | null {
   const m = message.toLowerCase();
   if (/\b(nfl|football|super\s*bowl|superbowl|chiefs|eagles|bills|ravens|cowboys|niners|packers|lions|texans|commanders|dolphins|broncos|raiders|jets|giants|bears|vikings|colts|jaguars|titans|bengals|browns|steelers|saints|buccaneers|panthers|falcons|cardinals|seahawks|rams|chargers)\b/.test(m)) return "NFL";
   if (/\b(nba|basketball|lakers|celtics|warriors|bucks|heat|nuggets|suns|clippers|sixers|knicks|nets|bulls|mavericks|grizzlies|kings|pelicans|timberwolves|thunder|rockets|spurs|magic|hawks|hornets|pistons|pacers|wizards|blazers|jazz|raptors|cavaliers)\b/.test(m)) return "NBA";
   if (/\b(ncaab|ncaamb|college basketball|march madness|duke|kentucky|kansas|gonzaga|purdue|uconn|houston|tennessee|auburn|alabama|arizona|baylor|creighton|marquette)\b/.test(m)) return "NCAAB";
   if (/\b(ncaaf|college football|cfb|playoff|buckeyes|crimson tide|bulldogs|wolverines|longhorns|gators|seminoles|tigers|sooners)\b/.test(m)) return "NCAAF";
   if (/\b(mlb|baseball|yankees|dodgers|braves|astros|phillies|padres|mets|orioles|guardians|rangers|mariners|twins|rays|diamondbacks|cubs|cardinals|red sox|giants|angels|athletics|royals|brewers|pirates|reds|tigers|nationals|rockies|marlins|white sox)\b/.test(m)) return "MLB";
-  return "NFL"; // Default to NFL
+  return null; // No sport keyword detected — will query user's active sports
 }
 
 function detectIntent(message: string): string {
@@ -648,6 +669,158 @@ async function fetchRelevantData(
   return { data: fetchedData, sources };
 }
 
+// ============================================================
+// MULTI-SPORT DATA FETCHING (when no specific league detected)
+// ============================================================
+interface MultiSportData {
+  gamesBySport: Record<string, unknown[]>;
+  oddsBySport: Record<string, unknown[]>;
+}
+
+async function fetchMultiSportData(
+  supabase: any,
+  sportsToQuery: string[],
+  intent: string,
+): Promise<{ data: MultiSportData; formattedPrompt: string; sources: SourceRef[] }> {
+  const now = new Date();
+  const in48Hours = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+  const gamesBySport: Record<string, unknown[]> = {};
+  const oddsBySport: Record<string, unknown[]> = {};
+  const sources: SourceRef[] = [];
+
+  // Fetch games + odds for each sport in parallel
+  await Promise.all(sportsToQuery.map(async (sport) => {
+    const gameTable = GAME_TABLE[sport];
+    const oddsTable = ODDS_TABLE[sport];
+    if (!gameTable) return;
+
+    try {
+      const { data: games } = await supabase
+        .from(gameTable)
+        .select("*")
+        .gte("date", now.toISOString())
+        .lte("date", in48Hours.toISOString())
+        .order("date", { ascending: true })
+        .limit(10);
+
+      if (games?.length) {
+        gamesBySport[sport] = games;
+        sources.push({
+          provider: "mgp_database",
+          endpoint: `${sport}/games`,
+          fetched_at: now.toISOString(),
+          ids: {},
+        });
+
+        // Fetch odds scoped to these games
+        if (oddsTable && (intent === "odds" || intent === "general" || intent === "games" || intent === "favored")) {
+          const gameIds = games.map((g: any) => g.id);
+          const { data: odds } = await supabase
+            .from(oddsTable)
+            .select("*")
+            .in("game_id", gameIds)
+            .order("updated_at", { ascending: false })
+            .limit(40);
+
+          if (odds?.length) {
+            oddsBySport[sport] = odds;
+            sources.push({
+              provider: "the_odds_api",
+              endpoint: `${sport}/odds`,
+              fetched_at: now.toISOString(),
+              ids: {},
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error(`Error fetching ${sport} games/odds:`, e);
+    }
+
+    // Fetch recent results for "results" intent
+    if (intent === "results" || intent === "general") {
+      try {
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const { data: results } = await supabase
+          .from(gameTable)
+          .select("*")
+          .eq("is_final", true)
+          .gte("date", sevenDaysAgo.toISOString())
+          .order("date", { ascending: false })
+          .limit(10);
+
+        if (results?.length) {
+          if (!gamesBySport[`${sport}_results`]) gamesBySport[`${sport}_results`] = [];
+          gamesBySport[`${sport}_results`] = results;
+        }
+      } catch (e) {
+        console.error(`Error fetching ${sport} results:`, e);
+      }
+    }
+  }));
+
+  // Format the multi-sport data for the prompt
+  let prompt = "\n[MGP DATA — MULTI-SPORT]\n";
+  const totalGames = Object.values(gamesBySport).reduce((sum, g) => sum + g.filter(() => true).length, 0);
+
+  if (totalGames === 0) {
+    prompt += `No upcoming games found for ${sportsToQuery.join(", ")} in the next 48 hours.\nYou are in FACTUAL mode with Google Search enabled — answer using your knowledge and search results.\n`;
+    return { data: { gamesBySport, oddsBySport }, formattedPrompt: prompt, sources };
+  }
+
+  for (const sport of sportsToQuery) {
+    const games = gamesBySport[sport];
+    if (!games?.length) continue;
+
+    const gameMap = new Map((games as any[]).map((g: any) => [g.id, g]));
+
+    prompt += `\n📅 UPCOMING ${sport} GAMES:\n`;
+    (games as any[]).slice(0, 8).forEach((g: any) => {
+      const date = new Date(g.date).toLocaleString("en-US", {
+        weekday: "short", month: "short", day: "numeric",
+        hour: "numeric", minute: "2-digit", timeZone: "America/New_York",
+      });
+      prompt += `• ${g.visitor_team_name} @ ${g.home_team_name} — ${date} ET\n`;
+    });
+
+    const odds = oddsBySport[sport];
+    if (odds?.length) {
+      prompt += `\n📊 ${sport} ODDS:\n`;
+      const oddsByGame = new Map<string, any[]>();
+      for (const o of odds as any[]) {
+        if (!oddsByGame.has(o.game_id)) oddsByGame.set(o.game_id, []);
+        oddsByGame.get(o.game_id)!.push(o);
+      }
+      for (const [gameId, gameOdds] of oddsByGame) {
+        const game = gameMap.get(gameId);
+        const matchup = game
+          ? `${game.visitor_team_name} @ ${game.home_team_name}`
+          : "Unknown Matchup";
+        const freshest = gameOdds[0];
+        const age = getAgeString(freshest.updated_at);
+        prompt += `\n${matchup} (updated ${age}):\n`;
+        for (const o of gameOdds.slice(0, 2)) {
+          prompt += `  • ${o.sportsbook}: Spread ${formatSpread(o.spread_value)}, ML Home ${o.moneyline_home || "—"} / Away ${o.moneyline_away || "—"}, Total O/U ${o.total_value || "—"}\n`;
+        }
+      }
+    }
+
+    // Results
+    const results = gamesBySport[`${sport}_results`];
+    if (results?.length) {
+      prompt += `\n🏆 RECENT ${sport} RESULTS:\n`;
+      (results as any[]).slice(0, 5).forEach((g: any) => {
+        const date = new Date(g.date).toLocaleDateString("en-US", {
+          weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York",
+        });
+        prompt += `• ${date}: ${g.visitor_team_name} ${g.away_score ?? "?"} @ ${g.home_team_name} ${g.home_score ?? "?"} (FINAL)\n`;
+      });
+    }
+  }
+
+  return { data: { gamesBySport, oddsBySport }, formattedPrompt: prompt, sources };
+}
+
 function getAgeString(updatedAt: string): string {
   const diffMs = Date.now() - new Date(updatedAt).getTime();
   const mins = Math.floor(diffMs / 60000);
@@ -877,7 +1050,11 @@ serve(async (req) => {
 
     console.log(`[gemini-chat] Authenticated user: ${user.id}`);
 
-    const { messages, webSearchEnabled = false } = await req.json() as { messages: ChatMessage[]; webSearchEnabled?: boolean };
+    const { messages, activeSports: clientActiveSports, webSearchEnabled = false } = await req.json() as {
+      messages: ChatMessage[];
+      activeSports?: string[];
+      webSearchEnabled?: boolean;
+    };
     const lastUserMessage = messages.filter(m => m.role === "user").pop()?.content || "";
 
     console.log("Processing chat request with", messages.length, "messages");
@@ -887,11 +1064,28 @@ serve(async (req) => {
     const intent = detectIntent(lastUserMessage);
     const questionType = classifyQuestionType(lastUserMessage);
 
-    console.log(`[gemini-chat] Detected league: ${league}, intent: ${intent}, questionType: ${questionType}`);
+    // Determine which sports to query when no keyword match
+    const sportsToQuery = league
+      ? [league]
+      : (clientActiveSports?.length ? clientActiveSports : getInSeasonSports());
+
+    console.log(`[gemini-chat] Detected league: ${league || "AUTO"}, sportsToQuery: [${sportsToQuery.join(", ")}], intent: ${intent}, questionType: ${questionType}`);
 
     // Fetch relevant data from our database
-    const { data: fetchedData, sources } = await fetchRelevantData(supabase, league, intent, lastUserMessage);
-    const dataPrompt = formatDataForPrompt(fetchedData, sources, intent, league);
+    let dataPrompt: string;
+    let sources: SourceRef[];
+
+    if (league) {
+      // Single-sport path (unchanged behavior)
+      const result = await fetchRelevantData(supabase, league, intent, lastUserMessage);
+      dataPrompt = formatDataForPrompt(result.data, result.sources, intent, league);
+      sources = result.sources;
+    } else {
+      // Multi-sport path: query all active/in-season sports
+      const result = await fetchMultiSportData(supabase, sportsToQuery, intent);
+      dataPrompt = result.formattedPrompt;
+      sources = result.sources;
+    }
 
     // Get current date/time for context
     const now = new Date();
@@ -912,7 +1106,7 @@ CURRENT CONTEXT
 
 TODAY: ${currentDate}
 TIME: ${currentTime} ET
-DETECTED LEAGUE: ${league}
+DETECTED LEAGUE: ${league || `AUTO — querying: ${sportsToQuery.join(", ")}`}
 
 CURRENT SPORTS SEASONS:
 ${(() => {

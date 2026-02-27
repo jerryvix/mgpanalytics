@@ -23,12 +23,12 @@ export function useGeminiChat() {
   const [isLoading, setIsLoading] = useState(false);
 
   const sendMessage = useCallback(
-    async (messages: ChatMessage[]): Promise<GeminiResponse> => {
+    async (messages: ChatMessage[], activeSports?: string[]): Promise<GeminiResponse> => {
       setIsLoading(true);
 
       try {
         const { data, error } = await supabase.functions.invoke("gemini-chat", {
-          body: { messages },
+          body: { messages, activeSports },
         });
 
         if (error) {

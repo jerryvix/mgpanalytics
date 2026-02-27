@@ -99,7 +99,7 @@ const formatGameTime = (dateStr: string) => {
 
 export function DashboardHome() {
   const [query, setQuery] = useState("");
-  const { openWithQuery } = useChat();
+  const { openWithQuery, setActiveSports: setChatActiveSports } = useChat();
   const [moneyFlows, setMoneyFlows] = useState<OddsMovement[]>([]);
   const [upcomingGames, setUpcomingGames] = useState<GameWithOdds[]>([]);
   const [lastRefresh, setLastRefresh] = useState<string>("");
@@ -122,6 +122,11 @@ export function DashboardHome() {
       initializedFromProfile.current = true;
     }
   }, [preferredSports]);
+
+  // Keep ChatContext in sync so chatbot knows which sports are active
+  useEffect(() => {
+    setChatActiveSports(activeSports);
+  }, [activeSports, setChatActiveSports]);
 
   // Persist sport filter changes to profile with debounce
   const persistSports = useCallback(async (sports: string[]) => {

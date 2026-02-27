@@ -59,6 +59,7 @@ export function ChatPanel() {
     toggleChat,
     pendingQuery,
     setPendingQuery,
+    activeSports,
     activeConversationId,
     setActiveConversationId,
     refreshConversations,
@@ -329,7 +330,7 @@ export function ChatPanel() {
 
     try {
       // Call Gemini with conversation history
-      const response = await sendGeminiMessage(newHistory);
+      const response = await sendGeminiMessage(newHistory, activeSports);
       
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
