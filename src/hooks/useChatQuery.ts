@@ -1,3 +1,8 @@
+/**
+ * @deprecated Legacy client-side chat handler. The active chat path is
+ * ChatPanel → useGeminiChat() → gemini-chat edge function.
+ * Retained for possible future use (fast preview cards). Do not add new features here.
+ */
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isToday, isTomorrow, startOfWeek, endOfWeek } from "date-fns";
 import { handleNFLStatsQuery, shouldHandleNFLStats } from "@/services/chatbot/nflStatsHandler";

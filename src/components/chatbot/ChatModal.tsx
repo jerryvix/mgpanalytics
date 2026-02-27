@@ -1,3 +1,8 @@
+/**
+ * @deprecated Legacy chat modal using client-side useChatQuery. The active chat path is
+ * ChatPanel → useGeminiChat() → gemini-chat edge function.
+ * Retained for possible future use. Do not add new features here.
+ */
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { X, Send, Loader2 } from "lucide-react";

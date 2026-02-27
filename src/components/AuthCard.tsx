@@ -61,7 +61,20 @@ export function AuthCard() {
       switch (mode) {
         case "login": {
           const { error } = await supabase.auth.signInWithPassword({ email, password });
-          if (error) throw error;
+          if (error) {
+            if (error.message.includes("Email not confirmed")) {
+              toast.error("EMAIL NOT VERIFIED", {
+                description: "Check your inbox for the verification link.",
+                action: {
+                  label: "RESEND",
+                  onClick: () => { setMode("resend"); },
+                },
+              });
+              setLoading(false);
+              return;
+            }
+            throw error;
+          }
           toast.success("ACCESS GRANTED", { description: "Redirecting to dashboard..." });
           break;
         }
@@ -77,7 +90,11 @@ export function AuthCard() {
           // Supabase returns identities:[] for existing emails without error
           if (data.user?.identities?.length === 0) {
             toast.error("ACCOUNT ALREADY EXISTS", {
-              description: "Try signing in, or use Forgot Password to reset.",
+              description: "Try signing in, or use 'Resend Verification' below.",
+              action: {
+                label: "RESEND",
+                onClick: () => { setMode("resend"); },
+              },
             });
             setMode("login");
             setLoading(false);

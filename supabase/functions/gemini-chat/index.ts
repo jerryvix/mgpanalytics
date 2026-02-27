@@ -251,7 +251,7 @@ function detectIntent(message: string): string {
   if (/\b(props?|player prop|over\s*\/?\s*under\s+\d|o\/u\s+\d)\b/.test(m)) return "props";
   if (/\b(odds|line|spread|total|over|under|moneyline|ml|ats|point spread)\b/.test(m)) return "odds";
   // Head-to-head: must come before "results" since "record vs" shouldn't fall into 7-day window results
-  if (/\b(record\s+(vs|against|versus)|head[\s-]?to[\s-]?head|h2h|season\s+series|how\s+many\s+(wins?|losses?|times?)\s+(vs|against|versus)|(series|matchup)\s+(record|history))\b/.test(m)) return "head_to_head";
+  if (/\b(record\s+(vs|against|versus|this)|head[\s-]?to[\s-]?head|h2h|season\s+series|how\s+many\s+(wins?|losses?|times?)\s+(vs|against|versus)|(series|matchup)\s+(record|history)|(.+)\s+vs\s+(.+)\s+this\s+season)\b/.test(m)) return "head_to_head";
   if (/\b(who won|final score|result|score of|did .+ (win|lose|cover|beat)|last night|yesterday|recap|box score)\b/.test(m)) return "results";
   if (/\b(game|schedule|when|playing|tonight|today|upcoming|matchup)\b/.test(m)) return "games";
   if (/\b(player|stats?|average|scoring|points|yards|rushing|passing|receiving)\b/.test(m)) return "player_stats";
@@ -362,10 +362,27 @@ async function fetchRelevantData(
 
     if (oddsTable) {
       try {
-        const { data: odds } = await supabase
-          .from(oddsTable)
-          .select("*")
-          .limit(20);
+        // Scope odds to already-fetched upcoming games when available
+        const gameIds = (fetchedData.games || []).map((g: any) => g.id);
+
+        let odds: any[] | null = null;
+        if (gameIds.length > 0) {
+          const { data } = await supabase
+            .from(oddsTable)
+            .select("*")
+            .in("game_id", gameIds)
+            .order("updated_at", { ascending: false })
+            .limit(40);  // Multiple books per game
+          odds = data;
+        } else {
+          // Fallback: get most recent odds with recency ordering
+          const { data } = await supabase
+            .from(oddsTable)
+            .select("*")
+            .order("updated_at", { ascending: false })
+            .limit(20);
+          odds = data;
+        }
 
         if (odds?.length) {
           fetchedData.odds = odds;
@@ -596,15 +613,57 @@ async function fetchRelevantData(
       } catch (e) {
         console.error("Error fetching upcoming H2H games:", e);
       }
+
+      // If no H2H games found, provide each team's recent record as context
+      if (!fetchedData.head_to_head_games?.length && team1 && team2) {
+        try {
+          for (const teamName of [team1, team2]) {
+            const { data: teamGames } = await supabase
+              .from(gameTable)
+              .select("*")
+              .eq("is_final", true)
+              .or(`home_team_name.eq.${teamName},visitor_team_name.eq.${teamName}`)
+              .order("date", { ascending: false })
+              .limit(5);
+
+            if (teamGames?.length) {
+              if (!fetchedData.results) fetchedData.results = [];
+              fetchedData.results.push(...teamGames);
+            }
+          }
+
+          // Set a placeholder H2H summary
+          fetchedData.head_to_head = {
+            team1, team2,
+            team1_wins: 0, team2_wins: 0, total_games: 0,
+            summary: "No meetings this season yet",
+          };
+        } catch (e) {
+          console.error("Error fetching team fallback for H2H:", e);
+        }
+      }
     }
   }
 
   return { data: fetchedData, sources };
 }
 
-function formatDataForPrompt(data: FetchedData, sources: SourceRef[]): string {
-  if (Object.keys(data).length === 0 || Object.values(data).every(v => !v?.length)) {
-    return "\n[MGP DATA]\nNo data available for this query. Suggest the user ask about upcoming games, player stats, odds, or injury reports.\n";
+function getAgeString(updatedAt: string): string {
+  const diffMs = Date.now() - new Date(updatedAt).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  return `${hours}h ago`;
+}
+
+function formatSpread(value: number | null): string {
+  if (value == null) return "—";
+  return value > 0 ? `+${value}` : `${value}`;
+}
+
+function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: string, league?: string): string {
+  if (Object.keys(data).length === 0 || Object.values(data).every(v => !v || (Array.isArray(v) ? v.length === 0 : false))) {
+    return `\n[MGP DATA]\nNo matching data found in the database for this ${intent || "general"} query about ${league || "sports"}.\nYou are in FACTUAL mode with Google Search enabled — answer using your knowledge and search results.\nDo NOT say "I don't have that data." Instead, provide what you know and note if live DB data would add precision.\n`;
   }
 
   let prompt = "\n[MGP DATA]\n";
@@ -634,8 +693,12 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[]): string {
   if (data.head_to_head) {
     const h2h = data.head_to_head as any;
     prompt += `\n🆚 HEAD-TO-HEAD: ${h2h.team1} vs ${h2h.team2}${h2h.season ? ` (${h2h.season})` : ""}\n`;
-    prompt += `Season Series: ${h2h.team1} ${h2h.team1_wins} - ${h2h.team2_wins} ${h2h.team2}\n`;
-    prompt += `Total games played: ${h2h.total_games}\n`;
+    if (h2h.total_games === 0) {
+      prompt += `No head-to-head meetings this season. Each team's recent results are shown below.\n`;
+    } else {
+      prompt += `Season Series: ${h2h.team1} ${h2h.team1_wins} - ${h2h.team2_wins} ${h2h.team2}\n`;
+      prompt += `Total games played: ${h2h.total_games}\n`;
+    }
 
     if (data.head_to_head_games?.length) {
       prompt += "\nGame-by-game results:\n";
@@ -655,9 +718,42 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[]): string {
 
   if (data.odds?.length) {
     prompt += "\n📊 CURRENT ODDS:\n";
-    data.odds.slice(0, 5).forEach((o: any) => {
-      prompt += `• Spread: ${o.spread_value > 0 ? "+" : ""}${o.spread_value}, Total: O/U ${o.total_value} (${o.sportsbook})\n`;
-    });
+    // Build game lookup from fetched games
+    const gameMap = new Map((data.games || []).map((g: any) => [g.id, g]));
+
+    // Group odds by game
+    const oddsByGame = new Map<string, any[]>();
+    for (const o of data.odds as any[]) {
+      const key = o.game_id;
+      if (!oddsByGame.has(key)) oddsByGame.set(key, []);
+      oddsByGame.get(key)!.push(o);
+    }
+
+    let oldestUpdate: string | null = null;
+    for (const [gameId, gameOdds] of oddsByGame) {
+      const game = gameMap.get(gameId);
+      const matchup = game
+        ? `${game.visitor_team_name} @ ${game.home_team_name}`
+        : "Unknown Matchup";
+      const freshest = gameOdds[0]; // Already sorted by updated_at desc
+      const age = getAgeString(freshest.updated_at);
+      if (!oldestUpdate || freshest.updated_at < oldestUpdate) {
+        oldestUpdate = freshest.updated_at;
+      }
+
+      prompt += `\n${matchup} (updated ${age}):\n`;
+      for (const o of gameOdds.slice(0, 4)) { // Max 4 books per game
+        prompt += `  • ${o.sportsbook}: Spread ${formatSpread(o.spread_value)}, ML Home ${o.moneyline_home || "—"} / Away ${o.moneyline_away || "—"}, Total O/U ${o.total_value || "—"}\n`;
+      }
+    }
+
+    // Staleness warning
+    if (oldestUpdate) {
+      const diffMs = Date.now() - new Date(oldestUpdate).getTime();
+      if (diffMs > 6 * 60 * 60 * 1000) {
+        prompt += `\n⚠ Odds data last updated over 6 hours ago. Lines may have moved since then.\n`;
+      }
+    }
   }
 
   if (data.players?.length) {
@@ -795,7 +891,7 @@ serve(async (req) => {
 
     // Fetch relevant data from our database
     const { data: fetchedData, sources } = await fetchRelevantData(supabase, league, intent, lastUserMessage);
-    const dataPrompt = formatDataForPrompt(fetchedData, sources);
+    const dataPrompt = formatDataForPrompt(fetchedData, sources, intent, league);
 
     // Get current date/time for context
     const now = new Date();
@@ -923,6 +1019,7 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
         content: responseText,
         sources: responseSources,
         questionType,
+        routerMode: "EDGE_PRIMARY",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
