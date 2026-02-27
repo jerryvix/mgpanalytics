@@ -1167,7 +1167,7 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
           systemInstruction: {
             parts: [{ text: fullSystemInstruction }],
           },
-          ...(useSearch ? { tools: [{ googleSearch: {} }] } : {}),
+          ...(useSearch ? { tools: [{ google_search: {} }] } : {}),
           generationConfig: {
             temperature: 0.4, // Lower temperature for more factual
             maxOutputTokens: 8192,
@@ -1225,7 +1225,7 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
       }
     }
 
-    console.log("Response generated with", responseSources.length, "sources");
+    console.log(`[gemini-chat] Google Search ${useSearch ? "enabled" : "disabled"}, grounding chunks: ${groundingMetadata?.groundingChunks?.length || 0}, sources: ${responseSources.length}`);
 
     return new Response(
       JSON.stringify({
