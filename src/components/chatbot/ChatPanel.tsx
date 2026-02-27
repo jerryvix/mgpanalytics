@@ -412,7 +412,7 @@ export function ChatPanel() {
   );
 
   const chatContent = (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-2 md:space-y-4">
