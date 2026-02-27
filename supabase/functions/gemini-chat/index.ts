@@ -199,8 +199,9 @@ QUESTION TYPE: FACTUAL (Open — General Knowledge Allowed)
 ═══════════════════════════════════════════════════════════
 
 This question is about factual sports information (stats, history, biographical info).
-- You MAY answer using your general knowledge. Do NOT say "that data isn't available" for factual questions.
-- If [MGP DATA] is available, use it. If not, answer from your knowledge.
+- Use Google Search and your general knowledge as PRIMARY sources for stats, standings, and player info.
+- [MGP DATA] may contain supplementary context — use it when relevant, but do not treat it as comprehensive. Player stats in [MGP DATA] cover a limited roster, not all players on a team.
+- Do NOT say "that data isn't available" for factual questions — use Google Search.
 - NEVER fabricate odds, lines, or market data even in factual mode.
 - Still follow teacher-student framing: present facts descriptively, end with exploration prompts.`,
 };
@@ -311,7 +312,8 @@ async function fetchRelevantData(
   supabase: any,
   league: string,
   intent: string,
-  message: string
+  message: string,
+  questionType: QuestionType = "FACTUAL"
 ): Promise<{ data: FetchedData; sources: SourceRef[] }> {
   const fetchedData: FetchedData = {};
   const sources: SourceRef[] = [];
@@ -420,18 +422,35 @@ async function fetchRelevantData(
     }
   }
 
-  // Fetch player stats if relevant
-  if (intent === "player_stats" || intent === "general") {
+  // Fetch player stats if relevant — skip for FACTUAL questions where
+  // Gemini + Google Search is more accurate than our partial roster data
+  if ((intent === "player_stats" || intent === "general") && questionType !== "FACTUAL") {
     try {
       const sport = league === "NCAAB" ? "NCAAB" : league;
-      const { data: players } = await supabase
+      const { team1 } = extractTeamNames(message, league);
+
+      let query = supabase
         .from("players")
         .select("*, player_season_stats(*)")
-        .eq("sport", sport)
-        .eq("is_featured", true)
-        .limit(10);
+        .eq("sport", sport);
+
+      if (team1) {
+        // Team-specific: all players for this team (no is_featured filter)
+        query = query.eq("team_name", team1).limit(15);
+      } else {
+        // General: featured players across the league
+        query = query.eq("is_featured", true).limit(10);
+      }
+
+      const { data: players } = await query;
 
       if (players?.length) {
+        // Sort by PPG descending so leading scorers come first
+        players.sort((a: any, b: any) => {
+          const aPPG = a.player_season_stats?.[0]?.points_per_game || 0;
+          const bPPG = b.player_season_stats?.[0]?.points_per_game || 0;
+          return bPPG - aPPG;
+        });
         fetchedData.players = players;
         sources.push({
           provider: "mgp_database",
@@ -930,7 +949,7 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
   }
 
   if (data.players?.length) {
-    prompt += "\n👤 PLAYER STATS:\n";
+    prompt += "\n👤 PLAYER STATS (partial roster — not all team players included):\n";
     data.players.slice(0, 5).forEach((p: any) => {
       const stats = p.player_season_stats?.[0];
       if (stats) {
@@ -1077,7 +1096,7 @@ serve(async (req) => {
 
     if (league) {
       // Single-sport path (unchanged behavior)
-      const result = await fetchRelevantData(supabase, league, intent, lastUserMessage);
+      const result = await fetchRelevantData(supabase, league, intent, lastUserMessage, questionType);
       dataPrompt = formatDataForPrompt(result.data, result.sources, intent, league);
       sources = result.sources;
     } else {
