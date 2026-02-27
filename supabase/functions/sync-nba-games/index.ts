@@ -80,7 +80,7 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const THE_ODDS_API_KEY = Deno.env.get("THE_ODDS_API_KEY");
+    const BALLDONTLIE_API_KEY = Deno.env.get("BALLDONTLIE_API_KEY");
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) {
       throw new Error("Supabase configuration missing");
@@ -221,8 +221,6 @@ serve(async (req) => {
 
     let insertedCount = 0;
     let oddsInsertedCount = 0;
-    let oddsRequestsUsed = 0;
-    let oddsRequestsRemaining = 0;
 
     if (gamesToUpsert.length > 0) {
       const { data: insertedData, error: insertError } = await supabase
@@ -239,8 +237,8 @@ serve(async (req) => {
       console.log(`Upserted ${insertedCount} NBA games`);
     }
 
-    // Fetch odds independently of game insert — query existing games from DB
-    if (THE_ODDS_API_KEY) {
+    // Fetch odds from BDL (GOAT tier) — no quota limits, 600 req/min
+    if (BALLDONTLIE_API_KEY) {
       const { data: gamesForOdds } = await supabase
         .from("nba_games")
         .select("id, home_team_name, visitor_team_name")
@@ -249,17 +247,46 @@ serve(async (req) => {
 
       if (gamesForOdds && gamesForOdds.length > 0) {
         try {
-          const oddsUrl = `https://api.the-odds-api.com/v4/sports/basketball_nba/odds?apiKey=${THE_ODDS_API_KEY}&markets=spreads,h2h,totals&regions=us&oddsFormat=american`;
-          const oddsResponse = await fetch(oddsUrl);
-
-          oddsRequestsUsed = parseInt(oddsResponse.headers.get("x-requests-used") || "0");
-          oddsRequestsRemaining = parseInt(oddsResponse.headers.get("x-requests-remaining") || "0");
+          const todayStr = now.toISOString().split("T")[0];
+          const tomorrowStr = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+          const bdlOddsUrl = `https://api.balldontlie.io/v2/odds?dates[]=${todayStr}&dates[]=${tomorrowStr}`;
+          const oddsResponse = await fetch(bdlOddsUrl, {
+            headers: { Authorization: BALLDONTLIE_API_KEY },
+          });
 
           if (oddsResponse.ok) {
-            const oddsData = await oddsResponse.json();
-            console.log(`Fetched odds for ${oddsData.length} NBA games`);
+            const bdlData = await oddsResponse.json();
+            const bdlOdds = bdlData.data || [];
+            console.log(`Fetched ${bdlOdds.length} BDL odds entries for NBA`);
 
-            // Process odds and match to games
+            const allowedVendors = ["draftkings", "fanduel", "caesars", "betrivers"];
+            // Group BDL odds by game_id to find home/away team names for matching
+            const oddsByBdlGame = new Map<number, typeof bdlOdds>();
+            for (const odd of bdlOdds) {
+              if (!allowedVendors.includes(odd.vendor?.toLowerCase())) continue;
+              const group = oddsByBdlGame.get(odd.game_id) || [];
+              group.push(odd);
+              oddsByBdlGame.set(odd.game_id, group);
+            }
+
+            // BDL odds don't include team names directly — we need to match via the
+            // BDL games endpoint or infer from spread signs. Fetch BDL games for mapping.
+            const bdlGamesUrl = `https://api.balldontlie.io/v2/games?dates[]=${todayStr}&dates[]=${tomorrowStr}`;
+            const bdlGamesResp = await fetch(bdlGamesUrl, {
+              headers: { Authorization: BALLDONTLIE_API_KEY },
+            });
+            const bdlGamesData = bdlGamesResp.ok ? await bdlGamesResp.json() : { data: [] };
+            const bdlGames = bdlGamesData.data || [];
+
+            // Build BDL game_id → { home_team, visitor_team } map
+            const bdlGameMap = new Map<number, { home: string; away: string }>();
+            for (const g of bdlGames) {
+              bdlGameMap.set(g.id, {
+                home: g.home_team?.full_name || g.home_team?.name || "",
+                away: g.visitor_team?.full_name || g.visitor_team?.name || "",
+              });
+            }
+
             const oddsToUpsert: Array<{
               game_id: string;
               sportsbook: string;
@@ -272,80 +299,30 @@ serve(async (req) => {
               total_under_odds: number | null;
             }> = [];
 
-            for (const oddsGame of oddsData) {
-              // Match odds game to DB game using robust normalized name matching
-              const matchedGame = findMatchingGame(
-                oddsGame.home_team,
-                oddsGame.away_team,
-                gamesForOdds
-              );
-
-              if (!matchedGame) {
-                console.log(`[sync-nba-games] No match for odds: ${oddsGame.away_team} @ ${oddsGame.home_team}`);
+            for (const [bdlGameId, gameOdds] of oddsByBdlGame) {
+              const bdlGame = bdlGameMap.get(bdlGameId);
+              if (!bdlGame) {
+                console.log(`[sync-nba-games] No BDL game found for game_id ${bdlGameId}`);
                 continue;
               }
 
-              // Process each bookmaker
-              const allowedBooks = ["draftkings", "fanduel", "caesars", "betrivers"];
-              for (const bookmaker of oddsGame.bookmakers || []) {
-                if (!allowedBooks.includes(bookmaker.key.toLowerCase())) continue;
+              const matchedGame = findMatchingGame(bdlGame.home, bdlGame.away, gamesForOdds);
+              if (!matchedGame) {
+                console.log(`[sync-nba-games] No DB match for BDL: ${bdlGame.away} @ ${bdlGame.home}`);
+                continue;
+              }
 
-                let spreadValue: number | null = null;
-                let spreadOdds: number | null = null;
-                let moneylineHome: number | null = null;
-                let moneylineAway: number | null = null;
-                let totalValue: number | null = null;
-                let totalOverOdds: number | null = null;
-                let totalUnderOdds: number | null = null;
-
-                const normHome = normalizeTeamName(oddsGame.home_team);
-
-                for (const market of bookmaker.markets || []) {
-                  if (market.key === "spreads") {
-                    const homeOutcome = market.outcomes.find((o: { name: string }) => {
-                      const normOutcome = normalizeTeamName(o.name);
-                      return normHome.includes(normOutcome) || normOutcome.includes(normHome) ||
-                        normOutcome.split(" ").some((p: string) => normHome.includes(p) && p.length > 3);
-                    });
-                    if (homeOutcome) {
-                      spreadValue = homeOutcome.point || null;
-                      spreadOdds = homeOutcome.price;
-                    }
-                  }
-                  if (market.key === "h2h") {
-                    for (const outcome of market.outcomes) {
-                      const normOutcome = normalizeTeamName(outcome.name);
-                      const isHome = normHome.includes(normOutcome) || normOutcome.includes(normHome) ||
-                        normOutcome.split(" ").some((p: string) => normHome.includes(p) && p.length > 3);
-                      if (isHome) {
-                        moneylineHome = outcome.price;
-                      } else {
-                        moneylineAway = outcome.price;
-                      }
-                    }
-                  }
-                  if (market.key === "totals") {
-                    for (const outcome of market.outcomes) {
-                      if (outcome.name === "Over") {
-                        totalValue = outcome.point || null;
-                        totalOverOdds = outcome.price;
-                      } else if (outcome.name === "Under") {
-                        totalUnderOdds = outcome.price;
-                      }
-                    }
-                  }
-                }
-
+              for (const odd of gameOdds) {
                 oddsToUpsert.push({
                   game_id: matchedGame.id,
-                  sportsbook: bookmaker.key.toLowerCase(),
-                  spread_value: spreadValue,
-                  spread_odds: spreadOdds,
-                  moneyline_home: moneylineHome,
-                  moneyline_away: moneylineAway,
-                  total_value: totalValue,
-                  total_over_odds: totalOverOdds,
-                  total_under_odds: totalUnderOdds,
+                  sportsbook: odd.vendor.toLowerCase(),
+                  spread_value: odd.spread_home_value != null ? parseFloat(odd.spread_home_value) : null,
+                  spread_odds: odd.spread_home_odds ?? null,
+                  moneyline_home: odd.moneyline_home_odds ?? null,
+                  moneyline_away: odd.moneyline_away_odds ?? null,
+                  total_value: odd.total_value != null ? parseFloat(odd.total_value) : null,
+                  total_over_odds: odd.total_over_odds ?? null,
+                  total_under_odds: odd.total_under_odds ?? null,
                 });
               }
             }
@@ -359,18 +336,20 @@ serve(async (req) => {
                 console.error("Error inserting odds:", oddsError);
               } else {
                 oddsInsertedCount = oddsToUpsert.length;
-                console.log(`Upserted ${oddsInsertedCount} NBA odds records`);
+                console.log(`Upserted ${oddsInsertedCount} NBA odds records via BDL`);
               }
             }
           } else {
-            console.error(`NBA odds API returned ${oddsResponse.status}: quota may be exhausted`);
+            console.error(`BDL odds API returned ${oddsResponse.status}`);
           }
         } catch (oddsErr) {
-          console.error("Error fetching odds:", oddsErr);
+          console.error("Error fetching BDL odds:", oddsErr);
         }
       } else {
         console.log("No NBA games in window for odds matching");
       }
+    } else {
+      console.log("[sync-nba-games] BALLDONTLIE_API_KEY not set, skipping odds");
     }
 
     const response = {
@@ -386,14 +365,13 @@ serve(async (req) => {
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success",
       records_added: insertedCount,
-      api_requests_used: oddsRequestsUsed || undefined,
-      api_requests_remaining: oddsRequestsRemaining || undefined,
       details: {
         dates_fetched: dates,
         total_espn_games: allGames.length,
         filtered_48h: upcomingGames.length,
         season: { bdl: bdlSeason, db: dbSeason },
         odds_synced: oddsInsertedCount,
+        odds_source: "bdl",
       },
     });
 

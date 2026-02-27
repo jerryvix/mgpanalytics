@@ -97,7 +97,7 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const THE_ODDS_API_KEY = Deno.env.get("THE_ODDS_API_KEY");
+    const BALLDONTLIE_API_KEY = Deno.env.get("BALLDONTLIE_API_KEY");
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) {
       throw new Error("Supabase configuration missing");
@@ -300,6 +300,7 @@ serve(async (req) => {
 
     let insertedCount = 0;
     let oddsInsertedCount = 0;
+
     if (gamesToInsert.length > 0) {
       const { data: insertedData, error: insertError } = await supabase
         .from("ncaab_games")
@@ -313,16 +314,55 @@ serve(async (req) => {
 
       insertedCount = insertedData?.length || 0;
       console.log(`Upserted ${insertedCount} NCAAB games`);
+    }
 
-      // Fetch odds from The Odds API if available
-      if (THE_ODDS_API_KEY && insertedData && insertedData.length > 0) {
+    // Fetch odds from BDL (GOAT tier) — no quota limits, 600 req/min
+    if (BALLDONTLIE_API_KEY) {
+      const { data: gamesForOdds } = await supabase
+        .from("ncaab_games")
+        .select("id, home_team_name, visitor_team_name")
+        .gte("date", now.toISOString())
+        .lte("date", in24Hours.toISOString());
+
+      if (gamesForOdds && gamesForOdds.length > 0) {
         try {
-          const oddsUrl = `https://api.the-odds-api.com/v4/sports/basketball_ncaab/odds?apiKey=${THE_ODDS_API_KEY}&markets=spreads,h2h,totals&regions=us&oddsFormat=american`;
-          const oddsResponse = await fetch(oddsUrl);
+          const todayStr = now.toISOString().split("T")[0];
+          const tomorrowStr = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+          const bdlOddsUrl = `https://api.balldontlie.io/ncaab/v1/odds?dates[]=${todayStr}&dates[]=${tomorrowStr}`;
+          const oddsResponse = await fetch(bdlOddsUrl, {
+            headers: { Authorization: BALLDONTLIE_API_KEY },
+          });
 
           if (oddsResponse.ok) {
-            const oddsData = await oddsResponse.json();
-            console.log(`Fetched odds for ${oddsData.length} NCAAB games`);
+            const bdlData = await oddsResponse.json();
+            const bdlOdds = bdlData.data || [];
+            console.log(`Fetched ${bdlOdds.length} BDL odds entries for NCAAB`);
+
+            const allowedVendors = ["draftkings", "fanduel", "caesars", "betrivers"];
+            // Group BDL odds by game_id for team matching
+            const oddsByBdlGame = new Map<number, typeof bdlOdds>();
+            for (const odd of bdlOdds) {
+              if (!allowedVendors.includes(odd.vendor?.toLowerCase())) continue;
+              const group = oddsByBdlGame.get(odd.game_id) || [];
+              group.push(odd);
+              oddsByBdlGame.set(odd.game_id, group);
+            }
+
+            // Fetch BDL NCAAB games for team name mapping
+            const bdlGamesUrl = `https://api.balldontlie.io/ncaab/v1/games?dates[]=${todayStr}&dates[]=${tomorrowStr}`;
+            const bdlGamesResp = await fetch(bdlGamesUrl, {
+              headers: { Authorization: BALLDONTLIE_API_KEY },
+            });
+            const bdlGamesData = bdlGamesResp.ok ? await bdlGamesResp.json() : { data: [] };
+            const bdlGames = bdlGamesData.data || [];
+
+            const bdlGameMap = new Map<number, { home: string; away: string }>();
+            for (const g of bdlGames) {
+              bdlGameMap.set(g.id, {
+                home: g.home_team?.full_name || g.home_team?.name || "",
+                away: g.visitor_team?.full_name || g.visitor_team?.name || "",
+              });
+            }
 
             const oddsToUpsert: Array<{
               game_id: string;
@@ -339,78 +379,38 @@ serve(async (req) => {
             let matchedCount = 0;
             let unmatchedCount = 0;
 
-            for (const oddsGame of oddsData) {
-              const matchedGame = findMatchingGame(
-                oddsGame.home_team,
-                oddsGame.away_team,
-                insertedData
-              );
+            for (const [bdlGameId, gameOdds] of oddsByBdlGame) {
+              const bdlGame = bdlGameMap.get(bdlGameId);
+              if (!bdlGame) {
+                console.log(`[sync-ncaab-games] No BDL game found for game_id ${bdlGameId}`);
+                unmatchedCount++;
+                continue;
+              }
 
+              const matchedGame = findMatchingGame(bdlGame.home, bdlGame.away, gamesForOdds);
               if (!matchedGame) {
                 unmatchedCount++;
-                console.log(`No NCAAB match for: ${oddsGame.home_team} vs ${oddsGame.away_team}`);
+                console.log(`[sync-ncaab-games] No DB match for BDL: ${bdlGame.away} @ ${bdlGame.home}`);
                 continue;
               }
               matchedCount++;
 
-              const allowedBooks = ["draftkings", "fanduel", "caesars", "betrivers"];
-              for (const bookmaker of oddsGame.bookmakers || []) {
-                if (!allowedBooks.includes(bookmaker.key.toLowerCase())) continue;
-
-                let spreadValue: number | null = null;
-                let spreadOdds: number | null = null;
-                let moneylineHome: number | null = null;
-                let moneylineAway: number | null = null;
-                let totalValue: number | null = null;
-                let totalOverOdds: number | null = null;
-                let totalUnderOdds: number | null = null;
-
-                for (const market of bookmaker.markets || []) {
-                  if (market.key === "spreads") {
-                    const homeOutcome = market.outcomes.find((o: { name: string }) =>
-                      oddsGame.home_team.includes(o.name) || o.name.includes(oddsGame.home_team.split(" ").pop())
-                    );
-                    if (homeOutcome) {
-                      spreadValue = homeOutcome.point || null;
-                      spreadOdds = homeOutcome.price;
-                    }
-                  }
-                  if (market.key === "h2h") {
-                    for (const outcome of market.outcomes) {
-                      if (oddsGame.home_team.includes(outcome.name) || outcome.name.includes(oddsGame.home_team.split(" ").pop())) {
-                        moneylineHome = outcome.price;
-                      } else {
-                        moneylineAway = outcome.price;
-                      }
-                    }
-                  }
-                  if (market.key === "totals") {
-                    for (const outcome of market.outcomes) {
-                      if (outcome.name === "Over") {
-                        totalValue = outcome.point || null;
-                        totalOverOdds = outcome.price;
-                      } else if (outcome.name === "Under") {
-                        totalUnderOdds = outcome.price;
-                      }
-                    }
-                  }
-                }
-
+              for (const odd of gameOdds) {
                 oddsToUpsert.push({
                   game_id: matchedGame.id,
-                  sportsbook: bookmaker.key.toLowerCase(),
-                  spread_value: spreadValue,
-                  spread_odds: spreadOdds,
-                  moneyline_home: moneylineHome,
-                  moneyline_away: moneylineAway,
-                  total_value: totalValue,
-                  total_over_odds: totalOverOdds,
-                  total_under_odds: totalUnderOdds,
+                  sportsbook: odd.vendor.toLowerCase(),
+                  spread_value: odd.spread_home_value != null ? parseFloat(odd.spread_home_value) : null,
+                  spread_odds: odd.spread_home_odds ?? null,
+                  moneyline_home: odd.moneyline_home_odds ?? null,
+                  moneyline_away: odd.moneyline_away_odds ?? null,
+                  total_value: odd.total_value != null ? parseFloat(odd.total_value) : null,
+                  total_over_odds: odd.total_over_odds ?? null,
+                  total_under_odds: odd.total_under_odds ?? null,
                 });
               }
             }
 
-            console.log(`NCAAB odds matching: ${matchedCount} matched, ${unmatchedCount} unmatched out of ${oddsData.length} odds games`);
+            console.log(`NCAAB BDL odds matching: ${matchedCount} matched, ${unmatchedCount} unmatched`);
 
             if (oddsToUpsert.length > 0) {
               const { error: oddsError } = await supabase
@@ -421,14 +421,20 @@ serve(async (req) => {
                 console.error("Error inserting odds:", oddsError);
               } else {
                 oddsInsertedCount = oddsToUpsert.length;
-                console.log(`Upserted ${oddsInsertedCount} NCAAB odds records`);
+                console.log(`Upserted ${oddsInsertedCount} NCAAB odds records via BDL`);
               }
             }
+          } else {
+            console.error(`BDL NCAAB odds API returned ${oddsResponse.status}`);
           }
         } catch (oddsErr) {
-          console.error("Error fetching odds:", oddsErr);
+          console.error("Error fetching BDL odds:", oddsErr);
         }
+      } else {
+        console.log("No NCAAB games in 24h window for odds matching");
       }
+    } else {
+      console.log("[sync-ncaab-games] BALLDONTLIE_API_KEY not set, skipping odds");
     }
 
     const response = {
@@ -445,7 +451,7 @@ serve(async (req) => {
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success",
       records_added: insertedCount,
-      details: { total_espn_games: allGames.length, filtered_24h: upcomingGames.length, ranked_games: rankedGames.length, odds_synced: oddsInsertedCount },
+      details: { total_espn_games: allGames.length, filtered_24h: upcomingGames.length, ranked_games: rankedGames.length, odds_synced: oddsInsertedCount, odds_source: "bdl" },
     });
 
     return new Response(JSON.stringify(response), {

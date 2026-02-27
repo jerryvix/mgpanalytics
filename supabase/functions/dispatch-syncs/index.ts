@@ -33,11 +33,11 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
 // Functions hitting the same API are staggered to avoid rate-limit cascades.
 const FUNCTION_API_GROUP: Record<string, string> = {
   "sync-nfl-games": "espn",
-  "sync-nba-games": "odds_api+espn",   // ESPN (free) + The Odds API
-  "sync-ncaab-games": "odds_api+espn",
+  "sync-nba-games": "espn+bdl",         // ESPN (free) + BDL (GOAT tier)
+  "sync-ncaab-games": "espn+bdl",
   "sync-ncaaf-games": "espn",
   "sync-mlb-games": "espn",
-  "sync-odds-snapshot": "odds_api",
+  "sync-odds-snapshot": "odds_api+bdl",
   "sync-player-props": "odds_api",
   "sync-nfl-players": "bdl",
   "sync-nfl-season-stats": "bdl",
