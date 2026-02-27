@@ -3,9 +3,6 @@ project_id = "vwezujtftfccamoduglp"
 [functions.sync-nfl-games]
 verify_jwt = false
 
-[functions.sync-nba-odds]
-verify_jwt = false
-
 [functions.sync-nba-games]
 verify_jwt = false
 
@@ -49,9 +46,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.nfl-slate-leaders]
-verify_jwt = false
-
-[functions.sportradar]
 verify_jwt = false
 
 [functions.analyst-query]

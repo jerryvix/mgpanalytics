@@ -12,7 +12,7 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   // NFL:advanced_stats — no dedicated function yet; skip
   // NFL:props — handled by ALL:player_props
   "NBA:games": "sync-nba-games",
-  "NBA:odds": "sync-nba-odds",
+  "NBA:odds": "sync-nba-games",  // odds fetched inline by sync-nba-games
   "NBA:players": "sync-nba-players",
   "NBA:stats": "sync-nba-stats",
   "NBA:game_logs": "sync-nba-game-logs",
@@ -28,6 +28,31 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "ALL:odds_snapshot": "sync-odds-snapshot",
   "ALL:grade_props": "grade-player-props",
 };
+
+// Which external API each function primarily calls.
+// Functions hitting the same API are staggered to avoid rate-limit cascades.
+const FUNCTION_API_GROUP: Record<string, string> = {
+  "sync-nfl-games": "espn",
+  "sync-nba-games": "odds_api+espn",   // ESPN (free) + The Odds API
+  "sync-ncaab-games": "odds_api+espn",
+  "sync-ncaaf-games": "espn",
+  "sync-mlb-games": "espn",
+  "sync-odds-snapshot": "odds_api",
+  "sync-player-props": "odds_api",
+  "sync-nfl-players": "bdl",
+  "sync-nfl-season-stats": "bdl",
+  "sync-nfl-players-slate": "bdl",
+  "sync-nfl-game-logs": "bdl",
+  "sync-nba-players": "bdl",
+  "sync-nba-stats": "bdl",
+  "sync-nba-game-logs": "bdl",
+  "backfill-nba-games": "bdl",
+  "sync-ncaab-players": "bdl",
+  "grade-player-props": "none",
+};
+
+// Delay in ms between dispatching functions that share an API group
+const STAGGER_DELAY_MS = 3000;
 
 // Approximate season windows (month ranges, 0-indexed)
 // Returns true if the sport has active games/data worth syncing right now
@@ -158,7 +183,7 @@ Deno.serve(async (req) => {
     }
 
     // Determine which syncs are due
-    const dueSchedules = schedules.filter((s) => {
+    const dueSchedules = schedules.filter((s: any) => {
       const key = `${s.sport}:${s.data_type}`;
 
       // If force-sync specified, only run those
@@ -199,20 +224,46 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Mark all due syncs as "running" in sync_schedule, then fire-and-forget
-    // Each sync function will take 10-60s; awaiting all would exceed edge function timeout
+    // Stagger dispatches: group by API provider to prevent rate-limit cascades.
+    // Functions that hit the same external API get a delay between them.
+    // Dedup: if the same function is mapped by multiple schedule keys, only fire it once.
     const dispatched: string[] = [];
+    const firedFunctions = new Set<string>();
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || SUPABASE_SERVICE_ROLE_KEY;
+
+    // Track last fire time per API group to stagger
+    const lastFireByGroup = new Map<string, number>();
+
     for (const schedule of dueSchedules) {
       const key = `${schedule.sport}:${schedule.data_type}`;
       const functionName = SYNC_FUNCTION_MAP[key];
       if (!functionName) continue;
 
+      // Skip if we already fired this exact function (e.g., NBA:games and NBA:odds both map to sync-nba-games)
+      if (firedFunctions.has(functionName)) {
+        console.log(`[dispatch-syncs] ${key} → ${functionName} already dispatched, skipping duplicate`);
+        dispatched.push(key);
+        continue;
+      }
+
+      // Stagger: wait if another function using the same API was recently fired
+      const apiGroup = FUNCTION_API_GROUP[functionName] || "unknown";
+      const apiGroups = apiGroup.split("+"); // e.g., "odds_api+espn" → ["odds_api", "espn"]
+      for (const group of apiGroups) {
+        if (group === "none" || group === "espn") continue; // ESPN is free/unlimited, no stagger needed
+        const lastFire = lastFireByGroup.get(group) || 0;
+        const elapsed = Date.now() - lastFire;
+        if (elapsed < STAGGER_DELAY_MS) {
+          const waitMs = STAGGER_DELAY_MS - elapsed;
+          console.log(`[dispatch-syncs] Staggering ${functionName} by ${waitMs}ms (${group} rate limit)`);
+          await new Promise(resolve => setTimeout(resolve, waitMs));
+        }
+      }
+
       const functionUrl = `${SUPABASE_URL}/functions/v1/${functionName}`;
-      console.log(`[dispatch-syncs] Firing ${functionName} for ${key}`);
+      console.log(`[dispatch-syncs] Firing ${functionName} for ${key} [api: ${apiGroup}]`);
 
       // Fire the fetch without awaiting — the sync function runs independently
-      // Auth via x-cron-secret only; apikey is for gateway routing (anon key preferred)
-      const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || SUPABASE_SERVICE_ROLE_KEY;
       fetch(functionUrl, {
         method: "POST",
         headers: {
@@ -260,6 +311,10 @@ Deno.serve(async (req) => {
           error_message: null,
         }, { onConflict: "sport,data_type" });
 
+      firedFunctions.add(functionName);
+      for (const group of apiGroups) {
+        lastFireByGroup.set(group, Date.now());
+      }
       dispatched.push(key);
     }
 
