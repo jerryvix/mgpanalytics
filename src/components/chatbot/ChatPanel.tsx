@@ -309,29 +309,29 @@ export function ChatPanel() {
     setInput("");
     setIsLoading(true);
 
-    // Create or use existing conversation
-    let convId = currentConversationId;
-    if (!convId) {
-      convId = await createNewConversation(query.trim());
-      if (convId) {
-        setCurrentConversationId(convId);
-        setActiveConversationId(convId);
-      }
-    }
-
-    // Save user message
-    if (convId) {
-      await saveMessage(convId, "user", query.trim());
-    }
-
-    // Update conversation history for Gemini
-    const newHistory = [...conversationHistory, { role: "user" as const, content: query.trim() }];
-    setConversationHistory(newHistory);
-
     try {
+      // Create or use existing conversation
+      let convId = currentConversationId;
+      if (!convId) {
+        convId = await createNewConversation(query.trim());
+        if (convId) {
+          setCurrentConversationId(convId);
+          setActiveConversationId(convId);
+        }
+      }
+
+      // Save user message
+      if (convId) {
+        await saveMessage(convId, "user", query.trim());
+      }
+
+      // Update conversation history for Gemini
+      const newHistory = [...conversationHistory, { role: "user" as const, content: query.trim() }];
+      setConversationHistory(newHistory);
+
       // Call Gemini with conversation history
       const response = await sendGeminiMessage(newHistory, activeSports);
-      
+
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "bot",
@@ -341,7 +341,7 @@ export function ChatPanel() {
         questionType: response.questionType,
       };
       setMessages((prev) => [...prev, botMessage]);
-      
+
       // Update history with assistant response
       setConversationHistory([...newHistory, { role: "assistant", content: response.content }]);
 

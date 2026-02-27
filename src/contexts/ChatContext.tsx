@@ -80,6 +80,27 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     refreshConversations();
   }, [refreshConversations]);
 
+  // Load preferred sports from user profile on mount
+  useEffect(() => {
+    async function loadPreferredSports() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("preferred_sports")
+          .eq("id", user.id)
+          .single();
+        if (profile?.preferred_sports?.length) {
+          setActiveSports(profile.preferred_sports);
+        }
+      } catch (e) {
+        console.error("Error loading preferred sports:", e);
+      }
+    }
+    loadPreferredSports();
+  }, []);
+
   // Set initial state after mount - default to open on desktop, closed on mobile
   useEffect(() => {
     if (!mounted) {
