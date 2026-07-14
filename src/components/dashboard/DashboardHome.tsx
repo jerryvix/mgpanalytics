@@ -626,9 +626,9 @@ export function DashboardHome() {
                 >
                   <span className="flex items-center gap-1.5 min-w-0">
                     <span className="shrink-0">{getSportEmoji(flow.sport)}</span>
-                    <span className="text-foreground font-medium truncate">{displayTeam(flow.team, flow.sport)}</span>
-                    <span className="text-muted-foreground shrink-0">vs</span>
                     <span className="text-muted-foreground truncate">{displayTeam(flow.opponent, flow.sport)}</span>
+                    <span className="text-muted-foreground shrink-0">@</span>
+                    <span className="text-foreground font-medium truncate">{displayTeam(flow.team, flow.sport)}</span>
                   </span>
                   <span className="flex items-center gap-1.5 shrink-0">
                     {flow.hasMovement && flow.movement !== null ? (

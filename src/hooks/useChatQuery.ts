@@ -864,7 +864,7 @@ export function useChatQuery() {
         const game = games.find(g => g.id === highest.game_id);
         if (!game) return "Couldn't find game details.";
         
-        return `📊 Highest total: ${game.home_team_name.split(" ").pop()} vs ${game.visitor_team_name.split(" ").pop()} at ${highest.total_value}.`;
+        return `📊 Highest total: ${game.visitor_team_name.split(" ").pop()} @ ${game.home_team_name.split(" ").pop()} at ${highest.total_value}.`;
       } else {
         const lowest = withTotals.reduce((min, o) => 
           (o.total_value! < min.total_value!) ? o : min
@@ -872,7 +872,7 @@ export function useChatQuery() {
         const game = games.find(g => g.id === lowest.game_id);
         if (!game) return "Couldn't find game details.";
         
-        return `📊 Lowest total: ${game.home_team_name.split(" ").pop()} vs ${game.visitor_team_name.split(" ").pop()} at ${lowest.total_value}.`;
+        return `📊 Lowest total: ${game.visitor_team_name.split(" ").pop()} @ ${game.home_team_name.split(" ").pop()} at ${lowest.total_value}.`;
       }
     }
     

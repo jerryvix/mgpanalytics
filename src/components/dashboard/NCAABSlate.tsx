@@ -286,17 +286,8 @@ export function NCAABSlate() {
                         {getStatusBadge(game.status, isRanked, game.is_featured)}
                       </div>
 
-                      {/* Matchup with Rankings */}
+                      {/* Matchup with Rankings — away team first */}
                       <div className="font-mono text-base text-foreground mb-4">
-                        <div className="flex items-center gap-2">
-                          {formatRank(game.home_team_rank) && (
-                            <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
-                              {formatRank(game.home_team_rank)}
-                            </Badge>
-                          )}
-                          <span className="font-bold">{game.home_team_name}</span>
-                        </div>
-                        <span className="text-terminal-amber mx-2 text-sm">vs</span>
                         <div className="flex items-center gap-2">
                           {formatRank(game.visitor_team_rank) && (
                             <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
@@ -304,6 +295,15 @@ export function NCAABSlate() {
                             </Badge>
                           )}
                           <span className="font-bold">{game.visitor_team_name}</span>
+                        </div>
+                        <span className="text-terminal-amber mx-2 text-sm">@</span>
+                        <div className="flex items-center gap-2">
+                          {formatRank(game.home_team_rank) && (
+                            <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
+                              {formatRank(game.home_team_rank)}
+                            </Badge>
+                          )}
+                          <span className="font-bold">{game.home_team_name}</span>
                         </div>
                       </div>
 
@@ -420,19 +420,19 @@ export function NCAABSlate() {
               {selectedGame && (
                 <div>
                   <div className="flex items-center gap-2 text-lg">
-                    {formatRank(selectedGame.home_team_rank) && (
-                      <Badge className="bg-terminal-amber text-background text-xs">
-                        {formatRank(selectedGame.home_team_rank)}
-                      </Badge>
-                    )}
-                    {selectedGame.home_team_name}
-                    <span className="text-terminal-amber">vs</span>
                     {formatRank(selectedGame.visitor_team_rank) && (
                       <Badge className="bg-terminal-amber text-background text-xs">
                         {formatRank(selectedGame.visitor_team_rank)}
                       </Badge>
                     )}
                     {selectedGame.visitor_team_name}
+                    <span className="text-terminal-amber">@</span>
+                    {formatRank(selectedGame.home_team_rank) && (
+                      <Badge className="bg-terminal-amber text-background text-xs">
+                        {formatRank(selectedGame.home_team_rank)}
+                      </Badge>
+                    )}
+                    {selectedGame.home_team_name}
                   </div>
                   <p className="text-xs text-muted-foreground font-normal mt-1">
                     {formatGameTime(selectedGame.date)}

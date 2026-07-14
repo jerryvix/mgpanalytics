@@ -7,7 +7,10 @@ const corsHeaders = {
 };
 
 const BDL_NFL_BASE_URL = 'https://api.balldontlie.io/nfl/v1';
-const CURRENT_SEASON = 2025;
+// NFL seasons are labeled by START year (games table + BDL both use it).
+// Jan/Feb belong to the season that started the prior calendar year.
+const _now = new Date();
+const CURRENT_SEASON = _now.getMonth() <= 1 ? _now.getFullYear() - 1 : _now.getFullYear();
 
 async function bdlFetch(apiKey: string, endpoint: string, params?: Record<string, string | number | number[] | string[]>) {
   const url = new URL(`${BDL_NFL_BASE_URL}${endpoint}`);

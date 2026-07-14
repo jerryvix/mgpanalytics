@@ -234,9 +234,9 @@ export function NFLSlate() {
 
                     {/* Matchup */}
                     <div className="font-mono text-base text-foreground mb-4">
-                      <span className="font-bold">{game.home_team_name}</span>
-                      <span className="text-terminal-green mx-2">vs</span>
                       <span className="font-bold">{game.visitor_team_name}</span>
+                      <span className="text-terminal-green mx-2">@</span>
+                      <span className="font-bold">{game.home_team_name}</span>
                     </div>
 
                     {/* DraftKings Odds Section */}
@@ -341,7 +341,7 @@ export function NFLSlate() {
               {selectedGame && (
                 <div>
                   <span className="text-lg">
-                    {selectedGame.home_team_name} vs {selectedGame.visitor_team_name}
+                    {selectedGame.visitor_team_name} @ {selectedGame.home_team_name}
                   </span>
                   <p className="text-xs text-muted-foreground font-normal mt-1">
                     {formatGameTime(selectedGame.date)}

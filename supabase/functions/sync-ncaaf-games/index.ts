@@ -206,13 +206,13 @@ serve(async (req) => {
       const homeScore = homeTeam?.score ? parseInt(homeTeam.score) : null;
       const awayScore = awayTeam?.score ? parseInt(awayTeam.score) : null;
 
-      // Season labeled by end-year, derived from the game's own date so
-      // preseason fetches of next season's games get the right label
+      // Season labeled by START year (fan convention: the 2026 season runs
+      // Aug 2026 – Jan 2027), derived from the game's own date
       const gameDate = new Date(game.date);
       return {
         external_id: `espn_ncaaf_${game.id}`,
         date: game.date,
-        season: gameDate.getMonth() >= 7 ? gameDate.getFullYear() + 1 : gameDate.getFullYear(),
+        season: gameDate.getMonth() >= 6 ? gameDate.getFullYear() : gameDate.getFullYear() - 1,
         status: game.status?.type?.name || "scheduled",
         home_team_name: homeTeam?.team?.displayName || homeTeam?.team?.name || "TBD",
         visitor_team_name: awayTeam?.team?.displayName || awayTeam?.team?.name || "TBD",

@@ -171,9 +171,11 @@ Deno.serve(async (req) => {
       api_source: "mixed",
     });
 
-    // Dynamic season: NFL BDL uses end-year (2025 = 2024-25 season)
+    // NFL seasons are labeled by START year everywhere (BDL convention and
+    // ours): the 2026 season runs Sep 2026 – Feb 2027. Jan/Feb belong to the
+    // prior season; from March we target the upcoming season's schedule.
     const now = new Date();
-    const nflDbSeason = now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear();
+    const nflDbSeason = now.getMonth() <= 1 ? now.getFullYear() - 1 : now.getFullYear();
     console.log(`[sync-nfl-games] Season: ${nflDbSeason}`);
 
     // ===== STEP 1: Fetch games from BallDontLie =====
@@ -227,7 +229,7 @@ Deno.serve(async (req) => {
     const gamesToUpsert = allSeasonGames.map((game) => ({
       id: game.id,
       league: "NFL",
-      season: nflDbSeason,
+      season: game.season ?? nflDbSeason,
       week: game.week || null,
       date: game.date,
       status: game.status,
@@ -301,11 +303,11 @@ Deno.serve(async (req) => {
         const matchedGame = findMatchingGame(oddsGame, gamesLookup);
         
         if (!matchedGame) {
-          console.log(`No match found for: ${oddsGame.home_team} vs ${oddsGame.away_team}`);
+          console.log(`No match found for: ${oddsGame.away_team} @ ${oddsGame.home_team}`);
           continue;
         }
 
-        console.log(`Matched: ${oddsGame.home_team} vs ${oddsGame.away_team} -> Game ID ${matchedGame.id}`);
+        console.log(`Matched: ${oddsGame.away_team} @ ${oddsGame.home_team} -> Game ID ${matchedGame.id}`);
 
         for (const bookmaker of oddsGame.bookmakers) {
           // Only process allowed sportsbooks

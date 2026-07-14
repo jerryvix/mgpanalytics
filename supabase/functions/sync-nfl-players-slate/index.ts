@@ -254,7 +254,9 @@ Deno.serve(async (req) => {
           .select("*")
           .in("player_id", playerIds)
           .eq("sport", "NFL")
-          .eq("season", 2024);
+          // Most recent season with stats: current once games begin (Sep+),
+          // else last completed. NFL stats seasons are labeled by start year.
+          .eq("season", new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1);
 
         const statsMap = new Map();
         for (const stat of statsData || []) {
