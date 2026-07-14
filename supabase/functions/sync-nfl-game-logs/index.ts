@@ -195,8 +195,10 @@ Deno.serve(async (req) => {
       api_source: "balldontlie",
     });
 
-    // Parse request body
-    let season = 2024; // Current NFL season
+    // Parse request body. Season default: the current season once games begin
+    // (Sep+), else the most recently completed one (BDL labels by start year)
+    const nowDate = new Date();
+    let season = nowDate.getMonth() >= 8 ? nowDate.getFullYear() : nowDate.getFullYear() - 1;
     let fullSeason = true; // Default to full season for NFL
     let weekFilter: number | null = null;
     try {
@@ -211,7 +213,11 @@ Deno.serve(async (req) => {
     console.log(`[sync-nfl-game-logs] Starting sync for season ${season}, fullSeason=${fullSeason}`);
 
     // Step 1: Get NFL players with BDL external_ids
-    const SKILL_POSITIONS = ["QB", "RB", "WR", "TE", "FB"];
+    // Roster sync stores full position names; accept abbreviations too
+    const SKILL_POSITIONS = [
+      "QB", "RB", "WR", "TE", "FB",
+      "Quarterback", "Running Back", "Wide Receiver", "Tight End", "Fullback",
+    ];
     const { data: players, error: playersError } = await supabase
       .from("players")
       .select("id, external_id, name, team_abbr, position")
