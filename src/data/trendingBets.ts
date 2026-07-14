@@ -1,19 +1,20 @@
 // Trending Bets — full-season futures paired with a verifiable "did you know".
 //
-// This is a curated SEED. Every `nugget` here is a real, checkable historical
-// fact with a `source`; lines/odds are taken from live sportsbook boards
-// (DraftKings, 2026-27 season) as of build time. When a futures-odds sync +
-// nugget pipeline lands, it replaces this file — the shape below is exactly
-// what it will emit, so no UI rework is needed. Game-level props slot in as
-// additional `category` values.
+// Every `nugget` is a real, checkable fact with a `source`; lines/odds are the
+// live 2026-27 sportsbook boards (DraftKings/consensus) captured at build time
+// and web-verified July 2026. When a futures-odds + nugget sync lands it
+// replaces this file — the shape below is exactly what it emits, so no UI
+// rework is needed. Game-level props slot in via the "Game Props" category.
 //
 // RULE: never ship an unverifiable nugget. Set `verified: false` and it is
-// hidden from users until a source is attached.
+// hidden from users until a source is attached. Year ranges use the compact
+// apostrophe style, e.g. ('20-'21).
 
 export type BetCategory =
   | "Win Totals"
   | "Awards"
   | "Division"
+  | "Conference"
   | "Championship"
   | "Game Props"; // reserved for in-season expansion
 
@@ -32,48 +33,22 @@ export interface TrendingBet {
   updated: string; // ISO date the line was captured
 }
 
-const D = "2026-09-13"; // capture date for these boards
+const D = "2026-07-14"; // capture date for these boards
 
 export const NFL_TRENDING: TrendingBet[] = [
+  // ---- Win Totals ----
   {
-    id: "nfl-mvp-allen",
-    category: "Awards",
-    subject: "Josh Allen",
-    logoHint: "BUF",
-    market: "AP NFL MVP",
-    line: "+600",
+    id: "nfl-wins-ravens",
+    category: "Win Totals",
+    subject: "Baltimore Ravens",
+    logoHint: "BAL",
+    market: "Regular Season Wins",
+    line: "O/U 11.5",
+    odds: "Over +115 / Under -140",
     book: "DraftKings",
     nugget:
-      "Allen enters as the reigning MVP. Only two players this century have repeated as MVP — Peyton Manning (2008–09) and Aaron Rodgers (2020–21) — so a back-to-back would be rare air.",
-    source: "AP MVP voting history",
-    verified: true,
-    updated: D,
-  },
-  {
-    id: "nfl-dpoy-garrett",
-    category: "Awards",
-    subject: "Myles Garrett",
-    logoHint: "CLE",
-    market: "AP Defensive Player of the Year",
-    line: "+400",
-    book: "DraftKings",
-    nugget:
-      "Garrett (2023 winner) is the favorite, but repeating is hard: Aaron Donald is the only player to win back-to-back DPOY in the last decade (2020–21).",
-    source: "AP DPOY history",
-    verified: true,
-    updated: D,
-  },
-  {
-    id: "nfl-opoy-chase",
-    category: "Awards",
-    subject: "Ja'Marr Chase",
-    logoHint: "CIN",
-    market: "AP Offensive Player of the Year",
-    line: "+1000",
-    book: "DraftKings",
-    nugget:
-      "Chase won the receiving Triple Crown in 2024 — leading the NFL in catches, receiving yards, and touchdowns in the same season, a feat only a handful of receivers have ever pulled off.",
-    source: "2024 NFL receiving leaders",
+      "Baltimore opens co-favorite for most wins in the AFC at 11.5 — despite going just 8-9 in '25 and missing the playoffs. It's the biggest projected turnaround on the board, and adding elite edge rusher Trey Hendrickson is a big reason the market believes it.",
+    source: "2026 NFL win totals; 2025 standings",
     verified: true,
     updated: D,
   },
@@ -87,94 +62,238 @@ export const NFL_TRENDING: TrendingBet[] = [
     odds: "Over -120 / Under +100",
     book: "DraftKings",
     nugget:
-      "Buffalo has won at least 11 games in each of the last five seasons (2020–24) — the book is essentially asking whether that dominance finally cools.",
-    source: "NFL standings 2020–2024",
+      "Buffalo has won 11+ games in five of the last six seasons and hasn't finished below 10 wins since '19. At 10.5, the book is essentially asking whether the Josh Allen-era floor finally dips.",
+    source: "NFL standings '19-'25",
     verified: true,
     updated: D,
   },
   {
-    id: "nfl-wins-ravens",
+    id: "nfl-wins-cardinals",
     category: "Win Totals",
-    subject: "Baltimore Ravens",
-    logoHint: "BAL",
+    subject: "Arizona Cardinals",
+    logoHint: "ARI",
     market: "Regular Season Wins",
-    line: "O/U 11.5",
-    odds: "Over +115 / Under -140",
+    line: "O/U 4.5",
     book: "DraftKings",
     nugget:
-      "11.5 is a steep bar — Baltimore has reached the playoffs in five of the last six seasons, but a 12-win regular season has happened only a couple of times in that stretch.",
-    source: "NFL playoff appearances 2019–2024",
+      "At 4.5, Arizona owns the lowest win total in the entire NFL — a full seven games below the Ravens and Rams at the top. It's the market's clearest single signal of a team the books expect to rebuild.",
+    source: "2026 NFL win totals",
     verified: true,
     updated: D,
   },
+  // ---- Awards ----
+  {
+    id: "nfl-mvp-allen",
+    category: "Awards",
+    subject: "Josh Allen",
+    logoHint: "BUF",
+    market: "AP NFL MVP",
+    line: "+550",
+    book: "DraftKings",
+    nugget:
+      "Allen enters as the reigning MVP — but repeating is one of the hardest feats in the sport. Only five players have ever won back-to-back MVP, and none since Aaron Rodgers in ('20-'21).",
+    source: "AP MVP voting history",
+    verified: true,
+    updated: D,
+  },
+  {
+    id: "nfl-mvp-jackson",
+    category: "Awards",
+    subject: "Lamar Jackson",
+    logoHint: "BAL",
+    market: "AP NFL MVP",
+    line: "+700",
+    book: "DraftKings",
+    nugget:
+      "Jackson is already a two-time MVP ('19, '23). A third would put him in an exclusive club of three-time winners — a list still topped by Peyton Manning's five.",
+    source: "AP MVP voting history",
+    verified: true,
+    updated: D,
+  },
+  {
+    id: "nfl-dpoy-garrett",
+    category: "Awards",
+    subject: "Myles Garrett",
+    logoHint: "CLE",
+    market: "AP Defensive Player of the Year",
+    line: "+400",
+    book: "DraftKings",
+    nugget:
+      "Garrett is the reigning DPOY (a two-time winner in '23 and '25) and just the second player ever to take it unanimously, after J.J. Watt in '14. A 2026 win would make him the first to win three DPOYs in four years since Watt.",
+    source: "AP DPOY history; 2026 NFL Honors",
+    verified: true,
+    updated: D,
+  },
+  {
+    id: "nfl-mvp-nonqb",
+    category: "Awards",
+    subject: "The field (non-QBs)",
+    market: "AP NFL MVP",
+    line: "Longshots",
+    book: "DraftKings",
+    nugget:
+      "Every serious MVP favorite is a quarterback — for good reason. The last 13 MVPs have all been QBs, and since 2001 only three non-quarterbacks have won the award, all of them running backs.",
+    source: "AP MVP winners since 2001",
+    verified: true,
+    updated: D,
+  },
+  // ---- Division ----
   {
     id: "nfl-div-afceast",
     category: "Division",
     subject: "Buffalo Bills",
     logoHint: "BUF",
     market: "AFC East Winner",
-    line: "-130",
+    line: "-125",
     book: "DraftKings",
     nugget:
-      "The Bills have won five straight AFC East titles. Before them, New England owned the division — 11 in a row from 2009 to 2019. The AFC East has had exactly one other champion in 16 years.",
-    source: "NFL division champions",
+      "Buffalo won five straight AFC East titles ('20-'24) before New England — behind rookie Drake Maye — grabbed it in '25 and rode it all the way to Super Bowl LX. The Bills are now favored to take the division right back.",
+    source: "NFL division champions; 2025 standings",
+    verified: true,
+    updated: D,
+  },
+  {
+    id: "nfl-div-afcnorth",
+    category: "Division",
+    subject: "Baltimore Ravens",
+    logoHint: "BAL",
+    market: "AFC North Winner",
+    line: "-105",
+    book: "DraftKings",
+    nugget:
+      "The Ravens are favored to win the North despite an 8-9 '25 — while the Bengals, coming off 6-11, made the offseason's boldest swing, trading their first-round pick for star DT Dexter Lawrence. It's shaping up as the league's most volatile division.",
+    source: "2026 division odds; offseason moves",
     verified: true,
     updated: D,
   },
 ];
 
 export const NCAAF_TRENDING: TrendingBet[] = [
-  {
-    id: "ncaaf-heisman",
-    category: "Awards",
-    subject: "Heisman Field",
-    market: "Heisman Trophy",
-    line: "Open field",
-    book: "DraftKings",
-    nugget:
-      "No player has ever won the Heisman twice — except Archie Griffin, who did it back-to-back in 1974–75. Fifty years later, every returning favorite is still chasing history no one else has matched.",
-    source: "Heisman Trust records",
-    verified: true,
-    updated: D,
-  },
+  // ---- Win Totals ----
   {
     id: "ncaaf-wins-alabama",
     category: "Win Totals",
     subject: "Alabama Crimson Tide",
     logoHint: "ALA",
     market: "Regular Season Wins",
-    line: "O/U 9.5",
-    odds: "Over +240 / Under -300",
+    line: "O/U 8.5",
+    odds: "Over -118 / Under -104",
     book: "DraftKings",
     nugget:
-      "Alabama won 10+ games in 16 straight seasons (2008–23) under Nick Saban. That streak ended in 2024 — Kalen DeBoer's first year went 9–4 — which is exactly why this number sits at 9.5, not 11.",
-    source: "Alabama football records",
+      "Alabama won 10+ games in 16 straight seasons under Nick Saban ('08-'23). That streak ended the year after he retired — and with the SEC moving to a nine-game conference schedule in 2026, the Tide's total sits at a startling 8.5.",
+    source: "Alabama football records; 2026 win totals",
     verified: true,
     updated: D,
   },
   {
-    id: "ncaaf-champ-repeat",
-    category: "Championship",
-    subject: "Georgia Bulldogs",
-    logoHint: "UGA",
-    market: "National Championship",
-    line: "Futures",
+    id: "ncaaf-wins-sec",
+    category: "Win Totals",
+    subject: "Georgia · Texas · Ohio State",
+    market: "Regular Season Wins",
+    line: "O/U 9.5",
     book: "DraftKings",
     nugget:
-      "Georgia's back-to-back titles in 2021 and 2022 were the first repeat national champion since Alabama in 2011–12 — repeating at the top of college football is genuinely rare.",
-    source: "CFP / BCS champions",
+      "Georgia, Texas, and Ohio State all open at 9.5 wins — and not a single SEC team cracked a 10-win total for 2026. The reason is structural: the SEC's new nine-game conference schedule means one more brutal game for everyone.",
+    source: "2026 college football win totals",
     verified: true,
     updated: D,
   },
+  // ---- Awards ----
+  {
+    id: "ncaaf-heisman-carr",
+    category: "Awards",
+    subject: "CJ Carr",
+    logoHint: "ND",
+    market: "Heisman Trophy",
+    line: "+700",
+    book: "DraftKings",
+    nugget:
+      "Carr (Notre Dame) opens as the +700 favorite, but history says respect the field: quarterbacks have won 16 of the last 20 Heismans, yet nobody has ever repeated as a winner except Archie Griffin, back-to-back in ('74-'75) — a record that's now stood 50 years.",
+    source: "Heisman Trust records",
+    verified: true,
+    updated: D,
+  },
+  {
+    id: "ncaaf-heisman-manning",
+    category: "Awards",
+    subject: "Arch Manning",
+    logoHint: "TEX",
+    market: "Heisman Trophy",
+    line: "+800",
+    book: "DraftKings",
+    nugget:
+      "Arch Manning opens second at +800 — and no Manning has ever won the Heisman. Grandfather Archie finished third in 1970 and Peyton was the runner-up in 1997. Arch carries the family's best shot yet.",
+    source: "Heisman voting history",
+    verified: true,
+    updated: D,
+  },
+  {
+    id: "ncaaf-heisman-smith",
+    category: "Awards",
+    subject: "Jeremiah Smith",
+    logoHint: "OSU",
+    market: "Heisman Trophy",
+    line: "+1400",
+    book: "DraftKings",
+    nugget:
+      "Ohio State's Jeremiah Smith is the best non-QB on the board at +1400. He'd be bucking history hard: before DeVonta Smith in 2020, no wide receiver had won the Heisman since Desmond Howard in 1991.",
+    source: "Heisman winners by position",
+    verified: true,
+    updated: D,
+  },
+  // ---- Conference ----
   {
     id: "ncaaf-sec-title",
+    category: "Conference",
+    subject: "Texas Longhorns",
+    logoHint: "TEX",
+    market: "SEC Championship",
+    line: "+300",
+    book: "DraftKings",
+    nugget:
+      "Texas (+300) edges Georgia (+350) atop the SEC with Arch Manning back under center. Georgia is chasing history it already made once — its back-to-back national titles in ('21-'22) were the first repeat champion since Alabama in ('11-'12).",
+    source: "2026 SEC title odds; CFP champions",
+    verified: true,
+    updated: D,
+  },
+  {
+    id: "ncaaf-bigten-title",
+    category: "Conference",
+    subject: "Ohio State Buckeyes",
+    logoHint: "OSU",
+    market: "Big Ten Championship",
+    line: "+180",
+    book: "DraftKings",
+    nugget:
+      "Ohio State opens the clear Big Ten favorite at +180 with Julian Sayin and star WR Jeremiah Smith back. Reigning champ Indiana (+250) is close behind — the Hoosiers stunned the sport in '25 and now have to prove it wasn't a one-off.",
+    source: "2026 Big Ten title odds",
+    verified: true,
+    updated: D,
+  },
+  // ---- Championship ----
+  {
+    id: "ncaaf-natl-osu",
     category: "Championship",
-    subject: "SEC Field",
+    subject: "Ohio State Buckeyes",
+    logoHint: "OSU",
+    market: "National Championship",
+    line: "+600",
+    book: "DraftKings",
+    nugget:
+      "Ohio State opens as the +600 national-title favorite — one year after Indiana shocked college football, going a perfect 16-0 to win its first-ever championship and become just the third 16-0 champion in history, joining 1894 Yale and 2019 North Dakota State.",
+    source: "2026 national title odds; 2025 CFP",
+    verified: true,
+    updated: D,
+  },
+  {
+    id: "ncaaf-natl-conference",
+    category: "Championship",
+    subject: "Big Ten vs. SEC",
     market: "National Championship",
     line: "Conference futures",
     book: "DraftKings",
     nugget:
-      "Since 2006, SEC teams have won more national championships than the rest of the FBS combined — the single biggest reason SEC contenders carry shorter title odds than anyone else.",
+      "Since 2006, SEC programs have won more national titles than the rest of the FBS combined — yet the last two crowns both went to the Big Ten: Ohio State ('24) and Indiana ('25). The board reflects the shift, with Big Ten teams holding three of the four shortest title prices.",
     source: "National championship history",
     verified: true,
     updated: D,

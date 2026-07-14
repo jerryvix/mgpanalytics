@@ -4,12 +4,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trendingFor, TrendingBet, BetCategory } from "@/data/trendingBets";
 
-const CATEGORY_ORDER: BetCategory[] = ["Win Totals", "Awards", "Division", "Championship", "Game Props"];
+const CATEGORY_ORDER: BetCategory[] = [
+  "Win Totals",
+  "Awards",
+  "Division",
+  "Conference",
+  "Championship",
+  "Game Props",
+];
 
 const CATEGORY_META: Record<BetCategory, { icon: typeof Trophy; label: string }> = {
   "Win Totals": { icon: TrendingUp, label: "Season Win Totals" },
   Awards: { icon: Trophy, label: "Award Races" },
   Division: { icon: Target, label: "Division Odds" },
+  Conference: { icon: Trophy, label: "Conference Championships" },
   Championship: { icon: Trophy, label: "Championship Futures" },
   "Game Props": { icon: Target, label: "Game Props" },
 };
