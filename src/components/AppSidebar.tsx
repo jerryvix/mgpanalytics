@@ -87,7 +87,15 @@ const sportsMenuItems = [
     ]
   },
   { title: "NCAAF", url: "/dashboard/ncaaf", logo: "/logos/ncaa.png" },
-  { title: "MLB", url: "/dashboard/mlb", logo: "/logos/mlb.png" },
+  {
+    title: "MLB",
+    url: "/dashboard/mlb",
+    logo: "/logos/mlb.png",
+    subItems: [
+      { title: "Games", url: "/dashboard/mlb" },
+      { title: "Players", url: "/dashboard/mlb/players" },
+    ]
+  },
 ];
 
 // Community menu items

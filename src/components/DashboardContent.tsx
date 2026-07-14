@@ -13,6 +13,7 @@ import NBAPlayers from "@/pages/NBAPlayers";
 // NCAABPlayers removed — no props data available for NCAAB
 // PlayerProfile import removed with NCAAB players routes
 import NBAPlayerDetailPage from "@/pages/NBAPlayerDetailPage";
+import MLBPlayers from "@/pages/MLBPlayers";
 import CappersDirectory from "@/pages/CappersDirectory";
 import {
   SharpsPage,
@@ -33,7 +34,7 @@ interface DashboardContentProps {
 
 export function DashboardContent({ isAdmin }: DashboardContentProps) {
   const location = useLocation();
-  const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab)/.test(location.pathname);
+  const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab|mlb)/.test(location.pathname);
 
   return (
     <div className="p-4 pb-20 md:p-6 md:pb-6">
@@ -49,6 +50,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="nba/players" element={<NBAPlayers />} />
         <Route path="nba/players/:playerId" element={<NBAPlayerDetailPage />} />
         <Route path="mlb" element={<ComingSoon sport="MLB" emoji="⚾" />} />
+        <Route path="mlb/players" element={<MLBPlayers />} />
         <Route path="ncaaf" element={<ComingSoon sport="NCAAF" emoji="🏈" />} />
         <Route path="ncaab" element={<NCAABSlate />} />
         {/* NCAAB players routes removed — no props data available */}
