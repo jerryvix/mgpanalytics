@@ -273,7 +273,11 @@ Deno.serve(async (req) => {
 
     // Step 2: Get skill-position NFL players from DB to map external_id to internal id
     // Only sync stats for bet-relevant positions — reduces API volume ~60%
-    const SKILL_POSITIONS = ["QB", "RB", "WR", "TE", "FB"];
+    // Roster sync stores full position names; accept abbreviations too
+    const SKILL_POSITIONS = [
+      "QB", "RB", "WR", "TE", "FB",
+      "Quarterback", "Running Back", "Wide Receiver", "Tight End", "Fullback",
+    ];
     const { data: players, error: playersError } = await supabase
       .from("players")
       .select("id, external_id")
