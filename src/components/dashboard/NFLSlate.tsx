@@ -8,6 +8,7 @@ import { Loader2, Signal, TrendingUp, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
+import { TrendingNow } from "@/components/dashboard/TrendingNow";
 
 interface Game {
   id: number;
@@ -174,6 +175,7 @@ export function NFLSlate() {
 
   return (
     <div className="space-y-6">
+      <TrendingNow sport="NFL" />
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
