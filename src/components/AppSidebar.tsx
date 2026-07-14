@@ -67,6 +67,7 @@ const sportsMenuItems = [
     subItems: [
       { title: "Games", url: "/dashboard/nfl" },
       { title: "Players", url: "/dashboard/nfl/players" },
+      { title: "Trending Bets", url: "/dashboard/nfl/trending" },
     ]
   },
   { 
@@ -86,7 +87,15 @@ const sportsMenuItems = [
       { title: "Games", url: "/dashboard/ncaab" },
     ]
   },
-  { title: "NCAAF", url: "/dashboard/ncaaf", logo: "/logos/ncaa.png" },
+  {
+    title: "NCAAF",
+    url: "/dashboard/ncaaf",
+    logo: "/logos/ncaa.png",
+    subItems: [
+      { title: "Games", url: "/dashboard/ncaaf" },
+      { title: "Trending Bets", url: "/dashboard/ncaaf/trending" },
+    ]
+  },
   {
     title: "MLB",
     url: "/dashboard/mlb",

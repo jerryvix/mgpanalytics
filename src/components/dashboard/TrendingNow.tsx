@@ -159,7 +159,7 @@ export function TrendingNow({ sport }: TrendingNowProps) {
         <div className="flex items-center gap-2">
           <span className="text-lg" role="img" aria-label="chart increasing">📈</span>
           <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-foreground">
-            Trending Now
+            Line Movement
           </h2>
           <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
             Where the market is moving

@@ -4,6 +4,7 @@ import { NFLSlate } from "@/components/dashboard/NFLSlate";
 import { NBASlate } from "@/components/dashboard/NBASlate";
 import { NCAABSlate } from "@/components/dashboard/NCAABSlate";
 import { NCAAFSlate } from "@/components/dashboard/NCAAFSlate";
+import { TrendingBets } from "@/components/dashboard/TrendingBets";
 import { AdminPanel } from "@/components/dashboard/AdminPanel";
 import SyncObservatory from "@/pages/SyncObservatory";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
@@ -47,12 +48,14 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="nfl/players" element={<NFLPlayers />} />
         <Route path="nfl/players/bdl-:playerId" element={<NFLPlayerDetail />} />
         <Route path="nfl/players/:playerId" element={<NFLPlayerDetail />} />
+        <Route path="nfl/trending" element={<TrendingBets sport="NFL" />} />
         <Route path="nba" element={<NBASlate />} />
         <Route path="nba/players" element={<NBAPlayers />} />
         <Route path="nba/players/:playerId" element={<NBAPlayerDetailPage />} />
         <Route path="mlb" element={<ComingSoon sport="MLB" emoji="⚾" />} />
         <Route path="mlb/players" element={<MLBPlayers />} />
         <Route path="ncaaf" element={<NCAAFSlate />} />
+        <Route path="ncaaf/trending" element={<TrendingBets sport="NCAAF" />} />
         <Route path="ncaab" element={<NCAABSlate />} />
         {/* NCAAB players routes removed — no props data available */}
         <Route path="profile" element={<Profile />} />
