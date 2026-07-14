@@ -8,6 +8,7 @@ import { Loader2, Signal, TrendingUp, Trophy, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
+import { OffseasonBanner } from "@/components/dashboard/OffseasonBanner";
 
 interface Game {
   id: string;
@@ -202,6 +203,7 @@ export function NCAABSlate() {
 
   return (
     <div className="space-y-6">
+      <OffseasonBanner sport="NCAAB" />
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

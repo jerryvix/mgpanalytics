@@ -121,9 +121,11 @@ serve(async (req) => {
       api_source: "espn",
     });
 
-    // Calculate date range: now to +7 days (Saturday games focus)
+    // Calculate date range: now to +45 days — wide enough to load the upcoming
+    // season's early slate during preseason, and the coming weeks in-season
+    const LOOKAHEAD_DAYS = 60;
     const now = new Date();
-    const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const windowEnd = new Date(now.getTime() + LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
 
     // Fetch AP Top 25 rankings
     const rankedTeams: RankedTeam[] = [];
@@ -151,9 +153,9 @@ serve(async (req) => {
       console.error("Error fetching NCAAF rankings:", err);
     }
 
-    // Get next 7 days of dates
+    // Get dates across the lookahead window
     const dates: string[] = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i <= LOOKAHEAD_DAYS; i++) {
       const date = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
       dates.push(date.toISOString().split("T")[0].replace(/-/g, ""));
     }
@@ -181,13 +183,13 @@ serve(async (req) => {
       }
     }
 
-    // Filter games within 7-day window
+    // Filter games within the lookahead window
     const upcomingGames = allGames.filter((game) => {
       const gameDate = new Date(game.date);
-      return gameDate >= now && gameDate <= in7Days;
+      return gameDate >= now && gameDate <= windowEnd;
     });
 
-    console.log(`Filtered to ${upcomingGames.length} games in 7-day window`);
+    console.log(`Filtered to ${upcomingGames.length} games in ${LOOKAHEAD_DAYS}-day window`);
 
     // Process games
     const processedGames = upcomingGames.map((game) => {
@@ -204,10 +206,13 @@ serve(async (req) => {
       const homeScore = homeTeam?.score ? parseInt(homeTeam.score) : null;
       const awayScore = awayTeam?.score ? parseInt(awayTeam.score) : null;
 
+      // Season labeled by end-year, derived from the game's own date so
+      // preseason fetches of next season's games get the right label
+      const gameDate = new Date(game.date);
       return {
         external_id: `espn_ncaaf_${game.id}`,
         date: game.date,
-        season: now.getMonth() >= 8 ? now.getFullYear() + 1 : now.getFullYear(),
+        season: gameDate.getMonth() >= 7 ? gameDate.getFullYear() + 1 : gameDate.getFullYear(),
         status: game.status?.type?.name || "scheduled",
         home_team_name: homeTeam?.team?.displayName || homeTeam?.team?.name || "TBD",
         visitor_team_name: awayTeam?.team?.displayName || awayTeam?.team?.name || "TBD",
@@ -224,19 +229,12 @@ serve(async (req) => {
       };
     });
 
-    // Separate ranked and non-ranked games
+    // Sync the full slate; ranked matchups keep their is_featured flag so the
+    // UI can spotlight them (preseason has no AP poll yet — don't drop games)
     const rankedGames = processedGames.filter(
       (g) => (g.home_team_rank && g.home_team_rank <= 25) || (g.visitor_team_rank && g.visitor_team_rank <= 25)
     );
-    const featuredCandidates = processedGames.filter(
-      (g) => !rankedGames.includes(g)
-    );
-
-    // If no ranked games, pick top 5 featured
-    let gamesToSync = rankedGames;
-    if (rankedGames.length === 0 && featuredCandidates.length > 0) {
-      gamesToSync = featuredCandidates.slice(0, 5).map((g) => ({ ...g, is_featured: true }));
-    }
+    const gamesToSync = processedGames;
 
     console.log(`Syncing ${gamesToSync.length} games (${rankedGames.length} ranked)`);
 

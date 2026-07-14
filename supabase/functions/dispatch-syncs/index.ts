@@ -62,7 +62,7 @@ function isSportInSeason(sport: string): boolean {
     case "NFL":   return month >= 7 || month <= 1;   // Aug–Feb (preseason prep through Super Bowl)
     case "NBA":   return month >= 9 || month <= 5;    // Oct–Jun
     case "NCAAB": return month >= 10 || month <= 3;   // Nov–Apr (March Madness)
-    case "NCAAF": return month >= 7 || month <= 0;    // Aug–Jan (bowls)
+    case "NCAAF": return month >= 6 || month <= 0;    // Jul–Jan (preseason schedule prep through bowls)
     case "MLB":   return month >= 2 && month <= 10;   // Mar–Nov (spring training thru WS)
     case "ALL":   return true;                        // Cross-sport syncs always run
     default:      return true;

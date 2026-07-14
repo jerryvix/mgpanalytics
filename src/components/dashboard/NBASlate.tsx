@@ -6,6 +6,7 @@ import { Loader2, Signal, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, isAfter, isBefore, addHours, getHours } from "date-fns";
 import { NBAGameCard, GamePreviewModal, NBASlateFilters, SortOption, FilterOption } from "@/components/nba";
+import { OffseasonBanner } from "@/components/dashboard/OffseasonBanner";
 
 interface Game {
   id: string;
@@ -233,6 +234,7 @@ export function NBASlate() {
 
   return (
     <div className="space-y-6">
+      <OffseasonBanner sport="NBA" />
       {/* Header with Filters */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

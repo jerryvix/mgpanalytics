@@ -243,8 +243,11 @@ Deno.serve(async (req) => {
       api_source: "balldontlie",
     });
 
-    // Parse request body for season parameter
-    let season = 2024;
+    // Parse request body for season parameter. Default: the current season
+    // once games begin (Sep+), else the most recently completed one
+    // (BDL NFL seasons are labeled by start year)
+    const nowDate = new Date();
+    let season = nowDate.getMonth() >= 8 ? nowDate.getFullYear() : nowDate.getFullYear() - 1;
     try {
       const body = await req.json();
       if (body.season) {
