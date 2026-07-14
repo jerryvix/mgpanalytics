@@ -24,6 +24,7 @@ interface NFLGame {
 
 interface BallDontLieResponse {
   data: NFLGame[];
+  meta?: { next_cursor?: number | string | null };
 }
 
 // The Odds API types
@@ -176,58 +177,67 @@ Deno.serve(async (req) => {
     console.log(`[sync-nfl-games] Season: ${nflDbSeason}`);
 
     // ===== STEP 1: Fetch games from BallDontLie =====
-    const gamesParams = new URLSearchParams({
-      "seasons[]": String(nflDbSeason),
-      "postseason": "true",
-    });
+    // Full season (regular + postseason), paginated via cursor.
+    const allSeasonGames: NFLGame[] = [];
+    let cursor: string | null = null;
 
-    const gamesUrl = `https://api.balldontlie.io/nfl/v1/games?${gamesParams.toString()}`;
-    console.log("Fetching postseason games from:", gamesUrl);
+    do {
+      const gamesParams = new URLSearchParams({
+        "seasons[]": String(nflDbSeason),
+        "per_page": "100",
+      });
+      if (cursor) gamesParams.set("cursor", cursor);
 
-    const gamesResponse = await fetch(gamesUrl, {
-      method: "GET",
-      headers: {
-        "Authorization": ballDontLieApiKey,
-        "Content-Type": "application/json",
-      },
-    });
+      const gamesUrl = `https://api.balldontlie.io/nfl/v1/games?${gamesParams.toString()}`;
 
-    if (!gamesResponse.ok) {
-      const errorText = await gamesResponse.text();
-      console.error("BallDontLie API error:", gamesResponse.status, errorText);
-      
-      if (gamesResponse.status === 401) {
-        throw new Error("Authorization failed - check API key");
+      const gamesResponse = await fetch(gamesUrl, {
+        method: "GET",
+        headers: {
+          "Authorization": ballDontLieApiKey,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!gamesResponse.ok) {
+        const errorText = await gamesResponse.text();
+        console.error("BallDontLie API error:", gamesResponse.status, errorText);
+
+        if (gamesResponse.status === 401) {
+          throw new Error("Authorization failed - check API key");
+        }
+        throw new Error(`Failed to fetch games: ${gamesResponse.status} ${gamesResponse.statusText}`);
       }
-      throw new Error(`Failed to fetch games: ${gamesResponse.status} ${gamesResponse.statusText}`);
-    }
 
-    const gamesData: BallDontLieResponse = await gamesResponse.json();
-    console.log(`Fetched ${gamesData.data?.length || 0} postseason games from BallDontLie`);
+      const gamesData: BallDontLieResponse = await gamesResponse.json();
+      allSeasonGames.push(...(gamesData.data || []));
+      cursor = gamesData.meta?.next_cursor != null ? String(gamesData.meta.next_cursor) : null;
+    } while (cursor);
 
-    if (!gamesData.data || gamesData.data.length === 0) {
-      console.log("No postseason games found");
+    console.log(`Fetched ${allSeasonGames.length} season ${nflDbSeason} games from BallDontLie`);
+
+    if (allSeasonGames.length === 0) {
+      console.log(`No games found for season ${nflDbSeason}`);
       return new Response(
-        JSON.stringify({ success: true, gamesCount: 0, oddsCount: 0, message: "No postseason games found" }),
+        JSON.stringify({ success: true, gamesCount: 0, oddsCount: 0, message: `No games found for season ${nflDbSeason}` }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
     // Transform and upsert games (UPSERT handles duplicates via onConflict)
-    const gamesToUpsert = gamesData.data.map((game) => ({
+    const gamesToUpsert = allSeasonGames.map((game) => ({
       id: game.id,
       league: "NFL",
       season: nflDbSeason,
       week: game.week || null,
       date: game.date,
       status: game.status,
-      postseason: true,
+      postseason: game.postseason ?? false,
       home_team_name: game.home_team?.full_name || "Unknown",
       visitor_team_name: game.visitor_team?.full_name || "Unknown",
       external_id: `nfl_${game.id}`,
     }));
 
-    console.log(`Upserting ${gamesToUpsert.length} postseason games...`);
+    console.log(`Upserting ${gamesToUpsert.length} games...`);
 
     const { error: upsertGamesError } = await supabase
       .from("games")
@@ -238,7 +248,7 @@ Deno.serve(async (req) => {
       throw new Error(`Database error: ${upsertGamesError.message}`);
     }
 
-    console.log(`Successfully upserted ${gamesToUpsert.length} postseason games`);
+    console.log(`Successfully upserted ${gamesToUpsert.length} games`);
 
     // ===== STEP 2: Fetch odds from The Odds API =====
     let oddsCount = 0;

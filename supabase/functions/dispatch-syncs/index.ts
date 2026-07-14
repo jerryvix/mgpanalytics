@@ -59,7 +59,7 @@ const STAGGER_DELAY_MS = 3000;
 function isSportInSeason(sport: string): boolean {
   const month = new Date().getMonth(); // 0=Jan, 11=Dec
   switch (sport) {
-    case "NFL":   return month >= 8 || month <= 0;   // Sep–Jan (Super Bowl is late Jan/early Feb)
+    case "NFL":   return month >= 7 || month <= 1;   // Aug–Feb (preseason prep through Super Bowl)
     case "NBA":   return month >= 9 || month <= 5;    // Oct–Jun
     case "NCAAB": return month >= 10 || month <= 3;   // Nov–Apr (March Madness)
     case "NCAAF": return month >= 7 || month <= 0;    // Aug–Jan (bowls)

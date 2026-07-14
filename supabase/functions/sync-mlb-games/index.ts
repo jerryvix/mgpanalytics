@@ -120,13 +120,14 @@ serve(async (req) => {
       api_source: "espn",
     });
 
-    // Calculate date range: now to +24 hours
+    // Date range: -2 days (to finalize scores of recently completed games) to +24 hours
     const now = new Date();
     const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
 
-    // Get today and tomorrow dates
+    // Fetch two days back through tomorrow
     const dates: string[] = [];
-    for (let i = 0; i < 2; i++) {
+    for (let i = -2; i < 2; i++) {
       const date = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
       dates.push(date.toISOString().split("T")[0].replace(/-/g, ""));
     }
@@ -154,13 +155,13 @@ serve(async (req) => {
       }
     }
 
-    // Filter games within 24-hour window
+    // Keep upcoming games (next 24h) plus recent games (last 2 days) so final scores get captured
     const upcomingGames = allGames.filter((game) => {
       const gameDate = new Date(game.date);
-      return gameDate >= now && gameDate <= in24Hours;
+      return gameDate >= twoDaysAgo && gameDate <= in24Hours;
     });
 
-    console.log(`Filtered to ${upcomingGames.length} games in 24-hour window`);
+    console.log(`Filtered to ${upcomingGames.length} games in -48h/+24h window`);
 
     // Process games
     const gamesToUpsert = upcomingGames.map((game) => {
@@ -208,7 +209,7 @@ serve(async (req) => {
       const { data: insertedData, error: insertError } = await supabase
         .from("mlb_games")
         .upsert(gamesToUpsert, { onConflict: "external_id" })
-        .select("id, home_team_name, visitor_team_name");
+        .select("id, home_team_name, visitor_team_name, date");
 
       if (insertError) {
         console.error("Error inserting games:", insertError);
@@ -240,8 +241,14 @@ serve(async (req) => {
               total_under_odds: number | null;
             }> = [];
 
+            // Only match odds against upcoming games — past games from the score-update
+            // window would otherwise steal odds during multi-game series
+            const upcomingInserted = insertedData.filter(
+              (g) => g.date && new Date(g.date) >= now
+            );
+
             for (const oddsGame of oddsData) {
-              const matchedGame = insertedData.find((g) => {
+              const matchedGame = upcomingInserted.find((g) => {
                 const homeMatch =
                   g.home_team_name.toLowerCase().includes(oddsGame.home_team.toLowerCase().split(" ").pop()) ||
                   oddsGame.home_team.toLowerCase().includes(g.home_team_name.toLowerCase().split(" ").pop());

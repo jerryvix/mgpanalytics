@@ -89,7 +89,7 @@ const Index = () => {
             SYSTEM ONLINE
           </span>
           <span className="text-border">|</span>
-          <span>NFL • NBA</span>
+          <span>NFL • NCAAF • NBA</span>
           <span className="text-border">|</span>
           <span>{new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }).toUpperCase()}</span>
         </motion.div>
