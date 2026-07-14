@@ -1035,10 +1035,10 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
 
-    if (!GEMINI_API_KEY) {
-      console.error("GEMINI_API_KEY not configured");
+    if (!ANTHROPIC_API_KEY) {
+      console.error("ANTHROPIC_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "Service configuration error" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -1144,48 +1144,47 @@ ${dataPrompt}
 
 REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is missing but related data exists, share that and note the gap. End with an exploration prompt to keep the conversation going.`;
 
-    // Build conversation for Gemini — trim to last 20 messages to balance context vs cost
+    // Build conversation for Claude — trim to last 20 messages to balance context vs cost
     const recentMessages = messages.length > 20 ? messages.slice(-20) : messages;
-    const contents = recentMessages.map((msg) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }],
+    const anthropicMessages = recentMessages.map((msg) => ({
+      role: msg.role === "assistant" ? "assistant" : "user",
+      content: msg.content,
     }));
 
-    // Auto-enable Google Search for FACTUAL and CONTEXTUAL questions so Gemini can fetch
+    // Auto-enable web search for FACTUAL and CONTEXTUAL questions so Claude can fetch
     // current stats, weather, real-time matchup data, and other live information
     const useSearch = webSearchEnabled || questionType === "FACTUAL" || questionType === "CONTEXTUAL";
 
-    // Call Gemini (Google Search grounding enabled for FACTUAL/CONTEXTUAL questions or when user opts in)
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents,
-          systemInstruction: {
-            parts: [{ text: fullSystemInstruction }],
-          },
-          ...(useSearch ? { tools: [{ google_search: {} }] } : {}),
-          generationConfig: {
-            temperature: 0.4, // Lower temperature for more factual
-            maxOutputTokens: 8192,
-          },
-        }),
-      }
-    );
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 8192,
+        temperature: 0.4,
+        system: fullSystemInstruction,
+        messages: anthropicMessages,
+        ...(useSearch
+          ? { tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }] }
+          : {}),
+      }),
+    });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
-      
+      console.error("Anthropic API error:", response.status, errorText);
+
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
+
       return new Response(
         JSON.stringify({ error: "Failed to get AI response" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -1193,38 +1192,42 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
     }
 
     const data = await response.json();
-    const candidate = data.candidates?.[0];
-    const textContent = candidate?.content?.parts?.find((part: { text?: string }) => part.text);
-    let responseText = textContent?.text || "I couldn't generate a response. Please try again.";
+    const contentBlocks: Array<{ type: string; text?: string; name?: string; citations?: Array<{ type: string; url?: string; title?: string }> }> = data.content || [];
+
+    const textBlocks = contentBlocks.filter((block) => block.type === "text");
+    let responseText =
+      textBlocks.map((b) => b.text ?? "").join("") ||
+      "I couldn't generate a response. Please try again.";
 
     // Detect truncated responses
-    if (candidate?.finishReason === "MAX_TOKENS") {
-      console.warn("[gemini-chat] Response truncated due to MAX_TOKENS");
+    if (data.stop_reason === "max_tokens") {
+      console.warn("[gemini-chat] Response truncated due to max_tokens");
       responseText += "\n\n*Response was trimmed for length. Try asking a more specific question.*";
     }
 
-    // Build sources array from our fetched data + any Google search grounding
-    const responseSources: { title: string; url: string }[] = [];
-    
+    // Build sources array from any web_search citations
     // MGP internal sources are not exposed to the consumer.
-    // Only Google grounding sources (external web results) are shown.
+    // Only web grounding sources (external web results) are shown.
+    const responseSources: { title: string; url: string }[] = [];
+    let webSearchUseCount = 0;
 
-    // Add Google grounding sources if available
-    const groundingMetadata = data.candidates?.[0]?.groundingMetadata;
-    if (groundingMetadata?.groundingChunks) {
-      for (const chunk of groundingMetadata.groundingChunks) {
-        if (chunk.web?.uri && chunk.web?.title) {
-          if (!responseSources.some(s => s.url === chunk.web.uri)) {
+    for (const block of contentBlocks) {
+      if (block.type === "server_tool_use" && block.name === "web_search") {
+        webSearchUseCount++;
+      }
+      if (block.type === "text" && Array.isArray(block.citations)) {
+        for (const citation of block.citations) {
+          if (citation.url && !responseSources.some((s) => s.url === citation.url)) {
             responseSources.push({
-              title: chunk.web.title,
-              url: chunk.web.uri,
+              title: citation.title || citation.url,
+              url: citation.url,
             });
           }
         }
       }
     }
 
-    console.log(`[gemini-chat] Google Search ${useSearch ? "enabled" : "disabled"}, grounding chunks: ${groundingMetadata?.groundingChunks?.length || 0}, sources: ${responseSources.length}`);
+    console.log(`[gemini-chat] Web search ${useSearch ? "enabled" : "disabled"}, queries: ${webSearchUseCount}, sources: ${responseSources.length}`);
 
     return new Response(
       JSON.stringify({
