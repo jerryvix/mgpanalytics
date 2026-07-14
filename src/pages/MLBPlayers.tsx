@@ -103,9 +103,9 @@ async function loadMlbPlayers() {
     for (const p of props || []) propIds.add(p.player_id);
   }
 
-  // Hit-streak rows
+  // Hit-streak rows — 5+ games qualifies as a genuine "hot" streak
   const streaks: HitStreakRow[] = stats
-    .filter((s) => (s.hit_streak ?? 0) > 0)
+    .filter((s) => (s.hit_streak ?? 0) >= 5)
     .map((s) => {
       const p = players!.find((pp) => pp.id === s.player_id)!;
       const next = p?.team_name ? nextByTeam.get(p.team_name) : undefined;
