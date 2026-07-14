@@ -9,8 +9,8 @@ const corsHeaders = {
 // Base URL for NFL API
 const NFL_BASE_URL = "https://api.balldontlie.io/nfl/v1";
 
-// Rate limiting delay (100ms between calls)
-const RATE_LIMIT_DELAY = 100;
+// Rate limiting delay between calls — generous so trial/lower BDL tiers don't 429
+const RATE_LIMIT_DELAY = 1100;
 let lastCallTime = 0;
 
 async function rateLimitedDelay(): Promise<void> {
@@ -40,13 +40,26 @@ async function bdlFetch(
   }
 
   console.log(`[Sync NFL Players] Fetching: ${url.toString()}`);
-  
-  const response = await fetch(url.toString(), {
-    headers: {
-      "Authorization": apiKey,
-      "Content-Type": "application/json",
-    },
-  });
+
+  // Retry on 429 with backoff — BDL trial tiers have low rate limits
+  const MAX_RETRIES = 4;
+  let response: Response;
+  for (let attempt = 0; ; attempt++) {
+    response = await fetch(url.toString(), {
+      headers: {
+        "Authorization": apiKey,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.status !== 429 || attempt >= MAX_RETRIES) break;
+
+    const retryAfter = parseInt(response.headers.get("retry-after") || "0", 10);
+    const waitMs = retryAfter > 0 ? retryAfter * 1000 : Math.min(15000 * 2 ** attempt, 60000);
+    console.log(`[Sync NFL Players] 429 rate limited, waiting ${waitMs}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
+    await response.body?.cancel();
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
