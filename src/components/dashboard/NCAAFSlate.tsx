@@ -1,0 +1,429 @@
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Loader2, Signal, TrendingUp, Trophy, Star } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { format, parseISO, differenceInCalendarDays } from "date-fns";
+import { PublicBettingPreview } from "@/components/PublicBettingPreview";
+
+interface Game {
+  id: string;
+  home_team_name: string;
+  visitor_team_name: string;
+  status: string;
+  date: string;
+  venue: string | null;
+  home_team_rank: number | null;
+  visitor_team_rank: number | null;
+  is_featured: boolean;
+}
+
+interface Odd {
+  id: string;
+  game_id: string;
+  sportsbook: string;
+  spread_value: number | null;
+  spread_odds: number | null;
+  moneyline_home: number | null;
+  moneyline_away: number | null;
+  total_value: number | null;
+  total_over_odds: number | null;
+  total_under_odds: number | null;
+}
+
+type GameOddsMap = Record<string, Odd | null>;
+
+const SPORTSBOOKS = ["draftkings", "fanduel", "caesars", "betrivers"];
+const SPORTSBOOK_LABELS: Record<string, string> = {
+  draftkings: "DraftKings",
+  fanduel: "FanDuel",
+  caesars: "Caesars",
+  betrivers: "BetRivers",
+};
+
+export function NCAAFSlate() {
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [allOdds, setAllOdds] = useState<Odd[]>([]);
+  const [oddsLoading, setOddsLoading] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
+
+  useEffect(() => {
+    fetchGames();
+  }, []);
+
+  const fetchGames = async () => {
+    setLoading(true);
+    const now = new Date();
+
+    // NCAAF is weekly — show the next up-to-30 upcoming matchups regardless of
+    // how far out, so the slate is never falsely empty on a non-gameday.
+    const { data: gamesData, error: gamesError } = await supabase
+      .from("ncaaf_games")
+      .select("*")
+      .gte("date", now.toISOString())
+      .order("date", { ascending: true })
+      .limit(30);
+
+    if (gamesError) {
+      console.error("Error fetching NCAAF games:", gamesError);
+      setLoading(false);
+      return;
+    }
+
+    const upcomingGames = (gamesData || []).filter(
+      (game) => !game.status?.toLowerCase().startsWith("final")
+    );
+    setGames(upcomingGames as unknown as Game[]);
+
+    if (upcomingGames.length > 0) {
+      const gameIds = upcomingGames.map((g) => g.id);
+      const { data: oddsData } = await supabase
+        .from("ncaaf_odds")
+        .select("*")
+        .in("game_id", gameIds)
+        .ilike("sportsbook", "%draftkings%");
+      const oddsMap: GameOddsMap = {};
+      (oddsData || []).forEach((odd) => (oddsMap[odd.game_id] = odd));
+      setGameOddsMap(oddsMap);
+    }
+
+    setLoading(false);
+  };
+
+  const handleViewAllOdds = async (game: Game, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedGame(game);
+    setSheetOpen(true);
+    setOddsLoading(true);
+    setAllOdds([]);
+    const { data } = await supabase
+      .from("ncaaf_odds")
+      .select("*")
+      .eq("game_id", game.id)
+      .in("sportsbook", SPORTSBOOKS);
+    setAllOdds(data || []);
+    setOddsLoading(false);
+  };
+
+  const formatGameDate = (dateString: string) => {
+    try {
+      const date = parseISO(dateString);
+      const days = differenceInCalendarDays(date, new Date());
+      const time = format(date, "EEE MMM d, h:mm a");
+      if (days <= 0) return `Today · ${format(date, "h:mm a")}`;
+      if (days === 1) return `Tomorrow · ${format(date, "h:mm a")}`;
+      return time;
+    } catch {
+      return dateString;
+    }
+  };
+
+  const getStatusBadge = (status: string, isRanked: boolean, isFeatured: boolean) => {
+    const statusLower = (status || "").toLowerCase();
+    if (statusLower.includes("progress") || statusLower === "live") {
+      return (
+        <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green text-[10px] font-mono animate-pulse">
+          LIVE
+        </Badge>
+      );
+    }
+    if (isRanked) {
+      return (
+        <Badge className="bg-terminal-amber/20 text-terminal-amber border-terminal-amber/50 text-[10px] font-mono">
+          <Trophy className="w-3 h-3 mr-1" />
+          RANKED
+        </Badge>
+      );
+    }
+    if (isFeatured) {
+      return (
+        <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/50 text-[10px] font-mono">
+          <Star className="w-3 h-3 mr-1" />
+          FEATURED
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-terminal-amber/10 text-terminal-amber border-terminal-amber/50 text-[10px] font-mono">
+        SCHEDULED
+      </Badge>
+    );
+  };
+
+  const formatPrice = (price: number | null) => {
+    if (price === null) return "N/A";
+    return price >= 0 ? `+${price}` : `${price}`;
+  };
+  const formatLine = (line: number | null) => {
+    if (line === null) return "N/A";
+    return line >= 0 ? `+${line}` : `${line}`;
+  };
+  const formatRank = (rank: number | null) => {
+    if (!rank || rank > 25) return null;
+    return `#${rank}`;
+  };
+  const getOddsBySportsbook = (sportsbook: string): Odd | undefined =>
+    allOdds.find((o) => o.sportsbook.toLowerCase().includes(sportsbook));
+
+  const rankedGamesCount = games.filter(
+    (g) => g.home_team_rank !== null || g.visitor_team_rank !== null
+  ).length;
+
+  return (
+    <div className="space-y-6">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between"
+      >
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-wide font-mono">NCAAF SLATE</h1>
+          <p className="text-sm text-muted-foreground font-mono">Upcoming College Football Matchups</p>
+        </div>
+        <Badge variant="outline" className="border-terminal-amber text-terminal-amber font-mono">
+          {rankedGamesCount > 0 ? `${rankedGamesCount} RANKED` : `${games.length} GAMES`}
+        </Badge>
+      </motion.div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-terminal-amber" />
+          <span className="ml-2 font-mono text-muted-foreground">LOADING FEED...</span>
+        </div>
+      ) : games.length === 0 ? (
+        <Card className="bg-card border-terminal-amber/30">
+          <CardContent className="py-12 text-center font-mono">
+            <Signal className="w-8 h-8 mx-auto mb-4 text-terminal-amber" />
+            <p className="text-foreground">No upcoming matchups scheduled yet</p>
+            <p className="text-xs text-muted-foreground mt-2">
+              The schedule fills in as the season approaches — check back soon.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
+        >
+          {games.map((game, index) => {
+            const dkOdds = gameOddsMap[game.id];
+            const isRanked = game.home_team_rank !== null || game.visitor_team_rank !== null;
+            return (
+              <motion.div
+                key={game.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+              >
+                <Card className="bg-card border-terminal-amber/30 hover:border-terminal-amber/60 transition-all">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
+                        {formatGameDate(game.date)}
+                      </span>
+                      {getStatusBadge(game.status, isRanked, game.is_featured)}
+                    </div>
+
+                    {/* Matchup — away team first */}
+                    <div className="font-mono text-base text-foreground mb-4">
+                      <div className="flex items-center gap-2">
+                        {formatRank(game.visitor_team_rank) && (
+                          <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
+                            {formatRank(game.visitor_team_rank)}
+                          </Badge>
+                        )}
+                        <span className="font-bold">{game.visitor_team_name}</span>
+                      </div>
+                      <span className="text-terminal-amber mx-2 text-sm">@</span>
+                      <div className="flex items-center gap-2">
+                        {formatRank(game.home_team_rank) && (
+                          <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
+                            {formatRank(game.home_team_rank)}
+                          </Badge>
+                        )}
+                        <span className="font-bold">{game.home_team_name}</span>
+                      </div>
+                    </div>
+
+                    {game.venue && (
+                      <p className="text-[10px] text-muted-foreground font-mono mb-3">📍 {game.venue}</p>
+                    )}
+
+                    {dkOdds ? (
+                      <div className="bg-terminal-green/5 border border-terminal-green/20 rounded-lg p-3 mb-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="w-3 h-3 text-terminal-green" />
+                          <span className="font-mono text-[10px] text-terminal-green uppercase tracking-wider">
+                            DraftKings Odds
+                          </span>
+                        </div>
+                        <div className="space-y-2 font-mono text-xs">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">SPREAD:</span>
+                            <span className="text-foreground">
+                              {dkOdds.spread_value !== null ? (
+                                <>
+                                  {game.home_team_name.split(" ").pop()} {formatLine(dkOdds.spread_value)}{" "}
+                                  <span className="text-terminal-green">({formatPrice(dkOdds.spread_odds)})</span>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground">TOTAL:</span>
+                            <span className="text-foreground">
+                              {dkOdds.total_value !== null ? (
+                                <>
+                                  <span className="text-terminal-amber">{dkOdds.total_value}</span>
+                                  <span className="text-muted-foreground ml-1">
+                                    O ({formatPrice(dkOdds.total_over_odds)}) / U ({formatPrice(dkOdds.total_under_odds)})
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground italic mb-3">*odds post closer to kickoff</p>
+                    )}
+
+                    <PublicBettingPreview
+                      homeTeam={game.home_team_name}
+                      awayTeam={game.visitor_team_name}
+                      gameId={game.id}
+                      sport="NCAAF"
+                    />
+
+                    <Button
+                      onClick={(e) => handleViewAllOdds(game, e)}
+                      className="w-full bg-terminal-amber/20 hover:bg-terminal-amber/30 text-terminal-amber border border-terminal-amber/50 font-mono text-sm mt-2"
+                      variant="outline"
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      View All Odds
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      )}
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="bg-background border-l border-terminal-amber/30 w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader className="flex flex-row items-center justify-between pb-4 border-b border-terminal-amber/20">
+            <SheetTitle className="font-mono text-foreground">
+              {selectedGame && (
+                <div>
+                  <div className="flex items-center gap-2 text-lg">
+                    {formatRank(selectedGame.visitor_team_rank) && (
+                      <Badge className="bg-terminal-amber text-background text-xs">
+                        {formatRank(selectedGame.visitor_team_rank)}
+                      </Badge>
+                    )}
+                    {selectedGame.visitor_team_name}
+                    <span className="text-terminal-amber">@</span>
+                    {formatRank(selectedGame.home_team_rank) && (
+                      <Badge className="bg-terminal-amber text-background text-xs">
+                        {formatRank(selectedGame.home_team_rank)}
+                      </Badge>
+                    )}
+                    {selectedGame.home_team_name}
+                  </div>
+                  <p className="text-xs text-muted-foreground font-normal mt-1">
+                    {formatGameDate(selectedGame.date)}
+                  </p>
+                </div>
+              )}
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-6 space-y-6">
+            {oddsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-5 h-5 animate-spin text-terminal-amber" />
+                <span className="ml-2 font-mono text-sm text-muted-foreground">FETCHING ALL ODDS...</span>
+              </div>
+            ) : allOdds.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic py-6 text-center">
+                *odds post closer to kickoff
+              </p>
+            ) : (
+              SPORTSBOOKS.map((sportsbook) => {
+                const odds = getOddsBySportsbook(sportsbook);
+                return (
+                  <div key={sportsbook} className="border border-terminal-amber/20 rounded-lg overflow-hidden">
+                    <div className="bg-terminal-amber/10 px-4 py-2 border-b border-terminal-amber/20">
+                      <span className="font-mono text-sm font-bold text-terminal-amber">
+                        {SPORTSBOOK_LABELS[sportsbook]}
+                      </span>
+                    </div>
+                    <div className="p-4 space-y-4 bg-card">
+                      {odds ? (
+                        <>
+                          <div>
+                            <h4 className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+                              Spread
+                            </h4>
+                            <div className="font-mono text-sm">
+                              {odds.spread_value !== null ? (
+                                <span>
+                                  {selectedGame?.home_team_name}{" "}
+                                  <span className="text-terminal-amber">{formatLine(odds.spread_value)}</span>
+                                  <span className="text-muted-foreground ml-1">({formatPrice(odds.spread_odds)})</span>
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
+                              Total
+                            </h4>
+                            <div className="font-mono text-sm">
+                              {odds.total_value !== null ? (
+                                <div className="flex justify-between items-center">
+                                  <span>
+                                    O/U <span className="text-terminal-amber">{odds.total_value}</span>
+                                  </span>
+                                  <span>
+                                    Over <span className="text-terminal-green">{formatPrice(odds.total_over_odds)}</span>
+                                    <span className="text-muted-foreground mx-1">|</span>
+                                    Under <span className="text-terminal-amber">{formatPrice(odds.total_under_odds)}</span>
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">N/A</span>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">Odds not available</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </div>
+  );
+}

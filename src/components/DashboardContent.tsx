@@ -3,6 +3,7 @@ import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { NFLSlate } from "@/components/dashboard/NFLSlate";
 import { NBASlate } from "@/components/dashboard/NBASlate";
 import { NCAABSlate } from "@/components/dashboard/NCAABSlate";
+import { NCAAFSlate } from "@/components/dashboard/NCAAFSlate";
 import { AdminPanel } from "@/components/dashboard/AdminPanel";
 import SyncObservatory from "@/pages/SyncObservatory";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
@@ -34,7 +35,7 @@ interface DashboardContentProps {
 
 export function DashboardContent({ isAdmin }: DashboardContentProps) {
   const location = useLocation();
-  const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab|mlb)/.test(location.pathname);
+  const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab|ncaaf|mlb)/.test(location.pathname);
 
   return (
     <div className="p-4 pb-20 md:p-6 md:pb-6">
@@ -51,7 +52,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="nba/players/:playerId" element={<NBAPlayerDetailPage />} />
         <Route path="mlb" element={<ComingSoon sport="MLB" emoji="⚾" />} />
         <Route path="mlb/players" element={<MLBPlayers />} />
-        <Route path="ncaaf" element={<ComingSoon sport="NCAAF" emoji="🏈" />} />
+        <Route path="ncaaf" element={<NCAAFSlate />} />
         <Route path="ncaab" element={<NCAABSlate />} />
         {/* NCAAB players routes removed — no props data available */}
         <Route path="profile" element={<Profile />} />
