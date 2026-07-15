@@ -42,7 +42,7 @@ async function loadFollowedGames(teamFollows: FollowRow[]): Promise<NextGame[]> 
     const list = teams.map((t) => `"${t.replace(/"/g, '')}"`).join(",");
     let q = supabase
       .from(cfg.table as "games")
-      .select("home_team_name, visitor_team_name, date, league")
+      .select("home_team_name, visitor_team_name, date")
       .gte("date", nowIso)
       .or(`home_team_name.in.(${list}),visitor_team_name.in.(${list})`)
       .order("date", { ascending: true })
