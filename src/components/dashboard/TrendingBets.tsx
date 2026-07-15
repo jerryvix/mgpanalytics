@@ -1,8 +1,18 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Lightbulb, TrendingUp, Trophy, Target, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { trendingFor, TrendingBet, BetCategory } from "@/data/trendingBets";
+import { TodaysBoard } from "@/components/dashboard/TodaysBoard";
+
+// Sports with games on the calendar default to Today's Board; offseason
+// sports open on Season Long so the first thing seen is never an empty grid.
+function inSeason(sport: "NFL" | "NCAAF" | "MLB"): boolean {
+  const m = new Date().getMonth(); // 0 = Jan
+  if (sport === "MLB") return m >= 2 && m <= 10;
+  return m >= 7 || m <= 0; // NFL / NCAAF: Aug–Jan
+}
 
 const CATEGORY_ORDER: BetCategory[] = [
   "Win Totals",
@@ -78,6 +88,7 @@ interface TrendingBetsProps {
 }
 
 export function TrendingBets({ sport }: TrendingBetsProps) {
+  const [view, setView] = useState<"board" | "season">(inSeason(sport) ? "board" : "season");
   const bets = trendingFor(sport);
   const byCategory = CATEGORY_ORDER.map((cat) => ({
     cat,
@@ -92,13 +103,32 @@ export function TrendingBets({ sport }: TrendingBetsProps) {
           <span role="img" aria-label="chart increasing">📈</span> {sport} TRENDING BETS
         </h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Season-long markets with an angle most people miss — every bet paired with a verifiable stat
-          that gives it a fresh read. Odds shown are live sportsbook lines; insights are sourced from
-          real history.
+          {view === "board"
+            ? "The day's board: lines, live game state, the sharpest market moves, and verified angles — all in one look."
+            : "Season-long markets with an angle most people miss — every bet paired with a verifiable stat that gives it a fresh read."}
         </p>
       </motion.div>
 
-      {bets.length === 0 ? (
+      {/* Today's Board | Season Long */}
+      <div className="flex gap-2">
+        {([["board", "Today's Board"], ["season", "Season Long"]] as const).map(([v, label]) => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            className={`font-mono text-xs uppercase tracking-wider px-4 py-2 rounded-md border transition-colors ${
+              view === v
+                ? "text-terminal-green border-terminal-green/50 bg-terminal-green/10"
+                : "text-muted-foreground border-border bg-card/50 hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {view === "board" ? (
+        <TodaysBoard sport={sport} />
+      ) : bets.length === 0 ? (
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center text-sm text-muted-foreground font-mono">
             Trending markets load in as {sport} futures boards open. Check back soon.
@@ -126,13 +156,15 @@ export function TrendingBets({ sport }: TrendingBetsProps) {
         })
       )}
 
-      <div className="flex items-start gap-1.5 pt-1">
-        <Info className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
-        <p className="text-[10px] text-muted-foreground leading-relaxed max-w-2xl">
-          Insights reflect historical fact, not predictions — context to inform your own read, not an MGP
-          pick. Once games begin, weekly and in-season prop markets appear here alongside the season-long bets.
-        </p>
-      </div>
+      {view === "season" && (
+        <div className="flex items-start gap-1.5 pt-1">
+          <Info className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
+          <p className="text-[10px] text-muted-foreground leading-relaxed max-w-2xl">
+            Insights reflect historical fact, not predictions — context to inform your own read, not an MGP
+            pick. Once games begin, weekly and in-season prop markets appear here alongside the season-long bets.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
