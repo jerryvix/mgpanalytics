@@ -14,6 +14,7 @@ interface TickerItem {
   text: string;
   teamAbbr?: string; // when present, a small team logo renders before the text
   sport?: string;
+  headshotUrl?: string; // tiny player headshot, when we have one
 }
 
 async function loadTicker(): Promise<TickerItem[]> {
@@ -32,7 +33,10 @@ async function loadTicker(): Promise<TickerItem[]> {
 
   if (streaks && streaks.length) {
     const ids = streaks.map((s) => s.player_id);
-    const { data: players } = await supabase.from("players").select("id, name, team_abbr").in("id", ids);
+    const { data: players } = await supabase
+      .from("players")
+      .select("id, name, team_abbr, headshot_url")
+      .in("id", ids);
     const pmap = new Map((players || []).map((p) => [p.id, p]));
     for (const s of streaks) {
       const p = pmap.get(s.player_id);
@@ -42,6 +46,7 @@ async function loadTicker(): Promise<TickerItem[]> {
         text: `${p.name}${p.team_abbr ? ` (${p.team_abbr})` : ""} — ${s.hit_streak}-game hit streak`,
         teamAbbr: p.team_abbr ?? undefined,
         sport: "MLB",
+        headshotUrl: (p as { headshot_url?: string | null }).headshot_url ?? undefined,
       });
     }
   }
@@ -79,6 +84,15 @@ export function EdgeTicker() {
         {loop.map((it, i) => (
           <span key={i} className="mx-4 inline-flex items-center gap-1.5 font-mono text-xs text-foreground/90">
             <span>{it.icon}</span>
+            {it.headshotUrl && (
+              <img
+                src={it.headshotUrl}
+                alt=""
+                loading="lazy"
+                className="w-5 h-5 rounded-full object-cover bg-muted"
+                onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+              />
+            )}
             {it.teamAbbr && <TeamLogo sport={it.sport ?? "MLB"} name={it.teamAbbr} abbr={it.teamAbbr} size={14} />}
             <span>{it.text}</span>
             <span className="text-terminal-green/40 ml-4">|</span>

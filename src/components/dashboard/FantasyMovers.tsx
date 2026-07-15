@@ -16,6 +16,7 @@ interface Mover {
   delta: number;
   streak: number;
   form: boolean[];
+  headshotUrl: string | null;
 }
 
 // Fantasy/DFS "form edge": hitters producing well above their season line right
@@ -46,7 +47,7 @@ async function loadFormMovers(): Promise<Mover[]> {
 
   const ids = rows.map((r) => r.player_id);
   const [{ data: players }, { data: logs }] = await Promise.all([
-    supabase.from("players").select("id, name, team_abbr").in("id", ids),
+    supabase.from("players").select("id, name, team_abbr, headshot_url").in("id", ids),
     supabase
       .from("player_game_logs")
       .select("player_id, game_date, hits")
@@ -73,6 +74,7 @@ async function loadFormMovers(): Promise<Mover[]> {
         playerId: r.player_id,
         name: p.name,
         team: p.team_abbr,
+        headshotUrl: (p as { headshot_url?: string | null }).headshot_url ?? null,
         seasonAvg: r.seasonAvg,
         formAvg: r.formAvg,
         delta: r.formAvg - r.seasonAvg,
@@ -113,6 +115,15 @@ export function FantasyMovers() {
               to={`/dashboard/mlb/players/${m.playerId}`}
               className={`flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 hover:border-terminal-green/40 group ${hoverLift}`}
             >
+              {m.headshotUrl && (
+                <img
+                  src={m.headshotUrl}
+                  alt={m.name}
+                  loading="lazy"
+                  className="w-9 h-9 rounded-full object-cover bg-muted shrink-0"
+                  onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+                />
+              )}
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 font-semibold text-foreground text-sm truncate group-hover:text-terminal-green transition-colors">
                   <span className="truncate">{m.name}</span>
