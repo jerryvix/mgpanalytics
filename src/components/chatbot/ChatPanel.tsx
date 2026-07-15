@@ -499,6 +499,9 @@ export function ChatPanel() {
             <Send className="w-5 h-5" />
           </Button>
         </div>
+        <p className="mt-1.5 text-[10px] text-muted-foreground text-center">
+          MGP is AI driven and can make mistakes. Please double-check responses.
+        </p>
       </div>
     </div>
   );
@@ -691,6 +694,9 @@ export function ChatPanel() {
                     <Send className="w-5 h-5" />
                   </Button>
                 </div>
+                <p className="mt-1.5 text-[10px] text-muted-foreground text-center">
+                  MGP is AI driven and can make mistakes. Please double-check responses.
+                </p>
               </div>
             </div>
           </motion.div>

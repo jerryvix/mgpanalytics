@@ -529,6 +529,9 @@ export function DashboardHome() {
               <ArrowRight className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
           </div>
+          <p className="mt-2 text-[10px] text-muted-foreground text-center">
+            MGP is AI driven and can make mistakes. Please double-check responses.
+          </p>
         </form>
 
         <div className="flex flex-col md:flex-row md:flex-wrap md:justify-center gap-2 md:gap-3 w-full max-w-2xl">
