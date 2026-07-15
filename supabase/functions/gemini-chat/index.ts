@@ -232,6 +232,80 @@ interface FetchedData {
   head_to_head?: unknown;
   head_to_head_games?: unknown[];
   hit_streaks?: unknown[];
+  stat_leaders?: { sport: string; label: string; season: number; isRate: boolean; rows: unknown[] };
+}
+
+// ============================================================
+// STAT-LEADER DETECTION — grounds "who leads/most/top in <stat>" questions
+// in our own player_season_stats (the exact data the Players pages show), so
+// chat can never invent a leaderboard that contradicts the dashboard.
+// ============================================================
+interface StatLeaderReq {
+  sport: string;
+  column: string;
+  label: string;
+  isRate: boolean; // rate stats (AVG/OPS/%) need a minimum-sample filter
+}
+
+const RATE_COLUMNS = new Set([
+  "batting_avg", "ops", "slugging_pct", "on_base_pct",
+  "fg_pct", "three_point_pct", "ft_pct", "passer_rating",
+]);
+
+function detectStatLeader(message: string, league: string): StatLeaderReq | null {
+  const m = message.toLowerCase();
+  // Must be phrased as a leaderboard question
+  if (!/\b(leads?|leader|leading|most|top|best|highest|fewest|lowest)\b/.test(m)) return null;
+
+  const MLB: Array<[RegExp, string, string]> = [
+    [/\bops\b|on-?base plus slugging/, "ops", "OPS"],
+    [/home ?runs?|\bhrs?\b|homers?|long ?balls?/, "home_runs", "home runs"],
+    [/\brbis?\b|runs batted in/, "rbi", "RBI"],
+    [/batting average|\bavg\b|\bba\b|\bhitting\b/, "batting_avg", "batting average"],
+    [/stolen bases?|\bsb\b|steals/, "stolen_bases", "stolen bases"],
+    [/slugging/, "slugging_pct", "slugging %"],
+    [/on-?base|\bobp\b/, "on_base_pct", "on-base %"],
+    [/\bhits\b/, "hits", "hits"],
+    [/\bdoubles\b/, "doubles", "doubles"],
+    [/\bwalks\b|bases on balls/, "walks", "walks"],
+  ];
+  const NBA: Array<[RegExp, string, string]> = [
+    [/points|scoring|\bppg\b/, "points_per_game", "points per game"],
+    [/rebounds?|\brpg\b/, "rebounds_per_game", "rebounds per game"],
+    [/assists?|\bapg\b/, "assists_per_game", "assists per game"],
+    [/steals?|\bspg\b/, "steals_per_game", "steals per game"],
+    [/blocks?|\bbpg\b/, "blocks_per_game", "blocks per game"],
+  ];
+  const NFL: Array<[RegExp, string, string]> = [
+    [/passing yards|pass yards|passing yds/, "pass_yards", "passing yards"],
+    [/rushing yards|rush yards|rushing yds/, "rush_yards", "rushing yards"],
+    [/receiving yards|rec yards|receiving yds/, "rec_yards", "receiving yards"],
+    [/passing (td|touchdown)/, "pass_td", "passing TDs"],
+    [/rushing (td|touchdown)/, "rush_td", "rushing TDs"],
+    [/receiving (td|touchdown)/, "rec_td", "receiving TDs"],
+    [/receptions|\bcatches\b/, "receptions", "receptions"],
+    [/\bsacks\b/, "sacks", "sacks"],
+    [/interceptions|\bints?\b/, "interceptions", "interceptions"],
+  ];
+
+  const pick = (arr: Array<[RegExp, string, string]>) => {
+    for (const [re, col, label] of arr) if (re.test(m)) return { col, label };
+    return null;
+  };
+
+  let sport = "";
+  let hit: { col: string; label: string } | null = null;
+  if (league === "MLB" || /\bmlb\b|baseball/.test(m)) { sport = "MLB"; hit = pick(MLB); }
+  else if (league === "NBA" || /\bnba\b|basketball/.test(m)) { sport = "NBA"; hit = pick(NBA); }
+  else if (league === "NFL" || /\bnfl\b|football/.test(m)) { sport = "NFL"; hit = pick(NFL); }
+  else {
+    // No explicit league — infer from the stat keyword, MLB first (in-season)
+    hit = pick(MLB); if (hit) sport = "MLB";
+    if (!hit) { hit = pick(NBA); if (hit) sport = "NBA"; }
+    if (!hit) { hit = pick(NFL); if (hit) sport = "NFL"; }
+  }
+  if (!hit) return null;
+  return { sport, column: hit.col, label: hit.label, isRate: RATE_COLUMNS.has(hit.col) };
 }
 
 // ============================================================
@@ -426,7 +500,7 @@ async function fetchRelevantData(
   // exact data the dashboard shows, so chat and UI can never contradict each
   // other. Runs for ANY question type (web results routinely serve stale
   // prior-season numbers for "active streak" questions).
-  if (/hit(ting)?[ -]?streaks?|hot\s+(hitter|bat)|longest\s+(active\s+)?streak|on[ -]base\s+streak/i.test(message)) {
+  if (/hit(ting)?[ -]?streaks?|hot(test)?\s+(hitter|bat)|longest\s+(active\s+)?streak|on[ -]base\s+streak/i.test(message)) {
     try {
       const season = now.getFullYear();
       const { data: streaks } = await supabase
@@ -467,6 +541,72 @@ async function fetchRelevantData(
       }
     } catch (e) {
       console.error("Error fetching hit streaks:", e);
+    }
+  }
+
+  // Stat-leaderboard questions MUST be answered from our database — these are
+  // the exact leaderboards shown on the Players pages, so chat can never invent
+  // a different top-N. Runs for ANY question type.
+  {
+    const leaderReq = detectStatLeader(message, league);
+    if (leaderReq) {
+      try {
+        // Ground to the latest season we actually have data for in that sport
+        const { data: seasonRow } = await supabase
+          .from("player_season_stats")
+          .select("season")
+          .eq("sport", leaderReq.sport)
+          .not(leaderReq.column, "is", null)
+          .order("season", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const season = seasonRow?.season ?? now.getFullYear();
+
+        let q = supabase
+          .from("player_season_stats")
+          .select(`player_id, ${leaderReq.column}, games_played, at_bats`)
+          .eq("sport", leaderReq.sport)
+          .eq("season", season)
+          .not(leaderReq.column, "is", null)
+          .order(leaderReq.column, { ascending: false })
+          .limit(10);
+        // Rate stats need a minimum sample or a scrub leads the board
+        if (leaderReq.isRate && leaderReq.sport === "MLB") q = q.gte("at_bats", 40);
+        const { data: leaders } = await q;
+
+        if (leaders?.length) {
+          const ids = leaders.map((r: any) => r.player_id);
+          const { data: lp } = await supabase
+            .from("players")
+            .select("id, name, team_abbr")
+            .in("id", ids);
+          const pmap = new Map((lp || []).map((p: any) => [p.id, p]));
+          const rows = leaders
+            .map((r: any) => {
+              const p = pmap.get(r.player_id);
+              if (!p) return null;
+              return { name: p.name, team: p.team_abbr, value: r[leaderReq.column] };
+            })
+            .filter(Boolean);
+          if (rows.length) {
+            fetchedData.stat_leaders = {
+              sport: leaderReq.sport,
+              label: leaderReq.label,
+              season,
+              isRate: leaderReq.isRate,
+              rows,
+            };
+            sources.push({
+              provider: "mgp_database",
+              endpoint: `${leaderReq.sport}/stat_leaders/${leaderReq.column}`,
+              fetched_at: now.toISOString(),
+              ids: {},
+            });
+          }
+        }
+      } catch (e) {
+        console.error("Error fetching stat leaders:", e);
+      }
     }
   }
 
@@ -1012,6 +1152,20 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
     });
   }
 
+  if (data.stat_leaders?.rows?.length) {
+    const sl = data.stat_leaders;
+    const fmt = (v: any) => {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return String(v);
+      return sl.isRate ? n.toFixed(3).replace(/^0/, "") : String(n);
+    };
+    prompt += `\n🏆 ${sl.sport} ${sl.label.toUpperCase()} LEADERS (${sl.season}) — AUTHORITATIVE, FROM THE MGP DATABASE:\n`;
+    prompt += `(This is the exact leaderboard shown on the MGP ${sl.sport} Players page. Answer this leaderboard question using ONLY these names and numbers — do NOT use web search or memory, which return figures that won't match our dashboard. Rank in the order listed.)\n`;
+    (sl.rows as any[]).forEach((r, i) => {
+      prompt += `${i + 1}. ${r.name}${r.team ? ` (${r.team})` : ""} — ${fmt(r.value)} ${sl.label}\n`;
+    });
+  }
+
   if (data.hit_streaks?.length) {
     prompt += "\n🔥 ACTIVE MLB HIT STREAKS — AUTHORITATIVE, LIVE FROM THE MGP DATABASE:\n";
     prompt += "(This is the exact data shown on the MGP dashboard. For any question about current/active hit streaks, use ONLY these numbers — do NOT use web search results or memory, which routinely return stale prior-season figures.)\n";
@@ -1152,10 +1306,18 @@ serve(async (req) => {
     let dataPrompt: string;
     let sources: SourceRef[];
 
-    if (league) {
-      // Single-sport path (unchanged behavior)
-      const result = await fetchRelevantData(supabase, league, intent, lastUserMessage, questionType);
-      dataPrompt = formatDataForPrompt(result.data, result.sources, intent, league);
+    // Force the grounded single-sport path when a stat-leader or hit-streak
+    // question is detected even without an explicit league keyword — otherwise
+    // the multi-sport path (no DB grounding) would answer leaderboards from web
+    // search and could contradict the dashboard.
+    const inferredLeader = detectStatLeader(lastUserMessage, league || "");
+    const isHitStreakQ = /hit(ting)?[ -]?streaks?|hot(test)?\s+(hitter|bat)|longest\s+(active\s+)?streak/i.test(lastUserMessage);
+    const groundingLeague = league || inferredLeader?.sport || (isHitStreakQ ? "MLB" : "");
+
+    if (groundingLeague) {
+      // Single-sport path — includes stat-leader + hit-streak DB grounding
+      const result = await fetchRelevantData(supabase, groundingLeague, intent, lastUserMessage, questionType);
+      dataPrompt = formatDataForPrompt(result.data, result.sources, intent, groundingLeague);
       sources = result.sources;
     } else {
       // Multi-sport path: query all active/in-season sports
