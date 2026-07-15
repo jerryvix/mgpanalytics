@@ -1,0 +1,38 @@
+# Nugget Grading — the 99% release gate
+
+Every "Did You Know" nugget (Trending Bets seeds in `src/data/trendingBets.ts`, Edge pool in
+`src/data/edges.ts`) must pass BOTH gates before it ships with `verified: true`:
+
+## Gate 1 — automated structural integrity (runs on every build)
+
+`src/test/nuggetIntegrity.test.ts` fails the test suite if any entry:
+- lacks a non-empty `nugget`, `source`, `line`, or `book`
+- has a duplicate `id`
+- uses full-year ranges instead of the compact `('YY-'YY)` style
+- contains hedge/hallucination tells ("probably", "reportedly", "some say", "believed to")
+- is `verified: true` with a placeholder source ("TBD", "unknown", "n/a")
+
+## Gate 2 — factual grading (recurring scheduled review)
+
+A scheduled weekly review re-grades every released nugget on this rubric (100 points):
+
+| Criterion | Points | Fails if |
+|---|---|---|
+| Every named fact web-verifiable | 40 | any stat, year, name, or count can't be confirmed by a source |
+| No misleading implication | 30 | wording implies something false (e.g. a player "repeating" an award he never won) |
+| Odds/lines current | 15 | line moved materially since `updated` date |
+| Insightful, not filler | 15 | a casual fan learns nothing |
+
+**Release rule: score must be ≥ 99. Anything below is set `verified: false` immediately**
+(which auto-hides it from users — the UI filters on `verified`) and is only re-released
+after the wording is fixed and re-graded.
+
+Known catches to date (regression list — re-check these patterns every review):
+- Heisman repeat-winner history attached to a first-time candidate (implied he'd won before)
+- "rookie Drake Maye" in the '25 season (drafted '24 — second-year)
+- "six franchises never won a World Series" (it's five)
+
+## Review cadence
+
+The scheduled "nugget fact-check" routine runs weekly: web-verify each claim, score per the
+rubric, flip `verified: false` on failures, and report the scorecard to Jerry.

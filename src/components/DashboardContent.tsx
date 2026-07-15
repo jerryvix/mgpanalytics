@@ -56,6 +56,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="mlb" element={<ComingSoon sport="MLB" emoji="⚾" />} />
         <Route path="mlb/players" element={<MLBPlayers />} />
         <Route path="mlb/players/:playerId" element={<MLBPlayerDetail />} />
+        <Route path="mlb/trending" element={<TrendingBets sport="MLB" />} />
         <Route path="ncaaf" element={<NCAAFSlate />} />
         <Route path="ncaaf/trending" element={<TrendingBets sport="NCAAF" />} />
         <Route path="ncaab" element={<NCAABSlate />} />

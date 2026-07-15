@@ -28,7 +28,8 @@ import {
   MessageSquare,
   Trash2,
   Newspaper,
-  Users
+  Users,
+  Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -103,6 +104,7 @@ const sportsMenuItems = [
     subItems: [
       { title: "Games", url: "/dashboard/mlb" },
       { title: "Players", url: "/dashboard/mlb/players" },
+      { title: "Trending Bets", url: "/dashboard/mlb/trending" },
     ]
   },
 ];
@@ -224,10 +226,30 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
       </SidebarHeader>
 
       <SidebarContent className="px-2 py-1">
-        {/* New Conversation Button */}
+        {/* Home + New Conversation */}
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <SidebarMenuButton asChild>
+                      <button
+                        onClick={() => navigate("/dashboard")}
+                        className={`w-full flex items-center gap-3 px-3 py-1.5 rounded transition-colors font-medium ${
+                          location.pathname === "/dashboard"
+                            ? "bg-terminal-green/15 text-terminal-green"
+                            : "text-sidebar-foreground hover:bg-terminal-green/10 hover:text-terminal-green"
+                        }`}
+                      >
+                        <Home className="w-4 h-4 shrink-0" />
+                        {!collapsed && <span className="text-sm">Home</span>}
+                      </button>
+                    </SidebarMenuButton>
+                  </TooltipTrigger>
+                  {collapsed && <TooltipContent side="right">Home</TooltipContent>}
+                </Tooltip>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <Tooltip>
                   <TooltipTrigger asChild>

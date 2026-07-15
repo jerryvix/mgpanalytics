@@ -67,7 +67,7 @@ function BetRow({ bet, index }: { bet: TrendingBet; index: number }) {
 }
 
 interface TrendingBetsProps {
-  sport: "NFL" | "NCAAF";
+  sport: "NFL" | "NCAAF" | "MLB";
 }
 
 export function TrendingBets({ sport }: TrendingBetsProps) {

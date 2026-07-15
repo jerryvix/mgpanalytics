@@ -102,7 +102,7 @@ export function FantasyMovers() {
         <div className="flex items-center gap-2 mb-1">
           <Zap className="w-4 h-4 text-terminal-green" />
           <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-foreground">
-            Fantasy Form Movers
+            Hot Bats
           </h2>
           <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline">
             Hitters running hot vs. their season line
@@ -148,7 +148,8 @@ export function FantasyMovers() {
           ))}
         </div>
         <p className="text-[10px] text-muted-foreground mt-2">
-          Recent form vs. season baseline — a quick DFS/fantasy read. NFL fantasy-point movers appear here in-season.
+          Bars = last 10 games, oldest → newest: <span className="text-terminal-green">tall green</span> = got a
+          hit, short gray = hitless. NFL hot hands appear here in-season.
         </p>
       </CardContent>
     </Card>

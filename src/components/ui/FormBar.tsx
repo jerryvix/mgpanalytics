@@ -8,8 +8,12 @@ interface FormBarProps {
 
 export function FormBar({ games, className }: FormBarProps) {
   if (!games || games.length === 0) return null;
+  const hits = games.filter(Boolean).length;
   return (
-    <div className={`flex items-end gap-0.5 h-4 ${className ?? ""}`} title={`Last ${games.length} games`}>
+    <div
+      className={`flex items-end gap-0.5 h-4 ${className ?? ""}`}
+      title={`Last ${games.length} games, oldest → newest. Tall green bar = got a hit, short gray = held hitless. (${hits} of ${games.length} with a hit)`}
+    >
       {games.map((hit, i) => (
         <div
           key={i}

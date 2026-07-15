@@ -53,51 +53,76 @@ export function DailyEdge() {
   const fmtAvg = (v: number | null) => (v == null ? "" : v.toFixed(3).replace(/^0/, ""));
 
   return (
-    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-      <Card className="bg-gradient-to-br from-terminal-green/10 via-card to-card border-terminal-green/30 overflow-hidden">
-        <CardContent className="p-4 sm:p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Lightbulb className="w-4 h-4 text-terminal-green" />
-            <span className="font-mono text-xs font-bold uppercase tracking-widest text-terminal-green">
-              Edge of the Day
-            </span>
-            <span className="text-[10px] text-muted-foreground font-mono ml-auto">
-              {SPORT_EMOJI[edge.sport]} {edge.sport}
-            </span>
-          </div>
-
-          <h2 className="text-lg sm:text-xl font-bold text-foreground text-balance">{edge.headline}</h2>
-          <p className="text-sm text-foreground/85 mt-1 leading-relaxed max-w-3xl">{edge.detail}</p>
-          <p className="text-[10px] text-muted-foreground font-mono mt-2">source: {edge.source}</p>
-
-          {/* Live computed edge — the hottest bat right now */}
-          {live && (
-            <Link
-              to={`/dashboard/mlb/players/${live.playerId}`}
-              className="mt-3 flex items-center gap-2 rounded-lg bg-terminal-amber/10 border border-terminal-amber/25 px-3 py-2 hover:border-terminal-amber/50 transition-colors group"
-            >
-              <Flame className="w-4 h-4 text-terminal-amber shrink-0" />
-              <span className="text-xs text-foreground">
-                <span className="font-mono text-terminal-amber font-bold">LIVE</span>{" "}
-                <span className="font-semibold group-hover:text-terminal-green transition-colors">
-                  {live.name}
-                </span>{" "}
-                {live.team ? `(${live.team}) ` : ""}
-                is on a{" "}
-                <span className="font-bold text-terminal-amber tabular-nums">{live.streak}-game</span>{" "}
-                hit streak
-                {live.streakAvg ? (
-                  <>
-                    {" "}
-                    — batting <span className="font-mono tabular-nums">{fmtAvg(live.streakAvg)}</span> during it
-                  </>
-                ) : null}
-                .
+    <div className="space-y-2">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <Card className="bg-gradient-to-br from-terminal-green/10 via-card to-card border-terminal-green/30 overflow-hidden">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <Lightbulb className="w-4 h-4 text-terminal-green" />
+              <span className="font-mono text-xs font-bold uppercase tracking-widest text-terminal-green">
+                Edge of the Day
               </span>
-            </Link>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
+              <span className="text-[10px] text-muted-foreground font-mono ml-auto">
+                {SPORT_EMOJI[edge.sport]} {edge.sport}
+              </span>
+            </div>
+
+            <h2 className="text-lg sm:text-xl font-bold text-foreground text-balance">{edge.headline}</h2>
+            <p className="text-sm text-foreground/85 mt-1 leading-relaxed max-w-3xl">{edge.detail}</p>
+
+            {/* The wager this edge informs */}
+            {edge.market && (
+              <div className="mt-3 inline-flex flex-wrap items-center gap-2 rounded-lg bg-terminal-green/10 border border-terminal-green/25 px-3 py-2">
+                <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-terminal-green">
+                  The Wager
+                </span>
+                <span className="text-xs text-foreground">{edge.market.label}</span>
+                <span className="font-mono text-xs font-bold text-terminal-green tabular-nums">
+                  {edge.market.line}
+                </span>
+                <span className="text-[10px] text-muted-foreground font-mono">{edge.market.book}</span>
+              </div>
+            )}
+
+            <p className="text-[10px] text-muted-foreground font-mono mt-2">source: {edge.source}</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Hot Right Now — live computed edge, its own box so it never muddies the day's insight */}
+      {live && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+          <Card className="bg-card border-terminal-amber/30">
+            <CardContent className="p-3 px-4">
+              <Link
+                to={`/dashboard/mlb/players/${live.playerId}`}
+                className="flex items-center gap-2 group"
+              >
+                <Flame className="w-4 h-4 text-terminal-amber shrink-0" />
+                <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-terminal-amber shrink-0">
+                  Hot Right Now
+                </span>
+                <span className="text-xs text-foreground">
+                  <span className="font-semibold group-hover:text-terminal-green transition-colors">
+                    {live.name}
+                  </span>{" "}
+                  {live.team ? `(${live.team}) ` : ""}
+                  is on a{" "}
+                  <span className="font-bold text-terminal-amber tabular-nums">{live.streak}-game</span>{" "}
+                  hit streak
+                  {live.streakAvg ? (
+                    <>
+                      {" "}
+                      — batting <span className="font-mono tabular-nums">{fmtAvg(live.streakAvg)}</span> during it
+                    </>
+                  ) : null}
+                  .
+                </span>
+              </Link>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+    </div>
   );
 }

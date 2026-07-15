@@ -147,7 +147,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     line: "-125",
     book: "DraftKings",
     nugget:
-      "Buffalo won five straight AFC East titles ('20-'24) before New England — behind rookie Drake Maye — grabbed it in '25 and rode it all the way to Super Bowl LX. The Bills are now favored to take the division right back.",
+      "Buffalo won five straight AFC East titles ('20-'24) before New England — behind second-year QB Drake Maye — grabbed it in '25 and rode it all the way to Super Bowl LX. The Bills are now favored to take the division right back.",
     source: "NFL division champions; 2025 standings",
     verified: true,
     updated: D,
@@ -208,7 +208,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     line: "+700",
     book: "DraftKings",
     nugget:
-      "Carr (Notre Dame) opens as the +700 favorite. Two things the field should know: quarterbacks have won 16 of the last 20 Heismans, and in 90 seasons only one player has ever won it twice — Archie Griffin, back-to-back in ('74-'75).",
+      "Carr (Notre Dame) opens as the +700 favorite. History is on his side positionally — quarterbacks have won 16 of the last 20 Heismans — but not institutionally: Notre Dame hasn't produced a Heisman winner since Tim Brown in 1987.",
     source: "Heisman Trust records",
     verified: true,
     updated: D,
@@ -300,7 +300,97 @@ export const NCAAF_TRENDING: TrendingBet[] = [
   },
 ];
 
-export function trendingFor(sport: "NFL" | "NCAAF"): TrendingBet[] {
-  const all = sport === "NFL" ? NFL_TRENDING : NCAAF_TRENDING;
+export const MLB_TRENDING: TrendingBet[] = [
+  // ---- Championship ----
+  {
+    id: "mlb-ws-dodgers",
+    category: "Championship",
+    subject: "Los Angeles Dodgers",
+    logoHint: "LAD",
+    market: "World Series",
+    line: "+190",
+    book: "DraftKings",
+    nugget:
+      "The Dodgers enter the All-Star break the standalone favorite — chasing a THREE-PEAT after winning it all in '24 and '25. No team has won three straight World Series since the ('98-'00) Yankees, and no NL team has ever done it.",
+    source: "World Series champions; 2026 odds at the All-Star break",
+    verified: true,
+    updated: "2026-07-14",
+  },
+  {
+    id: "mlb-ws-yankees",
+    category: "Championship",
+    subject: "New York Yankees",
+    logoHint: "NYY",
+    market: "World Series",
+    line: "+550",
+    book: "DraftKings",
+    nugget:
+      "The Yankees' 27 titles are the most in North American pro sports — but they haven't added one since '09, their longest championship drought since the ('78-'96) gap. They sit second on the board yet don't even lead their league: Tampa Bay owns the AL's best record at the break.",
+    source: "World Series history; 2026 AL standings at the break",
+    verified: true,
+    updated: "2026-07-14",
+  },
+  {
+    id: "mlb-ws-brewers",
+    category: "Championship",
+    subject: "Milwaukee Brewers",
+    logoHint: "MIL",
+    market: "World Series",
+    line: "+1100",
+    book: "DraftKings",
+    nugget:
+      "Milwaukee holds the third-shortest price on the board — and is one of just five MLB franchises that has never won a World Series. The Brewers' only pennant came back in '82, before an entire generation of their fans was born.",
+    source: "World Series history; 2026 odds",
+    verified: true,
+    updated: "2026-07-14",
+  },
+  // ---- Awards ----
+  {
+    id: "mlb-almvp-alvarez",
+    category: "Awards",
+    subject: "Yordan Alvarez",
+    logoHint: "HOU",
+    market: "AL MVP",
+    line: "-165",
+    book: "DraftKings",
+    nugget:
+      "Alvarez leads MLB in OPS at the break and has pulled away to odds-on favorite. He has never won an MVP — a first would also be Houston's first since Jose Altuve in '17.",
+    source: "AP MVP history; 2026 leaderboards at the break",
+    verified: true,
+    updated: "2026-07-14",
+  },
+  {
+    id: "mlb-nlmvp-ohtani",
+    category: "Awards",
+    subject: "Shohei Ohtani",
+    logoHint: "LAD",
+    market: "NL MVP",
+    line: "-1000",
+    odds: "Field +650",
+    book: "DraftKings",
+    nugget:
+      "Ohtani is such a prohibitive favorite that DraftKings opened a 'vs. the field' market. He owns four MVPs ('21, '23, '24, '25) — three straight seasons — and a fifth would leave only Barry Bonds (7) ahead of him all-time.",
+    source: "AP/BBWAA MVP history",
+    verified: true,
+    updated: "2026-07-14",
+  },
+  {
+    id: "mlb-almvp-caminero",
+    category: "Awards",
+    subject: "Junior Caminero",
+    logoHint: "TB",
+    market: "AL MVP",
+    line: "+450",
+    book: "DraftKings",
+    nugget:
+      "The board's fastest riser: Caminero was 20-1 two weeks ago and is +450 at the break, powering a Tampa Bay club with the AL's best record (56-37). The Rays have never had an MVP winner in franchise history.",
+    source: "2026 MVP odds movement; MVP history",
+    verified: true,
+    updated: "2026-07-14",
+  },
+];
+
+export function trendingFor(sport: "NFL" | "NCAAF" | "MLB"): TrendingBet[] {
+  const all = sport === "NFL" ? NFL_TRENDING : sport === "NCAAF" ? NCAAF_TRENDING : MLB_TRENDING;
   return all.filter((b) => b.verified);
 }
