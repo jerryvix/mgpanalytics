@@ -231,6 +231,7 @@ interface FetchedData {
   prop_results?: unknown[];
   head_to_head?: unknown;
   head_to_head_games?: unknown[];
+  hit_streaks?: unknown[];
 }
 
 // ============================================================
@@ -418,6 +419,54 @@ async function fetchRelevantData(
       } catch (e) {
         console.error("Error fetching odds:", e);
       }
+    }
+  }
+
+  // Hit-streak questions MUST be answered from our own database — it's the
+  // exact data the dashboard shows, so chat and UI can never contradict each
+  // other. Runs for ANY question type (web results routinely serve stale
+  // prior-season numbers for "active streak" questions).
+  if (/hit(ting)?[ -]?streaks?|hot\s+(hitter|bat)|longest\s+(active\s+)?streak|on[ -]base\s+streak/i.test(message)) {
+    try {
+      const season = now.getFullYear();
+      const { data: streaks } = await supabase
+        .from("player_season_stats")
+        .select("player_id, hit_streak, hit_streak_avg, batting_avg")
+        .eq("sport", "MLB")
+        .eq("season", season)
+        .gte("hit_streak", 3)
+        .order("hit_streak", { ascending: false })
+        .limit(10);
+
+      if (streaks?.length) {
+        const ids = streaks.map((s: any) => s.player_id);
+        const { data: streakPlayers } = await supabase
+          .from("players")
+          .select("id, name, team_abbr")
+          .in("id", ids);
+        const pmap = new Map((streakPlayers || []).map((p: any) => [p.id, p]));
+        fetchedData.hit_streaks = streaks
+          .map((s: any) => {
+            const p = pmap.get(s.player_id);
+            if (!p) return null;
+            return {
+              name: p.name,
+              team: p.team_abbr,
+              streak: s.hit_streak,
+              streak_avg: s.hit_streak_avg,
+              season_avg: s.batting_avg,
+            };
+          })
+          .filter(Boolean);
+        sources.push({
+          provider: "mgp_database",
+          endpoint: "MLB/hit_streaks",
+          fetched_at: now.toISOString(),
+          ids: {},
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching hit streaks:", e);
     }
   }
 
@@ -960,6 +1009,16 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
       } else {
         prompt += `• ${p.name} (${p.team_abbr}, ${p.position})\n`;
       }
+    });
+  }
+
+  if (data.hit_streaks?.length) {
+    prompt += "\n🔥 ACTIVE MLB HIT STREAKS — AUTHORITATIVE, LIVE FROM THE MGP DATABASE:\n";
+    prompt += "(This is the exact data shown on the MGP dashboard. For any question about current/active hit streaks, use ONLY these numbers — do NOT use web search results or memory, which routinely return stale prior-season figures.)\n";
+    (data.hit_streaks as any[]).forEach((s) => {
+      const sAvg = s.streak_avg != null ? `, batting ${Number(s.streak_avg).toFixed(3).replace(/^0/, "")} during it` : "";
+      const seasonAvg = s.season_avg != null ? ` (season ${Number(s.season_avg).toFixed(3).replace(/^0/, "")})` : "";
+      prompt += `• ${s.name}${s.team ? ` (${s.team})` : ""} — ${s.streak}-game hit streak${sAvg}${seasonAvg}\n`;
     });
   }
 
