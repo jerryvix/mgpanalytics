@@ -10,6 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { getTeamAbbrev } from "@/utils/teamAbbreviations";
 import { OnboardingModal } from "@/components/onboarding";
+import { DailyEdge } from "@/components/dashboard/DailyEdge";
 
 interface Game {
   id: number | string;
@@ -574,6 +575,9 @@ export function DashboardHome() {
             <span className="hidden sm:inline ml-1.5">Refresh</span>
           </Button>
         </div>
+
+        {/* Daily Edge — the habit hook */}
+        <DailyEdge />
 
         {/* Money Flows Section */}
         <motion.section
