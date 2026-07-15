@@ -120,14 +120,16 @@ serve(async (req) => {
       api_source: "espn",
     });
 
-    // Date range: -2 days (to finalize scores of recently completed games) to +24 hours
+    // Date range: -2 days (to finalize scores of recently completed games) to
+    // +4 days, so the schedule (and posted odds) populate ahead of time — e.g.
+    // during the All-Star break the weekend slate is already on the board.
     const now = new Date();
-    const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const in24Hours = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
     const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
 
-    // Fetch two days back through tomorrow
+    // Fetch two days back through four days ahead
     const dates: string[] = [];
-    for (let i = -2; i < 2; i++) {
+    for (let i = -2; i <= 4; i++) {
       const date = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
       dates.push(date.toISOString().split("T")[0].replace(/-/g, ""));
     }

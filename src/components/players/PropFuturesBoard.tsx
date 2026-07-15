@@ -70,9 +70,7 @@ export function PropFuturesBoard({ sport, view = "all" }: PropFuturesBoardProps)
           </h2>
           <p className="text-xs text-muted-foreground font-mono">
             {FUTURES_BOOK} board · captured {FUTURES_CAPTURED_AT} · pre-season snapshot, refreshed yearly
-            {view !== "players" && (
-              <span className="text-terminal-green"> · tap a team for the MGP Angle</span>
-            )}
+            <span className="text-terminal-green"> · tap any line for the MGP Angle</span>
           </p>
         </div>
         <div className="relative sm:ml-auto sm:w-64">
@@ -127,7 +125,8 @@ export function PropFuturesBoard({ sport, view = "all" }: PropFuturesBoardProps)
                     <tbody>
                       {group.items.map((f, i) => {
                         const rowKey = `${f.market}-${f.subject}`;
-                        const expandable = isTeamMarket(group.market);
+                        const expandable = true; // every line gets an MGP Angle
+                        const teamRow = isTeamMarket(group.market);
                         const isOpen = expanded === rowKey;
                         return (
                           <Fragment key={rowKey}>
@@ -145,7 +144,7 @@ export function PropFuturesBoard({ sport, view = "all" }: PropFuturesBoardProps)
                                     ) : (
                                       <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                     ))}
-                                  {expandable && (
+                                  {teamRow && (
                                     <TeamLogo sport={sport} name={f.subject} espnId={espnIdFor(f.subject)} size={18} />
                                   )}
                                   {f.subject}
@@ -174,6 +173,8 @@ export function PropFuturesBoard({ sport, view = "all" }: PropFuturesBoardProps)
                                     line={f.line}
                                     over={f.over}
                                     under={f.under}
+                                    kind={teamRow ? "team" : "player"}
+                                    marketLabel={group.label}
                                   />
                                 </td>
                               </tr>

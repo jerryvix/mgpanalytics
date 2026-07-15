@@ -14,6 +14,9 @@ interface FuturesInsightProps {
   line: number;
   over: string;
   under: string;
+  /** "team" = season win total; "player" = a player prop future */
+  kind?: "team" | "player";
+  marketLabel?: string; // e.g. "Passing Yards" for player props
 }
 
 const CACHE_HOURS = 24;
@@ -34,7 +37,7 @@ function readCache(key: string): string | null {
   }
 }
 
-export function FuturesInsight({ sport, subject, line, over, under }: FuturesInsightProps) {
+export function FuturesInsight({ sport, subject, line, over, under, kind = "team", marketLabel }: FuturesInsightProps) {
   const [content, setContent] = useState<string | null>(() => readCache(cacheKey(sport, subject, line)));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -52,10 +55,15 @@ export function FuturesInsight({ sport, subject, line, over, under }: FuturesIns
         .slice(0, 3)
         .join("\n");
       const prompt =
-        `Season win total insight: ${subject} 2026 regular season wins O/U ${line} ` +
-        `(Over ${over} / Under ${under}). In exactly 3 short bullet points: ` +
-        `(1) how last season went for them, (2) the most important change since, ` +
-        `(3) what this line implies about market expectations. ` +
+        (kind === "player"
+          ? `Season player prop insight: ${subject}, 2026 regular season total ${marketLabel ?? "production"} O/U ${line} ` +
+            `(Over ${over} / Under ${under}). In exactly 3 short bullet points: ` +
+            `(1) what he produced in this stat last season, (2) the most relevant situation change (team, role, scheme, health), ` +
+            `(3) what this line implies about market expectations. `
+          : `Season win total insight: ${subject} 2026 regular season wins O/U ${line} ` +
+            `(Over ${over} / Under ${under}). In exactly 3 short bullet points: ` +
+            `(1) how last season went for them, (2) the most important change since, ` +
+            `(3) what this line implies about market expectations. `) +
         `Keep each bullet to one sentence. No betting advice, no follow-up questions.` +
         (curated
           ? `\n\nVERIFIED MGP NOTES (authoritative — your bullets MUST agree with these):\n${curated}`
