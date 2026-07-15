@@ -10,6 +10,7 @@ import { format, parseISO } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
 import { TrendingNow } from "@/components/dashboard/TrendingNow";
 import { TeamLogo } from "@/components/ui/TeamLogo";
+import { WinProbBar } from "@/components/ui/WinProbBar";
 
 interface Game {
   id: number;
@@ -287,6 +288,14 @@ export function NFLSlate() {
                               )}
                             </span>
                           </div>
+
+                          {/* Implied win probability */}
+                          <WinProbBar
+                            homeName={game.home_team_name}
+                            awayName={game.visitor_team_name}
+                            moneylineHome={dkOdds.moneyline_home}
+                            moneylineAway={dkOdds.moneyline_away}
+                          />
 
                           {/* Total */}
                           <div className="flex items-center justify-between">

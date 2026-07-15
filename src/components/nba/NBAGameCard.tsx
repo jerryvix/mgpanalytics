@@ -8,6 +8,7 @@ import { PublicBettingPreview } from "@/components/PublicBettingPreview";
 import { GamePropsPreview } from "@/components/props/GamePropsPreview";
 import { getTeamAbbrev } from "@/utils/teamAbbreviations";
 import { TeamLogo } from "@/components/ui/TeamLogo";
+import { WinProbBar } from "@/components/ui/WinProbBar";
 
 interface NBAOdds {
   id: string;
@@ -195,6 +196,14 @@ export function NBAGameCard({
                     )}
                   </span>
                 </div>
+
+                {/* Implied win probability */}
+                <WinProbBar
+                  homeName={game.home_team_name}
+                  awayName={game.visitor_team_name}
+                  moneylineHome={odds.moneyline_home}
+                  moneylineAway={odds.moneyline_away}
+                />
 
                 {/* Total */}
                 <div className="flex items-center justify-between">

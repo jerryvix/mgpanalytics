@@ -10,6 +10,7 @@ import { format, parseISO } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
 import { OffseasonBanner } from "@/components/dashboard/OffseasonBanner";
 import { TeamLogo } from "@/components/ui/TeamLogo";
+import { WinProbBar } from "@/components/ui/WinProbBar";
 
 interface Game {
   id: string;
@@ -363,6 +364,14 @@ export function NCAABSlate() {
                                 )}
                               </span>
                             </div>
+
+                            {/* Implied win probability */}
+                            <WinProbBar
+                              homeName={game.home_team_name}
+                              awayName={game.visitor_team_name}
+                              moneylineHome={dkOdds.moneyline_home}
+                              moneylineAway={dkOdds.moneyline_away}
+                            />
 
                             {/* Total */}
                             <div className="flex items-center justify-between">
