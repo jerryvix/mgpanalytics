@@ -208,7 +208,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     line: "+700",
     book: "DraftKings",
     nugget:
-      "Carr (Notre Dame) opens as the +700 favorite, but history says respect the field: quarterbacks have won 16 of the last 20 Heismans, yet nobody has ever repeated as a winner except Archie Griffin, back-to-back in ('74-'75) — a record that's now stood 50 years.",
+      "Carr (Notre Dame) opens as the +700 favorite. Two things the field should know: quarterbacks have won 16 of the last 20 Heismans, and in 90 seasons only one player has ever won it twice — Archie Griffin, back-to-back in ('74-'75).",
     source: "Heisman Trust records",
     verified: true,
     updated: D,

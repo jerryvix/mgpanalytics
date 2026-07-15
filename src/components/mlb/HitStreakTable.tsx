@@ -21,12 +21,9 @@ const fmtAvg = (val: number | null | undefined) => {
   return val.toFixed(3).replace(/^0/, "");
 };
 
-const streakColor = (streak: number) => {
-  if (streak >= 15) return "text-red-400";
-  if (streak >= 10) return "text-terminal-amber";
-  if (streak >= 5) return "text-terminal-green";
-  return "text-foreground";
-};
+import { heatText, streakHeat } from "@/lib/heat";
+
+const streakColor = (streak: number) => heatText(streakHeat(streak));
 
 interface HitStreakTableProps {
   rows: HitStreakRow[];

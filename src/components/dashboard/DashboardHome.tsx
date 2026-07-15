@@ -16,6 +16,7 @@ import { StreakCard } from "@/components/dashboard/StreakCard";
 import { MyFollows } from "@/components/dashboard/MyFollows";
 import { YourTeams } from "@/components/dashboard/YourTeams";
 import { FantasyMovers } from "@/components/dashboard/FantasyMovers";
+import { EdgeTicker } from "@/components/dashboard/EdgeTicker";
 
 interface Game {
   id: number | string;
@@ -495,6 +496,9 @@ export function DashboardHome() {
 
   return (
     <div className="flex flex-col">
+      {/* Live Edge Ticker */}
+      <EdgeTicker />
+
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
