@@ -124,7 +124,7 @@ export function NBAGameCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
     >
-      <Card className="bg-card border-terminal-cyan/30 hover:border-terminal-cyan/60 transition-all h-full">
+      <Card className="bg-gradient-to-b from-card to-card/70 border-terminal-cyan/30 hover:border-terminal-cyan/60 hover:shadow-[0_0_24px_-8px_hsl(var(--terminal-cyan)/0.4)] transition-all h-full">
         <CardContent className="p-4">
           {/* Header row */}
           <div className="flex items-center justify-between mb-3">

@@ -309,7 +309,7 @@ export function NBASlate() {
 
       {/* All Sportsbooks Odds Panel */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="bg-background border-l border-terminal-cyan/30 w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="bg-background/85 backdrop-blur-xl border-l border-terminal-cyan/30 w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader className="flex flex-row items-center justify-between pb-4 border-b border-terminal-cyan/20">
             <SheetTitle className="font-mono text-foreground">
               {selectedGame && (

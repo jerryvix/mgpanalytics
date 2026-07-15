@@ -245,7 +245,7 @@ export function NFLSlate() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Card className="bg-card border-terminal-green/30 hover:border-terminal-green/60 transition-all">
+                <Card className="bg-gradient-to-b from-card to-card/70 border-terminal-green/30 hover:border-terminal-green/60 hover:shadow-[0_0_24px_-8px_hsl(var(--terminal-green)/0.4)] transition-all">
                   <CardContent className="p-4">
                     {/* Header row */}
                     <div className="flex items-center justify-between mb-3">
@@ -386,7 +386,7 @@ export function NFLSlate() {
 
       {/* All Sportsbooks Odds Panel */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="bg-background border-l border-terminal-green/30 w-full sm:max-w-xl overflow-y-auto">
+        <SheetContent className="bg-background/85 backdrop-blur-xl border-l border-terminal-green/30 w-full sm:max-w-xl overflow-y-auto">
           <SheetHeader className="flex flex-row items-center justify-between pb-4 border-b border-terminal-green/20">
             <SheetTitle className="font-mono text-foreground">
               {selectedGame && (

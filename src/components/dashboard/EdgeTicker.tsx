@@ -76,6 +76,7 @@ export function EdgeTicker() {
           ● Live Edges
         </span>
       </div>
+      <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-16 bg-gradient-to-l from-background to-transparent" />
       <motion.div
         className="flex whitespace-nowrap pl-28"
         animate={{ x: ["0%", "-50%"] }}
