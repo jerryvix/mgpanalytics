@@ -12,6 +12,9 @@ import { OffseasonBanner } from "@/components/dashboard/OffseasonBanner";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LiveBadge } from "@/components/ui/LiveBadge";
+import { useLiveScores } from "@/hooks/useLiveScores";
+import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
 
 interface Game {
   id: string;
@@ -58,6 +61,7 @@ export function NCAABSlate() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
   const [hasRankedGames, setHasRankedGames] = useState(false);
+  const live = useLiveScores("NCAAB");
 
   useEffect(() => {
     fetchGames();
@@ -66,15 +70,16 @@ export function NCAABSlate() {
   const fetchGames = async () => {
     setLoading(true);
 
-    // Get current time and 24 hours from now
+    // Window: 4h back (keeps in-progress games visible) to 24h ahead
     const now = new Date();
+    const windowStart = new Date(now.getTime() - 4 * 60 * 60 * 1000);
     const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     // Fetch NCAAB games
     const { data: gamesData, error: gamesError } = await supabase
       .from("ncaab_games")
       .select("*")
-      .gte("date", now.toISOString())
+      .gte("date", windowStart.toISOString())
       .lte("date", in24Hours.toISOString())
       .order("date", { ascending: true });
 
@@ -85,9 +90,7 @@ export function NCAABSlate() {
     }
 
     // Filter out completed games
-    const upcomingGames = (gamesData || []).filter(
-      (game) => !game.status.toLowerCase().startsWith("final")
-    );
+    const upcomingGames = (gamesData || []).filter((game) => !isFinalStatus(game.status));
 
     // Check if we have ranked games
     const rankedGames = upcomingGames.filter(
@@ -152,13 +155,8 @@ export function NCAABSlate() {
   };
 
   const getStatusBadge = (status: string, isRanked: boolean, isFeatured: boolean) => {
-    const statusLower = status.toLowerCase();
-    if (statusLower === "in progress" || statusLower === "live") {
-      return (
-        <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green text-[10px] font-mono animate-pulse">
-          LIVE
-        </Badge>
-      );
+    if (isLiveStatus(status)) {
+      return <LiveBadge />;
     }
     if (isRanked) {
       return (
@@ -284,6 +282,8 @@ export function NCAABSlate() {
               const dkOdds = gameOddsMap[game.id];
               const isRanked =
                 game.home_team_rank !== null || game.visitor_team_rank !== null;
+              const liveGame = live.getGame(game.visitor_team_name, game.home_team_name);
+              const showScore = liveGame && liveGame.state !== "pre" && liveGame.awayScore !== null;
 
               return (
                 <motion.div
@@ -299,7 +299,11 @@ export function NCAABSlate() {
                         <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
                           {formatGameTime(game.date)}
                         </span>
-                        {getStatusBadge(game.status, isRanked, game.is_featured)}
+                        {liveGame?.state === "in" ? (
+                          <LiveBadge detail={liveGame.detail} />
+                        ) : (
+                          getStatusBadge(liveGame?.state === "post" ? "Final" : game.status, isRanked, game.is_featured)
+                        )}
                       </div>
 
                       {/* Matchup with Rankings — away team first */}
@@ -312,6 +316,9 @@ export function NCAABSlate() {
                             </Badge>
                           )}
                           <span className="font-bold">{game.visitor_team_name}</span>
+                          {showScore && (
+                            <span className="ml-auto font-bold tabular-nums text-lg">{liveGame.awayScore}</span>
+                          )}
                         </div>
                         <span className="text-terminal-amber mx-2 text-sm">@</span>
                         <div className="flex items-center gap-2">
@@ -322,6 +329,9 @@ export function NCAABSlate() {
                             </Badge>
                           )}
                           <span className="font-bold">{game.home_team_name}</span>
+                          {showScore && (
+                            <span className="ml-auto font-bold tabular-nums text-lg">{liveGame.homeScore}</span>
+                          )}
                         </div>
                       </div>
 

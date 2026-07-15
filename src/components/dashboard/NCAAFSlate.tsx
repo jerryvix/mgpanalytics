@@ -13,6 +13,9 @@ import { FollowButton } from "@/components/ui/FollowButton";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LiveBadge } from "@/components/ui/LiveBadge";
+import { useLiveScores } from "@/hooks/useLiveScores";
+import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
 
 interface Game {
   id: string;
@@ -59,6 +62,7 @@ export function NCAAFSlate() {
   const [oddsLoading, setOddsLoading] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
+  const live = useLiveScores("NCAAF");
 
   useEffect(() => {
     fetchGames();
@@ -66,14 +70,15 @@ export function NCAAFSlate() {
 
   const fetchGames = async () => {
     setLoading(true);
-    const now = new Date();
+    // Reach back 5h so games currently in progress stay on the slate
+    const windowStart = new Date(Date.now() - 5 * 60 * 60 * 1000);
 
     // NCAAF is weekly — show the next up-to-30 upcoming matchups regardless of
     // how far out, so the slate is never falsely empty on a non-gameday.
     const { data: gamesData, error: gamesError } = await supabase
       .from("ncaaf_games")
       .select("*")
-      .gte("date", now.toISOString())
+      .gte("date", windowStart.toISOString())
       .order("date", { ascending: true })
       .limit(30);
 
@@ -83,9 +88,7 @@ export function NCAAFSlate() {
       return;
     }
 
-    const upcomingGames = (gamesData || []).filter(
-      (game) => !game.status?.toLowerCase().startsWith("final")
-    );
+    const upcomingGames = (gamesData || []).filter((game) => !isFinalStatus(game.status));
     setGames(upcomingGames as unknown as Game[]);
 
     if (upcomingGames.length > 0) {
@@ -132,13 +135,8 @@ export function NCAAFSlate() {
   };
 
   const getStatusBadge = (status: string, isRanked: boolean, isFeatured: boolean) => {
-    const statusLower = (status || "").toLowerCase();
-    if (statusLower.includes("progress") || statusLower === "live") {
-      return (
-        <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green text-[10px] font-mono animate-pulse">
-          LIVE
-        </Badge>
-      );
+    if (isLiveStatus(status)) {
+      return <LiveBadge />;
     }
     if (isRanked) {
       return (
@@ -235,6 +233,8 @@ export function NCAAFSlate() {
           {games.map((game, index) => {
             const dkOdds = gameOddsMap[game.id];
             const isRanked = game.home_team_rank !== null || game.visitor_team_rank !== null;
+            const liveGame = live.getGame(game.visitor_team_name, game.home_team_name);
+            const showScore = liveGame && liveGame.state !== "pre" && liveGame.awayScore !== null;
             return (
               <motion.div
                 key={game.id}
@@ -248,7 +248,11 @@ export function NCAAFSlate() {
                       <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
                         {formatGameDate(game.date)}
                       </span>
-                      {getStatusBadge(game.status, isRanked, game.is_featured)}
+                      {liveGame?.state === "in" ? (
+                        <LiveBadge detail={liveGame.detail} />
+                      ) : (
+                        getStatusBadge(liveGame?.state === "post" ? "Final" : game.status, isRanked, game.is_featured)
+                      )}
                     </div>
 
                     {/* Matchup — away team first */}
@@ -269,6 +273,9 @@ export function NCAAFSlate() {
                             sport: "NCAAF",
                           }}
                         />
+                        {showScore && (
+                          <span className="ml-auto font-bold tabular-nums text-lg">{liveGame.awayScore}</span>
+                        )}
                       </div>
                       <span className="text-terminal-amber mx-2 text-sm">@</span>
                       <div className="flex items-center gap-2">
@@ -287,6 +294,9 @@ export function NCAAFSlate() {
                             sport: "NCAAF",
                           }}
                         />
+                        {showScore && (
+                          <span className="ml-auto font-bold tabular-nums text-lg">{liveGame.homeScore}</span>
+                        )}
                       </div>
                     </div>
 

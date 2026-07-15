@@ -12,6 +12,9 @@ import { TrendingNow } from "@/components/dashboard/TrendingNow";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LiveBadge } from "@/components/ui/LiveBadge";
+import { useLiveScores } from "@/hooks/useLiveScores";
+import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
 
 interface Game {
   id: number;
@@ -54,6 +57,7 @@ export function NFLSlate() {
   const [oddsLoading, setOddsLoading] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
+  const live = useLiveScores("NFL");
 
   useEffect(() => {
     fetchGames();
@@ -146,11 +150,13 @@ export function NFLSlate() {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusLower = status.toLowerCase();
-    if (statusLower === "in progress" || statusLower === "live") {
+    if (isLiveStatus(status)) {
+      return <LiveBadge />;
+    }
+    if (isFinalStatus(status)) {
       return (
-        <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green text-[10px] font-mono animate-pulse">
-          LIVE
+        <Badge className="bg-muted text-muted-foreground border-border text-[10px] font-mono">
+          FINAL
         </Badge>
       );
     }
@@ -230,7 +236,8 @@ export function NFLSlate() {
         >
           {games.map((game, index) => {
             const dkOdds = gameOddsMap[game.id];
-            
+            const liveGame = live.getGame(game.visitor_team_name, game.home_team_name);
+
             return (
               <motion.div
                 key={game.id}
@@ -245,7 +252,11 @@ export function NFLSlate() {
                       <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
                         {formatGameTime(game.date)}
                       </span>
-                      {getStatusBadge(game.status)}
+                      {liveGame?.state === "in" ? (
+                        <LiveBadge detail={liveGame.detail} />
+                      ) : (
+                        getStatusBadge(liveGame?.state === "post" ? "Final" : game.status)
+                      )}
                     </div>
 
                     {/* Matchup */}
@@ -256,6 +267,20 @@ export function NFLSlate() {
                       <TeamLogo sport="NFL" name={game.home_team_name} size={22} />
                       <span className="font-bold">{game.home_team_name}</span>
                     </div>
+
+                    {/* Live / final score */}
+                    {liveGame && liveGame.state !== "pre" && liveGame.awayScore !== null && (
+                      <div className="flex items-center gap-2 font-mono text-lg font-bold tabular-nums -mt-2 mb-3">
+                        <span className="text-foreground">{liveGame.awayScore}</span>
+                        <span className="text-muted-foreground text-sm">—</span>
+                        <span className="text-foreground">{liveGame.homeScore}</span>
+                        {liveGame.state === "in" && liveGame.clock && (
+                          <span className="text-[10px] text-red-400 uppercase tracking-wider ml-1">
+                            {liveGame.detail}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* DraftKings Odds Section */}
                     <div className="bg-terminal-green/5 border border-terminal-green/20 rounded-lg p-3 mb-3">

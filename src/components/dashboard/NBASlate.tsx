@@ -8,6 +8,8 @@ import { format, parseISO, isAfter, isBefore, addHours, getHours } from "date-fn
 import { NBAGameCard, GamePreviewModal, NBASlateFilters, SortOption, FilterOption } from "@/components/nba";
 import { OffseasonBanner } from "@/components/dashboard/OffseasonBanner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useLiveScores } from "@/hooks/useLiveScores";
+import { isFinalStatus } from "@/lib/gameStatus";
 
 interface Game {
   id: string;
@@ -61,6 +63,7 @@ export function NBASlate() {
   const [sortBy, setSortBy] = useState<SortOption>("time");
   const [filterBy, setFilterBy] = useState<FilterOption>("all");
   const [showCompleted, setShowCompleted] = useState(false);
+  const live = useLiveScores("NBA");
 
   const fetchGames = useCallback(async (isManualRefresh = false) => {
     if (isManualRefresh) {
@@ -76,7 +79,7 @@ export function NBASlate() {
     const { data: gamesData, error: gamesError } = await supabase
       .from("nba_games")
       .select("*")
-      .gte("date", now.toISOString())
+      .gte("date", new Date(now.getTime() - 4 * 60 * 60 * 1000).toISOString())
       .lte("date", in48Hours.toISOString())
       .order("date", { ascending: true });
 
@@ -122,9 +125,7 @@ export function NBASlate() {
 
     // Filter by completion status
     if (!showCompleted) {
-      filteredGames = filteredGames.filter(
-        (game) => !game.status.toLowerCase().startsWith("final")
-      );
+      filteredGames = filteredGames.filter((game) => !isFinalStatus(game.status));
     }
 
     // Apply filter type
@@ -297,6 +298,7 @@ export function NBASlate() {
               key={game.id}
               game={game}
               odds={gameOddsMap[game.id] || null}
+              liveGame={live.getGame(game.visitor_team_name, game.home_team_name)}
               index={index}
               onViewOdds={handleViewAllOdds}
               onViewPreview={handleViewPreview}

@@ -9,6 +9,9 @@ import { GamePropsPreview } from "@/components/props/GamePropsPreview";
 import { getTeamAbbrev } from "@/utils/teamAbbreviations";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
+import { LiveBadge } from "@/components/ui/LiveBadge";
+import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
+import type { LiveGame } from "@/lib/liveScores";
 
 interface NBAOdds {
   id: string;
@@ -40,6 +43,7 @@ interface InjuryInfo {
 interface NBAGameCardProps {
   game: NBAGame;
   odds: NBAOdds | null;
+  liveGame?: LiveGame;
   injuries?: InjuryInfo[];
   lineMovement?: {
     spreadChange: number;
@@ -54,6 +58,7 @@ interface NBAGameCardProps {
 export function NBAGameCard({
   game,
   odds,
+  liveGame,
   injuries = [],
   lineMovement,
   index,
@@ -78,11 +83,13 @@ export function NBAGameCard({
   };
 
   const getStatusBadge = (status: string) => {
-    const statusLower = status.toLowerCase();
-    if (statusLower === "in progress" || statusLower === "live") {
+    if (isLiveStatus(status)) {
+      return <LiveBadge />;
+    }
+    if (isFinalStatus(status)) {
       return (
-        <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green text-[10px] font-mono animate-pulse">
-          LIVE
+        <Badge className="bg-muted text-muted-foreground border-border text-[10px] font-mono">
+          FINAL
         </Badge>
       );
     }
@@ -124,7 +131,11 @@ export function NBAGameCard({
             <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
               {formatGameTime(game.date)}
             </span>
-            {getStatusBadge(game.status)}
+            {liveGame?.state === "in" ? (
+              <LiveBadge detail={liveGame.detail} />
+            ) : (
+              getStatusBadge(liveGame?.state === "post" ? "Final" : game.status)
+            )}
           </div>
 
           {/* Matchup - Visitor @ Home format (standard convention) */}
@@ -132,6 +143,9 @@ export function NBAGameCard({
             <div className="flex items-center gap-2">
               <TeamLogo sport="NBA" name={game.visitor_team_name} size={22} />
               <span className="font-bold">{game.visitor_team_name}</span>
+              {liveGame && liveGame.state !== "pre" && liveGame.awayScore !== null && (
+                <span className="ml-auto font-bold tabular-nums text-lg">{liveGame.awayScore}</span>
+              )}
             </div>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-terminal-cyan text-xs ml-7">@</span>
@@ -139,6 +153,9 @@ export function NBAGameCard({
             <div className="flex items-center gap-2 mt-1">
               <TeamLogo sport="NBA" name={game.home_team_name} size={22} />
               <span className="font-bold">{game.home_team_name}</span>
+              {liveGame && liveGame.state !== "pre" && liveGame.homeScore !== null && (
+                <span className="ml-auto font-bold tabular-nums text-lg">{liveGame.homeScore}</span>
+              )}
             </div>
           </div>
 
