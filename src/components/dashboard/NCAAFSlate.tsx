@@ -12,6 +12,7 @@ import { TrendingNow } from "@/components/dashboard/TrendingNow";
 import { FollowButton } from "@/components/ui/FollowButton";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Game {
   id: string;
@@ -199,9 +200,20 @@ export function NCAAFSlate() {
       </motion.div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-terminal-amber" />
-          <span className="ml-2 font-mono text-muted-foreground">LOADING FEED...</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i} className="bg-card border-terminal-amber/30">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-24 w-full" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       ) : games.length === 0 ? (
         <Card className="bg-card border-terminal-amber/30">

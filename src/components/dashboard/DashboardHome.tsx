@@ -18,6 +18,7 @@ import { YourTeams } from "@/components/dashboard/YourTeams";
 import { FantasyMovers } from "@/components/dashboard/FantasyMovers";
 import { EdgeTicker } from "@/components/dashboard/EdgeTicker";
 import { TeamLogo } from "@/components/ui/TeamLogo";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Game {
   id: number | string;
@@ -643,7 +644,7 @@ export function DashboardHome() {
           {loading ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-10 bg-card/50 rounded animate-pulse" />
+                <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
           ) : moneyFlows.length > 0 ? (
@@ -729,7 +730,7 @@ export function DashboardHome() {
           {loading ? (
             <div className="space-y-2">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-12 bg-card/50 rounded animate-pulse" />
+                <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
           ) : upcomingGames.length > 0 ? (
