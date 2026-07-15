@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Users, Info, Loader2, Globe, Trophy, TrendingUp } from "lucide-react";
 import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
+import { SeasonLeaders } from "@/components/players/SeasonLeaders";
 import { NFLPlayerCard } from "@/components/players/NFLPlayerCard";
 import { searchNFLPlayers, NFLPlayer } from "@/services/balldontlie/nflPlayers";
 import { NFLSlatePlayersGrid } from "@/components/nfl";
@@ -23,7 +24,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function NFLPlayers() {
-  const [activeTab, setActiveTab] = useState<"slate" | "search" | "futures">("slate");
+  const [activeTab, setActiveTab] = useState<"slate" | "search" | "season" | "futures">("slate");
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: slateData } = useNFLSlateLeaders({ enabled: activeTab === "slate" });
@@ -63,7 +64,7 @@ export default function NFLPlayers() {
       </div>
 
       {/* Tab Navigation */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search" | "futures")}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search" | "season" | "futures")}>
         <TabsList className="bg-muted/50">
           <TabsTrigger value="slate" className="gap-2 text-xs sm:text-sm">
             <Trophy className="w-4 h-4" />
@@ -72,6 +73,10 @@ export default function NFLPlayers() {
           <TabsTrigger value="search" className="gap-2 text-xs sm:text-sm">
             <Globe className="w-4 h-4" />
             <span className="hidden sm:inline">Search All </span>Players
+          </TabsTrigger>
+          <TabsTrigger value="season" className="gap-2 text-xs sm:text-sm">
+            <Trophy className="w-4 h-4" />
+            <span className="hidden sm:inline">2025 </span>Leaders
           </TabsTrigger>
           <TabsTrigger value="futures" className="gap-2 text-xs sm:text-sm">
             <TrendingUp className="w-4 h-4" />
@@ -171,9 +176,14 @@ export default function NFLPlayers() {
           )}
         </TabsContent>
 
-        {/* Season Futures Tab — pre-season O/U board (team totals + player props) */}
+        {/* 2025 League Leaders — final-season top-10 boards */}
+        <TabsContent value="season" className="mt-6">
+          <SeasonLeaders season={2025} />
+        </TabsContent>
+
+        {/* Season Futures Tab — player prop futures (team totals live under Games > Futures) */}
         <TabsContent value="futures" className="mt-6">
-          <PropFuturesBoard sport="NFL" />
+          <PropFuturesBoard sport="NFL" view="players" />
         </TabsContent>
       </Tabs>
     </div>

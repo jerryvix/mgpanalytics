@@ -95,7 +95,6 @@ const sportsMenuItems = [
     subItems: [
       { title: "Games", url: "/dashboard/ncaaf" },
       { title: "Trending Bets", url: "/dashboard/ncaaf/trending" },
-      { title: "Futures", url: "/dashboard/ncaaf/futures" },
     ]
   },
   {

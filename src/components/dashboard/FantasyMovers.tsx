@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { TrendingUp, Zap } from "lucide-react";
+import { TrendingUp, Zap, Flame } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { FormBar } from "@/components/ui/FormBar";
-import { heatText, avgDeltaHeat, hoverLift } from "@/lib/heat";
+import { hoverLift } from "@/lib/heat";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 
 interface Mover {
@@ -140,8 +140,11 @@ export function FantasyMovers() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 {m.form.length > 0 && <FormBar games={m.form} />}
-                <span className={`inline-flex items-center gap-0.5 font-mono text-sm font-bold ${heatText(avgDeltaHeat(m.delta))}`}>
-                  <TrendingUp className="w-3.5 h-3.5" />+{fmtAvg(m.delta)}
+                {/* Positive form delta is always green (green = good, everywhere in
+                    the app); a flame marks the truly scorching (+.200 or more). */}
+                <span className="inline-flex items-center gap-0.5 font-mono text-sm font-bold text-terminal-green">
+                  {m.delta >= 0.2 ? <Flame className="w-3.5 h-3.5 text-terminal-amber" /> : <TrendingUp className="w-3.5 h-3.5" />}
+                  +{fmtAvg(m.delta)}
                 </span>
               </div>
             </Link>

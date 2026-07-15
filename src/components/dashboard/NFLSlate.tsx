@@ -12,6 +12,7 @@ import { TrendingNow } from "@/components/dashboard/TrendingNow";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
 import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
@@ -57,6 +58,7 @@ export function NFLSlate() {
   const [oddsLoading, setOddsLoading] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
+  const [pageView, setPageView] = useState<"games" | "futures">("games");
   const live = useLiveScores("NFL");
 
   useEffect(() => {
@@ -201,6 +203,27 @@ export function NFLSlate() {
         </div>
       </motion.div>
 
+      {/* Games | Futures view switch (Matchbetwin-style) */}
+      <div className="flex gap-2">
+        {(["games", "futures"] as const).map((v) => (
+          <button
+            key={v}
+            onClick={() => setPageView(v)}
+            className={`font-mono text-xs uppercase tracking-wider px-4 py-2 rounded-md border transition-colors ${
+              pageView === v
+                ? "text-terminal-green border-terminal-green/50 bg-terminal-green/10"
+                : "text-muted-foreground border-border bg-card/50 hover:text-foreground"
+            }`}
+          >
+            {v === "games" ? "Games" : "Futures"}
+          </button>
+        ))}
+      </div>
+
+      {pageView === "futures" ? (
+        <PropFuturesBoard sport="NFL" view="team" />
+      ) : (
+      <>
       {/* Loading State — skeleton cards shaped like the real slate */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -382,6 +405,8 @@ export function NFLSlate() {
             );
           })}
         </motion.div>
+      )}
+      </>
       )}
 
       {/* All Sportsbooks Odds Panel */}
