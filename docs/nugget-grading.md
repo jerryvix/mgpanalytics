@@ -32,7 +32,17 @@ Known catches to date (regression list — re-check these patterns every review)
 - "rookie Drake Maye" in the '25 season (drafted '24 — second-year)
 - "six franchises never won a World Series" (it's five)
 
-## Review cadence
+## Review cadence — point of generation, every time
 
-The scheduled "nugget fact-check" routine runs weekly: web-verify each claim, score per the
-rubric, flip `verified: false` on failures, and report the scorecard to Jerry.
+There is NO fixed review schedule (a weekly cron was tried and dropped by owner decision,
+Jul 2026). Instead:
+
+1. **Every generation is a verification.** Whenever a nugget or edge is created OR edited —
+   in any session, human or automated — every named fact and odds line in it must be
+   web-verified in that same session before `verified: true` is set. No exceptions.
+2. **Every build re-runs Gate 1** (`nuggetIntegrity.test.ts`), so nothing structurally
+   unsound ships even if it slipped into the file.
+3. **Freshness is visible to users**: every Trending Bets card displays its `updated`
+   capture date, and cards older than 7 days render a "line may have moved" tag. Odds are
+   re-captured whenever a session touches the file, and any session that notices a stale
+   or wrong entry fixes or hides it on the spot rather than waiting for a review pass.

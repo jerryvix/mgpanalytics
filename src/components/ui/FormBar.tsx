@@ -18,7 +18,9 @@ export function FormBar({ games, className }: FormBarProps) {
         <div
           key={i}
           className={`w-1.5 rounded-sm transition-all ${
-            hit ? "bg-terminal-green h-4" : "bg-muted h-1.5"
+            hit
+              ? "bg-terminal-green h-4"
+              : "bg-muted h-2 ring-1 ring-inset ring-foreground/50"
           }`}
         />
       ))}

@@ -22,7 +22,11 @@ const CATEGORY_META: Record<BetCategory, { icon: typeof Trophy; label: string }>
   "Game Props": { icon: Target, label: "Game Props" },
 };
 
+const STALE_DAYS = 7;
+
 function BetRow({ bet, index }: { bet: TrendingBet; index: number }) {
+  const ageDays = Math.floor((Date.now() - Date.parse(bet.updated)) / 86_400_000);
+  const stale = Number.isFinite(ageDays) && ageDays > STALE_DAYS;
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -57,7 +61,10 @@ function BetRow({ bet, index }: { bet: TrendingBet; index: number }) {
             </div>
             <p className="text-sm text-foreground/90 leading-relaxed">{bet.nugget}</p>
             <p className="text-[10px] text-muted-foreground font-mono mt-2">
-              {bet.book} · source: {bet.source}
+              {bet.book} · source: {bet.source} · odds as of {bet.updated}
+              {stale && (
+                <span className="text-terminal-amber ml-1.5">⚠ line may have moved</span>
+              )}
             </p>
           </div>
         </CardContent>

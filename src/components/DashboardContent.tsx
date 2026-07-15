@@ -4,10 +4,10 @@ import { NFLSlate } from "@/components/dashboard/NFLSlate";
 import { NBASlate } from "@/components/dashboard/NBASlate";
 import { NCAABSlate } from "@/components/dashboard/NCAABSlate";
 import { NCAAFSlate } from "@/components/dashboard/NCAAFSlate";
+import { MLBSlate } from "@/components/dashboard/MLBSlate";
 import { TrendingBets } from "@/components/dashboard/TrendingBets";
 import { AdminPanel } from "@/components/dashboard/AdminPanel";
 import SyncObservatory from "@/pages/SyncObservatory";
-import { ComingSoon } from "@/components/dashboard/ComingSoon";
 import Analyst from "@/pages/Analyst";
 import NFLPlayers from "@/pages/NFLPlayers";
 import NFLPlayerDetail from "@/pages/NFLPlayerDetail";
@@ -53,7 +53,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="nba" element={<NBASlate />} />
         <Route path="nba/players" element={<NBAPlayers />} />
         <Route path="nba/players/:playerId" element={<NBAPlayerDetailPage />} />
-        <Route path="mlb" element={<ComingSoon sport="MLB" emoji="⚾" />} />
+        <Route path="mlb" element={<MLBSlate />} />
         <Route path="mlb/players" element={<MLBPlayers />} />
         <Route path="mlb/players/:playerId" element={<MLBPlayerDetail />} />
         <Route path="mlb/trending" element={<TrendingBets sport="MLB" />} />

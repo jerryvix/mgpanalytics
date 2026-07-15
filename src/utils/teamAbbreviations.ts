@@ -151,12 +151,14 @@ export function getTeamAbbrev(teamName: string, league?: string): string {
     if (upper === "NBA" && NBA_TEAM_ABBREVS[teamName]) return NBA_TEAM_ABBREVS[teamName];
     if (upper === "NFL" && NFL_TEAM_ABBREVS[teamName]) return NFL_TEAM_ABBREVS[teamName];
     if ((upper === "NCAAB" || upper === "CBB") && NCAAB_TEAM_ABBREVS[teamName]) return NCAAB_TEAM_ABBREVS[teamName];
+    if (upper === "MLB" && MLB_TEAM_ABBREVS[teamName]) return MLB_TEAM_ABBREVS[teamName];
   }
 
   // Try all maps
   if (NBA_TEAM_ABBREVS[teamName]) return NBA_TEAM_ABBREVS[teamName];
   if (NFL_TEAM_ABBREVS[teamName]) return NFL_TEAM_ABBREVS[teamName];
   if (NCAAB_TEAM_ABBREVS[teamName]) return NCAAB_TEAM_ABBREVS[teamName];
+  if (MLB_TEAM_ABBREVS[teamName]) return MLB_TEAM_ABBREVS[teamName];
 
   // Fallback: extract a reasonable short form
   // For NCAAB-style names like "Gonzaga Bulldogs", use first word capped at 5 chars
@@ -169,6 +171,40 @@ export function getTeamAbbrev(teamName: string, league?: string): string {
   }
   return teamName.substring(0, 4).toUpperCase();
 }
+
+const MLB_TEAM_ABBREVS: Record<string, string> = {
+  "Arizona Diamondbacks": "AZ",
+  "Atlanta Braves": "ATL",
+  "Baltimore Orioles": "BAL",
+  "Boston Red Sox": "BOS",
+  "Chicago Cubs": "CHC",
+  "Chicago White Sox": "CWS",
+  "Cincinnati Reds": "CIN",
+  "Cleveland Guardians": "CLE",
+  "Colorado Rockies": "COL",
+  "Detroit Tigers": "DET",
+  "Houston Astros": "HOU",
+  "Kansas City Royals": "KC",
+  "Los Angeles Angels": "LAA",
+  "Los Angeles Dodgers": "LAD",
+  "Miami Marlins": "MIA",
+  "Milwaukee Brewers": "MIL",
+  "Minnesota Twins": "MIN",
+  "New York Mets": "NYM",
+  "New York Yankees": "NYY",
+  "Athletics": "ATH",
+  "Oakland Athletics": "ATH",
+  "Philadelphia Phillies": "PHI",
+  "Pittsburgh Pirates": "PIT",
+  "San Diego Padres": "SD",
+  "San Francisco Giants": "SF",
+  "Seattle Mariners": "SEA",
+  "St. Louis Cardinals": "STL",
+  "Tampa Bay Rays": "TB",
+  "Texas Rangers": "TEX",
+  "Toronto Blue Jays": "TOR",
+  "Washington Nationals": "WSH",
+};
 
 // MLB Stats API abbreviation → ESPN logo slug (only where they differ).
 // ESPN's CDN uses its own slugs, e.g. https://a.espncdn.com/i/teamlogos/mlb/500/chw.png
@@ -188,4 +224,4 @@ export function getEspnMlbSlug(abbr: string): string {
   return (MLB_API_TO_ESPN_SLUG[a] ?? a).toLowerCase();
 }
 
-export { NBA_TEAM_ABBREVS, NFL_TEAM_ABBREVS, NCAAB_TEAM_ABBREVS };
+export { NBA_TEAM_ABBREVS, NFL_TEAM_ABBREVS, NCAAB_TEAM_ABBREVS, MLB_TEAM_ABBREVS };
