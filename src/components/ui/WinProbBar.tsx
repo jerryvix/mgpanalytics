@@ -1,5 +1,6 @@
 import { impliedPair } from "@/lib/odds";
 import { cn } from "@/lib/utils";
+import { CountUp } from "@/components/ui/CountUp";
 
 interface WinProbBarProps {
   homeName: string;
@@ -24,10 +25,10 @@ export function WinProbBar({ homeName, awayName, moneylineHome, moneylineAway, c
     <div className={cn("space-y-1", className)} title="Implied win probability (moneyline, vig removed)">
       <div className="flex items-center justify-between font-mono tabular-nums text-[10px]">
         <span className="text-terminal-green">
-          {shortName(homeName)} {homePct}%
+          {shortName(homeName)} <CountUp value={homePct} suffix="%" />
         </span>
         <span className="text-terminal-amber">
-          {awayPct}% {shortName(awayName)}
+          <CountUp value={awayPct} suffix="%" /> {shortName(awayName)}
         </span>
       </div>
       <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted">

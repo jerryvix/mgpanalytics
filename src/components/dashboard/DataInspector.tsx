@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2, Database, Activity, Clock, AlertTriangle, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { CountUp } from "@/components/ui/CountUp";
 
 interface SyncStatus {
   sport: string;
@@ -331,13 +332,13 @@ export function DataInspector() {
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono text-[10px]">
                         <span className="text-muted-foreground">Players</span>
-                        <span className={c.players > 0 ? "text-terminal-green" : "text-destructive"}>{c.players}</span>
+                        <CountUp value={c.players} className={c.players > 0 ? "text-terminal-green" : "text-destructive"} />
                         <span className="text-muted-foreground">Games</span>
-                        <span className={c.games > 0 ? "text-terminal-green" : "text-muted-foreground"}>{c.games}</span>
+                        <CountUp value={c.games} className={c.games > 0 ? "text-terminal-green" : "text-muted-foreground"} />
                         <span className="text-muted-foreground">Odds</span>
-                        <span className={c.odds > 0 ? "text-terminal-green" : "text-muted-foreground"}>{c.odds}</span>
+                        <CountUp value={c.odds} className={c.odds > 0 ? "text-terminal-green" : "text-muted-foreground"} />
                         <span className="text-muted-foreground">Props</span>
-                        <span className={c.props > 0 ? "text-terminal-green" : "text-muted-foreground"}>{c.props}</span>
+                        <CountUp value={c.props} className={c.props > 0 ? "text-terminal-green" : "text-muted-foreground"} />
                       </div>
                     </div>
                   ))}

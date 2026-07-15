@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { useStreak } from "@/hooks/useStreak";
 import { tierFor, nextMilestone, isMilestoneDay } from "@/lib/streaks";
+import { CountUp } from "@/components/ui/CountUp";
 
 // Compact streak progress card: current tier, streak count, and progress toward
 // the next milestone reward. Celebrates on a milestone day.
@@ -29,7 +30,9 @@ export function StreakCard() {
             <div className="text-2xl leading-none">{tier.emoji}</div>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
-                <span className="font-mono font-bold text-foreground tabular-nums">{n}-day streak</span>
+                <span className="font-mono font-bold text-foreground tabular-nums">
+                  <CountUp value={n} />-day streak
+                </span>
                 <span className="text-xs font-mono text-terminal-amber uppercase tracking-wide">{tier.label}</span>
               </div>
               {celebrating ? (
@@ -54,7 +57,9 @@ export function StreakCard() {
             </div>
             <div className="text-right shrink-0 hidden sm:block">
               <div className="text-[10px] text-muted-foreground font-mono uppercase">Best</div>
-              <div className="font-mono font-bold text-foreground tabular-nums">{data.longest_streak}</div>
+              <div className="font-mono font-bold text-foreground tabular-nums">
+                <CountUp value={data.longest_streak} />
+              </div>
             </div>
           </div>
         </CardContent>
