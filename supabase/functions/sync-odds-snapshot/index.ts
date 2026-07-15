@@ -147,15 +147,19 @@ serve(async (req) => {
       const month = new Date().getMonth(); // 0=Jan, 11=Dec
       switch (sport) {
         case "NFL":   return month >= 8 || month <= 0;   // Sep–Jan
+        case "NCAAF": return month >= 7 || month <= 0;   // Aug–Jan
+        case "MLB":   return month >= 2 && month <= 10;   // Mar–Nov
         case "NBA":   return month >= 9 || month <= 5;    // Oct–Jun
         case "NCAAB": return month >= 10 || month <= 3;   // Nov–Apr
         default:      return true;
       }
     }
 
-    // Sports sourced from The Odds API (NFL only)
+    // Sports sourced from The Odds API — feeds odds_history (line movement)
     const oddsApiSports = [
       { key: "americanfootball_nfl", name: "NFL", source: "odds_api" as const },
+      { key: "americanfootball_ncaaf", name: "NCAAF", source: "odds_api" as const },
+      { key: "baseball_mlb", name: "MLB", source: "odds_api" as const },
     ];
     // Sports sourced from BDL (NBA, NCAAB)
     const bdlSports = [
