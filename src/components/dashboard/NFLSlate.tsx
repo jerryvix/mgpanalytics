@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
 import { TrendingNow } from "@/components/dashboard/TrendingNow";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 interface Game {
   id: number;
@@ -235,9 +236,11 @@ export function NFLSlate() {
                     </div>
 
                     {/* Matchup */}
-                    <div className="font-mono text-base text-foreground mb-4">
+                    <div className="flex items-center gap-2 font-mono text-base text-foreground mb-4">
+                      <TeamLogo sport="NFL" name={game.visitor_team_name} size={22} />
                       <span className="font-bold">{game.visitor_team_name}</span>
-                      <span className="text-terminal-green mx-2">@</span>
+                      <span className="text-terminal-green mx-1">@</span>
+                      <TeamLogo sport="NFL" name={game.home_team_name} size={22} />
                       <span className="font-bold">{game.home_team_name}</span>
                     </div>
 

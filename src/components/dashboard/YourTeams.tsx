@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { useFollows, FollowRow } from "@/hooks/useFollows";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 const SPORT_TABLE: Record<string, { table: string; league?: string; slug: string }> = {
   NFL: { table: "games", league: "NFL", slug: "nfl" },
@@ -109,12 +110,15 @@ export function YourTeams() {
               to={`/dashboard/${g.slug}`}
               className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 hover:border-terminal-green/40 transition-colors group"
             >
-              <span className="text-sm font-mono min-w-0">
-                <span className="font-bold text-foreground group-hover:text-terminal-green transition-colors">
-                  {g.team}
-                </span>{" "}
-                <span className="text-muted-foreground">
-                  {g.isHome ? "vs" : "@"} {g.opponent}
+              <span className="flex items-center gap-2 text-sm font-mono min-w-0">
+                <TeamLogo sport={g.sport} name={g.team} size={22} />
+                <span className="truncate">
+                  <span className="font-bold text-foreground group-hover:text-terminal-green transition-colors">
+                    {g.team}
+                  </span>{" "}
+                  <span className="text-muted-foreground">
+                    {g.isHome ? "vs" : "@"} {g.opponent}
+                  </span>
                 </span>
               </span>
               <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono shrink-0">

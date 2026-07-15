@@ -10,11 +10,14 @@ import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
 import { TrendingNow } from "@/components/dashboard/TrendingNow";
 import { FollowButton } from "@/components/ui/FollowButton";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 interface Game {
   id: string;
   home_team_name: string;
   visitor_team_name: string;
+  home_team_id: string | null;
+  visitor_team_id: string | null;
   status: string;
   date: string;
   venue: string | null;
@@ -238,6 +241,7 @@ export function NCAAFSlate() {
                     {/* Matchup — away team first */}
                     <div className="font-mono text-base text-foreground mb-4">
                       <div className="flex items-center gap-2">
+                        <TeamLogo sport="NCAAF" name={game.visitor_team_name} espnId={game.visitor_team_id} size={22} />
                         {formatRank(game.visitor_team_rank) && (
                           <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
                             {formatRank(game.visitor_team_rank)}
@@ -255,6 +259,7 @@ export function NCAAFSlate() {
                       </div>
                       <span className="text-terminal-amber mx-2 text-sm">@</span>
                       <div className="flex items-center gap-2">
+                        <TeamLogo sport="NCAAF" name={game.home_team_name} espnId={game.home_team_id} size={22} />
                         {formatRank(game.home_team_rank) && (
                           <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
                             {formatRank(game.home_team_rank)}
