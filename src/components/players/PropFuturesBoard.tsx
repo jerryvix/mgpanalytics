@@ -7,12 +7,7 @@ import { Input } from "@/components/ui/input";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { FuturesInsight } from "@/components/players/FuturesInsight";
 import { NCAAF_TEAM_IDS } from "@/data/ncaafTeamIds";
-import {
-  NFL_FUTURES,
-  NCAAF_FUTURES,
-  FUTURES_CAPTURED_AT,
-  FUTURES_BOOK,
-} from "@/data/propFutures";
+import { NFL_FUTURES, NCAAF_FUTURES } from "@/data/propFutures";
 
 // Pre-season futures board: team win totals + season-long player props.
 // Static by design — these lines mostly move only on major trades/injuries,
@@ -69,7 +64,7 @@ export function PropFuturesBoard({ sport, view = "all" }: PropFuturesBoardProps)
             {sport} SEASON FUTURES
           </h2>
           <p className="text-xs text-muted-foreground font-mono">
-            {FUTURES_BOOK} board · captured {FUTURES_CAPTURED_AT} · pre-season snapshot, refreshed yearly
+            Season-long O/U board
             <span className="text-terminal-green"> · tap any line for the MGP Angle</span>
           </p>
         </div>
