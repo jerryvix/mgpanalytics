@@ -154,11 +154,14 @@ export type Database = {
       }
       games: {
         Row: {
+          away_score: number | null
           created_at: string
           date: string
           external_id: string | null
+          home_score: number | null
           home_team_name: string
           id: number
+          is_final: boolean | null
           league: string
           postseason: boolean | null
           season: number | null
@@ -168,11 +171,14 @@ export type Database = {
           week: number | null
         }
         Insert: {
+          away_score?: number | null
           created_at?: string
           date: string
           external_id?: string | null
+          home_score?: number | null
           home_team_name: string
           id?: number
+          is_final?: boolean | null
           league: string
           postseason?: boolean | null
           season?: number | null
@@ -182,11 +188,14 @@ export type Database = {
           week?: number | null
         }
         Update: {
+          away_score?: number | null
           created_at?: string
           date?: string
           external_id?: string | null
+          home_score?: number | null
           home_team_name?: string
           id?: number
+          is_final?: boolean | null
           league?: string
           postseason?: boolean | null
           season?: number | null
@@ -231,13 +240,16 @@ export type Database = {
       }
       mlb_games: {
         Row: {
+          away_score: number | null
           created_at: string | null
           date: string
           external_id: string | null
+          home_score: number | null
           home_team_id: string | null
           home_team_name: string
           id: string
           is_featured: boolean | null
+          is_final: boolean | null
           season: number | null
           starting_pitcher_away: string | null
           starting_pitcher_home: string | null
@@ -249,13 +261,16 @@ export type Database = {
           weather: string | null
         }
         Insert: {
+          away_score?: number | null
           created_at?: string | null
           date: string
           external_id?: string | null
+          home_score?: number | null
           home_team_id?: string | null
           home_team_name: string
           id?: string
           is_featured?: boolean | null
+          is_final?: boolean | null
           season?: number | null
           starting_pitcher_away?: string | null
           starting_pitcher_home?: string | null
@@ -267,13 +282,16 @@ export type Database = {
           weather?: string | null
         }
         Update: {
+          away_score?: number | null
           created_at?: string | null
           date?: string
           external_id?: string | null
+          home_score?: number | null
           home_team_id?: string | null
           home_team_name?: string
           id?: string
           is_featured?: boolean | null
+          is_final?: boolean | null
           season?: number | null
           starting_pitcher_away?: string | null
           starting_pitcher_home?: string | null
@@ -341,12 +359,15 @@ export type Database = {
       }
       nba_games: {
         Row: {
+          away_score: number | null
           created_at: string
           date: string
           external_id: string | null
+          home_score: number | null
           home_team_id: number | null
           home_team_name: string
           id: string
+          is_final: boolean | null
           season: number | null
           status: string
           updated_at: string
@@ -354,12 +375,15 @@ export type Database = {
           visitor_team_name: string
         }
         Insert: {
+          away_score?: number | null
           created_at?: string
           date: string
           external_id?: string | null
+          home_score?: number | null
           home_team_id?: number | null
           home_team_name: string
           id?: string
+          is_final?: boolean | null
           season?: number | null
           status?: string
           updated_at?: string
@@ -367,12 +391,15 @@ export type Database = {
           visitor_team_name: string
         }
         Update: {
+          away_score?: number | null
           created_at?: string
           date?: string
           external_id?: string | null
+          home_score?: number | null
           home_team_id?: number | null
           home_team_name?: string
           id?: string
+          is_final?: boolean | null
           season?: number | null
           status?: string
           updated_at?: string
@@ -436,15 +463,18 @@ export type Database = {
       }
       ncaab_games: {
         Row: {
+          away_score: number | null
           created_at: string | null
           date: string
           external_id: string | null
+          home_score: number | null
           home_team_conference: string | null
           home_team_id: string | null
           home_team_name: string
           home_team_rank: number | null
           id: string
           is_featured: boolean | null
+          is_final: boolean | null
           season: number | null
           status: string
           updated_at: string | null
@@ -454,15 +484,18 @@ export type Database = {
           visitor_team_rank: number | null
         }
         Insert: {
+          away_score?: number | null
           created_at?: string | null
           date: string
           external_id?: string | null
+          home_score?: number | null
           home_team_conference?: string | null
           home_team_id?: string | null
           home_team_name: string
           home_team_rank?: number | null
           id?: string
           is_featured?: boolean | null
+          is_final?: boolean | null
           season?: number | null
           status?: string
           updated_at?: string | null
@@ -472,15 +505,18 @@ export type Database = {
           visitor_team_rank?: number | null
         }
         Update: {
+          away_score?: number | null
           created_at?: string | null
           date?: string
           external_id?: string | null
+          home_score?: number | null
           home_team_conference?: string | null
           home_team_id?: string | null
           home_team_name?: string
           home_team_rank?: number | null
           id?: string
           is_featured?: boolean | null
+          is_final?: boolean | null
           season?: number | null
           status?: string
           updated_at?: string | null
@@ -546,15 +582,18 @@ export type Database = {
       }
       ncaaf_games: {
         Row: {
+          away_score: number | null
           created_at: string | null
           date: string
           external_id: string | null
+          home_score: number | null
           home_team_conference: string | null
           home_team_id: string | null
           home_team_name: string
           home_team_rank: number | null
           id: string
           is_featured: boolean | null
+          is_final: boolean | null
           season: number | null
           status: string
           updated_at: string | null
@@ -566,15 +605,18 @@ export type Database = {
           weather: string | null
         }
         Insert: {
+          away_score?: number | null
           created_at?: string | null
           date: string
           external_id?: string | null
+          home_score?: number | null
           home_team_conference?: string | null
           home_team_id?: string | null
           home_team_name: string
           home_team_rank?: number | null
           id?: string
           is_featured?: boolean | null
+          is_final?: boolean | null
           season?: number | null
           status?: string
           updated_at?: string | null
@@ -586,15 +628,18 @@ export type Database = {
           weather?: string | null
         }
         Update: {
+          away_score?: number | null
           created_at?: string | null
           date?: string
           external_id?: string | null
+          home_score?: number | null
           home_team_conference?: string | null
           home_team_id?: string | null
           home_team_name?: string
           home_team_rank?: number | null
           id?: string
           is_featured?: boolean | null
+          is_final?: boolean | null
           season?: number | null
           status?: string
           updated_at?: string | null
@@ -963,15 +1008,19 @@ export type Database = {
       player_game_logs: {
         Row: {
           assists: number | null
+          at_bats: number | null
           blocks: number | null
           created_at: string | null
+          doubles: number | null
           fantasy_points: number | null
           fantasy_points_ppr: number | null
           fg_attempted: number | null
           fg_made: number | null
           game_date: string | null
           game_id: string | null
+          hits: number | null
           home_away: string | null
+          home_runs: number | null
           id: string
           minutes: number | null
           opponent_abbr: string | null
@@ -986,6 +1035,7 @@ export type Database = {
           player_id: string | null
           points: number | null
           raw_data: Json | null
+          rbi: number | null
           rebounds: number | null
           rec_td: number | null
           rec_yards: number | null
@@ -997,24 +1047,33 @@ export type Database = {
           season: number
           sport: string
           steals: number | null
+          stolen_bases: number | null
+          strikeouts: number | null
           targets: number | null
           team_score: number | null
           three_attempted: number | null
           three_made: number | null
+          total_bases: number | null
+          triples: number | null
           turnovers: number | null
+          walks: number | null
           week: number | null
         }
         Insert: {
           assists?: number | null
+          at_bats?: number | null
           blocks?: number | null
           created_at?: string | null
+          doubles?: number | null
           fantasy_points?: number | null
           fantasy_points_ppr?: number | null
           fg_attempted?: number | null
           fg_made?: number | null
           game_date?: string | null
           game_id?: string | null
+          hits?: number | null
           home_away?: string | null
+          home_runs?: number | null
           id?: string
           minutes?: number | null
           opponent_abbr?: string | null
@@ -1029,6 +1088,7 @@ export type Database = {
           player_id?: string | null
           points?: number | null
           raw_data?: Json | null
+          rbi?: number | null
           rebounds?: number | null
           rec_td?: number | null
           rec_yards?: number | null
@@ -1040,24 +1100,33 @@ export type Database = {
           season: number
           sport: string
           steals?: number | null
+          stolen_bases?: number | null
+          strikeouts?: number | null
           targets?: number | null
           team_score?: number | null
           three_attempted?: number | null
           three_made?: number | null
+          total_bases?: number | null
+          triples?: number | null
           turnovers?: number | null
+          walks?: number | null
           week?: number | null
         }
         Update: {
           assists?: number | null
+          at_bats?: number | null
           blocks?: number | null
           created_at?: string | null
+          doubles?: number | null
           fantasy_points?: number | null
           fantasy_points_ppr?: number | null
           fg_attempted?: number | null
           fg_made?: number | null
           game_date?: string | null
           game_id?: string | null
+          hits?: number | null
           home_away?: string | null
+          home_runs?: number | null
           id?: string
           minutes?: number | null
           opponent_abbr?: string | null
@@ -1072,6 +1141,7 @@ export type Database = {
           player_id?: string | null
           points?: number | null
           raw_data?: Json | null
+          rbi?: number | null
           rebounds?: number | null
           rec_td?: number | null
           rec_yards?: number | null
@@ -1083,11 +1153,16 @@ export type Database = {
           season?: number
           sport?: string
           steals?: number | null
+          stolen_bases?: number | null
+          strikeouts?: number | null
           targets?: number | null
           team_score?: number | null
           three_attempted?: number | null
           three_made?: number | null
+          total_bases?: number | null
+          triples?: number | null
           turnovers?: number | null
+          walks?: number | null
           week?: number | null
         }
         Relationships: [
@@ -1181,9 +1256,12 @@ export type Database = {
         Row: {
           assists: number | null
           assists_per_game: number | null
+          at_bats: number | null
+          batting_avg: number | null
           blocks: number | null
           blocks_per_game: number | null
           created_at: string | null
+          doubles: number | null
           fantasy_points: number | null
           fantasy_points_ppr: number | null
           fg_pct: number | null
@@ -1193,9 +1271,15 @@ export type Database = {
           ft_pct: number | null
           games_played: number | null
           games_started: number | null
+          hit_streak: number | null
+          hit_streak_avg: number | null
+          hits: number | null
+          home_runs: number | null
           id: string
           interceptions: number | null
           minutes_per_game: number | null
+          on_base_pct: number | null
+          ops: number | null
           pass_attempts: number | null
           pass_completions: number | null
           pass_int: number | null
@@ -1206,6 +1290,7 @@ export type Database = {
           points: number | null
           points_per_game: number | null
           raw_data: Json | null
+          rbi: number | null
           rebounds: number | null
           rebounds_per_game: number | null
           rec_td: number | null
@@ -1217,26 +1302,34 @@ export type Database = {
           sacks: number | null
           season: number
           season_type: string | null
+          slugging_pct: number | null
           source: string | null
           sport: string
           steals: number | null
           steals_per_game: number | null
+          stolen_bases: number | null
+          strikeouts: number | null
           tackles: number | null
           targets: number | null
           three_pct: number | null
           three_point_pct: number | null
+          triples: number | null
           turnovers: number | null
           turnovers_per_game: number | null
           updated_at: string | null
+          walks: number | null
           yards_per_carry: number | null
           yards_per_reception: number | null
         }
         Insert: {
           assists?: number | null
           assists_per_game?: number | null
+          at_bats?: number | null
+          batting_avg?: number | null
           blocks?: number | null
           blocks_per_game?: number | null
           created_at?: string | null
+          doubles?: number | null
           fantasy_points?: number | null
           fantasy_points_ppr?: number | null
           fg_pct?: number | null
@@ -1246,9 +1339,15 @@ export type Database = {
           ft_pct?: number | null
           games_played?: number | null
           games_started?: number | null
+          hit_streak?: number | null
+          hit_streak_avg?: number | null
+          hits?: number | null
+          home_runs?: number | null
           id?: string
           interceptions?: number | null
           minutes_per_game?: number | null
+          on_base_pct?: number | null
+          ops?: number | null
           pass_attempts?: number | null
           pass_completions?: number | null
           pass_int?: number | null
@@ -1259,6 +1358,7 @@ export type Database = {
           points?: number | null
           points_per_game?: number | null
           raw_data?: Json | null
+          rbi?: number | null
           rebounds?: number | null
           rebounds_per_game?: number | null
           rec_td?: number | null
@@ -1270,26 +1370,34 @@ export type Database = {
           sacks?: number | null
           season: number
           season_type?: string | null
+          slugging_pct?: number | null
           source?: string | null
           sport: string
           steals?: number | null
           steals_per_game?: number | null
+          stolen_bases?: number | null
+          strikeouts?: number | null
           tackles?: number | null
           targets?: number | null
           three_pct?: number | null
           three_point_pct?: number | null
+          triples?: number | null
           turnovers?: number | null
           turnovers_per_game?: number | null
           updated_at?: string | null
+          walks?: number | null
           yards_per_carry?: number | null
           yards_per_reception?: number | null
         }
         Update: {
           assists?: number | null
           assists_per_game?: number | null
+          at_bats?: number | null
+          batting_avg?: number | null
           blocks?: number | null
           blocks_per_game?: number | null
           created_at?: string | null
+          doubles?: number | null
           fantasy_points?: number | null
           fantasy_points_ppr?: number | null
           fg_pct?: number | null
@@ -1299,9 +1407,15 @@ export type Database = {
           ft_pct?: number | null
           games_played?: number | null
           games_started?: number | null
+          hit_streak?: number | null
+          hit_streak_avg?: number | null
+          hits?: number | null
+          home_runs?: number | null
           id?: string
           interceptions?: number | null
           minutes_per_game?: number | null
+          on_base_pct?: number | null
+          ops?: number | null
           pass_attempts?: number | null
           pass_completions?: number | null
           pass_int?: number | null
@@ -1312,6 +1426,7 @@ export type Database = {
           points?: number | null
           points_per_game?: number | null
           raw_data?: Json | null
+          rbi?: number | null
           rebounds?: number | null
           rebounds_per_game?: number | null
           rec_td?: number | null
@@ -1323,17 +1438,22 @@ export type Database = {
           sacks?: number | null
           season?: number
           season_type?: string | null
+          slugging_pct?: number | null
           source?: string | null
           sport?: string
           steals?: number | null
           steals_per_game?: number | null
+          stolen_bases?: number | null
+          strikeouts?: number | null
           tackles?: number | null
           targets?: number | null
           three_pct?: number | null
           three_point_pct?: number | null
+          triples?: number | null
           turnovers?: number | null
           turnovers_per_game?: number | null
           updated_at?: string | null
+          walks?: number | null
           yards_per_carry?: number | null
           yards_per_reception?: number | null
         }
@@ -1364,6 +1484,7 @@ export type Database = {
           injury_status: string | null
           is_featured: boolean | null
           jersey_number: string | null
+          last_active_season: number | null
           last_name: string | null
           name: string
           position: string | null
@@ -1397,6 +1518,7 @@ export type Database = {
           injury_status?: string | null
           is_featured?: boolean | null
           jersey_number?: string | null
+          last_active_season?: number | null
           last_name?: string | null
           name: string
           position?: string | null
@@ -1430,6 +1552,7 @@ export type Database = {
           injury_status?: string | null
           is_featured?: boolean | null
           jersey_number?: string | null
+          last_active_season?: number | null
           last_name?: string | null
           name?: string
           position?: string | null
@@ -1457,7 +1580,6 @@ export type Database = {
           onboarding_completed: boolean
           onboarding_path: string | null
           preferred_sports: string[] | null
-          trial_ended_at: string | null
           trial_ends_at: string | null
           trial_started_at: string | null
           updated_at: string
@@ -1488,43 +1610,75 @@ export type Database = {
       }
       sync_log: {
         Row: {
+          api_requests_remaining: number | null
+          api_requests_used: number | null
+          api_source: string | null
           completed_at: string | null
           created_at: string
+          data_type: string
+          details: Json | null
+          duration_ms: number | null
           error_message: string | null
+          function_name: string
           id: string
-          records_synced: number | null
+          records_added: number | null
+          records_failed: number | null
+          records_updated: number | null
+          sport: string
           started_at: string
           status: string
-          sync_type: string
+          trigger_source: string
         }
         Insert: {
+          api_requests_remaining?: number | null
+          api_requests_used?: number | null
+          api_source?: string | null
           completed_at?: string | null
           created_at?: string
+          data_type: string
+          details?: Json | null
+          duration_ms?: number | null
           error_message?: string | null
+          function_name: string
           id?: string
-          records_synced?: number | null
+          records_added?: number | null
+          records_failed?: number | null
+          records_updated?: number | null
+          sport: string
           started_at?: string
           status?: string
-          sync_type: string
+          trigger_source?: string
         }
         Update: {
+          api_requests_remaining?: number | null
+          api_requests_used?: number | null
+          api_source?: string | null
           completed_at?: string | null
           created_at?: string
+          data_type?: string
+          details?: Json | null
+          duration_ms?: number | null
           error_message?: string | null
+          function_name?: string
           id?: string
-          records_synced?: number | null
+          records_added?: number | null
+          records_failed?: number | null
+          records_updated?: number | null
+          sport?: string
           started_at?: string
           status?: string
-          sync_type?: string
+          trigger_source?: string
         }
         Relationships: []
       }
       sync_schedule: {
         Row: {
           created_at: string | null
+          cron_interval: string | null
           data_type: string
           error_message: string | null
           id: string
+          is_enabled: boolean | null
           last_sync_at: string | null
           last_sync_status: string | null
           next_scheduled_sync: string | null
@@ -1533,9 +1687,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          cron_interval?: string | null
           data_type: string
           error_message?: string | null
           id?: string
+          is_enabled?: boolean | null
           last_sync_at?: string | null
           last_sync_status?: string | null
           next_scheduled_sync?: string | null
@@ -1544,9 +1700,11 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          cron_interval?: string | null
           data_type?: string
           error_message?: string | null
           id?: string
+          is_enabled?: boolean | null
           last_sync_at?: string | null
           last_sync_status?: string | null
           next_scheduled_sync?: string | null
@@ -1584,6 +1742,36 @@ export type Database = {
           },
         ]
       }
+      user_follows: {
+        Row: {
+          created_at: string
+          entity_key: string
+          entity_label: string | null
+          entity_type: string
+          id: string
+          sport: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_key: string
+          entity_label?: string | null
+          entity_type: string
+          id?: string
+          sport?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_key?: string
+          entity_label?: string | null
+          entity_type?: string
+          id?: string
+          sport?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1601,6 +1789,33 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_streaks: {
+        Row: {
+          current_streak: number
+          last_visit_date: string | null
+          longest_streak: number
+          total_visits: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_visit_date?: string | null
+          longest_streak?: number
+          total_visits?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_visit_date?: string | null
+          longest_streak?: number
+          total_visits?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -1706,6 +1921,18 @@ export type Database = {
           x_username: string
         }[]
       }
+      get_nba_head_to_head: {
+        Args: { p_season?: number; p_team1: string; p_team2: string }
+        Returns: Json
+      }
+      get_nba_team_last_n_games: {
+        Args: { p_before_date?: string; p_n?: number; p_team_name: string }
+        Returns: Json
+      }
+      get_nba_team_record: {
+        Args: { p_season?: number; p_team_name: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1714,6 +1941,23 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      record_daily_visit: {
+        Args: never
+        Returns: {
+          current_streak: number
+          last_visit_date: string | null
+          longest_streak: number
+          total_visits: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "user_streaks"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "admin" | "user"

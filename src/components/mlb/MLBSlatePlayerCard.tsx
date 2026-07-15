@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Flame, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, isToday, isTomorrow } from "date-fns";
+import { FollowButton } from "@/components/ui/FollowButton";
 
 interface GameContext {
   opponent: string;
@@ -156,6 +157,10 @@ export function MLBSlatePlayerCard({
               </div>
               {formatGameContext()}
             </div>
+            <FollowButton
+              entity={{ entityType: "player", entityKey: id, entityLabel: name, sport: "MLB" }}
+              className="shrink-0 -mt-1 -mr-1"
+            />
           </div>
 
           {hasProps && (

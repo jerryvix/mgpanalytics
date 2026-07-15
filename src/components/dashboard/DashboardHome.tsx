@@ -11,6 +11,8 @@ import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { getTeamAbbrev } from "@/utils/teamAbbreviations";
 import { OnboardingModal } from "@/components/onboarding";
 import { DailyEdge } from "@/components/dashboard/DailyEdge";
+import { StreakBadge } from "@/components/dashboard/StreakBadge";
+import { MyFollows } from "@/components/dashboard/MyFollows";
 
 interface Game {
   id: number | string;
@@ -535,8 +537,11 @@ export function DashboardHome() {
 
       {/* Below the Fold Sections */}
       <div className="border-t border-border px-0 md:px-4 py-6 md:py-8 space-y-6 md:space-y-8">
-        {/* Sport Filter Pills + Refresh */}
+        {/* Sport Filter Pills + Streak + Refresh */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="shrink-0">
+            <StreakBadge />
+          </div>
           {ALL_SPORTS.map(sport => {
             const active = activeSports.includes(sport);
             const config = SPORT_CONFIG[sport];
@@ -578,6 +583,9 @@ export function DashboardHome() {
 
         {/* Daily Edge — the habit hook */}
         <DailyEdge />
+
+        {/* Personalized follows */}
+        <MyFollows />
 
         {/* Money Flows Section */}
         <motion.section

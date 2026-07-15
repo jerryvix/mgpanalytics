@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
 import { TrendingNow } from "@/components/dashboard/TrendingNow";
+import { FollowButton } from "@/components/ui/FollowButton";
 
 interface Game {
   id: string;
@@ -243,6 +244,14 @@ export function NCAAFSlate() {
                           </Badge>
                         )}
                         <span className="font-bold">{game.visitor_team_name}</span>
+                        <FollowButton
+                          entity={{
+                            entityType: "team",
+                            entityKey: `NCAAF:${game.visitor_team_name}`,
+                            entityLabel: game.visitor_team_name,
+                            sport: "NCAAF",
+                          }}
+                        />
                       </div>
                       <span className="text-terminal-amber mx-2 text-sm">@</span>
                       <div className="flex items-center gap-2">
@@ -252,6 +261,14 @@ export function NCAAFSlate() {
                           </Badge>
                         )}
                         <span className="font-bold">{game.home_team_name}</span>
+                        <FollowButton
+                          entity={{
+                            entityType: "team",
+                            entityKey: `NCAAF:${game.home_team_name}`,
+                            entityLabel: game.home_team_name,
+                            sport: "NCAAF",
+                          }}
+                        />
                       </div>
                     </div>
 
