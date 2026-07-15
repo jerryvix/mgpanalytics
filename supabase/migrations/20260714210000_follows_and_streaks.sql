@@ -89,3 +89,7 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.record_daily_visit() TO authenticated;
+
+-- Refresh PostgREST schema cache so the REST API serves the new tables/RPC
+-- immediately (required when applying DDL outside the normal migration runner).
+NOTIFY pgrst, 'reload schema';
