@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Users, Info, Loader2, Globe, Trophy } from "lucide-react";
+import { Search, Users, Info, Loader2, Globe, Trophy, TrendingUp } from "lucide-react";
+import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
 import { NFLPlayerCard } from "@/components/players/NFLPlayerCard";
 import { searchNFLPlayers, NFLPlayer } from "@/services/balldontlie/nflPlayers";
 import { NFLSlatePlayersGrid } from "@/components/nfl";
@@ -22,7 +23,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function NFLPlayers() {
-  const [activeTab, setActiveTab] = useState<"slate" | "search">("slate");
+  const [activeTab, setActiveTab] = useState<"slate" | "search" | "futures">("slate");
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: slateData } = useNFLSlateLeaders({ enabled: activeTab === "slate" });
@@ -62,7 +63,7 @@ export default function NFLPlayers() {
       </div>
 
       {/* Tab Navigation */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search")}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search" | "futures")}>
         <TabsList className="bg-muted/50">
           <TabsTrigger value="slate" className="gap-2 text-xs sm:text-sm">
             <Trophy className="w-4 h-4" />
@@ -71,6 +72,10 @@ export default function NFLPlayers() {
           <TabsTrigger value="search" className="gap-2 text-xs sm:text-sm">
             <Globe className="w-4 h-4" />
             <span className="hidden sm:inline">Search All </span>Players
+          </TabsTrigger>
+          <TabsTrigger value="futures" className="gap-2 text-xs sm:text-sm">
+            <TrendingUp className="w-4 h-4" />
+            Futures
           </TabsTrigger>
         </TabsList>
 
@@ -164,6 +169,11 @@ export default function NFLPlayers() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        {/* Season Futures Tab — pre-season O/U board (team totals + player props) */}
+        <TabsContent value="futures" className="mt-6">
+          <PropFuturesBoard sport="NFL" />
         </TabsContent>
       </Tabs>
     </div>

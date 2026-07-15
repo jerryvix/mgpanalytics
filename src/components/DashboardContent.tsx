@@ -5,6 +5,7 @@ import { NBASlate } from "@/components/dashboard/NBASlate";
 import { NCAABSlate } from "@/components/dashboard/NCAABSlate";
 import { NCAAFSlate } from "@/components/dashboard/NCAAFSlate";
 import { MLBSlate } from "@/components/dashboard/MLBSlate";
+import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
 import { TrendingBets } from "@/components/dashboard/TrendingBets";
 import { AdminPanel } from "@/components/dashboard/AdminPanel";
 import SyncObservatory from "@/pages/SyncObservatory";
@@ -59,6 +60,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="mlb/trending" element={<TrendingBets sport="MLB" />} />
         <Route path="ncaaf" element={<NCAAFSlate />} />
         <Route path="ncaaf/trending" element={<TrendingBets sport="NCAAF" />} />
+        <Route path="ncaaf/futures" element={<PropFuturesBoard sport="NCAAF" />} />
         <Route path="ncaab" element={<NCAABSlate />} />
         {/* NCAAB players routes removed — no props data available */}
         <Route path="profile" element={<Profile />} />
