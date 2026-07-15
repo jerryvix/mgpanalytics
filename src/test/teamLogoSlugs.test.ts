@@ -6,7 +6,7 @@ describe("getEspnMlbSlug", () => {
     // MLB Stats API abbreviations that differ from ESPN's logo slugs
     ["CWS", "chw"], // Chicago White Sox
     ["AZ", "ari"], // Arizona Diamondbacks
-    ["ATH", "oak"], // Athletics (ESPN legacy slug)
+    ["ATH", "ath"], // Athletics (current ESPN slug; verified live)
     // Straight passthroughs
     ["NYY", "nyy"],
     ["LAD", "lad"],

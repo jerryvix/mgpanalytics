@@ -175,7 +175,7 @@ export function getTeamAbbrev(teamName: string, league?: string): string {
 const MLB_API_TO_ESPN_SLUG: Record<string, string> = {
   CWS: "chw", // Chicago White Sox
   AZ: "ari", // Arizona Diamondbacks
-  ATH: "oak", // Athletics — ESPN still serves the logo under the legacy slug
+  ATH: "ath", // Athletics — current branding (legacy "oak" also exists on ESPN)
 };
 
 /**
