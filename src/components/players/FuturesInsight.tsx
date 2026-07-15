@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Loader2, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NFL_TRENDING, NCAAF_TRENDING } from "@/data/trendingBets";
 
 // Click-to-generate insight for a season futures line. Powered by the MGP
 // Analyst (same grounding + zero-hallucination rules as chat). Cached in
@@ -43,12 +44,22 @@ export function FuturesInsight({ sport, subject, line, over, under }: FuturesIns
     setLoading(true);
     setError(false);
     try {
+      // Feed any verified curated notes we hold about this team so the angle
+      // can never contradict our own Trending Bets nuggets.
+      const curated = [...NFL_TRENDING, ...NCAAF_TRENDING]
+        .filter((b) => b.verified && (b.subject.includes(subject) || b.nugget.includes(subject) || subject.includes(b.subject)))
+        .map((b) => `- ${b.nugget}`)
+        .slice(0, 3)
+        .join("\n");
       const prompt =
         `Season win total insight: ${subject} 2026 regular season wins O/U ${line} ` +
         `(Over ${over} / Under ${under}). In exactly 3 short bullet points: ` +
         `(1) how last season went for them, (2) the most important change since, ` +
         `(3) what this line implies about market expectations. ` +
-        `Keep each bullet to one sentence. No betting advice, no follow-up questions.`;
+        `Keep each bullet to one sentence. No betting advice, no follow-up questions.` +
+        (curated
+          ? `\n\nVERIFIED MGP NOTES (authoritative — your bullets MUST agree with these):\n${curated}`
+          : "");
       const { data, error: fnError } = await supabase.functions.invoke("gemini-chat", {
         body: { messages: [{ role: "user", content: prompt }] },
       });
