@@ -12,7 +12,10 @@ import { getTeamAbbrev } from "@/utils/teamAbbreviations";
 import { OnboardingModal } from "@/components/onboarding";
 import { DailyEdge } from "@/components/dashboard/DailyEdge";
 import { StreakBadge } from "@/components/dashboard/StreakBadge";
+import { StreakCard } from "@/components/dashboard/StreakCard";
 import { MyFollows } from "@/components/dashboard/MyFollows";
+import { YourTeams } from "@/components/dashboard/YourTeams";
+import { FantasyMovers } from "@/components/dashboard/FantasyMovers";
 
 interface Game {
   id: number | string;
@@ -581,11 +584,20 @@ export function DashboardHome() {
           </Button>
         </div>
 
+        {/* Streak progress + milestone */}
+        <StreakCard />
+
         {/* Daily Edge — the habit hook */}
         <DailyEdge />
 
+        {/* Personalized: followed teams' next games */}
+        <YourTeams />
+
         {/* Personalized follows */}
         <MyFollows />
+
+        {/* Fantasy form movers */}
+        <FantasyMovers />
 
         {/* Money Flows Section */}
         <motion.section
