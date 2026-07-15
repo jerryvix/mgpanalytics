@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getTeamAbbrev } from "@/utils/teamAbbreviations";
+import { getTeamAbbrev, getEspnMlbSlug } from "@/utils/teamAbbreviations";
 
 interface TeamLogoProps {
   sport: string;
@@ -18,7 +18,8 @@ function logoUrl(sport: string, name: string, abbr?: string, espnId?: string | n
     return espnId ? `https://a.espncdn.com/i/teamlogos/ncaa/500/${espnId}.png` : null;
   }
   if (s === "NFL" || s === "NBA" || s === "MLB") {
-    const a = (abbr || getTeamAbbrev(name, s) || "").toLowerCase();
+    let a = (abbr || getTeamAbbrev(name, s) || "").toLowerCase();
+    if (s === "MLB") a = getEspnMlbSlug(a);
     if (!a || a.length > 4) return null;
     return `https://a.espncdn.com/i/teamlogos/${s.toLowerCase()}/500/${a}.png`;
   }

@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
 import { OffseasonBanner } from "@/components/dashboard/OffseasonBanner";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 interface Game {
   id: string;
@@ -19,6 +20,8 @@ interface Game {
   home_team_rank: number | null;
   visitor_team_rank: number | null;
   is_featured: boolean;
+  home_team_id: string | null;
+  visitor_team_id: string | null;
 }
 
 interface Odd {
@@ -289,6 +292,7 @@ export function NCAABSlate() {
                       {/* Matchup with Rankings — away team first */}
                       <div className="font-mono text-base text-foreground mb-4">
                         <div className="flex items-center gap-2">
+                          <TeamLogo sport="NCAAB" name={game.visitor_team_name} espnId={game.visitor_team_id} size={22} />
                           {formatRank(game.visitor_team_rank) && (
                             <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
                               {formatRank(game.visitor_team_rank)}
@@ -298,6 +302,7 @@ export function NCAABSlate() {
                         </div>
                         <span className="text-terminal-amber mx-2 text-sm">@</span>
                         <div className="flex items-center gap-2">
+                          <TeamLogo sport="NCAAB" name={game.home_team_name} espnId={game.home_team_id} size={22} />
                           {formatRank(game.home_team_rank) && (
                             <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
                               {formatRank(game.home_team_rank)}

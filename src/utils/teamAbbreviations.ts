@@ -170,4 +170,22 @@ export function getTeamAbbrev(teamName: string, league?: string): string {
   return teamName.substring(0, 4).toUpperCase();
 }
 
+// MLB Stats API abbreviation → ESPN logo slug (only where they differ).
+// ESPN's CDN uses its own slugs, e.g. https://a.espncdn.com/i/teamlogos/mlb/500/chw.png
+const MLB_API_TO_ESPN_SLUG: Record<string, string> = {
+  CWS: "chw", // Chicago White Sox
+  AZ: "ari", // Arizona Diamondbacks
+  ATH: "oak", // Athletics — ESPN still serves the logo under the legacy slug
+};
+
+/**
+ * Normalize an MLB Stats API team abbreviation to the slug ESPN's logo CDN expects.
+ * Unknown abbreviations pass through lowercased (monogram fallback covers misses).
+ */
+export function getEspnMlbSlug(abbr: string): string {
+  const a = (abbr || "").trim().toUpperCase();
+  if (!a) return "";
+  return (MLB_API_TO_ESPN_SLUG[a] ?? a).toLowerCase();
+}
+
 export { NBA_TEAM_ABBREVS, NFL_TEAM_ABBREVS, NCAAB_TEAM_ABBREVS };

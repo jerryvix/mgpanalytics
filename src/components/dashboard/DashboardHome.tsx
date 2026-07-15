@@ -17,6 +17,7 @@ import { MyFollows } from "@/components/dashboard/MyFollows";
 import { YourTeams } from "@/components/dashboard/YourTeams";
 import { FantasyMovers } from "@/components/dashboard/FantasyMovers";
 import { EdgeTicker } from "@/components/dashboard/EdgeTicker";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 interface Game {
   id: number | string;
@@ -654,8 +655,10 @@ export function DashboardHome() {
                 >
                   <span className="flex items-center gap-1.5 min-w-0">
                     <span className="shrink-0">{getSportEmoji(flow.sport)}</span>
+                    <TeamLogo sport={flow.sport} name={flow.opponent} size={16} />
                     <span className="text-muted-foreground truncate">{displayTeam(flow.opponent, flow.sport)}</span>
                     <span className="text-muted-foreground shrink-0">@</span>
+                    <TeamLogo sport={flow.sport} name={flow.team} size={16} />
                     <span className="text-foreground font-medium truncate">{displayTeam(flow.team, flow.sport)}</span>
                   </span>
                   <span className="flex items-center gap-1.5 shrink-0">
@@ -738,8 +741,10 @@ export function DashboardHome() {
                 >
                   <span className="flex items-center gap-2 min-w-0">
                     <span className="shrink-0">{getSportEmoji(game.league)}</span>
+                    <TeamLogo sport={game.league} name={game.visitor_team_name} size={16} />
                     <span className="text-foreground truncate">{displayTeam(game.visitor_team_name, game.league)}</span>
                     <span className="text-muted-foreground shrink-0">@</span>
+                    <TeamLogo sport={game.league} name={game.home_team_name} size={16} />
                     <span className="text-foreground truncate">{displayTeam(game.home_team_name, game.league)}</span>
                   </span>
                   <span className="flex items-center gap-1.5 text-muted-foreground shrink-0">

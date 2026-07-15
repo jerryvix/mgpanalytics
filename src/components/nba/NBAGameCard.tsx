@@ -7,6 +7,7 @@ import { format, parseISO, isToday, isTomorrow, differenceInMinutes } from "date
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
 import { GamePropsPreview } from "@/components/props/GamePropsPreview";
 import { getTeamAbbrev } from "@/utils/teamAbbreviations";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 interface NBAOdds {
   id: string;
@@ -128,14 +129,14 @@ export function NBAGameCard({
           {/* Matchup - Visitor @ Home format (standard convention) */}
           <div className="font-mono text-base text-foreground mb-4">
             <div className="flex items-center gap-2">
-              <span className="text-lg">🏀</span>
+              <TeamLogo sport="NBA" name={game.visitor_team_name} size={22} />
               <span className="font-bold">{game.visitor_team_name}</span>
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-terminal-cyan text-xs ml-6">@</span>
+              <span className="text-terminal-cyan text-xs ml-7">@</span>
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-lg">🏀</span>
+              <TeamLogo sport="NBA" name={game.home_team_name} size={22} />
               <span className="font-bold">{game.home_team_name}</span>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Flame, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 export interface HitStreakRow {
   playerId: string;
@@ -98,7 +99,12 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                         </span>
                       </Link>
                     </td>
-                    <td className="px-2 py-2.5 text-muted-foreground font-mono">{r.team}</td>
+                    <td className="px-2 py-2.5 text-muted-foreground font-mono">
+                      <span className="inline-flex items-center gap-1.5">
+                        <TeamLogo sport="MLB" name={r.team} abbr={r.team} size={16} />
+                        {r.team}
+                      </span>
+                    </td>
                     <td className={`px-2 py-2.5 text-right font-mono font-bold tabular-nums ${streakColor(r.streak)}`}>
                       <span className="inline-flex items-center gap-1 justify-end">
                         {r.streak >= 10 && <Flame className="w-3 h-3" />}

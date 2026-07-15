@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { EDGE_POOL } from "@/data/edges";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 // A live, always-moving ticker across the top of the dashboard — the signature
 // "Bloomberg for prediction markets" moment. Motion signals the app is alive and
@@ -11,6 +12,8 @@ import { EDGE_POOL } from "@/data/edges";
 interface TickerItem {
   icon: string;
   text: string;
+  teamAbbr?: string; // when present, a small team logo renders before the text
+  sport?: string;
 }
 
 async function loadTicker(): Promise<TickerItem[]> {
@@ -37,6 +40,8 @@ async function loadTicker(): Promise<TickerItem[]> {
       items.push({
         icon: "🔥",
         text: `${p.name}${p.team_abbr ? ` (${p.team_abbr})` : ""} — ${s.hit_streak}-game hit streak`,
+        teamAbbr: p.team_abbr ?? undefined,
+        sport: "MLB",
       });
     }
   }
@@ -74,6 +79,7 @@ export function EdgeTicker() {
         {loop.map((it, i) => (
           <span key={i} className="mx-4 inline-flex items-center gap-1.5 font-mono text-xs text-foreground/90">
             <span>{it.icon}</span>
+            {it.teamAbbr && <TeamLogo sport={it.sport ?? "MLB"} name={it.teamAbbr} abbr={it.teamAbbr} size={14} />}
             <span>{it.text}</span>
             <span className="text-terminal-green/40 ml-4">|</span>
           </span>

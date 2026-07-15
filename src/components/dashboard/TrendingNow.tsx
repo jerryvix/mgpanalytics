@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Flame, ArrowRight, Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 type Sport = "NFL" | "NCAAF";
 
@@ -28,6 +29,10 @@ interface TrendingItem {
   books: number;
   direction: "up" | "down";
   subject: string; // e.g. "Total", team name for spread
+  homeTeam?: string;
+  visitorTeam?: string;
+  homeEspnId?: string | null; // NCAAF only — college logos resolve by ESPN id
+  visitorEspnId?: string | null;
 }
 
 const GAME_TABLE: Record<Sport, { table: string; league?: string }> = {
@@ -115,29 +120,38 @@ async function loadTrending(sport: Sport): Promise<TrendingItem[]> {
 
   if (candidates.length === 0) return [];
 
-  // Resolve matchup names
+  // Resolve matchup names (+ ESPN team ids for NCAAF logos)
   const gameIds = [...new Set(candidates.map((c) => c.gameId))];
+  const selectCols =
+    sport === "NCAAF"
+      ? "id, home_team_name, visitor_team_name, home_team_id, visitor_team_id"
+      : "id, home_team_name, visitor_team_name";
   const { data: games } = await supabase
     .from(cfg.table as "games")
-    .select("id, home_team_name, visitor_team_name")
+    .select(selectCols)
     .in("id", gameIds);
-  const nameMap = new Map(
-    (games || []).map((g: any) => [String(g.id), `${g.visitor_team_name} @ ${g.home_team_name}`])
-  );
+  const gameMap = new Map((games || []).map((g: any) => [String(g.id), g]));
 
   return candidates
-    .filter((c) => nameMap.has(String(c.gameId)))
-    .map((c) => ({
-      gameId: c.gameId,
-      matchup: nameMap.get(String(c.gameId))!,
-      market: c.market,
-      open: c.open,
-      current: c.current,
-      move: c.move,
-      books: c.books,
-      direction: c.move >= 0 ? ("up" as const) : ("down" as const),
-      subject: c.subject,
-    }))
+    .filter((c) => gameMap.has(String(c.gameId)))
+    .map((c) => {
+      const g = gameMap.get(String(c.gameId))!;
+      return {
+        gameId: c.gameId,
+        matchup: `${g.visitor_team_name} @ ${g.home_team_name}`,
+        market: c.market,
+        open: c.open,
+        current: c.current,
+        move: c.move,
+        books: c.books,
+        direction: c.move >= 0 ? ("up" as const) : ("down" as const),
+        subject: c.subject,
+        homeTeam: g.home_team_name as string,
+        visitorTeam: g.visitor_team_name as string,
+        homeEspnId: (g.home_team_id ?? null) as string | null,
+        visitorEspnId: (g.visitor_team_id ?? null) as string | null,
+      };
+    })
     .sort((a, b) => Math.abs(b.move) - Math.abs(a.move))
     .slice(0, 6);
 }
@@ -189,7 +203,17 @@ export function TrendingNow({ sport }: TrendingNowProps) {
                   className="rounded-lg border border-border bg-muted/20 p-3 hover:border-terminal-green/40 transition-colors"
                 >
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-mono text-foreground truncate">{item.matchup}</span>
+                    {item.visitorTeam && item.homeTeam ? (
+                      <span className="flex items-center gap-1 text-xs font-mono text-foreground min-w-0">
+                        <TeamLogo sport={sport} name={item.visitorTeam} espnId={item.visitorEspnId} size={14} />
+                        <span className="truncate">{item.visitorTeam}</span>
+                        <span className="text-muted-foreground shrink-0">@</span>
+                        <TeamLogo sport={sport} name={item.homeTeam} espnId={item.homeEspnId} size={14} />
+                        <span className="truncate">{item.homeTeam}</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs font-mono text-foreground truncate">{item.matchup}</span>
+                    )}
                     {i === 0 && (
                       <span className="inline-flex items-center gap-0.5 text-[10px] font-mono text-terminal-amber shrink-0">
                         <Flame className="w-3 h-3" /> HOT

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { FormBar } from "@/components/ui/FormBar";
 import { heatText, avgDeltaHeat, hoverLift } from "@/lib/heat";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 interface Mover {
   playerId: string;
@@ -113,8 +114,13 @@ export function FantasyMovers() {
               className={`flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2 hover:border-terminal-green/40 group ${hoverLift}`}
             >
               <div className="min-w-0">
-                <div className="font-semibold text-foreground text-sm truncate group-hover:text-terminal-green transition-colors">
-                  {m.name} {m.team ? <span className="text-muted-foreground font-normal">· {m.team}</span> : null}
+                <div className="flex items-center gap-1.5 font-semibold text-foreground text-sm truncate group-hover:text-terminal-green transition-colors">
+                  <span className="truncate">{m.name}</span>
+                  {m.team ? (
+                    <span className="inline-flex items-center gap-1 text-muted-foreground font-normal shrink-0">
+                      · <TeamLogo sport="MLB" name={m.team} abbr={m.team} size={14} /> {m.team}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="text-[11px] text-muted-foreground font-mono">
                   Season {fmtAvg(m.seasonAvg)} → Last {m.streak}:{" "}

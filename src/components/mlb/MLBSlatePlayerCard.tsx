@@ -4,6 +4,7 @@ import { Flame, Target } from "lucide-react";
 import { Link } from "react-router-dom";
 import { format, isToday, isTomorrow } from "date-fns";
 import { FollowButton } from "@/components/ui/FollowButton";
+import { TeamLogo } from "@/components/ui/TeamLogo";
 
 interface GameContext {
   opponent: string;
@@ -153,6 +154,7 @@ export function MLBSlatePlayerCard({
               <div className="flex items-center gap-2 text-sm">
                 <span className={`font-mono font-bold ${getPositionColor(position)}`}>{position}</span>
                 <span className="text-muted-foreground">•</span>
+                <TeamLogo sport="MLB" name={team} abbr={team} size={14} />
                 <span className="text-muted-foreground truncate">{team}</span>
               </div>
               {formatGameContext()}
