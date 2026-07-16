@@ -54,8 +54,9 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isOpen, toggleChat } = useChat();
-  // Remember the last sport page the user visited
-  const lastSportPath = useRef("/dashboard/nba");
+  // Remember the last sport page the user visited (default to MLB — the
+  // sport most likely in season when someone first taps Sports)
+  const lastSportPath = useRef("/dashboard/mlb");
 
   // Track current sport page
   const currentSportPath = SPORTS_PATHS.find((p) => location.pathname.startsWith(p));

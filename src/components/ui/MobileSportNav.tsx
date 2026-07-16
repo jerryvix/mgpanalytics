@@ -9,6 +9,7 @@ interface SportTab {
   subTabs?: { label: string; path: string }[];
 }
 
+// Must mirror the desktop sidebar: every sport, every live route.
 const sports: SportTab[] = [
   {
     label: "NFL",
@@ -17,6 +18,17 @@ const sports: SportTab[] = [
     subTabs: [
       { label: "Games", path: "/dashboard/nfl" },
       { label: "Players", path: "/dashboard/nfl/players" },
+      { label: "Trending", path: "/dashboard/nfl/trending" },
+    ],
+  },
+  {
+    label: "MLB",
+    path: "/dashboard/mlb",
+    logo: "/logos/mlb.png",
+    subTabs: [
+      { label: "Games", path: "/dashboard/mlb" },
+      { label: "Players", path: "/dashboard/mlb/players" },
+      { label: "Trending", path: "/dashboard/mlb/trending" },
     ],
   },
   {
@@ -29,13 +41,19 @@ const sports: SportTab[] = [
     ],
   },
   {
+    label: "NCAAF",
+    path: "/dashboard/ncaaf",
+    logo: "/logos/ncaa.png",
+    subTabs: [
+      { label: "Games", path: "/dashboard/ncaaf" },
+      { label: "Trending", path: "/dashboard/ncaaf/trending" },
+    ],
+  },
+  {
     label: "NCAAB",
     path: "/dashboard/ncaab",
     logo: "/logos/ncaa.png",
-    subTabs: [
-      { label: "Games", path: "/dashboard/ncaab" },
-      { label: "Players", path: "/dashboard/ncaab/players" },
-    ],
+    subTabs: [{ label: "Games", path: "/dashboard/ncaab" }],
   },
 ];
 
@@ -53,8 +71,8 @@ export function MobileSportNav() {
 
   return (
     <div className="mb-4 space-y-2">
-      {/* Sport tabs */}
-      <div className="flex gap-1">
+      {/* Sport tabs — five sports don't fit a phone width, so the row scrolls */}
+      <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1">
         {sports.map((sport) => {
           const isActive = activeSport?.label === sport.label;
           return (
@@ -62,7 +80,7 @@ export function MobileSportNav() {
               key={sport.label}
               onClick={() => navigate(sport.path)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0",
                 isActive
                   ? "bg-terminal-green/15 text-terminal-green border border-terminal-green/40"
                   : "bg-card/50 text-muted-foreground border border-border hover:text-foreground"
