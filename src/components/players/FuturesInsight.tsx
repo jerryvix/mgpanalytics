@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { MarkdownMessage } from "@/components/chatbot/MarkdownMessage";
 import { Loader2, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { NFL_TRENDING, NCAAF_TRENDING } from "@/data/trendingBets";
@@ -161,11 +161,7 @@ export function FuturesInsight({ sport, subject, line, over, under, kind = "team
           Couldn't load the angle — tap to retry
         </button>
       )}
-      {content && (
-        <div className="text-sm text-foreground/90 leading-relaxed [&_ul]:list-disc [&_ul]:pl-4 [&_li]:mt-1">
-          <ReactMarkdown>{content}</ReactMarkdown>
-        </div>
-      )}
+      {content && <MarkdownMessage content={content} />}
       <p className="text-[10px] text-muted-foreground mt-2">
         AI-generated angle — can make mistakes. Please double-check.
       </p>

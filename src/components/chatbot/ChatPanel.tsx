@@ -10,7 +10,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 import { supabase } from "@/integrations/supabase/client";
-import ReactMarkdown from "react-markdown";
+import { MarkdownMessage } from "./MarkdownMessage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -422,7 +422,7 @@ export function ChatPanel() {
               className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[90%] md:max-w-[70%] rounded-lg px-4 py-2.5 font-mono text-sm break-words ${
+                className={`max-w-[90%] md:max-w-[70%] rounded-lg px-4 py-2.5 text-sm break-words ${
                   message.role === "user"
                     ? "bg-muted text-foreground"
                     : "bg-terminal-green/10 border border-terminal-green/20"
@@ -432,17 +432,7 @@ export function ChatPanel() {
                 {message.role === "user" ? (
                   <p className="text-foreground">{message.content}</p>
                 ) : (
-                  <div className="text-foreground prose prose-sm prose-invert max-w-none 
-                    prose-headings:text-terminal-green prose-headings:font-mono prose-headings:font-semibold prose-headings:text-sm prose-headings:mb-2 prose-headings:mt-3 first:prose-headings:mt-0
-                    prose-p:text-foreground prose-p:my-1 prose-p:leading-relaxed
-                    prose-strong:text-terminal-green prose-strong:font-semibold
-                    prose-ul:my-1 prose-ul:pl-0 prose-li:text-foreground prose-li:my-0.5 prose-li:pl-0
-                    prose-li:marker:text-terminal-green/60
-                    [&_ul]:list-disc [&_ul]:ml-4
-                    [&_em]:text-muted-foreground [&_em]:not-italic [&_em]:text-xs
-                  ">
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
-                  </div>
+                  <MarkdownMessage content={message.content} />
                 )}
                 {/* Question type footer for bot messages */}
                 {message.role === "bot" && message.id !== "welcome" && getQuestionTypeFooter(message.questionType) && (
@@ -617,7 +607,7 @@ export function ChatPanel() {
                       className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-lg px-4 py-2.5 font-mono text-sm break-words ${
+                        className={`max-w-[85%] rounded-lg px-4 py-2.5 text-sm break-words ${
                           message.role === "user"
                             ? "bg-muted text-foreground"
                             : "bg-terminal-green/10 border border-terminal-green/20"
@@ -627,17 +617,7 @@ export function ChatPanel() {
                         {message.role === "user" ? (
                           <p className="text-foreground">{message.content}</p>
                         ) : (
-                          <div className="text-foreground prose prose-sm prose-invert max-w-none
-                            prose-headings:text-terminal-green prose-headings:font-mono prose-headings:font-semibold prose-headings:text-sm prose-headings:mb-2 prose-headings:mt-3 first:prose-headings:mt-0
-                            prose-p:text-foreground prose-p:my-1 prose-p:leading-relaxed
-                            prose-strong:text-terminal-green prose-strong:font-semibold
-                            prose-ul:my-1 prose-ul:pl-0 prose-li:text-foreground prose-li:my-0.5 prose-li:pl-0
-                            prose-li:marker:text-terminal-green/60
-                            [&_ul]:list-disc [&_ul]:ml-4
-                            [&_em]:text-muted-foreground [&_em]:not-italic [&_em]:text-xs
-                          ">
-                            <ReactMarkdown>{message.content}</ReactMarkdown>
-                          </div>
+                          <MarkdownMessage content={message.content} />
                         )}
                         {/* Question type footer for bot messages */}
                         {message.role === "bot" && message.id !== "welcome" && getQuestionTypeFooter(message.questionType) && (
