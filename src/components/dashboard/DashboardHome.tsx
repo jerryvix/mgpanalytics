@@ -56,13 +56,28 @@ interface SyncFreshness {
   label: string;
 }
 
+// Thresholds match how the pipeline actually works: game/odds syncs run on
+// 4h–24h schedules (live scores stream separately), so "fresh" means within
+// one sync cycle — not within minutes.
 function computeFreshness(lastSyncAt: string | null, lastSyncStatus: string | null, recordsSynced: number | null): SyncFreshness {
   if (!lastSyncAt || !lastSyncStatus) return { level: "stale", label: "Stale" };
-  const minutesAgo = (Date.now() - new Date(lastSyncAt).getTime()) / (1000 * 60);
+  const hoursAgo = (Date.now() - new Date(lastSyncAt).getTime()) / (1000 * 60 * 60);
   if (lastSyncStatus !== "success") return { level: "stale", label: "Stale" };
-  if (minutesAgo > 30) return { level: "stale", label: "Stale" };
-  if ((recordsSynced ?? 0) === 0) return { level: "limited", label: "Limited" };
-  return { level: "high", label: "Live" };
+  if (hoursAgo > 26) return { level: "stale", label: "Stale" };
+  if (hoursAgo > 6 || (recordsSynced ?? 0) === 0) return { level: "limited", label: "Synced today" };
+  return { level: "high", label: "Fresh" };
+}
+
+// Only judge freshness by sports actually playing — an offseason sport's
+// (correctly) old sync shouldn't drag the badge down.
+function inSeasonSportPrefixes(): string[] {
+  const m = new Date().getMonth(); // 0 = Jan
+  const s: string[] = ["ALL"];
+  if (m >= 2 && m <= 10) s.push("MLB");
+  if (m >= 7 || m <= 0) s.push("NFL", "NCAAF");
+  if (m >= 9 || m <= 5) s.push("NBA");
+  if (m >= 10 || m <= 3) s.push("NCAAB");
+  return s;
 }
 
 const freshnessColors: Record<FreshnessLevel, string> = {
@@ -717,7 +732,10 @@ export function DashboardHome() {
                 Money Flows
               </h2>
               {(() => {
-                const oddsKeys = Object.keys(dataFreshness).filter(k => k.includes("odds"));
+                const inSeason = inSeasonSportPrefixes();
+                const oddsKeys = Object.keys(dataFreshness).filter(
+                  k => k.includes("odds") && inSeason.includes(k.split("-")[0])
+                );
                 const best = oddsKeys.length > 0
                   ? oddsKeys.reduce((best, k) => {
                       const level = dataFreshness[k].level;
@@ -808,7 +826,10 @@ export function DashboardHome() {
               </h2>
               <span className="text-xs text-muted-foreground">(next 48 hours)</span>
               {(() => {
-                const gameKeys = Object.keys(dataFreshness).filter(k => k.includes("games"));
+                const inSeason = inSeasonSportPrefixes();
+                const gameKeys = Object.keys(dataFreshness).filter(
+                  k => k.includes("games") && inSeason.includes(k.split("-")[0])
+                );
                 const best = gameKeys.length > 0
                   ? gameKeys.reduce((best, k) => {
                       const level = dataFreshness[k].level;

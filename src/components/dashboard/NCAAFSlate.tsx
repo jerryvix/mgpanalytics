@@ -8,7 +8,6 @@ import { Loader2, Signal, TrendingUp, Trophy, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
-import { TrendingNow } from "@/components/dashboard/TrendingNow";
 import { FollowButton } from "@/components/ui/FollowButton";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
@@ -184,7 +183,6 @@ export function NCAAFSlate() {
 
   return (
     <div className="space-y-6">
-      <TrendingNow sport="NCAAF" />
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
