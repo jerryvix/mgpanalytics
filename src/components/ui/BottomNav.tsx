@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Trophy, MessageCircle, Users, UserCircle } from "lucide-react";
+import { Home, Trophy, MessageCircle, UserCircle } from "lucide-react";
 import { useChat } from "@/contexts/ChatContext";
 import { cn } from "@/lib/utils";
 
@@ -34,13 +34,15 @@ const navItems: NavItem[] = [
     icon: MessageCircle,
     action: "chat",
   },
-  {
-    label: "Community",
-    icon: Users,
-    action: "navigate",
-    path: "/dashboard/community/feed",
-    matchPaths: ["/dashboard/community"],
-  },
+  // Community hidden per owner (Jul 2026) until the capper-feed strategy is
+  // decided — routes still work, restore by uncommenting this entry.
+  // {
+  //   label: "Community",
+  //   icon: Users,
+  //   action: "navigate",
+  //   path: "/dashboard/community/feed",
+  //   matchPaths: ["/dashboard/community"],
+  // },
   {
     label: "Profile",
     icon: UserCircle,

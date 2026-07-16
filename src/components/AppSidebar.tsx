@@ -109,6 +109,10 @@ const sportsMenuItems = [
   },
 ];
 
+// Community hidden per owner (Jul 2026) until the capper-feed strategy is
+// decided — flip to true to restore the sidebar section.
+const SHOW_COMMUNITY: boolean = false;
+
 // Community menu items
 const communityMenuItems = [
   { title: "Feed", url: "/dashboard/community/feed", icon: Newspaper },
@@ -401,38 +405,42 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
         </SidebarGroup>
 
         {/* Community */}
-        <SidebarGroup className="mt-1">
-          {!collapsed && (
-            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-1">
-              Community
-            </SidebarGroupLabel>
-          )}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {communityMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <SidebarMenuButton asChild>
-                        <NavLink
-                          to={item.url}
-                          className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                          activeClassName="bg-sidebar-accent text-terminal-green"
-                        >
-                          <item.icon className="w-4 h-4 shrink-0" />
-                          {!collapsed && <span className="text-sm">{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </TooltipTrigger>
-                    {collapsed && (
-                      <TooltipContent side="right">{item.title}</TooltipContent>
-                    )}
-                  </Tooltip>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {/* Community hidden per owner (Jul 2026) until the capper-feed strategy
+            is decided — routes still work; restore via SHOW_COMMUNITY. */}
+        {SHOW_COMMUNITY && (
+          <SidebarGroup className="mt-1">
+            {!collapsed && (
+              <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-1">
+                Community
+              </SidebarGroupLabel>
+            )}
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {communityMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SidebarMenuButton asChild>
+                          <NavLink
+                            to={item.url}
+                            className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                            activeClassName="bg-sidebar-accent text-terminal-green"
+                          >
+                            <item.icon className="w-4 h-4 shrink-0" />
+                            {!collapsed && <span className="text-sm">{item.title}</span>}
+                          </NavLink>
+                        </SidebarMenuButton>
+                      </TooltipTrigger>
+                      {collapsed && (
+                        <TooltipContent side="right">{item.title}</TooltipContent>
+                      )}
+                    </Tooltip>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Admin - hidden when previewing as user */}
         {isAdmin && !isPreviewingAsUser && (
