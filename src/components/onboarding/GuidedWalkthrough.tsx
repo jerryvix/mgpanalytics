@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { CoachMark } from "./CoachMark";
 
@@ -29,6 +30,7 @@ interface GuidedWalkthroughProps {
 export function GuidedWalkthrough({ onComplete }: GuidedWalkthroughProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     // Don't show if already completed
@@ -53,7 +55,26 @@ export function GuidedWalkthrough({ onComplete }: GuidedWalkthroughProps) {
     }
   };
 
-  if (!visible) return null;
+  // The tour is written for the Home screen; anywhere else (deep links,
+  // player pages) it must never gate the UI — it simply waits for Home.
+  const onHome = location.pathname === "/dashboard" || location.pathname === "/dashboard/";
+
+  // Auto-skip any step whose target isn't visibly on the page (e.g. the
+  // chat-panel step while chat is closed). Without this, a step can stall
+  // invisibly — or worse, trap taps behind the barrier.
+  useEffect(() => {
+    if (!visible || !onHome) return;
+    const check = () => {
+      const el = document.querySelector(STEPS[currentStep].targetSelector);
+      const rect = el?.getBoundingClientRect();
+      if (!rect || rect.width === 0 || rect.height === 0) handleNext();
+    };
+    const timer = setTimeout(check, 900); // allow the target to render first
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, onHome, currentStep, location.pathname]);
+
+  if (!visible || !onHome) return null;
 
   const step = STEPS[currentStep];
 

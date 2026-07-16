@@ -24,8 +24,13 @@ export function CoachMark({
 
   const updatePosition = useCallback(() => {
     const el = document.querySelector(targetSelector);
-    if (el) {
-      setTargetRect(el.getBoundingClientRect());
+    const rect = el?.getBoundingClientRect();
+    // A hidden target (display:none reports 0×0) must not summon the overlay —
+    // a full-screen barrier with no visible anchor traps every tap on the page.
+    if (rect && rect.width > 0 && rect.height > 0) {
+      setTargetRect(rect);
+    } else {
+      setTargetRect(null);
     }
   }, [targetSelector]);
 
@@ -47,9 +52,13 @@ export function CoachMark({
   const spotlightW = targetRect.width + padding * 2;
   const spotlightH = targetRect.height + padding * 2;
 
-  // Position tooltip below target by default, above if near bottom
+  // Position tooltip below target by default, above if near bottom — and
+  // always clamp fully inside the viewport (iOS Safari's dynamic toolbars
+  // shrink innerHeight; an off-screen tooltip would leave the user trapped
+  // behind the click barrier with no reachable buttons).
   const tooltipBelow = targetRect.bottom + 180 < window.innerHeight;
-  const tooltipTop = tooltipBelow ? targetRect.bottom + 12 : targetRect.top - 180;
+  const rawTop = tooltipBelow ? targetRect.bottom + 12 : targetRect.top - 180;
+  const tooltipTop = Math.max(8, Math.min(rawTop, window.innerHeight - 190));
   const tooltipLeft = Math.max(16, Math.min(targetRect.left, window.innerWidth - 320));
 
   return (
@@ -85,8 +94,16 @@ export function CoachMark({
         />
       </svg>
 
-      {/* Click barrier — prevents interaction outside the spotlight */}
-      <div className="absolute inset-0" onClick={(e) => e.stopPropagation()} />
+      {/* Tap barrier — tapping anywhere outside the tooltip advances the tour
+          (standard mobile pattern). A dead barrier is a trap: if the tooltip
+          ever renders off-position, the user has no way to dismiss it. */}
+      <div
+        className="absolute inset-0"
+        onClick={(e) => {
+          e.stopPropagation();
+          onNext();
+        }}
+      />
 
       {/* Tooltip */}
       <motion.div
