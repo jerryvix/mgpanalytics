@@ -192,9 +192,21 @@ export function DashboardHome() {
       let nflGames: any[] | null = null;
       let nbaGames: any[] | null = null;
       let ncaabGames: any[] | null = null;
+      let mlbGames: any[] | null = null;
+      let ncaafGames: any[] | null = null;
 
-      // Only fetch sports the user has active
-      if (activeSports.includes("NFL")) {
+      // The user's preferred sports, PLUS whatever is actually in season —
+      // the home page should never hide the sport playing games this week.
+      const month = now.getMonth(); // 0 = Jan
+      const inSeasonNow = [
+        ...(month >= 2 && month <= 10 ? ["MLB"] : []),
+        ...(month >= 7 || month <= 0 ? ["NFL", "NCAAF"] : []),
+        ...(month >= 9 || month <= 5 ? ["NBA"] : []),
+        ...(month >= 10 || month <= 3 ? ["NCAAB"] : []),
+      ];
+      const effectiveSports = [...new Set([...activeSports, ...inSeasonNow])];
+
+      if (effectiveSports.includes("NFL")) {
         let { data } = await supabase
           .from("games")
           .select("*")
@@ -220,7 +232,7 @@ export function DashboardHome() {
         nflGames = data;
       }
 
-      if (activeSports.includes("NBA")) {
+      if (effectiveSports.includes("NBA")) {
         let { data } = await supabase
           .from("nba_games")
           .select("*")
@@ -244,7 +256,7 @@ export function DashboardHome() {
         nbaGames = data;
       }
 
-      if (activeSports.includes("NCAAB")) {
+      if (effectiveSports.includes("NCAAB")) {
         let { data } = await supabase
           .from("ncaab_games")
           .select("*")
@@ -266,6 +278,42 @@ export function DashboardHome() {
           data = extended;
         }
         ncaabGames = data;
+      }
+
+      if (effectiveSports.includes("MLB")) {
+        let { data } = await supabase
+          .from("mlb_games")
+          .select("*")
+          .not("status", "ilike", "%final%")
+          .gte("date", now.toISOString())
+          .lte("date", in48Hours.toISOString())
+          .order("date", { ascending: true })
+          .limit(10);
+
+        if (!data?.length) {
+          const { data: extended } = await supabase
+            .from("mlb_games")
+            .select("*")
+            .not("status", "ilike", "%final%")
+            .gte("date", now.toISOString())
+            .lte("date", in7Days.toISOString())
+            .order("date", { ascending: true })
+            .limit(10);
+          data = extended;
+        }
+        mlbGames = data;
+      }
+
+      if (effectiveSports.includes("NCAAF")) {
+        const { data } = await supabase
+          .from("ncaaf_games")
+          .select("*")
+          .not("status", "ilike", "%final%")
+          .gte("date", now.toISOString())
+          .lte("date", in48Hours.toISOString())
+          .order("date", { ascending: true })
+          .limit(10);
+        ncaafGames = data;
       }
 
       // Fetch odds for each sport's games
@@ -293,6 +341,24 @@ export function DashboardHome() {
             .from("ncaab_odds")
             .select("*")
             .in("game_id", ncaabGameIds)
+            .eq("sportsbook", "draftkings")
+        : { data: [] };
+
+      const mlbGameIds = mlbGames?.map(g => g.id) || [];
+      const { data: mlbOdds } = mlbGameIds.length > 0
+        ? await supabase
+            .from("mlb_odds")
+            .select("*")
+            .in("game_id", mlbGameIds)
+            .eq("sportsbook", "draftkings")
+        : { data: [] };
+
+      const ncaafGameIds = ncaafGames?.map(g => g.id) || [];
+      const { data: ncaafOdds } = ncaafGameIds.length > 0
+        ? await supabase
+            .from("ncaaf_odds")
+            .select("*")
+            .in("game_id", ncaafGameIds)
             .eq("sportsbook", "draftkings")
         : { data: [] };
 
@@ -338,6 +404,36 @@ export function DashboardHome() {
           date: game.date,
           status: game.status,
           league: "NCAAB",
+          spread: odds?.spread_value ?? null,
+          total: odds?.total_value ?? null,
+          hasOdds: !!odds,
+        });
+      });
+
+      mlbGames?.forEach(game => {
+        const odds = mlbOdds?.find(o => o.game_id === game.id);
+        gamesWithOdds.push({
+          id: game.id,
+          home_team_name: game.home_team_name,
+          visitor_team_name: game.visitor_team_name,
+          date: game.date,
+          status: game.status,
+          league: "MLB",
+          spread: odds?.spread_value ?? null,
+          total: odds?.total_value ?? null,
+          hasOdds: !!odds,
+        });
+      });
+
+      ncaafGames?.forEach(game => {
+        const odds = ncaafOdds?.find(o => o.game_id === game.id);
+        gamesWithOdds.push({
+          id: game.id,
+          home_team_name: game.home_team_name,
+          visitor_team_name: game.visitor_team_name,
+          date: game.date,
+          status: game.status,
+          league: "NCAAF",
           spread: odds?.spread_value ?? null,
           total: odds?.total_value ?? null,
           hasOdds: !!odds,
