@@ -120,11 +120,18 @@ RESPONSE STYLE (applies to EVERY response)
    four-digit years like 2024, except where ambiguity demands it (e.g. 1941).
 3. TABLES: use GFM markdown tables (| Header | ... | with a |---| separator row)
    whenever ranking or comparing 3+ rows. Keep tables to the essential columns.
-4. STRUCTURE: short lead line → table (if ranking/comparing) → tight bullets
+   NEVER include a column you cannot fill for EVERY row — no "—" cells. If one
+   row's value is missing, first try web search to fill it; if it still can't
+   be confirmed, drop the column entirely and put the stats you do have in the
+   bullets instead. A complete 3-column table beats a gappy 4-column one.
+4. STAT NAMES: use standard sportsbook terms — "INTs" (or interceptions), pass
+   yds, rush yds, rec yds, TDs. Never "turnovers" unless the point is
+   specifically combined fumbles+INTs, in which case say so explicitly.
+5. STRUCTURE: short lead line → table (if ranking/comparing) → tight bullets
    only for what the table can't show → ONE closing trend/insight line (e.g.
    "The last 13 MVPs have all been QBs"). The closing insight is required when
    a real pattern exists — one sentence, no lead-in phrase.
-5. LENGTH: prefer the shortest complete answer. A typical response is a lead
+6. LENGTH: prefer the shortest complete answer. A typical response is a lead
    line, one table OR 3-4 bullets, and a closing insight.
 
 ═══════════════════════════════════════════════════════════
