@@ -8,6 +8,7 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
 import { isFinalStatus } from "@/lib/gameStatus";
+import { consensusPriceMove } from "@/lib/odds";
 import { trendingFor } from "@/data/trendingBets";
 import { format, parseISO, isSameDay, addDays } from "date-fns";
 
@@ -49,7 +50,9 @@ interface BoardOdds {
 interface MoveRow {
   gameId: string;
   market: string; // Spread | Moneyline | Total
-  team: string | null;
+  team: string | null; // team name; "Over"/"Under" for totals
+  /** Moneyline: implied-probability points (+ = market backing this side).
+   *  Spread/Total: line points moved. */
   move: number;
   open: number;
   current: number;
@@ -68,7 +71,9 @@ const marketLabel = (t: string) => {
   return "Moneyline";
 };
 
-const MOVE_THRESHOLD: Record<string, number> = { Spread: 0.5, Total: 0.5, Moneyline: 10 };
+// Spread/Total measured in line points; Moneyline in implied-probability
+// points (2 pts ≈ a -110 → -122 shift — a genuine market move).
+const MOVE_THRESHOLD: Record<string, number> = { Spread: 0.5, Total: 0.5, Moneyline: 2 };
 
 async function loadBoard(sport: BoardSport) {
   const windowStart = new Date(Date.now() - 5 * 3600_000).toISOString();
@@ -109,36 +114,57 @@ async function loadBoard(sport: BoardSport) {
 
   const teamsByGame = new Map<string, Set<string>>();
   for (const r of hist || []) {
-    if (!r.team) continue;
+    if (!r.team || r.team === "Over" || r.team === "Under") continue;
     const s = teamsByGame.get(r.game_id) || new Set<string>();
     s.add(r.team);
     teamsByGame.set(r.game_id, s);
   }
 
-  const groups = new Map<string, { moves: number[]; opens: number[]; currents: number[]; team: string | null; gameId: string; market: string }>();
+  const groups = new Map<string, { pairs: Array<{ open: number | null; current: number | null }>; team: string | null; gameId: string; market: string }>();
   for (const r of hist || []) {
     const market = marketLabel(r.odds_type);
     const key = `${r.game_id}|${market}|${r.team ?? ""}`;
-    const g = groups.get(key) || { moves: [], opens: [], currents: [], team: r.team, gameId: r.game_id, market };
-    g.moves.push((r.current_line ?? 0) - (r.opening_line ?? 0));
-    g.opens.push(r.opening_line ?? 0);
-    g.currents.push(r.current_line ?? 0);
+    const g = groups.get(key) || { pairs: [], team: r.team, gameId: r.game_id, market };
+    g.pairs.push({ open: r.opening_line, current: r.current_line });
     groups.set(key, g);
   }
   const avg = (a: number[]) => a.reduce((s, x) => s + x, 0) / a.length;
-  const moves: MoveRow[] = [...groups.values()]
-    .map((g) => ({
+  const moves: MoveRow[] = [];
+  for (const g of groups.values()) {
+    // Over and Under rows carry the same total line — keep one per game.
+    if (g.market === "Total" && g.team === "Under") continue;
+    let row: Pick<MoveRow, "move" | "open" | "current" | "books"> | null = null;
+    if (g.market === "Moneyline") {
+      // American prices must be averaged in probability space, never
+      // arithmetically — that's what produced impossible board numbers
+      // like "-36.4". Move is in implied-probability points.
+      const c = consensusPriceMove(g.pairs);
+      if (c) row = { move: c.move, open: c.open, current: c.current, books: c.books };
+    } else {
+      // Spread/Total lines are plain points — arithmetic averaging is fine.
+      const valid = g.pairs.filter((p): p is { open: number; current: number } => p.open != null && p.current != null);
+      if (valid.length) {
+        row = {
+          move: Math.round(avg(valid.map((p) => p.current - p.open)) * 10) / 10,
+          open: Math.round(avg(valid.map((p) => p.open)) * 10) / 10,
+          current: Math.round(avg(valid.map((p) => p.current)) * 10) / 10,
+          books: valid.length,
+        };
+      }
+    }
+    if (!row || Math.abs(row.move) < (MOVE_THRESHOLD[g.market] ?? 0.5)) continue;
+    moves.push({
+      ...row,
       gameId: g.gameId,
       market: g.market,
       team: g.team,
-      move: Math.round(avg(g.moves) * 10) / 10,
-      open: Math.round(avg(g.opens) * 10) / 10,
-      current: Math.round(avg(g.currents) * 10) / 10,
-      books: g.moves.length,
       teamsInGame: [...(teamsByGame.get(g.gameId) || [])],
-    }))
-    .filter((m) => Math.abs(m.move) >= (MOVE_THRESHOLD[m.market] ?? 0.5))
-    .sort((a, b) => Math.abs(b.move) - Math.abs(a.move));
+    });
+  }
+  // Markets move on different scales — rank by multiples of each market's
+  // own significance threshold so a 3-point ML steam can outrank a half-run.
+  const strength = (m: MoveRow) => Math.abs(m.move) / (MOVE_THRESHOLD[m.market] ?? 0.5);
+  moves.sort((a, b) => strength(b) - strength(a));
 
   // Hot streak names for the meta line + Streaks & Angles rail (MLB data)
   let streaks: Array<{ name: string; team: string | null; streak: number; streakAvg: number | null }> = [];
@@ -168,6 +194,16 @@ async function loadBoard(sport: BoardSport) {
 
 const shortName = (full: string) => full.split(" ").pop() || full;
 const fmtAvg = (v: number | null) => (v == null ? "" : v.toFixed(3).replace(/^0/, ""));
+
+// "Yankees ML" · "Rays/Sox Total (Over)" · "Guardians Spread"
+const moveLabel = (m: MoveRow) => {
+  const matchup = m.teamsInGame.map(shortName).join("/");
+  if (m.market === "Total") return `${matchup || "Game"} Total${m.team ? ` (${m.team})` : ""}`;
+  const who = m.team ? shortName(m.team) : matchup || "Game";
+  return `${who} ${m.market === "Moneyline" ? "ML" : m.market}`;
+};
+// Prices get +/- signs; total lines are plain numbers (a 8.5 total isn't "+8.5")
+const fmtMoveVal = (m: MoveRow, v: number) => (m.market === "Total" ? `${v}` : fmtPrice(v));
 
 export function TodaysBoard({ sport }: { sport: BoardSport }) {
   const [dayOffset, setDayOffset] = useState(0);
@@ -313,12 +349,13 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
               sharpest.map((m, i) => (
                 <div key={i} className="py-2 border-b border-dashed border-border last:border-none text-sm">
                   <span className="font-mono text-terminal-amber text-[11px] mr-1.5">#{i + 1}</span>
-                  {m.team ? shortName(m.team) : m.teamsInGame.map(shortName).join("/") || "Game"} {m.market}
+                  {moveLabel(m)}
                   <span className="float-right font-mono font-bold text-terminal-green tabular-nums">
-                    {fmtLine(m.open)} → {fmtLine(m.current)}
+                    {fmtMoveVal(m, m.open)} → {fmtMoveVal(m, m.current)}
                   </span>
                   <span className="block font-mono text-[10px] text-muted-foreground mt-0.5">
-                    moved across {m.books} book{m.books === 1 ? "" : "s"}
+                    across {m.books} book{m.books === 1 ? "" : "s"}
+                    {m.market === "Moneyline" ? ` · ${m.move > 0 ? "+" : ""}${m.move} pts implied` : ""}
                   </span>
                 </div>
               ))
@@ -332,10 +369,12 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
               signal.map((m, i) => (
                 <div key={i} className="py-2 border-b border-dashed border-border last:border-none text-sm">
                   <span className="font-mono text-terminal-amber text-[11px] mr-1.5">#{i + 1}</span>
-                  {m.team ? `${shortName(m.team)} ML` : `${m.teamsInGame.map(shortName).join("/")} Total`}
-                  <span className="float-right font-mono font-bold text-terminal-green tabular-nums">{fmtLine(m.current)}</span>
+                  {moveLabel(m)}
+                  <span className="float-right font-mono font-bold text-terminal-green tabular-nums">{fmtMoveVal(m, m.current)}</span>
                   <span className="block font-mono text-[10px] text-muted-foreground mt-0.5">
-                    {m.move > 0 ? "steamed up" : "bet down"} from {fmtLine(m.open)}
+                    {m.market === "Moneyline"
+                      ? `${m.move > 0 ? "steamed" : "drifting"} from ${fmtPrice(m.open)}`
+                      : `${m.move > 0 ? "climbing" : "dropping"} from ${fmtMoveVal(m, m.open)}`}
                   </span>
                 </div>
               ))

@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { americanToImpliedProb, impliedPair } from "@/lib/odds";
+import {
+  americanToImpliedProb,
+  impliedPair,
+  probToAmerican,
+  consensusAmerican,
+  consensusPriceMove,
+} from "@/lib/odds";
 
 describe("americanToImpliedProb", () => {
   const cases: Array<[price: number, expected: number]> = [
@@ -57,5 +63,90 @@ describe("impliedPair", () => {
     expect(impliedPair(null, null)).toBeNull();
     expect(impliedPair(0, -110)).toBeNull();
     expect(impliedPair(-110, undefined)).toBeNull();
+  });
+});
+
+describe("probToAmerican", () => {
+  it("round-trips with americanToImpliedProb", () => {
+    for (const price of [-110, -200, -550, +100, +150, +200, +1400]) {
+      expect(probToAmerican(americanToImpliedProb(price)!)).toBe(price === +100 ? -100 : price);
+    }
+  });
+
+  it("never produces an illegal price inside ±100", () => {
+    for (let p = 0.02; p < 0.99; p += 0.01) {
+      const price = probToAmerican(p)!;
+      expect(Math.abs(price)).toBeGreaterThanOrEqual(100);
+    }
+  });
+
+  it("returns null for out-of-range input", () => {
+    expect(probToAmerican(0)).toBeNull();
+    expect(probToAmerican(1)).toBeNull();
+    expect(probToAmerican(-0.2)).toBeNull();
+    expect(probToAmerican(null)).toBeNull();
+    expect(probToAmerican(NaN)).toBeNull();
+  });
+});
+
+describe("consensusAmerican", () => {
+  it("returns a legal price when books straddle even money", () => {
+    // Arithmetic mean of -118 and +102 would be an impossible "-8";
+    // probability-space consensus stays legal.
+    const price = consensusAmerican([-118, +102])!;
+    expect(Math.abs(price)).toBeGreaterThanOrEqual(100);
+  });
+
+  it("matches the single book when only one price exists", () => {
+    expect(consensusAmerican([-136, null, undefined])).toBe(-136);
+  });
+
+  it("returns null with no usable prices", () => {
+    expect(consensusAmerican([null, undefined, 0])).toBeNull();
+    expect(consensusAmerican([])).toBeNull();
+  });
+});
+
+describe("consensusPriceMove", () => {
+  it("reports a steamed favorite as a positive move", () => {
+    // -112 → -136 across books: price shortening = money on this side.
+    const m = consensusPriceMove([
+      { open: -112, current: -135 },
+      { open: -110, current: -138 },
+      { open: -115, current: -134 },
+    ])!;
+    expect(m.books).toBe(3);
+    expect(m.move).toBeGreaterThan(0);
+    expect(m.open).toBeLessThanOrEqual(-100);
+    expect(m.current).toBeLessThan(m.open); // more negative = shorter price
+    expect(Math.abs(m.open)).toBeGreaterThanOrEqual(100);
+    expect(Math.abs(m.current)).toBeGreaterThanOrEqual(100);
+  });
+
+  it("reports a drifting side as a negative move", () => {
+    const m = consensusPriceMove([{ open: -120, current: +105 }])!;
+    expect(m.move).toBeLessThan(0);
+  });
+
+  it("stays legal when books disagree across the ±100 boundary", () => {
+    // This exact shape produced "-34.7 → +16" under arithmetic averaging.
+    const m = consensusPriceMove([
+      { open: -125, current: +110 },
+      { open: +105, current: +120 },
+      { open: -110, current: +102 },
+    ])!;
+    expect(Math.abs(m.open)).toBeGreaterThanOrEqual(100);
+    expect(Math.abs(m.current)).toBeGreaterThanOrEqual(100);
+  });
+
+  it("skips books missing either end and nulls out when none remain", () => {
+    const m = consensusPriceMove([
+      { open: -110, current: -120 },
+      { open: null, current: -140 },
+      { open: -105, current: null },
+    ])!;
+    expect(m.books).toBe(1);
+    expect(consensusPriceMove([{ open: null, current: -140 }])).toBeNull();
+    expect(consensusPriceMove([])).toBeNull();
   });
 });

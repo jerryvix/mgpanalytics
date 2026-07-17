@@ -3,8 +3,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Loader2, Signal, TrendingUp } from "lucide-react";
+import { Signal, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO } from "date-fns";
 import { TeamLogo } from "@/components/ui/TeamLogo";
@@ -12,6 +11,7 @@ import { WinProbBar } from "@/components/ui/WinProbBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { FollowButton } from "@/components/ui/FollowButton";
+import { GameInsightsSheet } from "@/components/games/GameInsightsSheet";
 import { useLiveScores } from "@/hooks/useLiveScores";
 import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
 
@@ -41,20 +41,10 @@ interface Odd {
 
 type GameOddsMap = Record<string, Odd | null>;
 
-const SPORTSBOOKS = ["draftkings", "fanduel", "caesars", "betrivers"];
-const SPORTSBOOK_LABELS: Record<string, string> = {
-  draftkings: "DraftKings",
-  fanduel: "FanDuel",
-  caesars: "Caesars",
-  betrivers: "BetRivers",
-};
-
 export function MLBSlate() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const [allOdds, setAllOdds] = useState<Odd[]>([]);
-  const [oddsLoading, setOddsLoading] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
   const live = useLiveScores("MLB");
@@ -108,25 +98,9 @@ export function MLBSlate() {
     setLoading(false);
   };
 
-  const handleViewAllOdds = async (game: Game, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleOpenInsights = (game: Game) => {
     setSelectedGame(game);
     setSheetOpen(true);
-    setOddsLoading(true);
-
-    const { data, error } = await supabase
-      .from("mlb_odds")
-      .select("*")
-      .eq("game_id", game.id)
-      .in("sportsbook", SPORTSBOOKS);
-
-    if (error) {
-      console.error("Error fetching all odds:", error);
-      setAllOdds([]);
-    } else {
-      setAllOdds((data as Odd[]) || []);
-    }
-    setOddsLoading(false);
   };
 
   const formatGameTime = (dateString: string) => {
@@ -163,10 +137,6 @@ export function MLBSlate() {
   const formatLine = (line: number | null) => {
     if (line === null) return "N/A";
     return line >= 0 ? `+${line}` : `${line}`;
-  };
-
-  const getOddsBySportsbook = (sportsbook: string): Odd | undefined => {
-    return allOdds.find((o) => o.sportsbook.toLowerCase().includes(sportsbook));
   };
 
   return (
@@ -231,7 +201,12 @@ export function MLBSlate() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
               >
-                <Card className="bg-gradient-to-b from-card to-card/70 border-terminal-green/30 hover:border-terminal-green/60 hover:shadow-[0_0_24px_-8px_hsl(var(--terminal-green)/0.4)] transition-all">
+                <Card
+                  onClick={() => handleOpenInsights(game)}
+                  role="button"
+                  aria-label={`Game insights: ${game.visitor_team_name} at ${game.home_team_name}`}
+                  className="cursor-pointer bg-gradient-to-b from-card to-card/70 border-terminal-green/30 hover:border-terminal-green/60 hover:shadow-[0_0_24px_-8px_hsl(var(--terminal-green)/0.4)] transition-all"
+                >
                   <CardContent className="p-4">
                     {/* Header row */}
                     <div className="flex items-center justify-between mb-3">
@@ -374,14 +349,17 @@ export function MLBSlate() {
                       )}
                     </div>
 
-                    {/* View All Odds Button */}
+                    {/* Game Insights Button — same target as tapping the card */}
                     <Button
-                      onClick={(e) => handleViewAllOdds(game, e)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenInsights(game);
+                      }}
                       className="w-full bg-terminal-green/20 hover:bg-terminal-green/30 text-terminal-green border border-terminal-green/50 font-mono text-sm"
                       variant="outline"
                     >
                       <TrendingUp className="w-4 h-4 mr-2" />
-                      View All Odds
+                      Game Insights & Odds
                     </Button>
                   </CardContent>
                 </Card>
@@ -391,72 +369,9 @@ export function MLBSlate() {
         </motion.div>
       )}
 
-      {/* All Sportsbooks Odds Panel */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="bg-background/85 backdrop-blur-xl border-l border-terminal-green/30 w-full sm:max-w-xl overflow-y-auto">
-          <SheetHeader className="flex flex-row items-center justify-between pb-4 border-b border-terminal-green/20">
-            <SheetTitle className="font-mono text-foreground">
-              {selectedGame && (
-                <div className="flex items-center gap-2 text-lg">
-                  <TeamLogo sport="MLB" name={selectedGame.visitor_team_name} size={20} />
-                  {selectedGame.visitor_team_name}
-                  <span className="text-terminal-green">@</span>
-                  <TeamLogo sport="MLB" name={selectedGame.home_team_name} size={20} />
-                  {selectedGame.home_team_name}
-                </div>
-              )}
-            </SheetTitle>
-          </SheetHeader>
-
-          <div className="mt-6 space-y-6">
-            {oddsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-5 h-5 animate-spin text-terminal-green" />
-                <span className="ml-2 font-mono text-sm text-muted-foreground">FETCHING ALL ODDS...</span>
-              </div>
-            ) : (
-              SPORTSBOOKS.map((book) => {
-                const odds = getOddsBySportsbook(book);
-                return (
-                  <div key={book} className="border border-border rounded-lg p-4 bg-card/50">
-                    <h3 className="font-mono text-sm font-bold text-terminal-green uppercase tracking-wider mb-3">
-                      {SPORTSBOOK_LABELS[book]}
-                    </h3>
-                    {odds ? (
-                      <div className="space-y-2 font-mono text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">RUN LINE:</span>
-                          <span className="text-foreground">
-                            {odds.spread_value !== null
-                              ? `${formatLine(odds.spread_value)} (${formatPrice(odds.spread_odds)})`
-                              : "N/A"}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">ML:</span>
-                          <span className="text-foreground">
-                            {formatPrice(odds.moneyline_home)} / {formatPrice(odds.moneyline_away)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-muted-foreground">TOTAL:</span>
-                          <span className="text-foreground">
-                            {odds.total_value !== null
-                              ? `${odds.total_value} — O (${formatPrice(odds.total_over_odds)}) / U (${formatPrice(odds.total_under_odds)})`
-                              : "N/A"}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground font-mono">No lines from this book yet</p>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Game Insights panel — real synced data: consensus win prob, line
+          movement, hot bats, verified angles, and the book-by-book board */}
+      <GameInsightsSheet sport="MLB" game={selectedGame} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
   );
 }
