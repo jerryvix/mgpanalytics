@@ -19,9 +19,16 @@ export interface LiveGame {
   homeScore: number | null;
   awayScore: number | null;
   state: "pre" | "in" | "post";
-  detail: string; // e.g. "10:23 - 3rd", "Bot 7th", "Final"
+  detail: string; // e.g. "10:23 - 3rd", "Bot 7th", "Final", "Postponed"
   period: number | null;
   clock: string | null;
+  /** Scheduled start, ISO — ESPN's own clock for this specific game. */
+  startTime: string | null;
+}
+
+/** Postponed/canceled/suspended report state "post" but are not finals. */
+export function isCalledOff(g: Pick<LiveGame, "state" | "detail">): boolean {
+  return g.state === "post" && /postpon|cancel|susp/i.test(g.detail);
 }
 
 /** Stable matchup key: away @ home, lowercased. */
@@ -57,15 +64,32 @@ export function normalizeScoreboard(json: unknown): LiveGame[] {
       detail: status?.type?.shortDetail || status?.type?.description || "",
       period: typeof status?.period === "number" ? status.period : null,
       clock: status?.displayClock ?? null,
+      startTime: typeof ev?.date === "string" ? ev.date : null,
     });
   }
   return games;
+}
+
+/**
+ * Key games by matchup. Doubleheaders produce two events with the same
+ * key — keep the actionable one: a live game always wins, and a still-
+ * upcoming game beats a finished one (it's the matchup someone can still
+ * bet), finished/called-off games rank last.
+ */
+export function toScoreboardMap(games: LiveGame[]): Map<string, LiveGame> {
+  const rank: Record<LiveGame["state"], number> = { in: 3, pre: 2, post: 1 };
+  const map = new Map<string, LiveGame>();
+  for (const g of games) {
+    const key = liveKey(g.awayName, g.homeName);
+    const existing = map.get(key);
+    if (!existing || rank[g.state] > rank[existing.state]) map.set(key, g);
+  }
+  return map;
 }
 
 /** Fetch today's scoreboard for a sport, keyed by away@home matchup. */
 export async function fetchLiveScores(sport: LiveSport): Promise<Map<string, LiveGame>> {
   const res = await fetch(`https://site.api.espn.com/apis/site/v2/sports/${ESPN_PATH[sport]}/scoreboard`);
   if (!res.ok) throw new Error(`ESPN scoreboard ${sport}: ${res.status}`);
-  const games = normalizeScoreboard(await res.json());
-  return new Map(games.map((g) => [liveKey(g.awayName, g.homeName), g]));
+  return toScoreboardMap(normalizeScoreboard(await res.json()));
 }

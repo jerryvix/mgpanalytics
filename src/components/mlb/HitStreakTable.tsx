@@ -6,6 +6,7 @@ import { format, parseISO, isSameDay } from "date-fns";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
+import { isCalledOff, type LiveGame } from "@/lib/liveScores";
 import { careerVsPitcher } from "@/services/mlb/batterVsPitcher";
 
 export interface HitStreakRow {
@@ -88,26 +89,31 @@ interface HitStreakTableProps {
 // 60s ESPN scoreboard polling as the slate badges — not the batch-synced
 // status column, which can lag hours. Upcoming games show first pitch so
 // the pick window is visible at a glance.
-function GameStateChip({
-  state,
-  detail,
-  gameDate,
-}: {
-  state: "pre" | "in" | "post" | undefined;
-  detail: string | undefined;
-  gameDate: string | null;
-}) {
-  if (state === "in") return <LiveBadge detail={detail} />;
-  if (state === "post") {
+function GameStateChip({ liveGame, gameDate }: { liveGame: LiveGame | undefined; gameDate: string | null }) {
+  if (liveGame?.state === "in") return <LiveBadge detail={liveGame.detail} />;
+  if (liveGame?.state === "post") {
+    // Postponed/canceled report "post" too — for picks that's the opposite
+    // of Final (no game tonight), so say so.
+    const calledOff = isCalledOff(liveGame);
     return (
-      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground border border-border rounded px-1.5 py-0.5">
-        Final
+      <span
+        className={`font-mono text-[10px] uppercase tracking-wider border rounded px-1.5 py-0.5 ${
+          calledOff ? "text-terminal-amber border-terminal-amber/40" : "text-muted-foreground border-border"
+        }`}
+        title={liveGame.detail || undefined}
+      >
+        {calledOff ? "PPD" : "Final"}
       </span>
     );
   }
-  if (!gameDate) return null;
+  // Upcoming: prefer ESPN's own start time (correct even for doubleheader
+  // game 2, where our synced row may be the earlier game), else our synced
+  // date. Never show a first pitch that's already in the past.
+  const when = (liveGame?.state === "pre" && liveGame.startTime) || gameDate;
+  if (!when) return null;
   try {
-    const d = parseISO(gameDate);
+    const d = parseISO(when);
+    if (d.getTime() < Date.now() - 15 * 60_000) return null;
     return (
       <span
         className="font-mono text-[10px] text-terminal-green/80"
@@ -180,7 +186,7 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                     key={r.playerId}
                     className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${
                       i % 2 === 1 ? "bg-muted/10" : ""
-                    } ${liveGame?.state === "post" ? "opacity-60" : ""}`}
+                    } ${liveGame?.state === "post" && !isCalledOff(liveGame) ? "opacity-60" : ""}`}
                   >
                     <td className="px-4 py-2.5">
                       <Link
@@ -236,11 +242,7 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                     <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                       {r.nextOpponent ? (
                         <span className="inline-flex items-center gap-2">
-                          <GameStateChip
-                            state={liveGame?.state}
-                            detail={liveGame?.detail}
-                            gameDate={r.nextGameDate}
-                          />
+                          <GameStateChip liveGame={liveGame} gameDate={r.nextGameDate} />
                           <span>
                             <span className="text-foreground">{r.nextOpponent}</span>
                             {r.nextPitcher && <span className="text-muted-foreground"> · {r.nextPitcher}</span>}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeScoreboard, liveKey } from "@/lib/liveScores";
+import { normalizeScoreboard, liveKey, toScoreboardMap, isCalledOff, type LiveGame } from "@/lib/liveScores";
 import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
 
 const espnFixture = {
@@ -7,6 +7,7 @@ const espnFixture = {
     {
       id: "401776543",
       shortName: "SEA @ NE",
+      date: "2026-07-17T20:05Z",
       status: {
         period: 3,
         displayClock: "10:23",
@@ -69,6 +70,11 @@ describe("normalizeScoreboard", () => {
     expect(live.period).toBe(3);
     expect(live.clock).toBe("10:23");
     expect(live.detail).toBe("10:23 - 3rd");
+    expect(live.startTime).toBe("2026-07-17T20:05Z");
+  });
+
+  it("startTime is null when the event has no date", () => {
+    expect(games[1].startTime).toBeNull();
   });
 
   it("extracts final games", () => {
@@ -95,6 +101,58 @@ describe("liveKey", () => {
     expect(liveKey(" Seattle Seahawks ", "New England Patriots")).toBe(
       "seattle seahawks@new england patriots"
     );
+  });
+});
+
+const mkGame = (over: Partial<LiveGame>): LiveGame => ({
+  espnId: "1",
+  homeName: "Boston Red Sox",
+  awayName: "Tampa Bay Rays",
+  homeScore: null,
+  awayScore: null,
+  state: "pre",
+  detail: "",
+  period: null,
+  clock: null,
+  startTime: null,
+  ...over,
+});
+
+describe("toScoreboardMap (doubleheaders)", () => {
+  const key = liveKey("Tampa Bay Rays", "Boston Red Sox");
+
+  it("keeps the upcoming game over the finished one, regardless of order", () => {
+    const final = mkGame({ espnId: "g1", state: "post", detail: "Final" });
+    const upcoming = mkGame({ espnId: "g2", state: "pre", startTime: "2026-07-17T23:10Z" });
+    expect(toScoreboardMap([final, upcoming]).get(key)?.espnId).toBe("g2");
+    expect(toScoreboardMap([upcoming, final]).get(key)?.espnId).toBe("g2");
+  });
+
+  it("a live game always wins", () => {
+    const live = mkGame({ espnId: "g1", state: "in", detail: "Bot 7th" });
+    const upcoming = mkGame({ espnId: "g2", state: "pre" });
+    expect(toScoreboardMap([upcoming, live]).get(key)?.espnId).toBe("g1");
+    expect(toScoreboardMap([live, upcoming]).get(key)?.espnId).toBe("g1");
+  });
+
+  it("distinct matchups never collide", () => {
+    const a = mkGame({ espnId: "a" });
+    const b = mkGame({ espnId: "b", homeName: "New York Yankees", awayName: "Los Angeles Dodgers" });
+    expect(toScoreboardMap([a, b]).size).toBe(2);
+  });
+});
+
+describe("isCalledOff", () => {
+  it("flags postponed/canceled/suspended finals", () => {
+    expect(isCalledOff({ state: "post", detail: "Postponed" })).toBe(true);
+    expect(isCalledOff({ state: "post", detail: "Canceled" })).toBe(true);
+    expect(isCalledOff({ state: "post", detail: "Suspended" })).toBe(true);
+  });
+
+  it("does not flag real finals or non-post states", () => {
+    expect(isCalledOff({ state: "post", detail: "Final" })).toBe(false);
+    expect(isCalledOff({ state: "post", detail: "Final/11 Inn" })).toBe(false);
+    expect(isCalledOff({ state: "pre", detail: "Postponed" })).toBe(false);
   });
 });
 
