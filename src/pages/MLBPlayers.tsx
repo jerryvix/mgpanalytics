@@ -48,27 +48,12 @@ async function loadMlbPlayers() {
   }
   const statMap = new Map(stats.map((s) => [s.player_id, s]));
 
-  // Last-7-game avg from game logs (only for streaking players, to bound the query)
-  const streakingIds = stats.filter((s) => (s.hit_streak ?? 0) > 0).map((s) => s.player_id);
-  const l7Map = new Map<string, number>();
-  if (streakingIds.length > 0) {
-    const { data: logs } = await supabase
-      .from("player_game_logs")
-      .select("player_id, game_date, hits, at_bats")
-      .eq("sport", "MLB")
-      .eq("season", season)
-      .in("player_id", streakingIds)
-      .order("game_date", { ascending: false });
-    const byPlayer = new Map<string, { hits: number; ab: number }[]>();
-    for (const log of logs || []) {
-      const arr = byPlayer.get(log.player_id) || [];
-      if (arr.length < 7) arr.push({ hits: log.hits || 0, ab: log.at_bats || 0 });
-      byPlayer.set(log.player_id, arr);
-    }
-    for (const [pid, games] of byPlayer) {
-      const ab = games.reduce((s, g) => s + g.ab, 0);
-      const hits = games.reduce((s, g) => s + g.hits, 0);
-      if (ab > 0) l7Map.set(pid, hits / ab);
+  // Team abbreviations, data-driven from the players we already fetched
+  // ("San Diego Padres" → "SD") — no hand-kept 30-team map to go stale.
+  const abbrByTeamName = new Map<string, string>();
+  for (const p of players || []) {
+    if (p.team_name && p.team_abbr && !abbrByTeamName.has(p.team_name)) {
+      abbrByTeamName.set(p.team_name, p.team_abbr);
     }
   }
 
@@ -120,8 +105,8 @@ async function loadMlbPlayers() {
         streak: s.hit_streak ?? 0,
         seasonAvg: s.batting_avg ?? 0,
         streakAvg: s.hit_streak_avg ?? 0,
-        last7Avg: l7Map.get(s.player_id) ?? null,
         nextOpponent: next?.opponent || null,
+        nextOpponentAbbr: next?.opponent ? abbrByTeamName.get(next.opponent) || null : null,
         nextPitcher: next?.pitcher || null,
         nextGameDate: next?.date || null,
       };

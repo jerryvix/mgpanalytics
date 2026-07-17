@@ -1,8 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Flame, TrendingUp } from "lucide-react";
+import { Flame } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { format, parseISO, isSameDay } from "date-fns";
+import { parseISO } from "date-fns";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
@@ -19,8 +19,8 @@ export interface HitStreakRow {
   streak: number;
   seasonAvg: number;
   streakAvg: number;
-  last7Avg: number | null;
   nextOpponent: string | null;
+  nextOpponentAbbr: string | null;
   nextPitcher: string | null;
   nextGameDate: string | null;
 }
@@ -117,14 +117,23 @@ function GameStateChip({ liveGame, gameDate }: { liveGame: LiveGame | undefined;
     return (
       <span
         className="font-mono text-[10px] text-terminal-green/80"
-        title="Scheduled first pitch — picks close at game time"
+        title="Scheduled first pitch (Pacific) — picks close at game time"
       >
-        {isSameDay(d, new Date()) ? format(d, "h:mm a") : format(d, "EEE h:mm a")}
+        {fmtPacific(d)}
       </span>
     );
   } catch {
     return null;
   }
+}
+
+// Owner's call: table times are Pacific. "PT" covers PST/PDT year-round.
+const PT_TIME = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" });
+const PT_DAY = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "America/Los_Angeles" });
+const PT_YMD = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" });
+function fmtPacific(d: Date): string {
+  const sameDay = PT_YMD.format(d) === PT_YMD.format(new Date());
+  return `${sameDay ? "" : `${PT_DAY.format(d)} `}${PT_TIME.format(d)} PT`;
 }
 
 export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
@@ -161,9 +170,6 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                   </th>
                   <th className="text-right font-medium px-2 py-2" title="Season batting average">
                     Season AVG
-                  </th>
-                  <th className="text-right font-medium px-2 py-2" title="Batting average, last 7 games">
-                    L7
                   </th>
                   <th
                     className="text-right font-medium px-2 py-2"
@@ -226,16 +232,6 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                     <td className="px-2 py-2.5 text-right font-mono tabular-nums text-foreground">
                       {fmtAvg(r.seasonAvg)}
                     </td>
-                    <td className="px-2 py-2.5 text-right font-mono tabular-nums text-muted-foreground">
-                      {r.last7Avg !== null ? (
-                        <span className="inline-flex items-center gap-1 justify-end">
-                          {r.last7Avg >= r.seasonAvg && <TrendingUp className="w-3 h-3 text-terminal-green" />}
-                          {fmtAvg(r.last7Avg)}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
                     <td className="px-2 py-2.5 text-right font-mono tabular-nums text-xs whitespace-nowrap">
                       <VsStarterCell batter={r.name} pitcher={r.nextPitcher} />
                     </td>
@@ -243,8 +239,8 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                       {r.nextOpponent ? (
                         <span className="inline-flex items-center gap-2">
                           <GameStateChip liveGame={liveGame} gameDate={r.nextGameDate} />
-                          <span>
-                            <span className="text-foreground">{r.nextOpponent}</span>
+                          <span title={r.nextOpponent}>
+                            <span className="text-foreground font-mono">{r.nextOpponentAbbr || r.nextOpponent}</span>
                             {r.nextPitcher && <span className="text-muted-foreground"> · {r.nextPitcher}</span>}
                           </span>
                         </span>
