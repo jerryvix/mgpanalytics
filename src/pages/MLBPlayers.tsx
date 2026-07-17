@@ -72,21 +72,23 @@ async function loadMlbPlayers() {
     }
   }
 
-  // Next matchup + probable pitcher, keyed by team name
+  // Next matchup + probable pitcher, keyed by team name. Reach back 5h
+  // (same as the slate) so a game that's underway still counts as the
+  // team's matchup — that's what the live badge hangs off.
   const in7 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: games } = await supabase
     .from("mlb_games")
     .select("home_team_name, visitor_team_name, date, starting_pitcher_home, starting_pitcher_away")
-    .gte("date", new Date().toISOString())
+    .gte("date", new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString())
     .lte("date", in7)
     .order("date", { ascending: true });
-  const nextByTeam = new Map<string, { opponent: string; pitcher: string | null }>();
+  const nextByTeam = new Map<string, { opponent: string; pitcher: string | null; date: string }>();
   for (const g of games || []) {
     if (!nextByTeam.has(g.home_team_name)) {
-      nextByTeam.set(g.home_team_name, { opponent: g.visitor_team_name, pitcher: g.starting_pitcher_away });
+      nextByTeam.set(g.home_team_name, { opponent: g.visitor_team_name, pitcher: g.starting_pitcher_away, date: g.date });
     }
     if (!nextByTeam.has(g.visitor_team_name)) {
-      nextByTeam.set(g.visitor_team_name, { opponent: g.home_team_name, pitcher: g.starting_pitcher_home });
+      nextByTeam.set(g.visitor_team_name, { opponent: g.home_team_name, pitcher: g.starting_pitcher_home, date: g.date });
     }
   }
 
@@ -113,6 +115,7 @@ async function loadMlbPlayers() {
         playerId: s.player_id,
         name: p?.name || "Unknown",
         team: p?.team_abbr || p?.team_name || "",
+        teamName: p?.team_name || null,
         headshotUrl: p?.headshot_url || undefined,
         streak: s.hit_streak ?? 0,
         seasonAvg: s.batting_avg ?? 0,
@@ -120,6 +123,7 @@ async function loadMlbPlayers() {
         last7Avg: l7Map.get(s.player_id) ?? null,
         nextOpponent: next?.opponent || null,
         nextPitcher: next?.pitcher || null,
+        nextGameDate: next?.date || null,
       };
     })
     .sort((a, b) => b.streak - a.streak || b.streakAvg - a.streakAvg);

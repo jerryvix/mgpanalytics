@@ -2,13 +2,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Flame, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { format, parseISO, isSameDay } from "date-fns";
 import { TeamLogo } from "@/components/ui/TeamLogo";
+import { LiveBadge } from "@/components/ui/LiveBadge";
+import { useLiveScores } from "@/hooks/useLiveScores";
 import { careerVsPitcher } from "@/services/mlb/batterVsPitcher";
 
 export interface HitStreakRow {
   playerId: string;
   name: string;
   team: string;
+  /** Full team name — used to match the ESPN live scoreboard. */
+  teamName: string | null;
   headshotUrl?: string;
   streak: number;
   seasonAvg: number;
@@ -16,6 +21,7 @@ export interface HitStreakRow {
   last7Avg: number | null;
   nextOpponent: string | null;
   nextPitcher: string | null;
+  nextGameDate: string | null;
 }
 
 // Baseball average format: 3 decimals, no leading zero (.312)
@@ -78,7 +84,45 @@ interface HitStreakTableProps {
   isLoading?: boolean;
 }
 
+// Game-state chip for the matchup cell. Live state comes from the same
+// 60s ESPN scoreboard polling as the slate badges — not the batch-synced
+// status column, which can lag hours. Upcoming games show first pitch so
+// the pick window is visible at a glance.
+function GameStateChip({
+  state,
+  detail,
+  gameDate,
+}: {
+  state: "pre" | "in" | "post" | undefined;
+  detail: string | undefined;
+  gameDate: string | null;
+}) {
+  if (state === "in") return <LiveBadge detail={detail} />;
+  if (state === "post") {
+    return (
+      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground border border-border rounded px-1.5 py-0.5">
+        Final
+      </span>
+    );
+  }
+  if (!gameDate) return null;
+  try {
+    const d = parseISO(gameDate);
+    return (
+      <span
+        className="font-mono text-[10px] text-terminal-green/80"
+        title="Scheduled first pitch — picks close at game time"
+      >
+        {isSameDay(d, new Date()) ? format(d, "h:mm a") : format(d, "EEE h:mm a")}
+      </span>
+    );
+  } catch {
+    return null;
+  }
+}
+
 export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
+  const live = useLiveScores("MLB");
   return (
     <Card className="bg-card border-border">
       <CardContent className="p-0">
@@ -125,12 +169,18 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
+                {rows.map((r, i) => {
+                  // We don't know home/away here, so try the matchup both ways.
+                  const liveGame =
+                    r.teamName && r.nextOpponent
+                      ? live.getGame(r.teamName, r.nextOpponent) ?? live.getGame(r.nextOpponent, r.teamName)
+                      : undefined;
+                  return (
                   <tr
                     key={r.playerId}
                     className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${
                       i % 2 === 1 ? "bg-muted/10" : ""
-                    }`}
+                    } ${liveGame?.state === "post" ? "opacity-60" : ""}`}
                   >
                     <td className="px-4 py-2.5">
                       <Link
@@ -185,16 +235,24 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                     </td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                       {r.nextOpponent ? (
-                        <>
-                          <span className="text-foreground">{r.nextOpponent}</span>
-                          {r.nextPitcher && <span className="text-muted-foreground"> · {r.nextPitcher}</span>}
-                        </>
+                        <span className="inline-flex items-center gap-2">
+                          <GameStateChip
+                            state={liveGame?.state}
+                            detail={liveGame?.detail}
+                            gameDate={r.nextGameDate}
+                          />
+                          <span>
+                            <span className="text-foreground">{r.nextOpponent}</span>
+                            {r.nextPitcher && <span className="text-muted-foreground"> · {r.nextPitcher}</span>}
+                          </span>
+                        </span>
                       ) : (
                         "—"
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
