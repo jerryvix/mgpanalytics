@@ -1,7 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Flame, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { TeamLogo } from "@/components/ui/TeamLogo";
+import { careerVsPitcher } from "@/services/mlb/batterVsPitcher";
 
 export interface HitStreakRow {
   playerId: string;
@@ -25,6 +27,51 @@ const fmtAvg = (val: number | null | undefined) => {
 import { heatText, streakHeat } from "@/lib/heat";
 
 const streakColor = (streak: number) => heatText(streakHeat(streak));
+
+// Career line vs tonight's probable starter, from MLB's public Stats API.
+// Sample size shown always — .333 in 3 AB and .320 in 25 AB are different
+// facts, and "never faced him" is itself an angle.
+function VsStarterCell({ batter, pitcher }: { batter: string; pitcher: string | null }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["bvp", batter, pitcher],
+    queryFn: () => careerVsPitcher(batter, pitcher!),
+    enabled: !!pitcher,
+    staleTime: 12 * 3600_000,
+    gcTime: 12 * 3600_000,
+    retry: 1,
+  });
+
+  if (!pitcher) return <span className="text-muted-foreground">—</span>;
+  if (isLoading) return <span className="text-muted-foreground animate-pulse">…</span>;
+  if (!data || data.status === "unavailable") return <span className="text-muted-foreground">—</span>;
+  if (data.status === "never-faced") {
+    return (
+      <span className="text-muted-foreground" title={`No career at-bats against ${pitcher}`}>
+        1st look
+      </span>
+    );
+  }
+
+  const { avg, hits, atBats, homeRuns, ops } = data.line;
+  const solidSample = atBats >= 10;
+  const tone =
+    avg !== null && solidSample && avg >= 0.3
+      ? "text-terminal-green"
+      : avg !== null && solidSample && avg <= 0.15
+        ? "text-terminal-amber"
+        : "text-foreground";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 justify-end ${tone}`}
+      title={`Career vs ${pitcher}: ${hits}-for-${atBats}${homeRuns ? `, ${homeRuns} HR` : ""}${ops !== null ? `, ${ops.toFixed(3)} OPS` : ""}`}
+    >
+      {fmtAvg(avg)}
+      <span className="text-muted-foreground text-[10px]">
+        ({hits}-{atBats}{homeRuns > 0 ? `, ${homeRuns} HR` : ""})
+      </span>
+    </span>
+  );
+}
 
 interface HitStreakTableProps {
   rows: HitStreakRow[];
@@ -67,6 +114,12 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                   </th>
                   <th className="text-right font-medium px-2 py-2" title="Batting average, last 7 games">
                     L7
+                  </th>
+                  <th
+                    className="text-right font-medium px-2 py-2"
+                    title="Career batting line against tonight's probable starter (all seasons, via MLB)"
+                  >
+                    VS Starter
                   </th>
                   <th className="text-left font-medium px-4 py-2">Next Matchup</th>
                 </tr>
@@ -126,6 +179,9 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                       ) : (
                         "—"
                       )}
+                    </td>
+                    <td className="px-2 py-2.5 text-right font-mono tabular-nums text-xs whitespace-nowrap">
+                      <VsStarterCell batter={r.name} pitcher={r.nextPitcher} />
                     </td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                       {r.nextOpponent ? (
