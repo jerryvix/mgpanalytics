@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthCard } from "@/components/AuthCard";
 import { motion } from "framer-motion";
@@ -125,6 +125,21 @@ const Index = () => {
           <AuthCard />
         </motion.div>
 
+        {/* Why MGP link — off the hero path, for the curious cold visitor */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.65, duration: 0.4 }}
+          className="mt-4"
+        >
+          <Link
+            to="/why"
+            className="text-xs font-mono text-muted-foreground hover:text-terminal-green transition-colors"
+          >
+            [ WHY MGP → ]
+          </Link>
+        </motion.div>
+
         {/* Footer */}
         <motion.footer
           initial={{ opacity: 0 }}
@@ -132,7 +147,12 @@ const Index = () => {
           transition={{ delay: 0.6, duration: 0.4 }}
           className="absolute bottom-4 text-center text-xs font-mono text-muted-foreground/50"
         >
-          <p>© 2026 MGP ANALYTICS • ALL RIGHTS RESERVED</p>
+          <p>
+            © 2026 MGP ANALYTICS • ALL RIGHTS RESERVED •{" "}
+            <Link to="/why" className="hover:text-terminal-green transition-colors">
+              WHY MGP
+            </Link>
+          </p>
         </motion.footer>
       </div>
     </div>
