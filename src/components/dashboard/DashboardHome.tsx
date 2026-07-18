@@ -49,43 +49,6 @@ interface GameWithOdds extends Game {
   hasOdds: boolean;
 }
 
-type FreshnessLevel = "high" | "limited" | "stale";
-
-interface SyncFreshness {
-  level: FreshnessLevel;
-  label: string;
-}
-
-// Thresholds match how the pipeline actually works: game/odds syncs run on
-// 4h–24h schedules (live scores stream separately), so "fresh" means within
-// one sync cycle — not within minutes.
-function computeFreshness(lastSyncAt: string | null, lastSyncStatus: string | null, recordsSynced: number | null): SyncFreshness {
-  if (!lastSyncAt || !lastSyncStatus) return { level: "stale", label: "Stale" };
-  const hoursAgo = (Date.now() - new Date(lastSyncAt).getTime()) / (1000 * 60 * 60);
-  if (lastSyncStatus !== "success") return { level: "stale", label: "Stale" };
-  if (hoursAgo > 26) return { level: "stale", label: "Stale" };
-  if (hoursAgo > 6 || (recordsSynced ?? 0) === 0) return { level: "limited", label: "Synced today" };
-  return { level: "high", label: "Fresh" };
-}
-
-// Only judge freshness by sports actually playing — an offseason sport's
-// (correctly) old sync shouldn't drag the badge down.
-function inSeasonSportPrefixes(): string[] {
-  const m = new Date().getMonth(); // 0 = Jan
-  const s: string[] = ["ALL"];
-  if (m >= 2 && m <= 10) s.push("MLB");
-  if (m >= 7 || m <= 0) s.push("NFL", "NCAAF");
-  if (m >= 9 || m <= 5) s.push("NBA");
-  if (m >= 10 || m <= 3) s.push("NCAAB");
-  return s;
-}
-
-const freshnessColors: Record<FreshnessLevel, string> = {
-  high: "bg-terminal-green/20 text-terminal-green border-terminal-green/30",
-  limited: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  stale: "bg-muted text-muted-foreground border-border",
-};
-
 const EXAMPLE_PROMPTS = [
   "What's on tonight's slate?",
   "Who are tonight's biggest favorites?",
@@ -129,7 +92,6 @@ export function DashboardHome() {
   const [lastRefresh, setLastRefresh] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [dataFreshness, setDataFreshness] = useState<Record<string, SyncFreshness>>({});
   const isMobile = useIsMobile();
   const { preferredSports } = useTrialStatus();
   const [showSetup, setShowSetup] = useState(false);
@@ -548,24 +510,6 @@ export function DashboardHome() {
       movements.sort((a, b) => Math.abs(b.movement || 0) - Math.abs(a.movement || 0));
       setMoneyFlows(movements.slice(0, 4));
 
-      // Fetch data freshness from sync_schedule
-      try {
-        const { data: schedules } = await supabase
-          .from("sync_schedule")
-          .select("sport, data_type, last_sync_at, last_sync_status, records_synced");
-
-        if (schedules) {
-          const freshness: Record<string, SyncFreshness> = {};
-          for (const s of schedules) {
-            const key = `${s.sport}-${s.data_type}`;
-            freshness[key] = computeFreshness(s.last_sync_at, s.last_sync_status, s.records_synced);
-          }
-          setDataFreshness(freshness);
-        }
-      } catch (e) {
-        console.error("Error fetching sync freshness:", e);
-      }
-
       setLastRefresh(new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -719,7 +663,9 @@ export function DashboardHome() {
         {/* Fantasy form movers */}
         <FantasyMovers />
 
-        {/* Money Flows Section */}
+        {/* Money Flows Section — hidden entirely until movement data exists;
+            sync plumbing (snapshot counts, freshness) is not user language */}
+        {!loading && moneyFlows.length === 0 ? null : (
         <motion.section
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -731,25 +677,6 @@ export function DashboardHome() {
               <h2 className="text-sm text-foreground uppercase tracking-wider font-medium">
                 Money Flows
               </h2>
-              {(() => {
-                const inSeason = inSeasonSportPrefixes();
-                const oddsKeys = Object.keys(dataFreshness).filter(
-                  k => k.includes("odds") && inSeason.includes(k.split("-")[0])
-                );
-                const best = oddsKeys.length > 0
-                  ? oddsKeys.reduce((best, k) => {
-                      const level = dataFreshness[k].level;
-                      if (level === "high") return dataFreshness[k];
-                      if (level === "limited" && best.level !== "high") return dataFreshness[k];
-                      return best;
-                    }, dataFreshness[oddsKeys[0]])
-                  : null;
-                return best ? (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded border ${freshnessColors[best.level]}`}>
-                    {best.label}
-                  </span>
-                ) : null;
-              })()}
             </div>
             {lastRefresh && (
               <span className="text-xs text-muted-foreground">
@@ -764,7 +691,7 @@ export function DashboardHome() {
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
-          ) : moneyFlows.length > 0 ? (
+          ) : (
             <div className="space-y-2">
               {moneyFlows.map((flow) => (
                 <div
@@ -805,12 +732,9 @@ export function DashboardHome() {
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground px-4 py-3 bg-card/50 border border-border rounded-lg">
-              No movement data yet — needs at least 2 snapshots.
-            </p>
           )}
         </motion.section>
+        )}
 
         {/* Upcoming Games Section */}
         <motion.section
@@ -825,25 +749,6 @@ export function DashboardHome() {
                 Upcoming Games
               </h2>
               <span className="text-xs text-muted-foreground">(next 48 hours)</span>
-              {(() => {
-                const inSeason = inSeasonSportPrefixes();
-                const gameKeys = Object.keys(dataFreshness).filter(
-                  k => k.includes("games") && inSeason.includes(k.split("-")[0])
-                );
-                const best = gameKeys.length > 0
-                  ? gameKeys.reduce((best, k) => {
-                      const level = dataFreshness[k].level;
-                      if (level === "high") return dataFreshness[k];
-                      if (level === "limited" && best.level !== "high") return dataFreshness[k];
-                      return best;
-                    }, dataFreshness[gameKeys[0]])
-                  : null;
-                return best ? (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded border ${freshnessColors[best.level]}`}>
-                    {best.label}
-                  </span>
-                ) : null;
-              })()}
             </div>
           </div>
 
