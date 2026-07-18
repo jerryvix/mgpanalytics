@@ -35,19 +35,19 @@ const CONTRAST_ROWS: Array<{ typical: string; mgp: string }> = [
 const SECTIONS: Array<{ index: string; title: string; body: string }> = [
   {
     index: "01",
-    title: "No invented numbers",
+    title: "No guesses. Just real numbers.",
     body:
       "Most AI chat tools answer market questions from model memory. Memory is stale and it makes things up. Our analyst is blocked from doing that. The odds, streaks and stat leaders in every answer come straight from synced data. Market numbers are never pulled from memory or the open web. If the data is old you see a staleness warning instead of a confident wrong answer.",
   },
   {
     index: "02",
-    title: "Every insight carries its receipt",
+    title: "Every angle comes with receipts.",
     body:
       "Each curated angle ships with a source and a capture date. You can see where a claim came from on the card itself. Anything we cannot verify never reaches your screen. An automated check blocks unsourced or hedged claims before release. Humans grade the output for accuracy after that.",
   },
   {
     index: "03",
-    title: "The full picture on one screen",
+    title: "Stop checking five apps.",
     body:
       "Odds from DraftKings, FanDuel, Caesars and BetRivers. Line movement history with the math done right. We convert to implied probability before comparing books because averaging American odds gives wrong answers. Live scores refresh every minute. Hit streaks and batter versus pitcher history sit on the same screen. No tab hopping.",
   },

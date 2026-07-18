@@ -39,6 +39,11 @@
 | "Powered by Gemini" | The live analyst is Claude Sonnet 4.6 (`gemini-chat` name is legacy). |
 | Rich prop-grading analyst in chat (EPA, CPOE, target share) | That code lives in the deprecated, unmounted `useChatQuery` path. Users never see it. |
 
+## Shipped pitch lines (approved July 17, 2026)
+- Landing hero: "Get an edge on the books."
+- /why hero: "An analyst that never makes numbers up."
+- /why differentiator headers: "No guesses. Just real numbers." · "Every angle comes with receipts." · "Stop checking five apps."
+
 ## Copy rules for shipped surfaces
 - Lead with the grounded-analyst story. Benefit language, second person.
 - No category jargon ("prediction markets"), no analogies ("Bloomberg"), no competitor names.
