@@ -3,53 +3,22 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-// Why MGP: public positioning page. Every claim on this page traces to the
-// Jul 2026 competitive audit (docs/positioning.md). Rules for this surface:
-// benefit language only, no category jargon, no analogies, no em dashes,
-// and nothing the codebase can't back up today. If a feature ships or dies,
-// update docs/positioning.md and this copy together.
+// Why MGP: public positioning page. Every claim traces to docs/positioning.md.
+// Voice rules for this surface (owner-set): positive benefits only, nothing
+// defensive, no jargon, no analogies, no em dashes, one line per card.
 
-const CONTRAST_ROWS: Array<{ typical: string; mgp: string }> = [
+const SECTIONS: Array<{ title: string; body: string }> = [
   {
-    typical: "AI chat guesses lines from training data",
-    mgp: "Answers locked to synced odds with timestamps",
-  },
-  {
-    typical: "Trends with no source attached",
-    mgp: "Source and capture date on every insight",
-  },
-  {
-    typical: "Averages American odds across books",
-    mgp: "Converts to probability first, so the math holds",
-  },
-  {
-    typical: "Sells picks and locks",
-    mgp: "Explains the market. Never tells you what to bet",
-  },
-  {
-    typical: "Odds here, scores there, stats somewhere else",
-    mgp: "One screen",
-  },
-];
-
-const SECTIONS: Array<{ index: string; title: string; body: string }> = [
-  {
-    index: "01",
     title: "No guesses. Just real numbers.",
-    body:
-      "Most AI chat tools answer market questions from model memory. Memory is stale and it makes things up. Our analyst is blocked from doing that. The odds, streaks and stat leaders in every answer come straight from synced data. Market numbers are never pulled from memory or the open web. If the data is old you see a staleness warning instead of a confident wrong answer.",
+    body: "Every answer pulls the live line straight from the books.",
   },
   {
-    index: "02",
-    title: "Every angle comes with receipts.",
-    body:
-      "Each curated angle ships with a source and a capture date. You can see where a claim came from on the card itself. Anything we cannot verify never reaches your screen. An automated check blocks unsourced or hedged claims before release. Humans grade the output for accuracy after that.",
+    title: "Get specialized data and insights.",
+    body: "Hit streaks, pitcher matchups and market moves, with the source on every card.",
   },
   {
-    index: "03",
-    title: "Stop checking five apps.",
-    body:
-      "Odds from DraftKings, FanDuel, Caesars and BetRivers. Line movement history with the math done right. We convert to implied probability before comparing books because averaging American odds gives wrong answers. Live scores refresh every minute. Hit streaks and batter versus pitcher history sit on the same screen. No tab hopping.",
+    title: "Stop checking multiple apps.",
+    body: "Odds, line moves, live scores and hot streaks in one place.",
   },
 ];
 
@@ -99,80 +68,28 @@ const WhyMGP = () => {
           className="mt-10 mb-14"
         >
           <h1 className="text-3xl md:text-5xl font-bold text-foreground leading-tight mb-5">
-            An analyst that never makes numbers up.
+            Bet Smarter, Not Harder. Get real insights.
           </h1>
-          <p className="text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
-            Ask about a line and you get the line we synced. Not a guess. When our data is more
-            than six hours old the answer says so. And it will never tell you what to bet. It
-            teaches. You decide.
-          </p>
-          <p className="mt-5 font-mono text-[11px] tracking-widest uppercase text-terminal-green">
-            Grounded answers • Sourced insights • One screen
+          <p className="font-mono text-[11px] tracking-widest uppercase text-terminal-green">
+            Real numbers • Specialized insights • One screen
           </p>
         </motion.div>
 
-        {/* Differentiators */}
+        {/* Benefit cards */}
         <div className="space-y-5">
           {SECTIONS.map((s) => (
-            <motion.section key={s.index} {...sectionMotion}>
+            <motion.section key={s.title} {...sectionMotion}>
               <Card className="bg-gradient-to-b from-card to-card/70 border-terminal-green/30">
                 <CardContent className="p-6">
-                  <div className="flex items-baseline gap-3 mb-3">
-                    <span className="font-mono text-xs text-terminal-green/60">{s.index}</span>
-                    <h2 className="font-mono text-sm md:text-base font-bold uppercase tracking-widest text-terminal-green">
-                      {s.title}
-                    </h2>
-                  </div>
+                  <h2 className="font-mono text-sm md:text-base font-bold uppercase tracking-widest text-terminal-green mb-2">
+                    {s.title}
+                  </h2>
                   <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{s.body}</p>
                 </CardContent>
               </Card>
             </motion.section>
           ))}
         </div>
-
-        {/* Contrast */}
-        <motion.section {...sectionMotion} className="mt-14">
-          <h2 className="font-mono text-sm font-bold uppercase tracking-widest text-foreground mb-4">
-            Typical tools vs MGP
-          </h2>
-          <div className="border border-border rounded-lg overflow-hidden divide-y divide-border">
-            <div className="hidden md:grid md:grid-cols-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              <span className="px-4 py-2.5">Typical tools</span>
-              <span className="px-4 py-2.5 text-terminal-green">MGP</span>
-            </div>
-            {CONTRAST_ROWS.map((row, i) => (
-              <div key={i} className="grid grid-cols-1 md:grid-cols-2 bg-card/50">
-                <div className="px-4 py-3 text-sm text-muted-foreground">
-                  <span className="md:hidden font-mono text-[10px] uppercase tracking-widest block mb-1">
-                    Typical tools
-                  </span>
-                  {row.typical}
-                </div>
-                <div className="px-4 py-3 text-sm text-foreground md:border-l md:border-border">
-                  <span className="md:hidden font-mono text-[10px] uppercase tracking-widest text-terminal-green block mb-1">
-                    MGP
-                  </span>
-                  {row.mgp}
-                </div>
-              </div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* Honest limits */}
-        <motion.section {...sectionMotion} className="mt-10">
-          <Card className="bg-card/60 border-terminal-amber/30">
-            <CardContent className="p-6">
-              <h2 className="font-mono text-sm font-bold uppercase tracking-widest text-terminal-amber mb-3">
-                What we do not do
-              </h2>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                Odds sync on a schedule, not tick by tick. We cover four major books, not fifty. We
-                never sell picks. And when data is stale we say so instead of pretending.
-              </p>
-            </CardContent>
-          </Card>
-        </motion.section>
 
         {/* CTA */}
         <motion.section {...sectionMotion} className="mt-14 text-center">

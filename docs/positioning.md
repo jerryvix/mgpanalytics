@@ -39,10 +39,14 @@
 | "Powered by Gemini" | The live analyst is Claude Sonnet 4.6 (`gemini-chat` name is legacy). |
 | Rich prop-grading analyst in chat (EPA, CPOE, target share) | That code lives in the deprecated, unmounted `useChatQuery` path. Users never see it. |
 
-## Shipped pitch lines (approved July 17, 2026)
-- Landing hero: "Get an edge on the books."
-- /why hero: "An analyst that never makes numbers up."
-- /why differentiator headers: "No guesses. Just real numbers." · "Every angle comes with receipts." · "Stop checking five apps."
+## Shipped pitch lines (approved July 17, 2026, rev 2)
+- Landing hero: "Get an edge on the books." / "Live odds. Line moves. Hot streaks. One screen."
+- /why hero: "Bet Smarter, Not Harder. Get real insights."
+- /why card headers: "No guesses. Just real numbers." · "Get specialized data and insights." · "Stop checking multiple apps."
+- Cut by owner direction: platform name-drops on the landing subhead (retires the Kalshi flag), the /why contrast grid and the "what we do not do" card.
+
+## Consumer voice rule (owner-set, July 17, 2026)
+Positive claims only on consumer surfaces. No defensive framing: nothing about hallucination, staleness, unverified claims or AI memory. Consumers are not doubting the data until copy plants that seed. The integrity story stays real in the product (provenance on cards, staleness warnings in chat) and in this doc; it is not marketing copy.
 
 ## Copy rules for shipped surfaces
 - Lead with the grounded-analyst story. Benefit language, second person.

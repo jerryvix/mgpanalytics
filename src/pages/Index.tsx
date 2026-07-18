@@ -90,12 +90,8 @@ const Index = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3 text-balance">
             Get an edge on the books.
           </h2>
-          <p className="text-sm md:text-base text-muted-foreground leading-relaxed text-balance">
-            Live odds, sharp line moves, and hot-streak intel across{" "}
-            <span className="text-foreground font-medium">DraftKings</span>,{" "}
-            <span className="text-foreground font-medium">FanDuel</span>,{" "}
-            <span className="text-foreground font-medium">Kalshi</span>, and more — one screen,
-            real time.
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
+            Live odds. Line moves. Hot streaks. One screen.
           </p>
         </motion.div>
 
