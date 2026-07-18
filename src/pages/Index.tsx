@@ -77,11 +77,33 @@ const Index = () => {
           </p>
         </motion.div>
 
+        {/* Value prop — a cold visitor should get what MGP is in one glance.
+            Benefit headline (no category labels, no analogies — the Bloomberg
+            framing stays in investor collateral), platforms named for instant
+            recognition and breadth. */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.5 }}
+          className="mb-7 max-w-xl text-center"
+        >
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3 text-balance">
+            Get an edge on the books.
+          </h2>
+          <p className="text-sm md:text-base text-muted-foreground leading-relaxed text-balance">
+            Live odds, sharp line moves, and hot-streak intel across{" "}
+            <span className="text-foreground font-medium">DraftKings</span>,{" "}
+            <span className="text-foreground font-medium">FanDuel</span>,{" "}
+            <span className="text-foreground font-medium">Kalshi</span>, and more — one screen,
+            real time.
+          </p>
+        </motion.div>
+
         {/* Status bar */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.4 }}
+          transition={{ delay: 0.35, duration: 0.4 }}
           className="mb-6 flex items-center gap-4 text-xs font-mono text-muted-foreground"
         >
           <span className="flex items-center gap-2">
@@ -98,7 +120,7 @@ const Index = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
         >
           <AuthCard />
         </motion.div>
