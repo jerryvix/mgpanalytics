@@ -705,6 +705,51 @@ export type Database = {
           },
         ]
       }
+      nfl_fantasy_weekly: {
+        Row: {
+          created_at: string
+          fantasy_points: number | null
+          fantasy_points_ppr: number | null
+          gsis_id: string
+          id: string
+          player_name: string
+          pos_group: string
+          position: string
+          season: number
+          season_type: string
+          team: string | null
+          week: number
+        }
+        Insert: {
+          created_at?: string
+          fantasy_points?: number | null
+          fantasy_points_ppr?: number | null
+          gsis_id: string
+          id?: string
+          player_name: string
+          pos_group: string
+          position: string
+          season: number
+          season_type: string
+          team?: string | null
+          week: number
+        }
+        Update: {
+          created_at?: string
+          fantasy_points?: number | null
+          fantasy_points_ppr?: number | null
+          gsis_id?: string
+          id?: string
+          player_name?: string
+          pos_group?: string
+          position?: string
+          season?: number
+          season_type?: string
+          team?: string | null
+          week?: number
+        }
+        Relationships: []
+      }
       odds: {
         Row: {
           created_at: string
@@ -1903,7 +1948,36 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      nfl_fantasy_season_ranks: {
+        Row: {
+          games: number | null
+          gsis_id: string | null
+          player_name: string | null
+          pos_group: string | null
+          position: string | null
+          position_rank: number | null
+          ppg_position_rank: number | null
+          ppg_ppr: number | null
+          season: number | null
+          team: string | null
+          total_ppr: number | null
+          total_std: number | null
+        }
+        Relationships: []
+      }
+      nfl_fantasy_second_half_ranks: {
+        Row: {
+          gsis_id: string | null
+          player_name: string | null
+          pos_group: string | null
+          season: number | null
+          second_half_games: number | null
+          second_half_ppg: number | null
+          second_half_ppr: number | null
+          second_half_rank: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_cache: { Args: never; Returns: undefined }

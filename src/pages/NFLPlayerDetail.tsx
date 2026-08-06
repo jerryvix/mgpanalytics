@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, User, TrendingUp, Zap, Calendar, Target, BarChart3 } from "lucide-react";
+import { ArrowLeft, User, TrendingUp, Zap, Calendar, Target, BarChart3, Trophy } from "lucide-react";
+import { FantasyTrajectoryTab } from "@/components/nfl/FantasyTrajectoryTab";
 import { NFLPlayerStatsCard } from "@/components/players/NFLPlayerStatsCard";
 import { NFLGameLog } from "@/components/players/NFLGameLog";
 import { NFLAdvancedStats } from "@/components/players/NFLAdvancedStats";
@@ -498,6 +499,10 @@ export default function NFLPlayerDetail() {
             <Target className="w-4 h-4 mr-1.5 hidden sm:inline" />
             Betting
           </TabsTrigger>
+          <TabsTrigger value="fantasy" className="text-xs sm:text-sm flex-1 min-w-0">
+            <Trophy className="w-4 h-4 mr-1.5 hidden sm:inline" />
+            Fantasy
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="traditional">
@@ -659,6 +664,14 @@ export default function NFLPlayerDetail() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="fantasy">
+          <FantasyTrajectoryTab
+            playerName={player.name}
+            position={player.position || ""}
+            teamAbbr={player.team_abbr}
+          />
         </TabsContent>
       </Tabs>
     </div>
