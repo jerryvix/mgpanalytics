@@ -75,6 +75,9 @@ verify_jwt = false
 [functions.backfill-nfl-fantasy]
 verify_jwt = false
 
+[functions.sync-ecr]
+verify_jwt = false
+
 [functions.sync-cfbd-roster-intel]
 verify_jwt = false
 

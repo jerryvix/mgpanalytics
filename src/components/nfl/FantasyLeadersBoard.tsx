@@ -41,13 +41,25 @@ interface AdpRow {
   low: number | null;
 }
 
+interface EcrRow {
+  gsis_id: string | null;
+  player_name: string;
+  team: string | null;
+  ecr: number;
+  best: number | null;
+  worst: number | null;
+}
+
 interface BoardRow {
   rankLabel: string; // "WR3" (ADP order on draft view, ADP order on results view)
   name: string;
   team: string | null;
-  adp: number | null; // overall ADP pick average, e.g. 2.9
+  adp: number | null; // results view: overall ADP pick average, e.g. 2.9
   adpHigh: number | null; // earliest real-draft pick
   adpLow: number | null; // latest real-draft pick
+  ecr: number | null; // draft view: average expert overall rank, e.g. 3.3
+  ecrBest: number | null;
+  ecrWorst: number | null;
   finishRank: number | null;
   totalPpr: number | null;
   ppgPpr: number | null;
@@ -74,14 +86,27 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
   const finishSeason = latest.season;
   const adpSeason = view === "draft" ? finishSeason + 1 : finishSeason;
 
-  const [{ data: adp }, { data: finishes }, { data: players }] = await Promise.all([
-    supabase
-      .from("nfl_adp_snapshots")
-      .select("gsis_id, player_name, team, adp, high, low")
-      .eq("season", adpSeason)
-      .eq("source", ADP_SOURCE)
-      .eq("position", posGroup)
-      .order("adp", { ascending: true }),
+  // Draft view ranks by FantasyPros expert consensus; results view grades
+  // last season against the real-draft ADP board.
+  const rankSource =
+    view === "draft"
+      ? supabase
+          .from("nfl_ecr_snapshots")
+          .select("gsis_id, player_name, team, ecr, best, worst")
+          .eq("season", adpSeason)
+          .eq("source", "fp_ppr_redraft")
+          .eq("position", posGroup)
+          .order("ecr", { ascending: true })
+      : supabase
+          .from("nfl_adp_snapshots")
+          .select("gsis_id, player_name, team, adp, high, low")
+          .eq("season", adpSeason)
+          .eq("source", ADP_SOURCE)
+          .eq("position", posGroup)
+          .order("adp", { ascending: true });
+
+  const [{ data: ranks }, { data: finishes }, { data: players }] = await Promise.all([
+    rankSource,
     supabase
       .from("nfl_fantasy_season_ranks")
       .select("gsis_id, player_name, team, total_ppr, ppg_ppr, games, position_rank")
@@ -104,26 +129,29 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
     }
   }
 
-  const adpList = (adp || []) as AdpRow[];
-  const rows: BoardRow[] = adpList.slice(0, ROWS_SHOWN).map((a, i) => {
+  const rankList = (ranks || []) as Array<AdpRow & EcrRow>;
+  const rows: BoardRow[] = rankList.slice(0, ROWS_SHOWN).map((a, i) => {
     const finish = a.gsis_id ? finishByGsis.get(a.gsis_id) : undefined;
-    const adpPosRank = i + 1;
+    const posRank = i + 1;
     // Expectation for a draft slot = what the actual finisher at that slot
     // scored. Positive delta: the player outscored their draft slot.
     let deltaPts: number | null = null;
     if (view === "results") {
-      const expected = ptsByFinishRank.get(adpPosRank);
+      const expected = ptsByFinishRank.get(posRank);
       if (expected != null) {
         deltaPts = Math.round(((finish?.total_ppr ?? 0) - expected) * 10) / 10;
       }
     }
     return {
-      rankLabel: `${posGroup}${adpPosRank}`,
+      rankLabel: `${posGroup}${posRank}`,
       name: a.player_name,
       team: finish?.team ?? a.team,
-      adp: a.adp,
-      adpHigh: a.high,
-      adpLow: a.low,
+      adp: a.adp ?? null,
+      adpHigh: a.high ?? null,
+      adpLow: a.low ?? null,
+      ecr: a.ecr ?? null,
+      ecrBest: a.best ?? null,
+      ecrWorst: a.worst ?? null,
       finishRank: finish?.position_rank ?? null,
       totalPpr: finish?.total_ppr ?? null,
       ppgPpr: finish?.ppg_ppr ?? null,
@@ -174,7 +202,7 @@ export function FantasyLeadersBoard() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex gap-2">
           {([
-            ["draft", "2026 Draft Board"],
+            ["draft", "2026 Projected Ranks"],
             ["results", "2025 vs ADP"],
           ] as const).map(([v, label]) => (
             <button
@@ -209,7 +237,7 @@ export function FantasyLeadersBoard() {
 
       <p className="text-xs text-muted-foreground font-mono">
         {view === "draft"
-          ? `Where drafts are taking ${posGroup}s right now, with last season's production - click a player for their trajectory.`
+          ? `Projected ${posGroup}1, ${posGroup}2, ... going into ${data?.adpSeason ?? "this season"} by expert consensus, with last season's production - click a player for their trajectory.`
           : `The ${data?.finishSeason ?? "last"} draft board, graded: +/- compares each player's points to the actual ${posGroup}-finisher at their draft slot.`}
       </p>
 
@@ -233,7 +261,7 @@ export function FantasyLeadersBoard() {
                 <Trophy className="w-4 h-4 text-terminal-green" />
                 <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-foreground">
                   {view === "draft"
-                    ? `${data.adpSeason} ${posGroup} Draft Board (ADP)`
+                    ? `${data.adpSeason} Projected ${posGroup} Ranks`
                     : `${data.finishSeason} ${posGroup} Finishes vs ADP`}
                 </h3>
               </div>
@@ -244,7 +272,9 @@ export function FantasyLeadersBoard() {
                       <th className="text-left font-medium pl-4 pr-1 py-2 w-14">#</th>
                       <th className="text-left font-medium px-1 py-2">Player</th>
                       <th className="text-left font-medium px-1 py-2">Team</th>
-                      <th className="text-right font-medium px-2 py-2">ADP</th>
+                      <th className="text-right font-medium px-2 py-2">
+                        {view === "draft" ? "Exp Rank" : "ADP"}
+                      </th>
                       <th className="text-right font-medium px-2 py-2">
                         {view === "draft" ? `'${String(data.finishSeason).slice(2)} Finish` : "Finish"}
                       </th>
@@ -280,12 +310,28 @@ export function FantasyLeadersBoard() {
                           )}
                         </td>
                         <td className="px-2 py-2 text-right font-mono tabular-nums">
-                          <span className="text-foreground font-bold">{fmtRoundPick(r.adp)}</span>
-                          {r.adp != null && (
-                            <span className="block text-[10px] text-muted-foreground">
-                              avg {r.adp.toFixed(1)}
-                              {r.adpHigh != null && r.adpLow != null ? ` · ${r.adpHigh}-${r.adpLow}` : ""}
-                            </span>
+                          {view === "draft" ? (
+                            <>
+                              <span className="text-foreground font-bold">
+                                {r.ecr == null ? "-" : `#${Math.round(r.ecr)} ovr`}
+                              </span>
+                              {r.ecr != null && (
+                                <span className="block text-[10px] text-muted-foreground">
+                                  ecr {r.ecr.toFixed(1)}
+                                  {r.ecrBest != null && r.ecrWorst != null ? ` · ${r.ecrBest}-${r.ecrWorst}` : ""}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-foreground font-bold">{fmtRoundPick(r.adp)}</span>
+                              {r.adp != null && (
+                                <span className="block text-[10px] text-muted-foreground">
+                                  avg {r.adp.toFixed(1)}
+                                  {r.adpHigh != null && r.adpLow != null ? ` · ${r.adpHigh}-${r.adpLow}` : ""}
+                                </span>
+                              )}
+                            </>
                           )}
                         </td>
                         <td className={`px-2 py-2 text-right font-mono tabular-nums font-bold ${isTopTenFinish(r.finishRank) ? "text-terminal-green" : "text-foreground"}`}>
@@ -313,9 +359,9 @@ export function FantasyLeadersBoard() {
                 </table>
               </div>
               <p className="text-[11px] text-muted-foreground px-4 py-2">
-                ADP: real 12-team PPR drafts from the past week (Fantasy Football Calculator). 1.02 means
-                round 1, pick 2; under it, the exact average overall pick and the earliest-latest picks
-                seen in real drafts. Rookies without NFL history show blank last-season columns.
+                {view === "draft"
+                  ? "Expert Rank: FantasyPros PPR consensus (via DynastyProcess), refreshed daily. #3 ovr is the rounded overall consensus; under it, the exact average and best-worst expert range. Rookies without NFL history show blank last-season columns."
+                  : "ADP: real 12-team PPR drafts (Fantasy Football Calculator). 1.02 means round 1, pick 2; under it, the exact average overall pick and the earliest-latest picks seen in real drafts."}
               </p>
             </CardContent>
           </Card>

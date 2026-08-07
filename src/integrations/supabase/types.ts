@@ -1008,6 +1008,57 @@ export type Database = {
         }
         Relationships: []
       }
+      nfl_ecr_snapshots: {
+        Row: {
+          best: number | null
+          created_at: string
+          ecr: number
+          fp_id: string
+          gsis_id: string | null
+          id: string
+          player_name: string
+          position: string | null
+          scrape_date: string | null
+          sd: number | null
+          season: number
+          source: string
+          team: string | null
+          worst: number | null
+        }
+        Insert: {
+          best?: number | null
+          created_at?: string
+          ecr: number
+          fp_id: string
+          gsis_id?: string | null
+          id?: string
+          player_name: string
+          position?: string | null
+          scrape_date?: string | null
+          sd?: number | null
+          season: number
+          source?: string
+          team?: string | null
+          worst?: number | null
+        }
+        Update: {
+          best?: number | null
+          created_at?: string
+          ecr?: number
+          fp_id?: string
+          gsis_id?: string | null
+          id?: string
+          player_name?: string
+          position?: string | null
+          scrape_date?: string | null
+          sd?: number | null
+          season?: number
+          source?: string
+          team?: string | null
+          worst?: number | null
+        }
+        Relationships: []
+      }
       nfl_name_overrides: {
         Row: {
           created_at: string
