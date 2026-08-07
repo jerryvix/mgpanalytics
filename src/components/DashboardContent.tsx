@@ -30,6 +30,7 @@ import {
 import { FeedPage } from "@/pages/community";
 import Profile from "@/pages/Profile";
 import { MobileSportNav } from "@/components/ui/MobileSportNav";
+import { BackButton } from "@/components/ui/BackButton";
 
 interface DashboardContentProps {
   isAdmin: boolean;
@@ -41,6 +42,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
 
   return (
     <div className="p-4 pb-20 md:p-6 md:pb-6">
+      <BackButton />
       {isSportsPage && <MobileSportNav />}
       <Routes>
         <Route index element={<DashboardHome />} />

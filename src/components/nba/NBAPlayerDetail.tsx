@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  ArrowLeft,
   User,
   TrendingUp,
   Zap,
@@ -168,18 +167,8 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Header - back button hidden on mobile (bottom nav handles it) */}
-      <div className="hidden md:flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Back
-        </Button>
-      </div>
+      {/* Back navigation lives in the dashboard shell (BackButton) so it is
+          present on every screen size, not just desktop. */}
 
       {/* Player Bio Card */}
       <Card className="bg-card border-border overflow-hidden">

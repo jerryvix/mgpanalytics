@@ -108,9 +108,7 @@ export default function MLBPlayerDetail() {
 
   return (
     <div className="space-y-4 max-w-3xl">
-      <Link to="/dashboard/mlb/players" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-terminal-green font-mono">
-        <ArrowLeft className="w-4 h-4" /> MLB Players
-      </Link>
+      {/* Back navigation lives in the dashboard shell (BackButton). */}
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>

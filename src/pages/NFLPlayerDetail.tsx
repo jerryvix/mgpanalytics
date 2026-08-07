@@ -302,13 +302,8 @@ export default function NFLPlayerDetail() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Back Button - hidden on mobile (bottom nav handles it) */}
-      <Link to="/dashboard/nfl/players" className="hidden md:inline-block">
-        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to NFL Players
-        </Button>
-      </Link>
+      {/* Back navigation lives in the dashboard shell (BackButton) so it is
+          present on every screen size, not just desktop. */}
 
       {/* Player Header */}
       <Card className="bg-card border-border overflow-hidden">

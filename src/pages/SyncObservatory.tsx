@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, RefreshCw, Activity, Loader2 } from "lucide-react";
+import { RefreshCw, Activity, Loader2 } from "lucide-react";
 import {
   SyncSummaryCards,
   DataFreshnessGrid,
@@ -85,12 +84,6 @@ export default function SyncObservatory() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <Link to="/dashboard/admin">
-            <Button variant="ghost" size="sm" className="gap-1 font-mono text-xs text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="w-3 h-3" />
-              Admin Panel
-            </Button>
-          </Link>
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-terminal-cyan" />
             <h1 className="text-base sm:text-lg font-mono font-bold text-foreground tracking-tight">SYNC OBSERVATORY</h1>
