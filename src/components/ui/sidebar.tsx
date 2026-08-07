@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -39,6 +39,12 @@ function useSidebar() {
   }
 
   return context;
+}
+
+// Same as useSidebar but returns null outside a provider instead of throwing,
+// for chrome (BottomNav) that renders on pages with and without a sidebar
+function useOptionalSidebar() {
+  return React.useContext(SidebarContext);
 }
 
 const SidebarProvider = React.forwardRef<
@@ -164,7 +170,27 @@ const Sidebar = React.forwardRef<
     );
   }
 
-  // Always use desktop/tablet layout - no mobile sheet
+  // On phones the sidebar lives in an off-canvas sheet, opened via
+  // toggleSidebar/setOpenMobile (BottomNav's Menu tab). Removing this branch
+  // silently strips all full-navigation access on mobile - see mobileNav test.
+  if (isMobile) {
+    return (
+      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+        <SheetContent
+          data-sidebar="sidebar"
+          data-mobile="true"
+          aria-describedby={undefined}
+          side={side}
+          className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+          style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
+        >
+          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          <div className="flex h-full w-full flex-col">{children}</div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <div
       ref={ref}
@@ -636,5 +662,6 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
+  useOptionalSidebar,
   useSidebar,
 };

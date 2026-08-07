@@ -126,15 +126,16 @@ const Dashboard = () => {
   return (
     <SidebarProvider>
       <div className="h-screen flex w-full bg-background overflow-hidden">
-        {/* Sidebar hidden on mobile - BottomNav replaces it */}
-        {!isMobile && (
-          <AppSidebar
-            user={user}
-            isAdmin={isAdmin}
-            isPreviewingAsUser={isPreviewingAsUser}
-            onTogglePreview={handleTogglePreview}
-          />
-        )}
+        {/* Always mounted: fixed rail on desktop, off-canvas sheet on mobile
+            (opened from BottomNav's Menu tab). Do not gate this on isMobile -
+            that leaves phones with no full navigation (see mobileNav test). */}
+        <AppSidebar
+          user={user}
+          isAdmin={isAdmin}
+          isPreviewingAsUser={isPreviewingAsUser}
+          onTogglePreview={handleTogglePreview}
+        />
+
         <main className="flex-1 overflow-auto">
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>

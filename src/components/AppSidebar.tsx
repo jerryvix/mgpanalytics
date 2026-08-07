@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -126,10 +127,16 @@ const adminMenuItem = {
 };
 
 export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview }: AppSidebarProps) {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+  const { state, isMobile, setOpenMobile } = useSidebar();
+  // The mobile sheet always shows the full sidebar; the icon rail is desktop-only
+  const collapsed = !isMobile && state === "collapsed";
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Close the mobile sheet once a nav link lands somewhere
+  useEffect(() => {
+    setOpenMobile(false);
+  }, [location.pathname, setOpenMobile]);
   const { 
     conversations, 
     conversationsLoading, 

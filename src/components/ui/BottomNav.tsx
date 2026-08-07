@@ -1,13 +1,14 @@
 import { useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, Trophy, MessageCircle, UserCircle } from "lucide-react";
+import { Home, Trophy, MessageCircle, UserCircle, Menu } from "lucide-react";
 import { useChat } from "@/contexts/ChatContext";
+import { useOptionalSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
   label: string;
   icon: typeof Home;
-  action: "navigate" | "chat";
+  action: "navigate" | "chat" | "menu";
   path?: string;
   matchPaths?: string[];
 }
@@ -50,12 +51,22 @@ const navItems: NavItem[] = [
     path: "/dashboard/profile",
     matchPaths: ["/dashboard/profile"],
   },
+  // Opens the full sidebar (every sport, players, trending, community, admin)
+  // as an off-canvas sheet - the mobile stand-in for the desktop left rail
+  {
+    label: "Menu",
+    icon: Menu,
+    action: "menu",
+  },
 ];
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isOpen, toggleChat } = useChat();
+  const sidebar = useOptionalSidebar();
+  // No sidebar on this page (no provider) - drop the Menu tab rather than crash
+  const items = sidebar ? navItems : navItems.filter((i) => i.action !== "menu");
   // Remember the last sport page the user visited (default to MLB - the
   // sport most likely in season when someone first taps Sports)
   const lastSportPath = useRef("/dashboard/mlb");
@@ -68,6 +79,7 @@ export function BottomNav() {
 
   const isActive = (item: NavItem) => {
     if (item.action === "chat") return isOpen;
+    if (item.action === "menu") return !!sidebar?.openMobile;
     if (!item.matchPaths) return false;
     return item.matchPaths.some((p) =>
       p === "/dashboard"
@@ -77,7 +89,12 @@ export function BottomNav() {
   };
 
   const handleTap = (item: NavItem) => {
-    if (item.action === "chat") {
+    if (item.action === "menu") {
+      if (isOpen) {
+        toggleChat();
+      }
+      sidebar?.setOpenMobile(true);
+    } else if (item.action === "chat") {
       toggleChat();
     } else {
       if (isOpen) {
@@ -99,7 +116,7 @@ export function BottomNav() {
     >
       <div className="mx-auto max-w-md mb-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-lg shadow-black/30">
         <div className="flex items-center justify-around h-14">
-          {navItems.map((item) => {
+          {items.map((item) => {
             const active = isActive(item);
             return (
               <button
