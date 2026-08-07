@@ -133,6 +133,24 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
 const fmtPts = (v: number | null) => (v == null ? "-" : v.toFixed(1));
 const fmtDelta = (v: number | null) => (v == null ? "-" : `${v > 0 ? "+" : ""}${v.toFixed(1)}`);
 
+// ADP is stored as the average overall pick (Gibbs 1.6 = usually #1-2 off the
+// board). Display it in draft notation instead: 1.6 -> "1.02" (round 1, pick
+// 2 of a 12-team draft), matching how Sleeper/ESPN drafters read the board.
+const fmtRoundPick = (adp: number | null, teams = 12) => {
+  if (adp == null) return "-";
+  let round = Math.floor((adp - 1) / teams) + 1;
+  // FFC formats from an unpublished higher-precision average, so exact .5
+  // boundaries can land one slot off their site. Standard rounding is the
+  // closest recoverable convention; validated within one pick across all
+  // 256 players of the 2026 board.
+  let pick = Math.round(adp - (round - 1) * teams);
+  if (pick > teams) {
+    round += 1;
+    pick = 1;
+  }
+  return `${round}.${String(pick).padStart(2, "0")}`;
+};
+
 export function FantasyLeadersBoard() {
   const [posGroup, setPosGroup] = useState<PosGroup>("RB");
   const [view, setView] = useState<BoardView>("draft");
@@ -217,10 +235,10 @@ export function FantasyLeadersBoard() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b border-border">
-                      <th className="text-left font-medium pl-4 pr-1 py-2 w-14">ADP</th>
+                      <th className="text-left font-medium pl-4 pr-1 py-2 w-14">#</th>
                       <th className="text-left font-medium px-1 py-2">Player</th>
                       <th className="text-left font-medium px-1 py-2">Team</th>
-                      <th className="text-right font-medium px-2 py-2">Pick</th>
+                      <th className="text-right font-medium px-2 py-2">ADP</th>
                       <th className="text-right font-medium px-2 py-2">
                         {view === "draft" ? `'${String(data.finishSeason).slice(2)} Finish` : "Finish"}
                       </th>
@@ -256,7 +274,7 @@ export function FantasyLeadersBoard() {
                           )}
                         </td>
                         <td className="px-2 py-2 text-right font-mono tabular-nums text-muted-foreground">
-                          {r.adp == null ? "-" : r.adp.toFixed(1)}
+                          {fmtRoundPick(r.adp)}
                         </td>
                         <td className={`px-2 py-2 text-right font-mono tabular-nums font-bold ${isTopTenFinish(r.finishRank) ? "text-terminal-green" : "text-foreground"}`}>
                           {finishLabel(r)}
@@ -283,7 +301,8 @@ export function FantasyLeadersBoard() {
                 </table>
               </div>
               <p className="text-[11px] text-muted-foreground px-4 py-2">
-                ADP: Fantasy Football Calculator, 12-team PPR drafts. Rookies without NFL history show blank last-season columns.
+                ADP: real 12-team PPR drafts from the past week (Fantasy Football Calculator), shown as
+                round.pick - 1.02 means round 1, pick 2. Rookies without NFL history show blank last-season columns.
               </p>
             </CardContent>
           </Card>
