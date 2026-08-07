@@ -3,11 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Users, Info, Loader2, Globe, Trophy, TrendingUp } from "lucide-react";
+import { Search, Users, Info, Loader2, Globe, Trophy, TrendingUp, Flame } from "lucide-react";
 import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
 import { NFLPlayerCard } from "@/components/players/NFLPlayerCard";
 import { searchNFLPlayers, NFLPlayer } from "@/services/balldontlie/nflPlayers";
 import { NFLSlatePlayersGrid } from "@/components/nfl";
+import { FantasyLeadersBoard } from "@/components/nfl/FantasyLeadersBoard";
 import { useNFLSlateLeaders } from "@/hooks/useNFLSlateLeaders";
 
 // Debounce hook
@@ -23,7 +24,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function NFLPlayers() {
-  const [activeTab, setActiveTab] = useState<"slate" | "search" | "season" | "futures">("slate");
+  const [activeTab, setActiveTab] = useState<"slate" | "search" | "season" | "futures" | "fantasy">("slate");
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: slateData } = useNFLSlateLeaders({ enabled: activeTab === "slate" });
@@ -63,7 +64,7 @@ export default function NFLPlayers() {
       </div>
 
       {/* Tab Navigation */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search" | "season" | "futures")}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search" | "season" | "futures" | "fantasy")}>
         <TabsList className="bg-muted/50">
           <TabsTrigger value="slate" className="gap-2 text-xs sm:text-sm">
             <Trophy className="w-4 h-4" />
@@ -72,6 +73,10 @@ export default function NFLPlayers() {
           <TabsTrigger value="search" className="gap-2 text-xs sm:text-sm">
             <Globe className="w-4 h-4" />
             <span className="hidden sm:inline">Search All </span>Players
+          </TabsTrigger>
+          <TabsTrigger value="fantasy" className="gap-2 text-xs sm:text-sm">
+            <Flame className="w-4 h-4" />
+            Fantasy
           </TabsTrigger>
           <TabsTrigger value="futures" className="gap-2 text-xs sm:text-sm">
             <TrendingUp className="w-4 h-4" />
@@ -173,6 +178,11 @@ export default function NFLPlayers() {
 
         {/* 2025 Leaders tab hidden per owner (Jul 2026) — SeasonLeaders component
             kept for reuse; the data still powers MGP Angle grounding. */}
+
+        {/* Fantasy Finishes Tab — nflverse-backed, links into the trajectory analyzer */}
+        <TabsContent value="fantasy" className="mt-6">
+          <FantasyLeadersBoard />
+        </TabsContent>
 
         {/* Season Futures Tab — player prop futures (team totals live under Games > Futures) */}
         <TabsContent value="futures" className="mt-6">
