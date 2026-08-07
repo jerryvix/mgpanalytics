@@ -6,9 +6,43 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Users, Info, Loader2, Globe, Trophy, TrendingUp, Flame } from "lucide-react";
 import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
 import { NFLPlayerCard } from "@/components/players/NFLPlayerCard";
-import { searchNFLPlayers, NFLPlayer } from "@/services/balldontlie/nflPlayers";
+import { supabase } from "@/integrations/supabase/client";
 import { NFLSlatePlayersGrid } from "@/components/nfl";
 import { FantasyLeadersBoard } from "@/components/nfl/FantasyLeadersBoard";
+
+// DB-backed player search result (replaces the dead Ball Don't Lie live search)
+interface DbPlayerResult {
+  id: string;
+  external_id: string;
+  name: string;
+  position: string | null;
+  team_abbr: string | null;
+  team_name: string | null;
+  college: string | null;
+  experience: string | null;
+}
+
+const POSITION_ABBR: Record<string, string> = {
+  quarterback: "QB",
+  "running back": "RB",
+  fullback: "FB",
+  "wide receiver": "WR",
+  "tight end": "TE",
+};
+
+async function searchDbPlayers(query: string): Promise<DbPlayerResult[]> {
+  // "%aj%brown%"-style pattern so multi-word queries match across the full name
+  const pattern = "%" + query.trim().replace(/[%_]/g, "").replace(/\s+/g, "%") + "%";
+  const { data, error } = await supabase
+    .from("players")
+    .select("id, external_id, name, position, team_abbr, team_name, college, experience")
+    .eq("sport", "NFL")
+    .ilike("name", pattern)
+    .order("name")
+    .limit(25);
+  if (error) throw error;
+  return (data || []) as DbPlayerResult[];
+}
 import { useNFLSlateLeaders } from "@/hooks/useNFLSlateLeaders";
 
 // Debounce hook
@@ -31,23 +65,19 @@ export default function NFLPlayers() {
   
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  // API search results
-  const { 
-    data: searchResults, 
+  // DB search results
+  const {
+    data: searchResults,
     isLoading: searchLoading,
-    isFetching: searchFetching 
+    isFetching: searchFetching
   } = useQuery({
-    queryKey: ["nfl-players-search", debouncedSearch],
-    queryFn: async () => {
-      if (!debouncedSearch || debouncedSearch.length < 2) {
-        return { data: [] };
-      }
-      return searchNFLPlayers(debouncedSearch, 25);
-    },
+    queryKey: ["nfl-players-db-search", debouncedSearch],
+    queryFn: () => searchDbPlayers(debouncedSearch),
     enabled: activeTab === "search" && debouncedSearch.length >= 2,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const apiPlayers = searchResults?.data || [];
+  const dbPlayers = searchResults || [];
 
   const headerTitle =
     activeTab === "slate" && slateData?.isSuperBowl
@@ -96,8 +126,8 @@ export default function NFLPlayers() {
             <CardContent className="p-4 flex items-start gap-3">
               <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
               <div className="text-sm text-muted-foreground">
-                <span className="text-foreground font-medium">Live Search: </span>
-                Search the Ball Don't Lie database for any NFL player. 
+                <span className="text-foreground font-medium">Player Search: </span>
+                Search MGP's NFL player database (skill positions).
                 Enter at least 2 characters to search.
               </div>
             </CardContent>
@@ -122,7 +152,7 @@ export default function NFLPlayers() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Users className="w-4 h-4" />
               <span>
-                {apiPlayers.length} player{apiPlayers.length !== 1 ? "s" : ""} found
+                {dbPlayers.length} player{dbPlayers.length !== 1 ? "s" : ""} found
               </span>
             </div>
           )}
@@ -134,7 +164,7 @@ export default function NFLPlayers() {
                 <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">Search NFL Players</h3>
                 <p className="text-muted-foreground text-sm">
-                  Enter a player name to search the Ball Don't Lie database.
+                  Enter a player name to search MGP's database.
                 </p>
               </CardContent>
             </Card>
@@ -144,7 +174,7 @@ export default function NFLPlayers() {
                 <Card key={i} className="h-28 animate-pulse bg-muted/30" />
               ))}
             </div>
-          ) : apiPlayers.length === 0 ? (
+          ) : dbPlayers.length === 0 ? (
             <Card className="bg-card border-border">
               <CardContent className="p-8 text-center">
                 <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -156,22 +186,23 @@ export default function NFLPlayers() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {apiPlayers.map((player: NFLPlayer) => (
-                <NFLPlayerCard
-                  key={player.id}
-                  id={player.id}
-                  firstName={player.first_name}
-                  lastName={player.last_name}
-                  position={player.position}
-                  positionAbbreviation={player.position_abbreviation}
-                  team={player.team}
-                  jerseyNumber={player.jersey_number}
-                  height={player.height}
-                  weight={player.weight}
-                  college={player.college}
-                  experience={player.experience}
-                />
-              ))}
+              {dbPlayers.map((player) => {
+                const [firstName, ...rest] = player.name.split(" ");
+                const pos = player.position || "";
+                return (
+                  <NFLPlayerCard
+                    key={player.id}
+                    id={Number(player.external_id)}
+                    firstName={firstName}
+                    lastName={rest.join(" ")}
+                    position={pos}
+                    positionAbbreviation={POSITION_ABBR[pos.toLowerCase()] || pos}
+                    team={player.team_abbr ? { name: player.team_name || player.team_abbr, abbreviation: player.team_abbr } : null}
+                    college={player.college}
+                    experience={player.experience}
+                  />
+                );
+              })}
             </div>
           )}
         </TabsContent>
