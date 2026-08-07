@@ -116,10 +116,35 @@ Deno.serve(async (req) => {
 
     const statsData = statsResponse.ok ? JSON.parse(statsText) : null;
 
+    // Test 4: NFL API tier — teams (basic) and season_stats (the endpoint the
+    // NFL sync pipeline actually depends on)
+    const nflTeamsResponse = await fetch("https://api.balldontlie.io/nfl/v1/teams", {
+      headers: { "Authorization": BDL_API_KEY, "Content-Type": "application/json" },
+    });
+    const nflTeamsText = await nflTeamsResponse.text();
+    console.log(`[test-bdl] NFL teams status: ${nflTeamsResponse.status}`);
+    const nflTeamsData = nflTeamsResponse.ok ? JSON.parse(nflTeamsText) : null;
+
+    const nflStatsResponse = await fetch("https://api.balldontlie.io/nfl/v1/season_stats?season=2025&per_page=1", {
+      headers: { "Authorization": BDL_API_KEY, "Content-Type": "application/json" },
+    });
+    const nflStatsText = await nflStatsResponse.text();
+    console.log(`[test-bdl] NFL season_stats status: ${nflStatsResponse.status}`);
+    const nflStatsData = nflStatsResponse.ok ? JSON.parse(nflStatsText) : null;
+
     return new Response(
       JSON.stringify({
         success: true,
         tests: {
+          nflTeams: {
+            status: nflTeamsResponse.status,
+            teamsCount: nflTeamsData?.data?.length || 0,
+          },
+          nflSeasonStats: {
+            status: nflStatsResponse.status,
+            hasData: (nflStatsData?.data?.length || 0) > 0,
+            note: "This endpoint powers sync-nfl-season-stats / game logs",
+          },
           teamsEndpoint: {
             status: teamsResponse.status,
             teamsCount: teamsData?.data?.length || 0,
