@@ -127,7 +127,7 @@ export function TrendingBets({ sport }: TrendingBetsProps) {
       </div>
 
       {view === "board" ? (
-        <TodaysBoard sport={sport} />
+        <TodaysBoard sport={sport} onShowSeasonLong={() => setView("season")} />
       ) : bets.length === 0 ? (
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center text-sm text-muted-foreground font-mono">

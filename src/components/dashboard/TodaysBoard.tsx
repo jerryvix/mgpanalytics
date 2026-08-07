@@ -90,6 +90,21 @@ async function loadBoard(sport: BoardSport) {
   const { data: games } = await gq;
   const list = ((games || []) as unknown as BoardGame[]).filter((g) => !isFinalStatus(g.status));
 
+  // Quiet stretch (preseason, bye weekends): pull the next scheduled slate so
+  // the board previews what's coming instead of dead-ending.
+  let nextGames: BoardGame[] = [];
+  if (list.length === 0) {
+    let nq = supabase
+      .from(GAME_TABLE[sport] as "games")
+      .select("*")
+      .gte("date", new Date().toISOString())
+      .order("date", { ascending: true })
+      .limit(6);
+    if (sport === "NFL") nq = nq.eq("league", "NFL");
+    const { data: next } = await nq;
+    nextGames = ((next || []) as unknown as BoardGame[]).filter((g) => !isFinalStatus(g.status));
+  }
+
   // DraftKings lines for the grid
   let oddsMap = new Map<string, BoardOdds>();
   if (list.length) {
@@ -189,7 +204,7 @@ async function loadBoard(sport: BoardSport) {
     }
   }
 
-  return { games: list, oddsMap, moves, streaks };
+  return { games: list, nextGames, oddsMap, moves, streaks };
 }
 
 const shortName = (full: string) => full.split(" ").pop() || full;
@@ -205,7 +220,7 @@ const moveLabel = (m: MoveRow) => {
 // Prices get +/- signs; total lines are plain numbers (a 8.5 total isn't "+8.5")
 const fmtMoveVal = (m: MoveRow, v: number) => (m.market === "Total" ? `${v}` : fmtPrice(v));
 
-export function TodaysBoard({ sport }: { sport: BoardSport }) {
+export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; onShowSeasonLong?: () => void }) {
   const [dayOffset, setDayOffset] = useState(0);
   const live = useLiveScores(sport);
   const { data, isLoading } = useQuery({
@@ -219,6 +234,15 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
     if (!data?.games) return [];
     const day = days[dayOffset];
     return data.games.filter((g) => isSameDay(parseISO(g.date), day));
+  }, [data, dayOffset, days]);
+
+  // What the empty board previews: later games already in the 72h window,
+  // else the next scheduled slate beyond it.
+  const upcoming = useMemo(() => {
+    if (!data) return [];
+    const day = days[dayOffset];
+    const after = data.games.filter((g) => parseISO(g.date) > day && !isSameDay(parseISO(g.date), day));
+    return (after.length ? after : data.nextGames || []).slice(0, 4);
   }, [data, dayOffset, days]);
 
   // moneyline movement direction per team (matched by name against history rows)
@@ -270,8 +294,42 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
             {isLoading ? (
               <div className="p-8 text-center text-sm text-muted-foreground font-mono">Loading the board…</div>
             ) : dayGames.length === 0 ? (
-              <div className="p-8 text-center text-sm text-muted-foreground font-mono">
-                No {sport} games on this date{dayOffset === 0 ? " - the board lights up on game days" : ""}.
+              <div className="p-6 space-y-4">
+                <p className="text-center text-sm text-muted-foreground font-mono">
+                  No {sport} games on this date{dayOffset === 0 ? " - the board lights up on game days" : ""}.
+                </p>
+                {upcoming.length > 0 && (
+                  <div className="max-w-md mx-auto">
+                    <div className="font-mono text-[10px] uppercase tracking-widest text-terminal-amber mb-1.5">
+                      Next slate · {format(parseISO(upcoming[0].date), "EEE MMM d")}
+                    </div>
+                    {upcoming.map((g) => (
+                      <div
+                        key={String(g.id)}
+                        className="flex items-center gap-2 py-2 border-b border-border/60 last:border-none text-sm"
+                      >
+                        <TeamLogo sport={sport} name={g.visitor_team_name} espnId={g.visitor_team_id} size={16} />
+                        <span className="truncate">{shortName(g.visitor_team_name)}</span>
+                        <span className="text-muted-foreground text-xs">@</span>
+                        <TeamLogo sport={sport} name={g.home_team_name} espnId={g.home_team_id} size={16} />
+                        <span className="truncate">{shortName(g.home_team_name)}</span>
+                        <span className="ml-auto font-mono text-[10px] text-muted-foreground shrink-0">
+                          {format(parseISO(g.date), "EEE h:mm a")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {onShowSeasonLong && (
+                  <div className="text-center">
+                    <button
+                      onClick={onShowSeasonLong}
+                      className="font-mono text-xs uppercase tracking-wider px-4 py-2 rounded-md border text-terminal-green border-terminal-green/50 bg-terminal-green/10 hover:bg-terminal-green/20 transition-colors"
+                    >
+                      Season-long angles are live →
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               dayGames.map((g, gi) => {

@@ -3,8 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Users, Info, Loader2, Globe, Trophy, TrendingUp, Flame } from "lucide-react";
+import { Search, Users, Info, Loader2, Globe, Trophy, TrendingUp, Flame, Crosshair } from "lucide-react";
 import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
+import { BacktestOverview } from "@/components/players/backtest/BacktestOverview";
 import { NFLPlayerCard } from "@/components/players/NFLPlayerCard";
 import { supabase } from "@/integrations/supabase/client";
 import { NFLSlatePlayersGrid } from "@/components/nfl";
@@ -57,8 +58,17 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+// Mar-Aug there is no slate to lead - open on the Fantasy finishes board so
+// the first thing a visitor sees is a full table, never an empty state.
+function nflOffseason(): boolean {
+  const m = new Date().getMonth(); // 0 = Jan
+  return m >= 2 && m <= 7;
+}
+
 export default function NFLPlayers() {
-  const [activeTab, setActiveTab] = useState<"slate" | "search" | "season" | "futures" | "fantasy">("slate");
+  const [activeTab, setActiveTab] = useState<"slate" | "search" | "season" | "futures" | "fantasy" | "accuracy">(
+    nflOffseason() ? "fantasy" : "slate"
+  );
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: slateData } = useNFLSlateLeaders({ enabled: activeTab === "slate" });
@@ -94,7 +104,7 @@ export default function NFLPlayers() {
       </div>
 
       {/* Tab Navigation */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search" | "season" | "futures" | "fantasy")}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search" | "season" | "futures" | "fantasy" | "accuracy")}>
         <TabsList className="bg-muted/50">
           <TabsTrigger value="slate" className="gap-2 text-xs sm:text-sm">
             <Trophy className="w-4 h-4" />
@@ -111,6 +121,10 @@ export default function NFLPlayers() {
           <TabsTrigger value="futures" className="gap-2 text-xs sm:text-sm">
             <TrendingUp className="w-4 h-4" />
             Futures
+          </TabsTrigger>
+          <TabsTrigger value="accuracy" className="gap-2 text-xs sm:text-sm">
+            <Crosshair className="w-4 h-4" />
+            Accuracy
           </TabsTrigger>
         </TabsList>
 
@@ -207,17 +221,22 @@ export default function NFLPlayers() {
           )}
         </TabsContent>
 
-        {/* 2025 Leaders tab hidden per owner (Jul 2026) — SeasonLeaders component
+        {/* 2025 Leaders tab hidden per owner (Jul 2026) - SeasonLeaders component
             kept for reuse; the data still powers MGP Angle grounding. */}
 
-        {/* Fantasy Finishes Tab — nflverse-backed, links into the trajectory analyzer */}
+        {/* Fantasy Finishes Tab - nflverse-backed, links into the trajectory analyzer */}
         <TabsContent value="fantasy" className="mt-6">
           <FantasyLeadersBoard />
         </TabsContent>
 
-        {/* Season Futures Tab — player prop futures (team totals live under Games > Futures) */}
+        {/* Season Futures Tab - player prop futures (team totals live under Games > Futures) */}
         <TabsContent value="futures" className="mt-6">
           <PropFuturesBoard sport="NFL" view="players" />
+        </TabsContent>
+
+        {/* Accuracy Tab - projection backtester: preseason numbers vs actual results */}
+        <TabsContent value="accuracy" className="mt-6">
+          <BacktestOverview />
         </TabsContent>
       </Tabs>
     </div>
