@@ -37,6 +37,8 @@ interface AdpRow {
   player_name: string;
   team: string | null;
   adp: number;
+  high: number | null;
+  low: number | null;
 }
 
 interface BoardRow {
@@ -44,6 +46,8 @@ interface BoardRow {
   name: string;
   team: string | null;
   adp: number | null; // overall ADP pick average, e.g. 2.9
+  adpHigh: number | null; // earliest real-draft pick
+  adpLow: number | null; // latest real-draft pick
   finishRank: number | null;
   totalPpr: number | null;
   ppgPpr: number | null;
@@ -73,7 +77,7 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
   const [{ data: adp }, { data: finishes }, { data: players }] = await Promise.all([
     supabase
       .from("nfl_adp_snapshots")
-      .select("gsis_id, player_name, team, adp")
+      .select("gsis_id, player_name, team, adp, high, low")
       .eq("season", adpSeason)
       .eq("source", ADP_SOURCE)
       .eq("position", posGroup)
@@ -118,6 +122,8 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
       name: a.player_name,
       team: finish?.team ?? a.team,
       adp: a.adp,
+      adpHigh: a.high,
+      adpLow: a.low,
       finishRank: finish?.position_rank ?? null,
       totalPpr: finish?.total_ppr ?? null,
       ppgPpr: finish?.ppg_ppr ?? null,
@@ -273,8 +279,14 @@ export function FantasyLeadersBoard() {
                             </span>
                           )}
                         </td>
-                        <td className="px-2 py-2 text-right font-mono tabular-nums text-muted-foreground">
-                          {fmtRoundPick(r.adp)}
+                        <td className="px-2 py-2 text-right font-mono tabular-nums">
+                          <span className="text-foreground font-bold">{fmtRoundPick(r.adp)}</span>
+                          {r.adp != null && (
+                            <span className="block text-[10px] text-muted-foreground">
+                              avg {r.adp.toFixed(1)}
+                              {r.adpHigh != null && r.adpLow != null ? ` · ${r.adpHigh}-${r.adpLow}` : ""}
+                            </span>
+                          )}
                         </td>
                         <td className={`px-2 py-2 text-right font-mono tabular-nums font-bold ${isTopTenFinish(r.finishRank) ? "text-terminal-green" : "text-foreground"}`}>
                           {finishLabel(r)}
@@ -301,8 +313,9 @@ export function FantasyLeadersBoard() {
                 </table>
               </div>
               <p className="text-[11px] text-muted-foreground px-4 py-2">
-                ADP: real 12-team PPR drafts from the past week (Fantasy Football Calculator), shown as
-                round.pick - 1.02 means round 1, pick 2. Rookies without NFL history show blank last-season columns.
+                ADP: real 12-team PPR drafts from the past week (Fantasy Football Calculator). 1.02 means
+                round 1, pick 2; under it, the exact average overall pick and the earliest-latest picks
+                seen in real drafts. Rookies without NFL history show blank last-season columns.
               </p>
             </CardContent>
           </Card>
