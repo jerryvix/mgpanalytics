@@ -91,6 +91,25 @@ describe("FantasyTrajectoryTab", () => {
     expect(screen.getByText(/No weeks 10–18 data/)).toBeInTheDocument();
   });
 
+  it("colors ranks green only for top-10 finishes (Jonathan Taylor 2025 case)", () => {
+    // Full season RB4 (green), weeks 10-18 RB11 (neutral), 2023/2022 RB33 (neutral)
+    mockProfile.mockReturnValue({
+      seasons: [seasonRow(2022, 33), seasonRow(2023, 33), seasonRow(2024, 12), seasonRow(2025, 4)],
+      latestSeason: 2025,
+      secondHalf: { ...secondHalf, second_half_rank: 11 },
+      isLoading: false,
+      isError: false,
+      matched: true,
+    });
+    render(<FantasyTrajectoryTab playerName="Jonathan Taylor" position="RB" teamAbbr="IND" />);
+
+    const greens = (text: string) =>
+      screen.getAllByText(text).filter((el) => el.closest(".text-terminal-green") || el.classList.contains("text-terminal-green"));
+    expect(greens("RB4").length).toBeGreaterThan(0); // top-10 finish is green
+    expect(greens("RB11")).toHaveLength(0); // 2nd-half RB11 is not
+    expect(greens("RB33")).toHaveLength(0); // old RB33 finishes are not
+  });
+
   it("handles null ranks in season rows without crashing", () => {
     mockProfile.mockReturnValue({
       seasons: [

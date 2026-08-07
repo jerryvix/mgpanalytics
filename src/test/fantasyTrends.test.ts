@@ -3,6 +3,7 @@ import {
   classifyTrend,
   classifyMomentum,
   getFantasyPosGroup,
+  isTopTenFinish,
   normalizePlayerName,
 } from "@/utils/fantasyTrends";
 
@@ -147,6 +148,17 @@ describe("getFantasyPosGroup", () => {
     expect(getFantasyPosGroup("Linebacker")).toBeNull();
     expect(getFantasyPosGroup("")).toBeNull();
     expect(getFantasyPosGroup(null)).toBeNull();
+  });
+});
+
+describe("isTopTenFinish", () => {
+  it("is true only for ranks 1-10", () => {
+    expect(isTopTenFinish(1)).toBe(true);
+    expect(isTopTenFinish(10)).toBe(true);
+    expect(isTopTenFinish(11)).toBe(false);
+    expect(isTopTenFinish(0)).toBe(false);
+    expect(isTopTenFinish(null)).toBe(false);
+    expect(isTopTenFinish(undefined)).toBe(false);
   });
 });
 

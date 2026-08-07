@@ -68,6 +68,14 @@ export function classifyMomentum(
   return "steady";
 }
 
+/**
+ * The one rule for green in fantasy UI: a top-10 positional finish.
+ * Everything else renders in the default foreground.
+ */
+export function isTopTenFinish(rank: number | null | undefined): boolean {
+  return rank != null && rank >= 1 && rank <= 10;
+}
+
 /** Map a players.position value (full name or abbreviation) to a fantasy rank group. */
 export function getFantasyPosGroup(position: string | null | undefined): "QB" | "RB" | "WR" | "TE" | null {
   switch ((position ?? "").trim().toUpperCase()) {

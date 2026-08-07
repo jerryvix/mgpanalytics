@@ -11,9 +11,14 @@ import { useNFLFantasyProfile } from "@/hooks/useNFLFantasyProfile";
 import {
   classifyTrend,
   classifyMomentum,
+  isTopTenFinish,
   type TrendDirection,
   type MomentumVerdict,
 } from "@/utils/fantasyTrends";
+
+// Green marks top-10 finishes only; everything else stays neutral.
+const rankTone = (rank: number | null | undefined) =>
+  isTopTenFinish(rank) ? "text-terminal-green" : "text-foreground";
 
 interface FantasyTrajectoryTabProps {
   playerName: string;
@@ -133,11 +138,11 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
   const tiles = [
     {
       label: `${latest?.season ?? ""} Finish`,
-      node: <span>{fmtRank(posGroup, latest?.position_rank)}</span>,
+      node: <span className={rankTone(latest?.position_rank)}>{fmtRank(posGroup, latest?.position_rank)}</span>,
     },
     {
       label: "Per-Game Rank",
-      node: <span>{fmtRank(posGroup, latest?.ppg_position_rank)}</span>,
+      node: <span className={rankTone(latest?.ppg_position_rank)}>{fmtRank(posGroup, latest?.ppg_position_rank)}</span>,
     },
     {
       label: "Trajectory",
@@ -173,7 +178,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
               <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
                 {t.label}
               </div>
-              <div className="text-xl font-bold font-mono tabular-nums text-terminal-green flex items-center justify-center min-h-7">
+              <div className="text-xl font-bold font-mono tabular-nums flex items-center justify-center min-h-7">
                 {t.node}
               </div>
             </CardContent>
@@ -231,11 +236,11 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
                     <tr key={s.season} className={`border-b border-border/50 ${i % 2 === 1 ? "bg-muted/10" : ""}`}>
                       <td className="px-4 py-2 font-mono text-muted-foreground">{s.season}</td>
                       <td className="px-2 py-2 font-mono">{s.team ?? "—"}</td>
-                      <td className="px-2 py-2 text-right font-mono tabular-nums font-bold text-terminal-green">
+                      <td className={`px-2 py-2 text-right font-mono tabular-nums font-bold ${rankTone(s.position_rank)}`}>
                         {fmtRank(s.pos_group, s.position_rank)}
                       </td>
                       <td className="px-2 py-2 text-right font-mono tabular-nums">{fmtNum(s.total_ppr)}</td>
-                      <td className="px-2 py-2 text-right font-mono tabular-nums">
+                      <td className={`px-2 py-2 text-right font-mono tabular-nums ${rankTone(s.ppg_position_rank)}`}>
                         {fmtRank(s.pos_group, s.ppg_position_rank)}
                       </td>
                       <td className="px-2 py-2 text-right font-mono tabular-nums">{fmtNum(s.ppg_ppr)}</td>
@@ -269,7 +274,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
                   <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
                     Full Season
                   </div>
-                  <div className="text-lg font-bold font-mono tabular-nums">
+                  <div className={`text-lg font-bold font-mono tabular-nums ${rankTone(latest?.position_rank)}`}>
                     {fmtRank(posGroup, latest?.position_rank)}
                   </div>
                 </div>
@@ -277,7 +282,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
                   <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
                     Weeks 10–18
                   </div>
-                  <div className="text-lg font-bold font-mono tabular-nums text-terminal-green">
+                  <div className={`text-lg font-bold font-mono tabular-nums ${rankTone(secondHalf.second_half_rank)}`}>
                     {fmtRank(posGroup, secondHalf.second_half_rank)}
                   </div>
                 </div>

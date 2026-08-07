@@ -11,7 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { supabase } from "@/integrations/supabase/client";
-import { normalizePlayerName } from "@/utils/fantasyTrends";
+import { isTopTenFinish, normalizePlayerName } from "@/utils/fantasyTrends";
 
 const POS_GROUPS = ["QB", "RB", "WR", "TE"] as const;
 type PosGroup = (typeof POS_GROUPS)[number];
@@ -128,7 +128,9 @@ export function FantasyLeadersBoard() {
                   <tbody>
                     {data.rows.map((r, i) => (
                       <tr key={`${r.rank}-${r.name}`} className={`border-b border-border/40 ${i % 2 === 1 ? "bg-muted/10" : ""}`}>
-                        <td className="pl-4 pr-1 py-2 font-mono text-muted-foreground">{posGroup}{r.rank}</td>
+                        <td className={`pl-4 pr-1 py-2 font-mono font-bold ${isTopTenFinish(r.rank) ? "text-terminal-green" : "text-muted-foreground"}`}>
+                          {posGroup}{r.rank}
+                        </td>
                         <td className="px-1 py-2">
                           {r.playerId ? (
                             <Link
@@ -148,7 +150,7 @@ export function FantasyLeadersBoard() {
                             </span>
                           )}
                         </td>
-                        <td className="px-2 py-2 text-right font-mono font-bold tabular-nums text-terminal-green">
+                        <td className="px-2 py-2 text-right font-mono font-bold tabular-nums">
                           {r.totalPpr?.toFixed(1) ?? "—"}
                         </td>
                         <td className="px-2 py-2 text-right font-mono tabular-nums">{r.ppgPpr?.toFixed(1) ?? "—"}</td>
