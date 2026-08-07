@@ -372,7 +372,8 @@ export function GameInsightsSheet({
                   No lines from tracked books yet. They post through the day.
                 </p>
               ) : (
-                <div className="border border-border rounded-lg overflow-hidden">
+                <div className="border border-border rounded-lg overflow-x-auto">
+                  <div className="min-w-[360px]">
                   <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 px-3 py-2 border-b border-border font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                     <span>Book</span>
                     <span className="text-right">{cfg.spreadLabel}</span>
@@ -407,6 +408,7 @@ export function GameInsightsSheet({
                   <p className="px-3 py-2 font-mono text-[10px] text-muted-foreground bg-card/30">
                     <b className="text-terminal-green">Green</b> = best moneyline price available. Same bet, better payout.
                   </p>
+                  </div>
                 </div>
               )}
             </section>

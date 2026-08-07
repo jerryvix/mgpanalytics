@@ -17,8 +17,8 @@ const CONTINUITY_META: Record<ContinuityVerdict, { label: string; className: str
 };
 
 const fmtPct = (v: number | null | undefined) => (v == null ? "-" : `${Math.round(v)}%`);
-const fmtNet = (v: number | null | undefined) =>
-  v == null ? "-" : v > 0 ? `+${v}` : `${v}`;
+// Keep prospect lists scannable on a phone; a loaded roster collapses to a count
+const MAX_PROSPECTS_SHOWN = 4;
 
 function leanLabel(lean: SignalLean, home: string, away: string): string {
   switch (lean) {
@@ -169,12 +169,19 @@ export function MatchupIntelSection({
                     {prospects.length === 0 ? (
                       <p className="font-mono text-[10px] text-muted-foreground">none on board</p>
                     ) : (
-                      prospects.map((p) => (
-                        <p key={p.rank} className="font-mono text-[11px] tabular-nums">
-                          <span className="text-terminal-amber">#{p.rank}</span> {p.player_name}
-                          <span className="text-muted-foreground"> {p.position ?? ""}</span>
-                        </p>
-                      ))
+                      <>
+                        {prospects.slice(0, MAX_PROSPECTS_SHOWN).map((p) => (
+                          <p key={p.rank} className="font-mono text-[11px] tabular-nums leading-relaxed truncate">
+                            <span className="text-terminal-amber">#{p.rank}</span> {p.player_name}
+                            <span className="text-muted-foreground"> {p.position ?? ""}</span>
+                          </p>
+                        ))}
+                        {prospects.length > MAX_PROSPECTS_SHOWN && (
+                          <p className="font-mono text-[10px] text-muted-foreground">
+                            +{prospects.length - MAX_PROSPECTS_SHOWN} more on board
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
@@ -209,18 +216,23 @@ function ContinuityCell({
         <Badge className={`${meta.className} text-[9px] font-mono px-1.5 py-0`}>{meta.label}</Badge>
       </div>
       {row ? (
-        <div className="font-mono text-[11px] tabular-nums space-y-0.5 text-muted-foreground">
-          <p>
-            returning PPA <b className="text-foreground">{fmtPct(row.percent_ppa)}</b>
-          </p>
-          <p>
-            portal {fmtNet(row.net_portal)} ({row.portal_in ?? 0} in / {row.portal_out ?? 0} out)
-          </p>
-          <p>{row.draft_departures ?? 0} drafted to NFL</p>
+        <div className="font-mono text-[11px] tabular-nums space-y-1">
+          <StatRow label="Returning" value={fmtPct(row.percent_ppa)} emphasize />
+          <StatRow label="Portal" value={`${row.portal_in ?? 0} in · ${row.portal_out ?? 0} out`} />
+          <StatRow label="To NFL" value={`${row.draft_departures ?? 0}`} />
         </div>
       ) : (
         <p className="font-mono text-[10px] text-muted-foreground">no CFBD data</p>
       )}
+    </div>
+  );
+}
+
+function StatRow({ label, value, emphasize }: { label: string; value: string; emphasize?: boolean }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={emphasize ? "font-bold text-foreground" : "text-foreground/80"}>{value}</span>
     </div>
   );
 }

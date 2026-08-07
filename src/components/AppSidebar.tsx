@@ -209,9 +209,23 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
       collapsible="icon"
     >
       <SidebarHeader className="border-b border-sidebar-border p-2">
-        <div className="flex items-center gap-3">
+        <div className={collapsed ? "flex flex-col items-center gap-2" : "flex items-center gap-3"}>
           <SidebarTrigger className="text-sidebar-foreground hover:text-terminal-green hover:bg-sidebar-accent" />
-          {!collapsed && (
+          {collapsed ? (
+            /* The rail keeps a tappable logo so home is always one click away,
+               not hidden behind expanding the sidebar first */
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/dashboard"
+                  className="w-7 h-7 rounded bg-primary/20 flex items-center justify-center hover:opacity-80 transition-opacity"
+                >
+                  <Activity className="w-3.5 h-3.5 text-terminal-green" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right">Home</TooltipContent>
+            </Tooltip>
+          ) : (
             <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <div className="w-7 h-7 rounded bg-primary/20 flex items-center justify-center">
                 <Activity className="w-3.5 h-3.5 text-terminal-green" />
