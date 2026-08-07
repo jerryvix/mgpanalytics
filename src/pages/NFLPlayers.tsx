@@ -124,7 +124,7 @@ export default function NFLPlayers() {
           </TabsTrigger>
           <TabsTrigger value="accuracy" className="gap-2 text-xs sm:text-sm">
             <Crosshair className="w-4 h-4" />
-            Accuracy
+            Where Oddsmakers Missed
           </TabsTrigger>
         </TabsList>
 

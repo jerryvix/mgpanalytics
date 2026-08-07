@@ -39,7 +39,8 @@ import {
   PlayerSyncCard,
   PropsSyncCard,
   NBASyncCard,
-  SyncScheduleDashboard
+  SyncScheduleDashboard,
+  BacktestSyncCard
 } from "./admin";
 
 // Types for sync schedule
@@ -843,7 +844,7 @@ export function AdminPanel() {
             <span className="text-muted-foreground">System:</span>
             <span className="text-terminal-green">DB ✓</span>
             <span className="text-terminal-green">Edge ✓</span>
-            <span className={apiStatus?.success ? "text-terminal-green" : "text-muted-foreground"}>BDL {apiStatus?.success ? "✓" : "—"}</span>
+            <span className={apiStatus?.success ? "text-terminal-green" : "text-muted-foreground"}>BDL {apiStatus?.success ? "✓" : "-"}</span>
             <span className="text-terminal-green">Odds ✓</span>
           </div>
           <span className="text-muted-foreground">Uptime <span className="text-foreground">99.9%</span></span>
@@ -854,10 +855,10 @@ export function AdminPanel() {
         <div className="bg-muted/30 rounded-lg p-2 flex flex-wrap items-center justify-between gap-1 font-mono text-[10px] border border-border">
           <div className="flex flex-wrap items-center gap-4">
             <span className="text-muted-foreground">Data:</span>
-            <span>NFL: <span className="text-terminal-green">{gamesCount ?? "—"}</span></span>
-            <span>NBA: <span className="text-terminal-cyan">{nbaGamesCount ?? "—"}</span></span>
-            <span>NCAAB: <span className="text-terminal-amber">{ncaabGamesCount ?? "—"}</span></span>
-            <span>Odds: <span className="text-foreground">{oddsCount ?? "—"}</span></span>
+            <span>NFL: <span className="text-terminal-green">{gamesCount ?? "-"}</span></span>
+            <span>NBA: <span className="text-terminal-cyan">{nbaGamesCount ?? "-"}</span></span>
+            <span>NCAAB: <span className="text-terminal-amber">{ncaabGamesCount ?? "-"}</span></span>
+            <span>Odds: <span className="text-foreground">{oddsCount ?? "-"}</span></span>
           </div>
           <span>Moves: <span className="text-terminal-cyan">{lineMovementsTodayCount ?? 0}</span></span>
         </div>
@@ -873,6 +874,11 @@ export function AdminPanel() {
         {/* Automated Sync Schedule */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.105 }} className="md:col-span-2">
           <SyncScheduleDashboard />
+        </motion.div>
+
+        {/* Projection Backtester Data */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.108 }}>
+          <BacktestSyncCard />
         </motion.div>
 
         {/* Player Sync */}
@@ -936,9 +942,9 @@ export function AdminPanel() {
               {/* Compact Stats Row */}
               <div className="flex items-center justify-between font-mono text-[10px] bg-muted/30 rounded px-2 py-1">
                 <div className="flex items-center gap-4">
-                  <span>{(nflPlayersCount ?? 0) >= 1000 ? `${((nflPlayersCount ?? 0) / 1000).toFixed(1)}K` : nflPlayersCount ?? "—"} Players</span>
-                  <span>{(nflSeasonStatsCount ?? 0) >= 1000 ? `${((nflSeasonStatsCount ?? 0) / 1000).toFixed(1)}K` : nflSeasonStatsCount ?? "—"} Stats</span>
-                  <span>{(nflGameLogsCount ?? 0) >= 1000 ? `${((nflGameLogsCount ?? 0) / 1000).toFixed(1)}K` : nflGameLogsCount ?? "—"} Logs</span>
+                  <span>{(nflPlayersCount ?? 0) >= 1000 ? `${((nflPlayersCount ?? 0) / 1000).toFixed(1)}K` : nflPlayersCount ?? "-"} Players</span>
+                  <span>{(nflSeasonStatsCount ?? 0) >= 1000 ? `${((nflSeasonStatsCount ?? 0) / 1000).toFixed(1)}K` : nflSeasonStatsCount ?? "-"} Stats</span>
+                  <span>{(nflGameLogsCount ?? 0) >= 1000 ? `${((nflGameLogsCount ?? 0) / 1000).toFixed(1)}K` : nflGameLogsCount ?? "-"} Logs</span>
                   <span>{nflAdvancedStatsCount ?? "N/A"} Adv</span>
                 </div>
                 <span className="text-muted-foreground">Last: {getLastSyncTime("NFL", "players")}</span>

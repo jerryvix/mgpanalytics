@@ -1,15 +1,15 @@
 // Biggest Misses leaderboard (Tier 3) - a derived view over the graded
-// Tier 1 data for the last completed season. Two player views:
-//   Healthy-season misses (default): played ~a full season - the real
-//     market signal, both the biggest beats and the biggest busts.
-//   Injury outliers: missed significant time (or never played) - context,
-//     not a conclusion. "Did not play" ADP rows are pinned here.
+// Tier 1 data for the last completed season. Healthy seasons only: players
+// who missed significant time (or never played) are excluded outright as
+// forecasting noise (owner call, Aug 2026 - the old "Injury outliers" toggle
+// was removed; isHealthySeason in backtestMetrics still draws the line).
 // Every magnitude is a signed number: positive/green = outperformed,
 // negative/red = underperformed. Win totals have no injury dimension and
-// render as a full two-column list (exceeded vs missed) instead.
+// render as a full two-column list (exceeded vs missed).
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { TrendingDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { TrendingDown, ChevronDown, ChevronRight } from "lucide-react";
 import type { PlayerSeasonRow, PropResultRow, WinTotalResultRow } from "@/hooks/useBacktest";
 import {
   isHealthySeason,
@@ -26,44 +26,50 @@ interface Props {
   lastCompleted: number;
 }
 
-type MissView = "healthy" | "injury";
-
 interface MissRow {
   key: string;
   label: string;
   detail: string;
   /** Signed; positive = beat/exceeded (green), negative = missed (red). */
   value: number;
-  isDnp?: boolean;
 }
 
 const LIST_LIMIT = 20;
 
-function sortKey(r: MissRow): number {
-  return r.isDnp ? Number.POSITIVE_INFINITY : Math.abs(r.value);
+function CollapsibleSection({
+  title,
+  defaultOpen = true,
+  children,
+}: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="space-y-2">
+      <CollapsibleTrigger className="flex items-center gap-1.5 w-full text-left group">
+        {open ? (
+          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+        )}
+        <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-foreground group-hover:text-terminal-green transition-colors">
+          {title}
+        </h4>
+      </CollapsibleTrigger>
+      <CollapsibleContent>{children}</CollapsibleContent>
+    </Collapsible>
+  );
 }
 
 export function BiggestMisses({ playerSeasons, props, winTotals, lastCompleted }: Props) {
-  const [view, setView] = useState<MissView>("healthy");
-
   // --- ADP: biggest beats AND busts vs draft slot (signed spot delta)
-  const adpRows: { row: MissRow; healthy: boolean }[] = [];
+  const adpRows: MissRow[] = [];
   for (const r of playerSeasons) {
     if (r.season !== lastCompleted) continue;
     if (!inAdpUniverse({ position: r.position, adpPosRank: r.adp_pos_rank })) continue;
-    if (r.finish_pos_rank === null) {
-      adpRows.push({
-        healthy: false, // did-not-play is injury-list by definition
-        row: {
-          key: `adp-${r.gsis_id}`,
-          label: `${r.player_name} (${r.position}${r.adp_pos_rank})`,
-          detail: `drafted ${r.position}${r.adp_pos_rank}, did not play`,
-          value: 0,
-          isDnp: true,
-        },
-      });
-      continue;
-    }
+    if (!isHealthySeason(r.games, r.season)) continue; // injury noise excluded
     const delta = adpSpotDelta({
       position: r.position,
       adpPosRank: r.adp_pos_rank,
@@ -72,32 +78,27 @@ export function BiggestMisses({ playerSeasons, props, winTotals, lastCompleted }
     });
     if (delta === null) continue;
     adpRows.push({
-      healthy: isHealthySeason(r.games, r.season),
-      row: {
-        key: `adp-${r.gsis_id}`,
-        label: `${r.player_name} (${r.position})`,
-        detail: `drafted ${r.position}${r.adp_pos_rank}, finished ${r.position}${r.finish_pos_rank} (${r.games ?? 0} gms)`,
-        value: delta,
-      },
+      key: `adp-${r.gsis_id}`,
+      label: `${r.player_name} (${r.position})`,
+      detail: `drafted ${r.position}${r.adp_pos_rank}, finished ${r.position}${r.finish_pos_rank} (${r.games ?? 0} gms)`,
+      value: delta,
     });
   }
 
   // --- Props: biggest overs AND unders (signed % deviation from the line)
-  const propRows: { row: MissRow; healthy: boolean }[] = [];
+  const propRows: MissRow[] = [];
   for (const p of props) {
     if (p.season !== lastCompleted) continue;
     if (p.result !== "over" && p.result !== "under") continue;
+    if (!isHealthySeason(p.games_played, p.season)) continue; // injury noise excluded
     const magnitude = propMissMagnitude({ actual: p.actual, line: p.line });
     if (magnitude === null) continue;
     const signed = p.result === "over" ? magnitude : -magnitude;
     propRows.push({
-      healthy: isHealthySeason(p.games_played, p.season),
-      row: {
-        key: `prop-${p.subject_name}-${p.market}`,
-        label: `${p.subject_name}, ${p.market.replace(/_/g, " ")}`,
-        detail: `line ${p.line}, actual ${p.actual} (${p.games_played ?? "?"} gms)`,
-        value: signed * 100,
-      },
+      key: `prop-${p.subject_name}-${p.market}`,
+      label: `${p.subject_name}, ${p.market.replace(/_/g, " ")}`,
+      detail: `line ${p.line}, actual ${p.actual} (${p.games_played ?? "?"} gms)`,
+      value: signed * 100,
     });
   }
 
@@ -121,40 +122,36 @@ export function BiggestMisses({ playerSeasons, props, winTotals, lastCompleted }
   winBeats.sort((a, b) => b.value - a.value);
   winMisses.sort((a, b) => a.value - b.value);
 
-  const pick = (list: { row: MissRow; healthy: boolean }[]) =>
-    list
-      .filter((m) => (view === "healthy" ? m.healthy : !m.healthy))
-      .map((m) => m.row)
-      .sort((x, y) => sortKey(y) - sortKey(x))
-      .slice(0, LIST_LIMIT);
+  // Split every source the same way as win totals: beats on the left,
+  // misses on the right, each capped at LIST_LIMIT.
+  const adpBeats = adpRows.filter((r) => r.value >= 0).sort((a, b) => b.value - a.value).slice(0, LIST_LIMIT);
+  const adpMisses = adpRows.filter((r) => r.value < 0).sort((a, b) => a.value - b.value).slice(0, LIST_LIMIT);
+  const propBeats = propRows.filter((r) => r.value >= 0).sort((a, b) => b.value - a.value).slice(0, LIST_LIMIT);
+  const propMisses = propRows.filter((r) => r.value < 0).sort((a, b) => a.value - b.value).slice(0, LIST_LIMIT);
 
   const missList = (title: string, rows: MissRow[], formatMag: (abs: number) => string) => (
     <div className="space-y-1">
       <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-foreground">{title}</h4>
       {rows.length === 0 ? (
-        <p className="text-[11px] text-muted-foreground font-mono">none in this view</p>
+        <p className="text-[11px] text-muted-foreground font-mono">no qualifying results</p>
       ) : (
         <ol className="space-y-1">
-          {rows.map((r, i) => {
-            const negative = r.isDnp || r.value < 0;
-            const text = r.isDnp ? "DNP" : `${r.value >= 0 ? "+" : "-"}${formatMag(Math.abs(r.value))}`;
-            return (
-              <li key={r.key} className="flex items-baseline justify-between gap-2 text-sm border-b border-border/30 pb-1">
-                <span>
-                  <span className="font-mono text-muted-foreground text-xs mr-2">{i + 1}.</span>
-                  <span className="font-medium text-foreground">{r.label}</span>
-                  <span className="text-[11px] text-muted-foreground font-mono ml-2">{r.detail}</span>
-                </span>
-                <span
-                  className={`font-mono font-bold tabular-nums shrink-0 ${
-                    negative ? "text-destructive" : "text-terminal-green"
-                  }`}
-                >
-                  {text}
-                </span>
-              </li>
-            );
-          })}
+          {rows.map((r, i) => (
+            <li key={r.key} className="flex items-baseline justify-between gap-2 text-sm border-b border-border/30 pb-1">
+              <span>
+                <span className="font-mono text-muted-foreground text-xs mr-2">{i + 1}.</span>
+                <span className="font-medium text-foreground">{r.label}</span>
+                <span className="text-[11px] text-muted-foreground font-mono ml-2">{r.detail}</span>
+              </span>
+              <span
+                className={`font-mono font-bold tabular-nums shrink-0 ${
+                  r.value < 0 ? "text-destructive" : "text-terminal-green"
+                }`}
+              >
+                {`${r.value >= 0 ? "+" : "-"}${formatMag(Math.abs(r.value))}`}
+              </span>
+            </li>
+          ))}
         </ol>
       )}
     </div>
@@ -163,54 +160,43 @@ export function BiggestMisses({ playerSeasons, props, winTotals, lastCompleted }
   return (
     <Card className="bg-card border-border">
       <CardContent className="p-4 space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <TrendingDown className="w-4 h-4 text-destructive" />
-            <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-foreground">
-              {lastCompleted} Biggest Misses
-            </h3>
-          </div>
-          <div className="flex gap-1">
-            {(
-              [
-                ["healthy", "Healthy-season misses"],
-                ["injury", "Injury outliers"],
-              ] as const
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setView(key)}
-                className={`px-3 py-1 rounded text-xs font-mono font-bold border transition-colors ${
-                  key === view
-                    ? "bg-terminal-green/20 text-terminal-green border-terminal-green/40"
-                    : "bg-muted/30 text-muted-foreground border-border hover:border-terminal-green/40"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center gap-2">
+          <TrendingDown className="w-4 h-4 text-destructive" />
+          <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-foreground">
+            Biggest Market Movers
+          </h3>
         </div>
 
         <p className="text-[11px] text-muted-foreground font-mono">
-          {view === "healthy"
-            ? "Played close to a full season, the biggest beats and busts against ADP, and the largest prop overs/unders. This is the signal view."
-            : "Missed significant time (or never played). Context only, do not draw market conclusions here."}
+          Beats on the left, misses on the right. Healthy seasons only; players who missed significant time
+          are excluded as forecasting noise.
         </p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {missList(`ADP Movers, Draft Slot vs Finish (top ${LIST_LIMIT})`, pick(adpRows), (n) => `${Math.round(n)}`)}
-          {missList(`Prop Overs & Unders (top ${LIST_LIMIT})`, pick(propRows), (n) => `${n.toFixed(0)}%`)}
+        <div className="border-t border-border/40 pt-3">
+          <CollapsibleSection title="ADP Movers (Draft Slot vs Finish)">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {missList("Beat ADP", adpBeats, (n) => `${Math.round(n)}`)}
+              {missList("Missed ADP", adpMisses, (n) => `${Math.round(n)}`)}
+            </div>
+          </CollapsibleSection>
         </div>
 
-        <div className="border-t border-border/40 pt-3 space-y-2">
-          <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-foreground">
-            Team Win Total Differential (Prior Year)
-          </h4>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {missList("Exceeded Total", winBeats, (n) => `${n.toFixed(1)} W`)}
-            {missList("Missed Total", winMisses, (n) => `${n.toFixed(1)} W`)}
-          </div>
+        <div className="border-t border-border/40 pt-3">
+          <CollapsibleSection title="Season Prop Results">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {missList("Beat The Line", propBeats, (n) => `${n.toFixed(0)}%`)}
+              {missList("Fell Short", propMisses, (n) => `${n.toFixed(0)}%`)}
+            </div>
+          </CollapsibleSection>
+        </div>
+
+        <div className="border-t border-border/40 pt-3">
+          <CollapsibleSection title="Team Win Total Differential (Prior Year)">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              {missList("Exceeded Total", winBeats, (n) => `${n.toFixed(1)} W`)}
+              {missList("Missed Total", winMisses, (n) => `${n.toFixed(1)} W`)}
+            </div>
+          </CollapsibleSection>
         </div>
       </CardContent>
     </Card>

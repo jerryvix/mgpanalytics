@@ -97,48 +97,41 @@ beforeEach(() => {
 });
 
 describe("BacktestOverview", () => {
-  it("renders the three source cards", () => {
+  it("leads with the misses leaderboard; summary cards, positional table, and archetypes stay hidden", () => {
     mockLoaded();
     render(<BacktestOverview />);
 
-    expect(screen.getByText("Season Props")).toBeInTheDocument();
-    expect(screen.getByText("Team Win Totals")).toBeInTheDocument();
-    expect(screen.getByText("Fantasy ADP")).toBeInTheDocument();
+    expect(screen.getByText("Biggest Market Movers")).toBeInTheDocument();
+    // Hidden per owner feedback (Aug 2026) while the metrics get rethought
+    expect(screen.queryByText("Season Props")).toBeNull();
+    expect(screen.queryByText("Fantasy ADP")).toBeNull();
+    expect(screen.queryByText("Positional Miss Rate")).toBeNull();
+    expect(screen.queryByText("Archetype Trends (ADP vs Finish)")).toBeNull();
   });
 
-  it("renders sub-threshold archetype buckets as raw counts with no trend label", () => {
+  it("shows healthy seasons only, with no injury-outliers toggle", () => {
     mockLoaded();
     render(<BacktestOverview />);
 
-    // Year 1 bucket has 3 player-seasons -> raw counts, explicit "not a trend"
-    const raw = screen.getAllByText(/beat ADP in \d+ of 3 player-seasons \(n < 50 - not a trend\)/i);
-    expect(raw.length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Biggest Market Movers")).toBeInTheDocument();
+    expect(screen.getByText(/excluded as forecasting noise/i)).toBeInTheDocument();
+    // The toggle was removed (owner call, Aug 2026)
+    expect(screen.queryByText("Injury outliers")).toBeNull();
+    expect(screen.queryByText("Healthy-season misses")).toBeNull();
   });
 
-  it("gives trend treatment only to buckets clearing the sample floor", () => {
+  it("collapses and re-expands a section on click, defaulting to open", () => {
     mockLoaded();
     render(<BacktestOverview />);
 
-    // The veteran bucket (n=60) renders a computed rate, not a raw-counts line
-    expect(screen.queryByText(/beat ADP in \d+ of 60 player-seasons/i)).toBeNull();
-    // ...and carries either a TREND badge or the near-baseline read
-    const treated = [
-      ...screen.queryAllByText(/TREND/),
-      ...screen.queryAllByText(/near baseline/i),
-    ];
-    expect(treated.length).toBeGreaterThanOrEqual(1);
-  });
+    // Default open: win-total content is visible immediately
+    expect(screen.getByText("Exceeded Total")).toBeInTheDocument();
 
-  it("splits the leaderboard into healthy-season and injury-outlier views", () => {
-    mockLoaded();
-    render(<BacktestOverview />);
+    fireEvent.click(screen.getByText("Team Win Total Differential (Prior Year)"));
+    expect(screen.queryByText("Exceeded Total")).toBeNull();
 
-    expect(screen.getByText(`${SEASON} Biggest Misses`)).toBeInTheDocument();
-    // Default = the signal view
-    expect(screen.getByText(/this is the signal view/i)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("Injury outliers"));
-    expect(screen.getByText(/do not draw market conclusions here/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Team Win Total Differential (Prior Year)"));
+    expect(screen.getByText("Exceeded Total")).toBeInTheDocument();
   });
 
   it("splits team win totals into an exceeded column and a missed column, signed and colored", () => {
