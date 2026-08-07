@@ -1,7 +1,9 @@
-// Fantasy finish leaderboard - the discovery surface for the trajectory
-// analyzer. Reads entirely from the nflverse-backed rank views (no BDL
-// dependency), so it works even when live-API search is down. Rows link to
-// the player detail page (Fantasy tab) when the name matches a known player.
+// Fantasy draft-season board: the current-year ADP draft board (default)
+// with a toggle to last season's results graded against preseason ADP.
+// ADP comes from nfl_adp_snapshots (Fantasy Football Calculator, 12-team
+// PPR), finishes from the nflverse-backed rank views; both share gsis_id
+// so joins are exact. Rows link to the player detail page (Fantasy tab)
+// when the name matches a known player.
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -15,18 +17,49 @@ import { isTopTenFinish, normalizePlayerName } from "@/utils/fantasyTrends";
 
 const POS_GROUPS = ["QB", "RB", "WR", "TE"] as const;
 type PosGroup = (typeof POS_GROUPS)[number];
+type BoardView = "draft" | "results";
+
+const ADP_SOURCE = "ffc_ppr_12";
+const ROWS_SHOWN = 15;
+
+interface FinishRow {
+  gsis_id: string | null;
+  player_name: string | null;
+  team: string | null;
+  total_ppr: number | null;
+  ppg_ppr: number | null;
+  games: number | null;
+  position_rank: number | null;
+}
+
+interface AdpRow {
+  gsis_id: string | null;
+  player_name: string;
+  team: string | null;
+  adp: number;
+}
 
 interface BoardRow {
-  rank: number;
+  rankLabel: string; // "WR3" (ADP order on draft view, ADP order on results view)
   name: string;
   team: string | null;
+  adp: number | null; // overall ADP pick average, e.g. 2.9
+  finishRank: number | null;
   totalPpr: number | null;
   ppgPpr: number | null;
   games: number | null;
-  playerId: string | null; // players.id when the name matches, for linking
+  deltaPts: number | null; // results view: actual pts minus pts of the actual finisher at the ADP slot
+  playerId: string | null; // players.id for linking
 }
 
-async function loadBoard(posGroup: PosGroup): Promise<{ season: number; rows: BoardRow[] } | null> {
+interface BoardData {
+  view: BoardView;
+  adpSeason: number;
+  finishSeason: number;
+  rows: BoardRow[];
+}
+
+async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData | null> {
   const { data: latest } = await supabase
     .from("nfl_fantasy_season_ranks")
     .select("season")
@@ -34,50 +67,105 @@ async function loadBoard(posGroup: PosGroup): Promise<{ season: number; rows: Bo
     .limit(1)
     .maybeSingle();
   if (!latest?.season) return null;
+  const finishSeason = latest.season;
+  const adpSeason = view === "draft" ? finishSeason + 1 : finishSeason;
 
-  const [{ data: ranks }, { data: players }] = await Promise.all([
+  const [{ data: adp }, { data: finishes }, { data: players }] = await Promise.all([
+    supabase
+      .from("nfl_adp_snapshots")
+      .select("gsis_id, player_name, team, adp")
+      .eq("season", adpSeason)
+      .eq("source", ADP_SOURCE)
+      .eq("position", posGroup)
+      .order("adp", { ascending: true }),
     supabase
       .from("nfl_fantasy_season_ranks")
-      .select("player_name, team, total_ppr, ppg_ppr, games, position_rank")
-      .eq("season", latest.season)
+      .select("gsis_id, player_name, team, total_ppr, ppg_ppr, games, position_rank")
+      .eq("season", finishSeason)
       .eq("pos_group", posGroup)
-      .lte("position_rank", 15)
       .order("position_rank", { ascending: true }),
     supabase.from("players").select("id, name").eq("sport", "NFL"),
   ]);
 
   const idByName = new Map<string, string>();
-  for (const p of players || []) {
-    idByName.set(normalizePlayerName(p.name), p.id);
+  for (const p of players || []) idByName.set(normalizePlayerName(p.name), p.id);
+
+  const finishList = (finishes || []) as FinishRow[];
+  const finishByGsis = new Map<string, FinishRow>();
+  const ptsByFinishRank = new Map<number, number>();
+  for (const f of finishList) {
+    if (f.gsis_id) finishByGsis.set(f.gsis_id, f);
+    if (f.position_rank != null && f.total_ppr != null && !ptsByFinishRank.has(f.position_rank)) {
+      ptsByFinishRank.set(f.position_rank, f.total_ppr);
+    }
   }
 
-  const rows: BoardRow[] = (ranks || []).map((r) => ({
-    rank: r.position_rank ?? 0,
-    name: r.player_name ?? "",
-    team: r.team,
-    totalPpr: r.total_ppr,
-    ppgPpr: r.ppg_ppr,
-    games: r.games,
-    playerId: idByName.get(normalizePlayerName(r.player_name ?? "")) ?? null,
-  }));
+  const adpList = (adp || []) as AdpRow[];
+  const rows: BoardRow[] = adpList.slice(0, ROWS_SHOWN).map((a, i) => {
+    const finish = a.gsis_id ? finishByGsis.get(a.gsis_id) : undefined;
+    const adpPosRank = i + 1;
+    // Expectation for a draft slot = what the actual finisher at that slot
+    // scored. Positive delta: the player outscored their draft slot.
+    let deltaPts: number | null = null;
+    if (view === "results") {
+      const expected = ptsByFinishRank.get(adpPosRank);
+      if (expected != null) {
+        deltaPts = Math.round(((finish?.total_ppr ?? 0) - expected) * 10) / 10;
+      }
+    }
+    return {
+      rankLabel: `${posGroup}${adpPosRank}`,
+      name: a.player_name,
+      team: finish?.team ?? a.team,
+      adp: a.adp,
+      finishRank: finish?.position_rank ?? null,
+      totalPpr: finish?.total_ppr ?? null,
+      ppgPpr: finish?.ppg_ppr ?? null,
+      games: finish?.games ?? null,
+      deltaPts,
+      playerId: idByName.get(normalizePlayerName(a.player_name)) ?? null,
+    };
+  });
 
-  return { season: latest.season, rows };
+  return { view, adpSeason, finishSeason, rows };
 }
+
+const fmtPts = (v: number | null) => (v == null ? "-" : v.toFixed(1));
+const fmtDelta = (v: number | null) => (v == null ? "-" : `${v > 0 ? "+" : ""}${v.toFixed(1)}`);
 
 export function FantasyLeadersBoard() {
   const [posGroup, setPosGroup] = useState<PosGroup>("RB");
+  const [view, setView] = useState<BoardView>("draft");
   const { data, isLoading } = useQuery({
-    queryKey: ["nfl-fantasy-leaders", posGroup],
-    queryFn: () => loadBoard(posGroup),
-    staleTime: 60 * 60 * 1000, // finished season - effectively static
+    queryKey: ["nfl-fantasy-board", view, posGroup],
+    queryFn: () => loadBoard(posGroup, view),
+    staleTime: 60 * 60 * 1000,
   });
+
+  const finishLabel = (r: BoardRow) =>
+    r.finishRank == null ? "-" : `${posGroup}${r.finishRank}`;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-xs text-muted-foreground font-mono">
-          {data?.season ?? "Last"} season-end PPR finishes - click a player for their multi-year trajectory.
-        </p>
+        <div className="flex gap-2">
+          {([
+            ["draft", "2026 Draft Board"],
+            ["results", "2025 vs ADP"],
+          ] as const).map(([v, label]) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`font-mono text-xs uppercase tracking-wider px-3 py-1.5 rounded-md border transition-colors ${
+                view === v
+                  ? "text-terminal-green border-terminal-green/50 bg-terminal-green/10"
+                  : "text-muted-foreground border-border bg-card/50 hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
         <div className="flex gap-1">
           {POS_GROUPS.map((g) => (
             <button
@@ -95,12 +183,22 @@ export function FantasyLeadersBoard() {
         </div>
       </div>
 
+      <p className="text-xs text-muted-foreground font-mono">
+        {view === "draft"
+          ? `Where drafts are taking ${posGroup}s right now, with last season's production - click a player for their trajectory.`
+          : `The ${data?.finishSeason ?? "last"} draft board, graded: +/- compares each player's points to the actual ${posGroup}-finisher at their draft slot.`}
+      </p>
+
       {isLoading ? (
         <Skeleton className="h-96 w-full" />
       ) : !data || data.rows.length === 0 ? (
         <Card className="bg-card border-border">
           <CardContent className="p-8 text-center">
-            <p className="text-sm text-muted-foreground font-mono">No fantasy finish data yet.</p>
+            <p className="text-sm text-muted-foreground font-mono">
+              {view === "draft"
+                ? "No ADP synced yet for the upcoming season."
+                : "No ADP data for last season."}
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -110,27 +208,34 @@ export function FantasyLeadersBoard() {
               <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
                 <Trophy className="w-4 h-4 text-terminal-green" />
                 <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-foreground">
-                  {data.season} {posGroup} Fantasy Finishes (PPR)
+                  {view === "draft"
+                    ? `${data.adpSeason} ${posGroup} Draft Board (ADP)`
+                    : `${data.finishSeason} ${posGroup} Finishes vs ADP`}
                 </h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b border-border">
-                      <th className="text-left font-medium pl-4 pr-1 py-2 w-12">#</th>
+                      <th className="text-left font-medium pl-4 pr-1 py-2 w-14">ADP</th>
                       <th className="text-left font-medium px-1 py-2">Player</th>
                       <th className="text-left font-medium px-1 py-2">Team</th>
+                      <th className="text-right font-medium px-2 py-2">Pick</th>
+                      <th className="text-right font-medium px-2 py-2">
+                        {view === "draft" ? `'${String(data.finishSeason).slice(2)} Finish` : "Finish"}
+                      </th>
                       <th className="text-right font-medium px-2 py-2">PPR Pts</th>
-                      <th className="text-right font-medium px-2 py-2">PPG</th>
-                      <th className="text-right font-medium pr-4 py-2">G</th>
+                      {view === "draft" ? (
+                        <th className="text-right font-medium pr-4 py-2">PPG</th>
+                      ) : (
+                        <th className="text-right font-medium pr-4 py-2">+/- Pts</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {data.rows.map((r, i) => (
-                      <tr key={`${r.rank}-${r.name}`} className={`border-b border-border/40 ${i % 2 === 1 ? "bg-muted/10" : ""}`}>
-                        <td className={`pl-4 pr-1 py-2 font-mono font-bold ${isTopTenFinish(r.rank) ? "text-terminal-green" : "text-muted-foreground"}`}>
-                          {posGroup}{r.rank}
-                        </td>
+                      <tr key={`${r.rankLabel}-${r.name}`} className={`border-b border-border/40 ${i % 2 === 1 ? "bg-muted/10" : ""}`}>
+                        <td className="pl-4 pr-1 py-2 font-mono font-bold text-muted-foreground">{r.rankLabel}</td>
                         <td className="px-1 py-2">
                           {r.playerId ? (
                             <Link
@@ -150,16 +255,36 @@ export function FantasyLeadersBoard() {
                             </span>
                           )}
                         </td>
-                        <td className="px-2 py-2 text-right font-mono font-bold tabular-nums">
-                          {r.totalPpr?.toFixed(1) ?? "-"}
+                        <td className="px-2 py-2 text-right font-mono tabular-nums text-muted-foreground">
+                          {r.adp == null ? "-" : r.adp.toFixed(1)}
                         </td>
-                        <td className="px-2 py-2 text-right font-mono tabular-nums">{r.ppgPpr?.toFixed(1) ?? "-"}</td>
-                        <td className="pr-4 py-2 text-right font-mono tabular-nums">{r.games ?? "-"}</td>
+                        <td className={`px-2 py-2 text-right font-mono tabular-nums font-bold ${isTopTenFinish(r.finishRank) ? "text-terminal-green" : "text-foreground"}`}>
+                          {finishLabel(r)}
+                        </td>
+                        <td className="px-2 py-2 text-right font-mono font-bold tabular-nums">{fmtPts(r.totalPpr)}</td>
+                        {view === "draft" ? (
+                          <td className="pr-4 py-2 text-right font-mono tabular-nums">{fmtPts(r.ppgPpr)}</td>
+                        ) : (
+                          <td
+                            className={`pr-4 py-2 text-right font-mono font-bold tabular-nums ${
+                              r.deltaPts == null
+                                ? "text-muted-foreground"
+                                : r.deltaPts >= 0
+                                  ? "text-terminal-green"
+                                  : "text-terminal-red"
+                            }`}
+                          >
+                            {fmtDelta(r.deltaPts)}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              <p className="text-[11px] text-muted-foreground px-4 py-2">
+                ADP: Fantasy Football Calculator, 12-team PPR drafts. Rookies without NFL history show blank last-season columns.
+              </p>
             </CardContent>
           </Card>
         </motion.div>
