@@ -580,132 +580,6 @@ export type Database = {
           },
         ]
       }
-      ncaaf_draft_picks: {
-        Row: {
-          college_school: string
-          created_at: string
-          draft_year: number
-          id: string
-          nfl_team: string | null
-          overall_pick: number | null
-          player_name: string
-          position: string | null
-          round: number | null
-        }
-        Insert: {
-          college_school: string
-          created_at?: string
-          draft_year: number
-          id?: string
-          nfl_team?: string | null
-          overall_pick?: number | null
-          player_name: string
-          position?: string | null
-          round?: number | null
-        }
-        Update: {
-          college_school?: string
-          created_at?: string
-          draft_year?: number
-          id?: string
-          nfl_team?: string | null
-          overall_pick?: number | null
-          player_name?: string
-          position?: string | null
-          round?: number | null
-        }
-        Relationships: []
-      }
-      ncaaf_draft_prospects: {
-        Row: {
-          captured_at: string
-          created_at: string
-          draft_year: number
-          height: string | null
-          id: string
-          player_name: string
-          position: string | null
-          rank: number
-          school: string
-          weight: number | null
-        }
-        Insert: {
-          captured_at: string
-          created_at?: string
-          draft_year: number
-          height?: string | null
-          id?: string
-          player_name: string
-          position?: string | null
-          rank: number
-          school: string
-          weight?: number | null
-        }
-        Update: {
-          captured_at?: string
-          created_at?: string
-          draft_year?: number
-          height?: string | null
-          id?: string
-          player_name?: string
-          position?: string | null
-          rank?: number
-          school?: string
-          weight?: number | null
-        }
-        Relationships: []
-      }
-      ncaaf_game_results: {
-        Row: {
-          away_conference: string | null
-          away_points: number
-          away_school: string
-          cfbd_game_id: number
-          created_at: string
-          date: string | null
-          home_conference: string | null
-          home_points: number
-          home_school: string
-          id: string
-          neutral_site: boolean | null
-          season: number
-          season_type: string | null
-          week: number | null
-        }
-        Insert: {
-          away_conference?: string | null
-          away_points: number
-          away_school: string
-          cfbd_game_id: number
-          created_at?: string
-          date?: string | null
-          home_conference?: string | null
-          home_points: number
-          home_school: string
-          id?: string
-          neutral_site?: boolean | null
-          season: number
-          season_type?: string | null
-          week?: number | null
-        }
-        Update: {
-          away_conference?: string | null
-          away_points?: number
-          away_school?: string
-          cfbd_game_id?: number
-          created_at?: string
-          date?: string | null
-          home_conference?: string | null
-          home_points?: number
-          home_school?: string
-          id?: string
-          neutral_site?: boolean | null
-          season?: number
-          season_type?: string | null
-          week?: number | null
-        }
-        Relationships: []
-      }
       ncaaf_games: {
         Row: {
           away_score: number | null
@@ -830,90 +704,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      ncaaf_returning_production: {
-        Row: {
-          conference: string | null
-          created_at: string
-          id: string
-          percent_passing_ppa: number | null
-          percent_ppa: number | null
-          percent_receiving_ppa: number | null
-          percent_rushing_ppa: number | null
-          school: string
-          season: number
-          total_ppa: number | null
-          usage_returning: number | null
-        }
-        Insert: {
-          conference?: string | null
-          created_at?: string
-          id?: string
-          percent_passing_ppa?: number | null
-          percent_ppa?: number | null
-          percent_receiving_ppa?: number | null
-          percent_rushing_ppa?: number | null
-          school: string
-          season: number
-          total_ppa?: number | null
-          usage_returning?: number | null
-        }
-        Update: {
-          conference?: string | null
-          created_at?: string
-          id?: string
-          percent_passing_ppa?: number | null
-          percent_ppa?: number | null
-          percent_receiving_ppa?: number | null
-          percent_rushing_ppa?: number | null
-          school?: string
-          season?: number
-          total_ppa?: number | null
-          usage_returning?: number | null
-        }
-        Relationships: []
-      }
-      ncaaf_transfers: {
-        Row: {
-          created_at: string
-          destination_school: string | null
-          eligibility: string | null
-          id: string
-          origin_school: string | null
-          player_name: string
-          position: string | null
-          rating: number | null
-          season: number
-          stars: number | null
-          transfer_date: string | null
-        }
-        Insert: {
-          created_at?: string
-          destination_school?: string | null
-          eligibility?: string | null
-          id?: string
-          origin_school?: string | null
-          player_name: string
-          position?: string | null
-          rating?: number | null
-          season: number
-          stars?: number | null
-          transfer_date?: string | null
-        }
-        Update: {
-          created_at?: string
-          destination_school?: string | null
-          eligibility?: string | null
-          id?: string
-          origin_school?: string | null
-          player_name?: string
-          position?: string | null
-          rating?: number | null
-          season?: number
-          stars?: number | null
-          transfer_date?: string | null
-        }
-        Relationships: []
       }
       nfl_fantasy_weekly: {
         Row: {
@@ -2158,23 +1948,6 @@ export type Database = {
       }
     }
     Views: {
-      ncaaf_roster_continuity: {
-        Row: {
-          conference: string | null
-          draft_departures: number | null
-          net_portal: number | null
-          percent_passing_ppa: number | null
-          percent_ppa: number | null
-          percent_receiving_ppa: number | null
-          percent_rushing_ppa: number | null
-          portal_in: number | null
-          portal_out: number | null
-          school: string | null
-          season: number | null
-          usage_returning: number | null
-        }
-        Relationships: []
-      }
       nfl_fantasy_season_ranks: {
         Row: {
           games: number | null
@@ -2232,10 +2005,6 @@ export type Database = {
       }
       get_nba_team_record: {
         Args: { p_season?: number; p_team_name: string }
-        Returns: Json
-      }
-      get_ncaaf_head_to_head: {
-        Args: { p_seasons?: number; p_team1: string; p_team2: string }
         Returns: Json
       }
       has_role: {

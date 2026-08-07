@@ -6,7 +6,6 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
 import { consensusAmerican, consensusPriceMove } from "@/lib/odds";
 import { trendingFor } from "@/data/trendingBets";
-import { MatchupIntelSection } from "@/components/ncaaf/MatchupIntelSection";
 import { format, parseISO } from "date-fns";
 
 // Game Insights — the tap-a-game deep dive. Every number here is real MGP
@@ -281,15 +280,6 @@ export function GameInsightsSheet({
           </div>
         ) : (
           <div className="mt-5 space-y-6">
-            {/* CFB matchup intelligence — executive summary first */}
-            {sport === "NCAAF" && (
-              <MatchupIntelSection
-                homeTeamName={game.home_team_name}
-                visitorTeamName={game.visitor_team_name}
-                gameDate={game.date}
-              />
-            )}
-
             {/* Market consensus — no-vig win probability */}
             {data?.consHome != null && data?.consAway != null && (
               <section>

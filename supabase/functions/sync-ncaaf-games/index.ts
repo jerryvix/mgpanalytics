@@ -121,14 +121,10 @@ serve(async (req) => {
       api_source: "espn",
     });
 
-    // Date range: -7 to +60 days. The lookahead loads the upcoming season's
-    // early slate during preseason and the coming weeks in-season; the
-    // lookback re-fetches recently played games so their final scores get
-    // written (a forward-only window left finals permanently null).
+    // Calculate date range: now to +45 days — wide enough to load the upcoming
+    // season's early slate during preseason, and the coming weeks in-season
     const LOOKAHEAD_DAYS = 60;
-    const LOOKBACK_DAYS = 7;
     const now = new Date();
-    const windowStart = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
     const windowEnd = new Date(now.getTime() + LOOKAHEAD_DAYS * 24 * 60 * 60 * 1000);
 
     // Fetch AP Top 25 rankings
@@ -157,9 +153,9 @@ serve(async (req) => {
       console.error("Error fetching NCAAF rankings:", err);
     }
 
-    // Get dates across the full lookback + lookahead window
+    // Get dates across the lookahead window
     const dates: string[] = [];
-    for (let i = -LOOKBACK_DAYS; i <= LOOKAHEAD_DAYS; i++) {
+    for (let i = 0; i <= LOOKAHEAD_DAYS; i++) {
       const date = new Date(now.getTime() + i * 24 * 60 * 60 * 1000);
       dates.push(date.toISOString().split("T")[0].replace(/-/g, ""));
     }
@@ -187,14 +183,13 @@ serve(async (req) => {
       }
     }
 
-    // Filter games within the window — including the lookback, so completed
-    // games get their scores/is_final upserted instead of being dropped
+    // Filter games within the lookahead window
     const upcomingGames = allGames.filter((game) => {
       const gameDate = new Date(game.date);
-      return gameDate >= windowStart && gameDate <= windowEnd;
+      return gameDate >= now && gameDate <= windowEnd;
     });
 
-    console.log(`Filtered to ${upcomingGames.length} games in -${LOOKBACK_DAYS}/+${LOOKAHEAD_DAYS} day window`);
+    console.log(`Filtered to ${upcomingGames.length} games in ${LOOKAHEAD_DAYS}-day window`);
 
     // Process games
     const processedGames = upcomingGames.map((game) => {

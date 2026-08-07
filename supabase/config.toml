@@ -74,12 +74,3 @@ verify_jwt = false
 
 [functions.backfill-nfl-fantasy]
 verify_jwt = false
-
-[functions.sync-cfbd-roster-intel]
-verify_jwt = false
-
-[functions.sync-cfbd-games]
-verify_jwt = false
-
-[functions.sync-draft-board]
-verify_jwt = false
