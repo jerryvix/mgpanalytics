@@ -248,7 +248,7 @@ export function FantasyLeadersBoard() {
           <CardContent className="p-8 text-center">
             <p className="text-sm text-muted-foreground font-mono">
               {view === "draft"
-                ? "No ADP synced yet for the upcoming season."
+                ? "No expert ranks synced yet for the upcoming season."
                 : "No ADP data for last season."}
             </p>
           </CardContent>
@@ -269,11 +269,13 @@ export function FantasyLeadersBoard() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b border-border">
-                      <th className="text-left font-medium pl-4 pr-1 py-2 w-14">#</th>
+                      <th className="text-left font-medium pl-4 pr-1 py-2 w-16">
+                        {view === "draft" ? `'${String(data.adpSeason).slice(2)} Proj` : `'${String(data.adpSeason).slice(2)} ADP`}
+                      </th>
                       <th className="text-left font-medium px-1 py-2">Player</th>
                       <th className="text-left font-medium px-1 py-2">Team</th>
                       <th className="text-right font-medium px-2 py-2">
-                        {view === "draft" ? "Exp Rank" : "ADP"}
+                        {view === "draft" ? "Consensus" : "Pick"}
                       </th>
                       <th className="text-right font-medium px-2 py-2">
                         {view === "draft" ? `'${String(data.finishSeason).slice(2)} Finish` : "Finish"}
@@ -289,7 +291,9 @@ export function FantasyLeadersBoard() {
                   <tbody>
                     {data.rows.map((r, i) => (
                       <tr key={`${r.rankLabel}-${r.name}`} className={`border-b border-border/40 ${i % 2 === 1 ? "bg-muted/10" : ""}`}>
-                        <td className="pl-4 pr-1 py-2 font-mono font-bold text-muted-foreground">{r.rankLabel}</td>
+                        <td className={`pl-4 pr-1 py-2 font-mono font-bold ${isTopTenFinish(i + 1) ? "text-terminal-green" : "text-foreground"}`}>
+                          {r.rankLabel}
+                        </td>
                         <td className="px-1 py-2">
                           {r.playerId ? (
                             <Link
@@ -311,17 +315,11 @@ export function FantasyLeadersBoard() {
                         </td>
                         <td className="px-2 py-2 text-right font-mono tabular-nums">
                           {view === "draft" ? (
-                            <>
-                              <span className="text-foreground font-bold">
-                                {r.ecr == null ? "-" : `#${Math.round(r.ecr)} ovr`}
-                              </span>
-                              {r.ecr != null && (
-                                <span className="block text-[10px] text-muted-foreground">
-                                  ecr {r.ecr.toFixed(1)}
-                                  {r.ecrBest != null && r.ecrWorst != null ? ` · ${r.ecrBest}-${r.ecrWorst}` : ""}
-                                </span>
-                              )}
-                            </>
+                            <span className="text-[11px] text-muted-foreground">
+                              {r.ecr == null
+                                ? "-"
+                                : `ovr ${r.ecr.toFixed(1)}${r.ecrBest != null && r.ecrWorst != null ? ` · ${r.ecrBest}-${r.ecrWorst}` : ""}`}
+                            </span>
                           ) : (
                             <>
                               <span className="text-foreground font-bold">{fmtRoundPick(r.adp)}</span>
@@ -360,7 +358,7 @@ export function FantasyLeadersBoard() {
               </div>
               <p className="text-[11px] text-muted-foreground px-4 py-2">
                 {view === "draft"
-                  ? "Expert Rank: FantasyPros PPR consensus (via DynastyProcess), refreshed daily. #3 ovr is the rounded overall consensus; under it, the exact average and best-worst expert range. Rookies without NFL history show blank last-season columns."
+                  ? "Projected ranks: FantasyPros PPR expert consensus (via DynastyProcess), refreshed daily and subject to change. Consensus column shows the average overall rank and best-worst expert range. Rookies without NFL history show blank last-season columns."
                   : "ADP: real 12-team PPR drafts (Fantasy Football Calculator). 1.02 means round 1, pick 2; under it, the exact average overall pick and the earliest-latest picks seen in real drafts."}
               </p>
             </CardContent>
