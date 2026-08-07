@@ -46,8 +46,7 @@ interface EcrRow {
   player_name: string;
   team: string | null;
   ecr: number;
-  best: number | null;
-  worst: number | null;
+  fp_id: string | null;
 }
 
 interface BoardRow {
@@ -57,9 +56,7 @@ interface BoardRow {
   adp: number | null; // results view: overall ADP pick average, e.g. 2.9
   adpHigh: number | null; // earliest real-draft pick
   adpLow: number | null; // latest real-draft pick
-  ecr: number | null; // draft view: average expert overall rank, e.g. 3.3
-  ecrBest: number | null;
-  ecrWorst: number | null;
+  overallRank: number | null; // draft view: sequential overall consensus rank (FantasyPros RK)
   finishRank: number | null;
   totalPpr: number | null;
   ppgPpr: number | null;
@@ -92,7 +89,7 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
     view === "draft"
       ? supabase
           .from("nfl_ecr_snapshots")
-          .select("gsis_id, player_name, team, ecr, best, worst")
+          .select("gsis_id, player_name, team, ecr, fp_id")
           .eq("season", adpSeason)
           .eq("source", "fp_ppr_redraft")
           .eq("position", posGroup)
@@ -105,7 +102,7 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
           .eq("position", posGroup)
           .order("adp", { ascending: true });
 
-  const [{ data: ranks }, { data: finishes }, { data: players }] = await Promise.all([
+  const [{ data: ranks }, { data: finishes }, { data: players }, { data: allEcr }] = await Promise.all([
     rankSource,
     supabase
       .from("nfl_fantasy_season_ranks")
@@ -114,7 +111,22 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
       .eq("pos_group", posGroup)
       .order("position_rank", { ascending: true }),
     supabase.from("players").select("id, name").eq("sport", "NFL"),
+    view === "draft"
+      ? supabase
+          .from("nfl_ecr_snapshots")
+          .select("fp_id, ecr")
+          .eq("season", adpSeason)
+          .eq("source", "fp_ppr_redraft")
+          .order("ecr", { ascending: true })
+      : Promise.resolve({ data: null }),
   ]);
+
+  // Sequential overall consensus rank across every position - the same RK
+  // number FantasyPros shows next to its POS column.
+  const overallRankByFp = new Map<string, number>();
+  (allEcr || []).forEach((r: { fp_id: string | null }, i: number) => {
+    if (r.fp_id) overallRankByFp.set(r.fp_id, i + 1);
+  });
 
   const idByName = new Map<string, string>();
   for (const p of players || []) idByName.set(normalizePlayerName(p.name), p.id);
@@ -149,9 +161,7 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
       adp: a.adp ?? null,
       adpHigh: a.high ?? null,
       adpLow: a.low ?? null,
-      ecr: a.ecr ?? null,
-      ecrBest: a.best ?? null,
-      ecrWorst: a.worst ?? null,
+      overallRank: a.fp_id ? overallRankByFp.get(a.fp_id) ?? null : null,
       finishRank: finish?.position_rank ?? null,
       totalPpr: finish?.total_ppr ?? null,
       ppgPpr: finish?.ppg_ppr ?? null,
@@ -275,7 +285,7 @@ export function FantasyLeadersBoard() {
                       <th className="text-left font-medium px-1 py-2">Player</th>
                       <th className="text-left font-medium px-1 py-2">Team</th>
                       <th className="text-right font-medium px-2 py-2">
-                        {view === "draft" ? "Consensus" : "Pick"}
+                        {view === "draft" ? "Ovr Rk" : "Pick"}
                       </th>
                       <th className="text-right font-medium px-2 py-2">
                         {view === "draft" ? `'${String(data.finishSeason).slice(2)} Finish` : "Finish"}
@@ -315,10 +325,8 @@ export function FantasyLeadersBoard() {
                         </td>
                         <td className="px-2 py-2 text-right font-mono tabular-nums">
                           {view === "draft" ? (
-                            <span className="text-[11px] text-muted-foreground">
-                              {r.ecr == null
-                                ? "-"
-                                : `ovr ${r.ecr.toFixed(1)}${r.ecrBest != null && r.ecrWorst != null ? ` · ${r.ecrBest}-${r.ecrWorst}` : ""}`}
+                            <span className="text-muted-foreground">
+                              {r.overallRank == null ? "-" : `#${r.overallRank}`}
                             </span>
                           ) : (
                             <>
@@ -358,7 +366,7 @@ export function FantasyLeadersBoard() {
               </div>
               <p className="text-[11px] text-muted-foreground px-4 py-2">
                 {view === "draft"
-                  ? "Projected ranks: FantasyPros PPR expert consensus (via DynastyProcess), refreshed daily and subject to change. Consensus column shows the average overall rank and best-worst expert range. Rookies without NFL history show blank last-season columns."
+                  ? "Projected positional and overall ranks: FantasyPros PPR expert consensus (via DynastyProcess), refreshed daily and subject to change. Rookies without NFL history show blank last-season columns."
                   : "ADP: real 12-team PPR drafts (Fantasy Football Calculator). 1.02 means round 1, pick 2; under it, the exact average overall pick and the earliest-latest picks seen in real drafts."}
               </p>
             </CardContent>
