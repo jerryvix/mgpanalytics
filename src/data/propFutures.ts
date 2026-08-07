@@ -1,9 +1,9 @@
-// Season-long futures board — scraped from Matchbetwin on 2026-07-15.
+// Season-long futures board - scraped from Matchbetwin on 2026-07-15.
 // STATIC BY DESIGN (owner decision): pre-season numbers that mostly only move on
 // major trades/injuries. Refresh once per year before each season, or on request.
 // Live futures tracking is an enterprise-tier data feature we deliberately skipped.
 //
-// Scope: Team Totals + Player Prop futures. NCAAF carries team totals only —
+// Scope: Team Totals + Player Prop futures. NCAAF carries team totals only -
 // the source book lists no NCAAF player prop futures.
 
 export interface PropFuture {

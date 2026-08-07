@@ -168,7 +168,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Header — back button hidden on mobile (bottom nav handles it) */}
+      {/* Header - back button hidden on mobile (bottom nav handles it) */}
       <div className="hidden md:flex items-center gap-4">
         <Button
           variant="ghost"
@@ -210,7 +210,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
                   <h1 className="text-2xl font-bold text-foreground">{player.name}</h1>
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <Badge variant="outline">{player.position || "—"}</Badge>
+                  <Badge variant="outline">{player.position || "-"}</Badge>
                   <span>•</span>
                   <span>{player.team_name || "Free Agent"}</span>
                 </div>
@@ -237,19 +237,19 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 md:gap-3 mt-4 md:mt-6">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-terminal-green">
-                    {stats.points_per_game?.toFixed(1) || "—"}
+                    {stats.points_per_game?.toFixed(1) || "-"}
                   </p>
                   <p className="text-xs text-muted-foreground">PPG</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-foreground">
-                    {stats.rebounds_per_game?.toFixed(1) || "—"}
+                    {stats.rebounds_per_game?.toFixed(1) || "-"}
                   </p>
                   <p className="text-xs text-muted-foreground">RPG</p>
                 </div>
                 <div className="text-center">
                   <p className="text-2xl font-bold text-foreground">
-                    {stats.assists_per_game?.toFixed(1) || "—"}
+                    {stats.assists_per_game?.toFixed(1) || "-"}
                   </p>
                   <p className="text-xs text-muted-foreground">APG</p>
                 </div>
@@ -406,7 +406,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
                                 draftkings: "DraftKings", fanduel: "FanDuel",
                                 betmgm: "BetMGM", caesars: "Caesars",
                               }[prop.sportsbook.toLowerCase()] || prop.sportsbook;
-                              const fmtOdds = (o: number | null) => o === null ? "—" : o > 0 ? `+${o}` : `${o}`;
+                              const fmtOdds = (o: number | null) => o === null ? "-" : o > 0 ? `+${o}` : `${o}`;
                               return (
                                 <div key={`${prop.prop_type}-${prop.sportsbook}`} className="flex items-center justify-between text-xs font-mono">
                                   <span className="text-muted-foreground">{bookLabel}</span>
@@ -477,13 +477,13 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
                             }[prop.prop_type] || prop.prop_type;
                             const date = prop.game_date
                               ? new Date(prop.game_date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                              : "—";
+                              : "-";
                             return (
                               <tr key={prop.id} className="border-b border-border/50">
                                 <td className="py-1.5 pr-2 text-muted-foreground">{date}</td>
                                 <td className="py-1.5 pr-2">{label}</td>
                                 <td className="py-1.5 pr-2 text-right">{prop.line}</td>
-                                <td className="py-1.5 pr-2 text-right font-semibold">{prop.actual_value ?? "—"}</td>
+                                <td className="py-1.5 pr-2 text-right font-semibold">{prop.actual_value ?? "-"}</td>
                                 <td className="py-1.5 text-right">
                                   {prop.result === "over" && (
                                     <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green/50 text-[10px]">OVER</Badge>
@@ -534,7 +534,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
                       </p>
                       <p className="text-muted-foreground">
                         Season avg:{" "}
-                        <span className="text-foreground">{stats?.points_per_game?.toFixed(1) || "—"} PPG</span>
+                        <span className="text-foreground">{stats?.points_per_game?.toFixed(1) || "-"} PPG</span>
                       </p>
                     </div>
                   </div>

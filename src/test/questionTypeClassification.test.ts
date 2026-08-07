@@ -6,7 +6,7 @@ import { describe, it, expect } from "vitest";
  *
  * The function runs in the Deno edge function and can't be imported
  * directly into Vitest. We replicate the exact regex logic here so
- * these tests act as a living spec — if someone changes the regexes
+ * these tests act as a living spec - if someone changes the regexes
  * in the edge function, these tests document the expected behavior.
  */
 

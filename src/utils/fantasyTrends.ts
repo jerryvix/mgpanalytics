@@ -14,7 +14,7 @@ export interface SeasonRankPoint {
  *
  * Uses the last (up to) 3 ranked seasons. Gap seasons (missed year, no rank)
  * are skipped, not interpolated. Moves are scored as log(prevRank / nextRank)
- * — positive = improving — because rank improvements compress near the top:
+ * - positive = improving - because rank improvements compress near the top:
  * RB8 -> RB6 is a real jump while RB44 -> RB40 is noise, and a ratio measure
  * treats both honestly where an absolute spot count cannot. The most recent
  * move is weighted 2x over the prior one. The ±0.45 threshold is roughly a

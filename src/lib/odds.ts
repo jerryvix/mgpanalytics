@@ -2,7 +2,7 @@
 
 /**
  * Convert an American moneyline price to its implied probability (0..1).
- * Returns null for null/undefined/0/non-finite input — 0 is not a valid price.
+ * Returns null for null/undefined/0/non-finite input - 0 is not a valid price.
  */
 export function americanToImpliedProb(price: number | null | undefined): number | null {
   if (price === null || price === undefined || price === 0 || !Number.isFinite(price)) return null;
@@ -28,7 +28,7 @@ export function impliedPair(
 
 /**
  * Convert a win probability (0..1 exclusive) back to an American price.
- * Inverse of americanToImpliedProb — p >= 0.5 yields a negative (favorite)
+ * Inverse of americanToImpliedProb - p >= 0.5 yields a negative (favorite)
  * price, so the result is always a legal price (never inside ±100).
  */
 export function probToAmerican(p: number | null | undefined): number | null {
@@ -37,8 +37,8 @@ export function probToAmerican(p: number | null | undefined): number | null {
 }
 
 /**
- * Consensus American price across books. American odds are discontinuous —
- * nothing exists between -100 and +100 — so they must NEVER be averaged
+ * Consensus American price across books. American odds are discontinuous -
+ * nothing exists between -100 and +100 - so they must NEVER be averaged
  * arithmetically (that's how a board ends up showing "-36.4"). Convert each
  * book to implied probability, average there, convert back.
  */
@@ -64,7 +64,7 @@ export interface PriceMove {
 /**
  * Consensus open→current movement for a priced market (moneyline).
  * Averages per-book implied probabilities on both ends, reports the shift in
- * probability points — the sign is meaningful: + = price shortening = money
+ * probability points - the sign is meaningful: + = price shortening = money
  * arriving on this side. (Raw American deltas get this backwards for
  * favorites: -112 → -136 is arithmetically "down" but the team is being BET.)
  */

@@ -1,5 +1,5 @@
 // Live scores straight from ESPN's public scoreboard (CORS-open, no key).
-// Fetched client-side on demand — no cron, no schema, no backend changes.
+// Fetched client-side on demand - no cron, no schema, no backend changes.
 // The batch syncs still own persistence; this layer is display-only.
 
 export type LiveSport = "NFL" | "NBA" | "MLB" | "NCAAF" | "NCAAB";
@@ -22,7 +22,7 @@ export interface LiveGame {
   detail: string; // e.g. "10:23 - 3rd", "Bot 7th", "Final", "Postponed"
   period: number | null;
   clock: string | null;
-  /** Scheduled start, ISO — ESPN's own clock for this specific game. */
+  /** Scheduled start, ISO - ESPN's own clock for this specific game. */
   startTime: string | null;
 }
 
@@ -36,7 +36,7 @@ export function liveKey(awayName: string, homeName: string): string {
   return `${(awayName || "").trim().toLowerCase()}@${(homeName || "").trim().toLowerCase()}`;
 }
 
-/** Pure — parse an ESPN scoreboard payload into LiveGames (testable). */
+/** Pure - parse an ESPN scoreboard payload into LiveGames (testable). */
 export function normalizeScoreboard(json: unknown): LiveGame[] {
   const events = (json as { events?: unknown[] })?.events;
   if (!Array.isArray(events)) return [];
@@ -72,7 +72,7 @@ export function normalizeScoreboard(json: unknown): LiveGame[] {
 
 /**
  * Key games by matchup. Doubleheaders produce two events with the same
- * key — keep the actionable one: a live game always wins, and a still-
+ * key - keep the actionable one: a live game always wins, and a still-
  * upcoming game beats a finished one (it's the matchup someone can still
  * bet), finished/called-off games rank last.
  */

@@ -17,7 +17,7 @@ const AuthCallback = () => {
       }
     );
 
-    // Timeout — if nothing happens in 5s, show error
+    // Timeout - if nothing happens in 5s, show error
     const timeout = setTimeout(() => {
       setError("Authentication timed out. The link may have expired.");
     }, 5000);

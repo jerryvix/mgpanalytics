@@ -76,12 +76,12 @@ function formatDate(dateStr: string) {
 }
 
 function calcFGPct(made: number, attempted: number) {
-  if (attempted === 0) return "—";
+  if (attempted === 0) return "-";
   return `${Math.round((made / attempted) * 100)}%`;
 }
 
 function calc3Pct(made: number, attempted: number) {
-  if (attempted === 0) return "—";
+  if (attempted === 0) return "-";
   return `${Math.round((made / attempted) * 100)}%`;
 }
 
@@ -258,7 +258,7 @@ export function NBAGameLog({ gameLogs, playerName, seasonAverages, isLoading }: 
                         : ""
                     }`}
                   >
-                    {plusMinus !== null ? (plusMinus > 0 ? `+${plusMinus}` : plusMinus) : "—"}
+                    {plusMinus !== null ? (plusMinus > 0 ? `+${plusMinus}` : plusMinus) : "-"}
                   </TableCell>
                 </TableRow>
               );

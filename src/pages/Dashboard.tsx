@@ -82,7 +82,7 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate, stashDeepLink]);
 
-  // Show onboarding modal for users who haven't completed it — only on dashboard home
+  // Show onboarding modal for users who haven't completed it - only on dashboard home
   const isOnDashboardHome = location.pathname === "/dashboard" || location.pathname === "/dashboard/";
   useEffect(() => {
     if (!trialLoading && !onboardingCompleted && user && isOnDashboardHome) {
@@ -126,7 +126,7 @@ const Dashboard = () => {
   return (
     <SidebarProvider>
       <div className="h-screen flex w-full bg-background overflow-hidden">
-        {/* Sidebar hidden on mobile — BottomNav replaces it */}
+        {/* Sidebar hidden on mobile - BottomNav replaces it */}
         {!isMobile && (
           <AppSidebar
             user={user}
@@ -143,9 +143,9 @@ const Dashboard = () => {
         {/* Bottom nav replaces sidebar on mobile */}
         {isMobile && <BottomNav />}
       </div>
-      {/* Onboarding Modal — shown once for new users */}
+      {/* Onboarding Modal - shown once for new users */}
       <OnboardingModal open={showOnboarding} onComplete={handleOnboardingComplete} />
-      {/* Guided Walkthrough — triggered after onboarding completes */}
+      {/* Guided Walkthrough - triggered after onboarding completes */}
       {walkthroughReady && (
         <GuidedWalkthrough onComplete={() => setWalkthroughReady(false)} />
       )}

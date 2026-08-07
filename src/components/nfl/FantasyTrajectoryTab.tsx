@@ -43,7 +43,7 @@ const TREND_BADGE: Record<TrendDirection, { label: string; className: string; Ic
     Icon: Minus,
   },
   insufficient: {
-    label: "—",
+    label: "-",
     className: "bg-muted/40 text-muted-foreground border-border",
     Icon: HelpCircle,
   },
@@ -66,17 +66,17 @@ const MOMENTUM_BADGE: Record<MomentumVerdict, { label: string; className: string
     Icon: Minus,
   },
   insufficient: {
-    label: "—",
+    label: "-",
     className: "bg-muted/40 text-muted-foreground border-border",
     Icon: HelpCircle,
   },
 };
 
 const fmtRank = (posGroup: string | null, rank: number | null | undefined) =>
-  rank == null ? "—" : `${posGroup ?? ""}${rank}`;
+  rank == null ? "-" : `${posGroup ?? ""}${rank}`;
 
 const fmtNum = (v: number | null | undefined, digits = 1) =>
-  v == null ? "—" : v.toFixed(digits);
+  v == null ? "-" : v.toFixed(digits);
 
 export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: FantasyTrajectoryTabProps) {
   const { seasons, latestSeason, secondHalf, isLoading, matched } = useNFLFantasyProfile(
@@ -131,7 +131,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
   const chartPoints: TrendPoint[] = seasons
     .filter((s) => s.season != null && s.position_rank != null)
     .map((s) => ({
-      label: `${s.season} — ${fmtRank(s.pos_group, s.position_rank)} · ${fmtNum(s.total_ppr)} pts (${s.games} gm)`,
+      label: `${s.season} - ${fmtRank(s.pos_group, s.position_rank)} · ${fmtNum(s.total_ppr)} pts (${s.games} gm)`,
       value: -s.position_rank!,
     }));
 
@@ -195,7 +195,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
                 Positional Finish Trajectory
               </h2>
               <p className="text-[11px] text-muted-foreground mb-2">
-                Season-end PPR finish at {posGroup} — higher on the chart is a better finish.
+                Season-end PPR finish at {posGroup} - higher on the chart is a better finish.
               </p>
               <TrendChart points={chartPoints} yFmt={(v) => `#${Math.round(-v)}`} />
             </CardContent>
@@ -205,7 +205,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
         <Card className="bg-card border-border">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground font-mono">
-              Not enough history for a trajectory — {seasons.length === 1 ? "only one ranked season" : "no ranked seasons"} yet.
+              Not enough history for a trajectory - {seasons.length === 1 ? "only one ranked season" : "no ranked seasons"} yet.
             </p>
           </CardContent>
         </Card>
@@ -235,7 +235,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
                   {[...seasons].reverse().map((s, i) => (
                     <tr key={s.season} className={`border-b border-border/50 ${i % 2 === 1 ? "bg-muted/10" : ""}`}>
                       <td className="px-4 py-2 font-mono text-muted-foreground">{s.season}</td>
-                      <td className="px-2 py-2 font-mono">{s.team ?? "—"}</td>
+                      <td className="px-2 py-2 font-mono">{s.team ?? "-"}</td>
                       <td className={`px-2 py-2 text-right font-mono tabular-nums font-bold ${rankTone(s.position_rank)}`}>
                         {fmtRank(s.pos_group, s.position_rank)}
                       </td>
@@ -244,14 +244,14 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
                         {fmtRank(s.pos_group, s.ppg_position_rank)}
                       </td>
                       <td className="px-2 py-2 text-right font-mono tabular-nums">{fmtNum(s.ppg_ppr)}</td>
-                      <td className="px-4 py-2 text-right font-mono tabular-nums">{s.games ?? "—"}</td>
+                      <td className="px-4 py-2 text-right font-mono tabular-nums">{s.games ?? "-"}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <p className="text-[11px] text-muted-foreground px-4 py-2">
-              Per-game rank counts seasons with 6+ games — it separates a player's level from their availability.
+              Per-game rank counts seasons with 6+ games - it separates a player's level from their availability.
             </p>
           </CardContent>
         </Card>
@@ -265,7 +265,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
               {latestSeason} Closing Stretch
             </h2>
             <p className="text-[11px] text-muted-foreground mb-3">
-              Weeks 10–18 positional rank vs. the full-season finish — a strong close is a leading
+              Weeks 10–18 positional rank vs. the full-season finish - a strong close is a leading
               indicator for the following year.
             </p>
             {secondHalf ? (

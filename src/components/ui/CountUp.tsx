@@ -11,7 +11,7 @@ interface CountUpProps {
   className?: string;
 }
 
-// Ticks a number up when it scrolls into view — the Bloomberg-terminal touch.
+// Ticks a number up when it scrolls into view - the Bloomberg-terminal touch.
 // tabular-nums keeps digit widths fixed so nothing shifts while animating.
 export function CountUp({ value, decimals = 0, prefix = "", suffix = "", duration = 0.8, className }: CountUpProps) {
   const ref = useRef<HTMLSpanElement>(null);

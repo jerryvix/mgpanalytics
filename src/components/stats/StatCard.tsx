@@ -28,7 +28,7 @@ function formatValue(
   format: string,
   unit?: string
 ): string {
-  if (value === undefined || value === null) return "—";
+  if (value === undefined || value === null) return "-";
   if (typeof value === "string") return value;
   
   switch (format) {

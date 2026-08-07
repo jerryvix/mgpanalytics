@@ -22,7 +22,7 @@ describe("classifyTrend", () => {
         { season: 2025, rank: 6 },
       ])
     ).toBe("ascending");
-    // His real finishes: RB12 -> RB8 -> RB6 must also read ascending —
+    // His real finishes: RB12 -> RB8 -> RB6 must also read ascending -
     // top-of-ranks moves are big in ratio terms even when small in spots
     expect(
       classifyTrend([

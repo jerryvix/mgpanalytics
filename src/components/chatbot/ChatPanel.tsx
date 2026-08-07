@@ -39,7 +39,7 @@ interface Message {
   questionType?: QuestionType;
 }
 
-const WELCOME_MESSAGE = "Welcome to the MGP Analyst. Think of me as your research assistant — I surface the data, you draw the conclusions.\n\nAsk me about games, odds, player stats, or matchups across NFL, NBA, NCAAB, and more. I'll share what I find and help you dig deeper.\n\nWhat would you like to explore?";
+const WELCOME_MESSAGE = "Welcome to the MGP Analyst. Think of me as your research assistant - I surface the data, you draw the conclusions.\n\nAsk me about games, odds, player stats, or matchups across NFL, NBA, NCAAB, and more. I'll share what I find and help you dig deeper.\n\nWhat would you like to explore?";
 
 function getQuestionTypeFooter(questionType?: QuestionType): string | null {
   switch (questionType) {
@@ -461,7 +461,7 @@ export function ChatPanel() {
       {/* Context warning */}
       {messages.length >= 16 && (
         <div className="px-4 py-2 bg-yellow-500/10 border-t border-yellow-500/20 text-xs text-yellow-400 font-mono text-center">
-          Long conversation — older messages may lose context. Consider starting a new chat for fresh topics.
+          Long conversation - older messages may lose context. Consider starting a new chat for fresh topics.
         </div>
       )}
 
@@ -646,11 +646,11 @@ export function ChatPanel() {
               {/* Context warning */}
               {messages.length >= 16 && (
                 <div className="px-4 py-2 bg-yellow-500/10 border-t border-yellow-500/20 text-xs text-yellow-400 font-mono text-center">
-                  Long conversation — older messages may lose context. Consider starting a new chat for fresh topics.
+                  Long conversation - older messages may lose context. Consider starting a new chat for fresh topics.
                 </div>
               )}
 
-              {/* Mobile input — padded for bottom nav + safe area */}
+              {/* Mobile input - padded for bottom nav + safe area */}
               <div
                 className="p-4 border-t border-border bg-card"
                 style={{ paddingBottom: "max(calc(3.5rem + env(safe-area-inset-bottom, 0px) + 0.5rem), 1rem)" }}
@@ -730,7 +730,7 @@ export function ChatPanel() {
             transition={isDragging ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
             className="h-full bg-card border-l border-border flex flex-col overflow-hidden relative"
           >
-            {/* Drag handle — left edge */}
+            {/* Drag handle - left edge */}
             <div
               onMouseDown={handleDragStart}
               className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 group"
@@ -738,7 +738,7 @@ export function ChatPanel() {
               <div className={`absolute inset-y-0 left-0 w-full transition-colors ${
                 isDragging ? "bg-terminal-green/40" : "bg-transparent group-hover:bg-terminal-green/20"
               }`} />
-              {/* Visible drag indicator — centered dot cluster */}
+              {/* Visible drag indicator - centered dot cluster */}
               <div className="absolute top-1/2 -translate-y-1/2 left-0 w-1.5 flex flex-col items-center gap-1 py-2">
                 <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-green" : "bg-muted-foreground/30 group-hover:bg-terminal-green/60"}`} />
                 <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-green" : "bg-muted-foreground/30 group-hover:bg-terminal-green/60"}`} />

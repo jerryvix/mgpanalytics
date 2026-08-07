@@ -22,7 +22,7 @@ interface PlayerPropsCardProps {
 }
 
 const formatOdds = (odds: number | null): string => {
-  if (odds === null || odds === undefined) return "—";
+  if (odds === null || odds === undefined) return "-";
   return odds > 0 ? `+${odds}` : `${odds}`;
 };
 

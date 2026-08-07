@@ -106,18 +106,18 @@ export function LineMovementDashboard() {
   };
 
   const getMovementValue = (movement: LineMovement) => {
-    if (!movement.current_line || !movement.previous_line) return "—";
+    if (!movement.current_line || !movement.previous_line) return "-";
     const diff = movement.current_line - movement.previous_line;
     const sign = diff > 0 ? "+" : "";
     return `${sign}${diff.toFixed(1)}`;
   };
 
   const formatTimestamp = (timestamp: string | null) => {
-    if (!timestamp) return "—";
+    if (!timestamp) return "-";
     try {
       return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
     } catch {
-      return "—";
+      return "-";
     }
   };
 
@@ -200,9 +200,9 @@ export function LineMovementDashboard() {
                       {movement.team || movement.game_id.slice(0, 8)}
                     </TableCell>
                     <TableCell className="py-1 capitalize">{movement.odds_type}</TableCell>
-                    <TableCell className="py-1">{movement.opening_line ?? "—"}</TableCell>
-                    <TableCell className="py-1">{movement.previous_line ?? "—"}</TableCell>
-                    <TableCell className="py-1 font-semibold">{movement.current_line ?? "—"}</TableCell>
+                    <TableCell className="py-1">{movement.opening_line ?? "-"}</TableCell>
+                    <TableCell className="py-1">{movement.previous_line ?? "-"}</TableCell>
+                    <TableCell className="py-1 font-semibold">{movement.current_line ?? "-"}</TableCell>
                     <TableCell className="py-1">
                       <div className="flex items-center gap-1">
                         {getMovementIcon(movement)}

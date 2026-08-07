@@ -27,7 +27,7 @@ export const OffseasonBanner = ({ sport }: OffseasonBannerProps) => {
         <span className="text-terminal-green tracking-widest">OFFSEASON</span>
         <span className="text-muted-foreground">
           {" "}
-          — {sport} is poolside in Cancún. Live data returns when the season tips off in {config.returns}. Last
+          - {sport} is poolside in Cancún. Live data returns when the season tips off in {config.returns}. Last
           season's numbers below are final.
         </span>
       </div>

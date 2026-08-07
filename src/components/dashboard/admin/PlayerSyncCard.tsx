@@ -206,7 +206,7 @@ export function PlayerSyncCard() {
             </div>
             <div className="flex items-center gap-1 mb-1">
               <Badge variant="outline" className="border-terminal-green/50 text-terminal-green text-[9px] px-1">
-                {counts.nfl.count ?? "—"} players
+                {counts.nfl.count ?? "-"} players
               </Badge>
             </div>
             <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1.5">
@@ -235,7 +235,7 @@ export function PlayerSyncCard() {
             </div>
             <div className="flex items-center gap-1 mb-1">
               <Badge variant="outline" className="border-terminal-amber/50 text-terminal-amber text-[9px] px-1">
-                {counts.ncaab.count ?? "—"} players
+                {counts.ncaab.count ?? "-"} players
               </Badge>
             </div>
             <div className="text-[8px] text-muted-foreground font-mono flex items-center gap-1 mb-1.5">
@@ -269,7 +269,7 @@ export function PlayerSyncCard() {
             <div className="bg-muted/30 rounded p-1.5">
               <div className="text-[8px] text-muted-foreground mb-0.5">Players</div>
               <Badge variant="outline" className="border-terminal-cyan/50 text-terminal-cyan text-[9px] px-1">
-                {counts.nba.count ?? "—"}
+                {counts.nba.count ?? "-"}
               </Badge>
               <div className="text-[7px] text-muted-foreground font-mono mt-0.5">
                 {counts.nba.lastSync || "Never synced"}
@@ -290,7 +290,7 @@ export function PlayerSyncCard() {
                     : "border-yellow-500/50 text-yellow-500"
                 }`}
               >
-                {counts.nba.withStats ?? "—"} / {counts.nba.count ?? "—"}
+                {counts.nba.withStats ?? "-"} / {counts.nba.count ?? "-"}
               </Badge>
               <div className="text-[7px] text-muted-foreground font-mono mt-0.5">
                 {counts.nba.statsLastSync || "Never synced"}

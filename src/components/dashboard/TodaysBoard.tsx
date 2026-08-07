@@ -12,7 +12,7 @@ import { consensusPriceMove } from "@/lib/odds";
 import { trendingFor } from "@/data/trendingBets";
 import { format, parseISO, isSameDay, addDays } from "date-fns";
 
-// Today's Board — the day-to-day companion to the Season Long futures view.
+// Today's Board - the day-to-day companion to the Season Long futures view.
 // Layout approved from the v3 mockup: odds grid on the left, three rails on
 // the right (Sharpest Moves, Market Signal, Streaks & Angles). Odds come from
 // the same synced tables the slates use; movement comes from odds_history;
@@ -61,7 +61,7 @@ interface MoveRow {
 }
 
 const fmtPrice = (v: number | null | undefined) =>
-  v === null || v === undefined ? "—" : v > 0 ? `+${v}` : `${v}`;
+  v === null || v === undefined ? "-" : v > 0 ? `+${v}` : `${v}`;
 const fmtLine = fmtPrice;
 
 const marketLabel = (t: string) => {
@@ -72,7 +72,7 @@ const marketLabel = (t: string) => {
 };
 
 // Spread/Total measured in line points; Moneyline in implied-probability
-// points (2 pts ≈ a -110 → -122 shift — a genuine market move).
+// points (2 pts ≈ a -110 → -122 shift - a genuine market move).
 const MOVE_THRESHOLD: Record<string, number> = { Spread: 0.5, Total: 0.5, Moneyline: 2 };
 
 async function loadBoard(sport: BoardSport) {
@@ -101,7 +101,7 @@ async function loadBoard(sport: BoardSport) {
     oddsMap = new Map(((odds || []) as unknown as BoardOdds[]).map((o) => [String(o.game_id), o]));
   }
 
-  // Line movement — odds_history rows carry their own team names, so no
+  // Line movement - odds_history rows carry their own team names, so no
   // fragile id-join with the games table is needed.
   const since = new Date(Date.now() - 3 * 24 * 3600_000).toISOString();
   const { data: hist } = await supabase
@@ -131,17 +131,17 @@ async function loadBoard(sport: BoardSport) {
   const avg = (a: number[]) => a.reduce((s, x) => s + x, 0) / a.length;
   const moves: MoveRow[] = [];
   for (const g of groups.values()) {
-    // Over and Under rows carry the same total line — keep one per game.
+    // Over and Under rows carry the same total line - keep one per game.
     if (g.market === "Total" && g.team === "Under") continue;
     let row: Pick<MoveRow, "move" | "open" | "current" | "books"> | null = null;
     if (g.market === "Moneyline") {
       // American prices must be averaged in probability space, never
-      // arithmetically — that's what produced impossible board numbers
+      // arithmetically - that's what produced impossible board numbers
       // like "-36.4". Move is in implied-probability points.
       const c = consensusPriceMove(g.pairs);
       if (c) row = { move: c.move, open: c.open, current: c.current, books: c.books };
     } else {
-      // Spread/Total lines are plain points — arithmetic averaging is fine.
+      // Spread/Total lines are plain points - arithmetic averaging is fine.
       const valid = g.pairs.filter((p): p is { open: number; current: number } => p.open != null && p.current != null);
       if (valid.length) {
         row = {
@@ -161,7 +161,7 @@ async function loadBoard(sport: BoardSport) {
       teamsInGame: [...(teamsByGame.get(g.gameId) || [])],
     });
   }
-  // Markets move on different scales — rank by multiples of each market's
+  // Markets move on different scales - rank by multiples of each market's
   // own significance threshold so a 3-point ML steam can outrank a half-run.
   const strength = (m: MoveRow) => Math.abs(m.move) / (MOVE_THRESHOLD[m.market] ?? 0.5);
   moves.sort((a, b) => strength(b) - strength(a));
@@ -271,7 +271,7 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
               <div className="p-8 text-center text-sm text-muted-foreground font-mono">Loading the board…</div>
             ) : dayGames.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground font-mono">
-                No {sport} games on this date{dayOffset === 0 ? " — the board lights up on game days" : ""}.
+                No {sport} games on this date{dayOffset === 0 ? " - the board lights up on game days" : ""}.
               </div>
             ) : (
               dayGames.map((g, gi) => {
@@ -320,8 +320,8 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
                       </div>
                     </div>
                     <PillCol
-                      top={o?.spread_value != null ? `${fmtLine(-o.spread_value)} ${fmtPrice(o.spread_odds)}` : "—"}
-                      bottom={o?.spread_value != null ? `${fmtLine(o.spread_value)} ${fmtPrice(o.spread_odds)}` : "—"}
+                      top={o?.spread_value != null ? `${fmtLine(-o.spread_value)} ${fmtPrice(o.spread_odds)}` : "-"}
+                      bottom={o?.spread_value != null ? `${fmtLine(o.spread_value)} ${fmtPrice(o.spread_odds)}` : "-"}
                     />
                     <PillCol
                       top={fmtPrice(o?.moneyline_away)}
@@ -330,8 +330,8 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
                       bottomMove={homeMlMove}
                     />
                     <PillCol
-                      top={o?.total_value != null ? `O ${o.total_value} ${fmtPrice(o.total_over_odds)}` : "—"}
-                      bottom={o?.total_value != null ? `U ${o.total_value} ${fmtPrice(o.total_under_odds)}` : "—"}
+                      top={o?.total_value != null ? `O ${o.total_value} ${fmtPrice(o.total_over_odds)}` : "-"}
+                      bottom={o?.total_value != null ? `U ${o.total_value} ${fmtPrice(o.total_under_odds)}` : "-"}
                     />
                   </motion.div>
                 );
@@ -344,7 +344,7 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
         <div className="space-y-4">
           <Rail title="Sharpest Moves" icon={<TD className="w-3.5 h-3.5" />} color="text-terminal-amber">
             {sharpest.length === 0 ? (
-              <RailQuiet text="Lines are quiet — moves appear as books shift." />
+              <RailQuiet text="Lines are quiet - moves appear as books shift." />
             ) : (
               sharpest.map((m, i) => (
                 <div key={i} className="py-2 border-b border-dashed border-border last:border-none text-sm">
@@ -380,7 +380,7 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
               ))
             )}
             <p className="font-mono text-[10px] text-muted-foreground pt-2">
-              "Most-backed" here means market signal — biggest line moves across books.
+              "Most-backed" here means market signal - biggest line moves across books.
             </p>
           </Rail>
 
@@ -411,7 +411,7 @@ export function TodaysBoard({ sport }: { sport: BoardSport }) {
         <Signal className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
         <p className="text-[10px] text-muted-foreground leading-relaxed max-w-2xl">
           Lines shown are the latest synced sportsbook numbers and refresh through the day; scores and game
-          state update live. Market moves reflect what books are doing — not an MGP recommendation.
+          state update live. Market moves reflect what books are doing - not an MGP recommendation.
         </p>
       </div>
     </div>

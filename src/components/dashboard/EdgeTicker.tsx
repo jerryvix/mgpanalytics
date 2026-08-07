@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EDGE_POOL } from "@/data/edges";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 
-// A live, always-moving ticker across the top of the dashboard — the signature
+// A live, always-moving ticker across the top of the dashboard - the signature
 // "Bloomberg for prediction markets" moment. Motion signals the app is alive and
 // keeps eyes on the page. Reuses data we already sync (MLB hit streaks) plus the
 // evergreen edge pool; degrades gracefully to just nuggets in the offseason.
@@ -43,7 +43,7 @@ async function loadTicker(): Promise<TickerItem[]> {
       if (!p) continue;
       items.push({
         icon: "🔥",
-        text: `${p.name}${p.team_abbr ? ` (${p.team_abbr})` : ""} — ${s.hit_streak}-game hit streak`,
+        text: `${p.name}${p.team_abbr ? ` (${p.team_abbr})` : ""} - ${s.hit_streak}-game hit streak`,
         teamAbbr: p.team_abbr ?? undefined,
         sport: "MLB",
         headshotUrl: (p as { headshot_url?: string | null }).headshot_url ?? undefined,

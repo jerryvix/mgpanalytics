@@ -8,7 +8,7 @@ import { EDGE_POOL } from "@/data/edges";
 const ALL_BETS: TrendingBet[] = [...NFL_TRENDING, ...NCAAF_TRENDING, ...MLB_TRENDING];
 const RELEASED = ALL_BETS.filter((b) => b.verified);
 
-// Wording that signals an unverified or hedged claim — never ship these.
+// Wording that signals an unverified or hedged claim - never ship these.
 const HEDGE_TELLS = /\b(probably|reportedly|some say|believed to|rumored|might have|allegedly)\b/i;
 // Year ranges must use the compact apostrophe style ('YY-'YY), not (2020-2021).
 const FULL_YEAR_RANGE = /\(\s*(19|20)\d{2}\s*[-–]\s*(19|20)\d{2}\s*\)/;

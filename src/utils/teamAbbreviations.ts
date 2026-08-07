@@ -72,7 +72,7 @@ const NFL_TEAM_ABBREVS: Record<string, string> = {
   "Washington Commanders": "WAS",
 };
 
-// Common NCAAB teams — power conferences + well-known programs
+// Common NCAAB teams - power conferences + well-known programs
 const NCAAB_TEAM_ABBREVS: Record<string, string> = {
   "Duke Blue Devils": "DUKE",
   "North Carolina Tar Heels": "UNC",
@@ -164,7 +164,7 @@ export function getTeamAbbrev(teamName: string, league?: string): string {
   // For NCAAB-style names like "Gonzaga Bulldogs", use first word capped at 5 chars
   const words = teamName.trim().split(/\s+/);
   if (words.length >= 2) {
-    // Use the last word (mascot) — usually more recognizable for college
+    // Use the last word (mascot) - usually more recognizable for college
     // But if it's a well-known city/school, use first word
     const first = words[0].toUpperCase().substring(0, 4);
     return first;
@@ -211,7 +211,7 @@ const MLB_TEAM_ABBREVS: Record<string, string> = {
 const MLB_API_TO_ESPN_SLUG: Record<string, string> = {
   CWS: "chw", // Chicago White Sox
   AZ: "ari", // Arizona Diamondbacks
-  ATH: "ath", // Athletics — current branding (legacy "oak" also exists on ESPN)
+  ATH: "ath", // Athletics - current branding (legacy "oak" also exists on ESPN)
 };
 
 /**

@@ -1,7 +1,7 @@
 // Canonical stat-leaderboard question detector.
 //
 // The chat edge function (supabase/functions/gemini-chat/index.ts) contains a
-// byte-for-byte mirror of this logic — it must, because it runs on Deno and
+// byte-for-byte mirror of this logic - it must, because it runs on Deno and
 // can't import from src. This copy is the one the test harness locks
 // (src/test/statLeaderDetect.test.ts). If you change one, change both.
 //

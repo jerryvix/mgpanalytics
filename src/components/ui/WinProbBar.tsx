@@ -10,7 +10,7 @@ interface WinProbBarProps {
   className?: string;
 }
 
-// Implied win probability from the moneyline, vig removed — a Bloomberg-style
+// Implied win probability from the moneyline, vig removed - a Bloomberg-style
 // read on who the market favors. Home keeps the terminal-green side, away the
 // amber side, matching the ML row colors. Renders nothing without both prices.
 export function WinProbBar({ homeName, awayName, moneylineHome, moneylineAway, className }: WinProbBarProps) {

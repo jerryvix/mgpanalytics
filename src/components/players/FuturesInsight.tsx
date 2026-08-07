@@ -26,7 +26,7 @@ function cacheKey(sport: string, subject: string, line: number) {
   return `mgp-futins-v2:${sport}:${subject}:${line}`;
 }
 
-// Which of our season-stat columns backs each futures market — so the angle
+// Which of our season-stat columns backs each futures market - so the angle
 // always carries the player's real prior-season number from our own database.
 const MARKET_STAT: Record<string, { column: string; label: string }> = {
   "Passing Yards": { column: "pass_yards", label: "passing yards" },
@@ -93,7 +93,7 @@ export function FuturesInsight({ sport, subject, line, over, under, kind = "team
     try {
       // Ground the angle in everything we already know: curated verified
       // nuggets (teams) and the player's real prior-season stat line from our
-      // own database — the angle must never claim ignorance of a number the
+      // own database - the angle must never claim ignorance of a number the
       // dashboard displays.
       const curated = [...NFL_TRENDING, ...NCAAF_TRENDING]
         .filter((b) => b.verified && (b.subject.includes(subject) || b.nugget.includes(subject) || subject.includes(b.subject)))
@@ -115,12 +115,12 @@ export function FuturesInsight({ sport, subject, line, over, under, kind = "team
 
       const prompt =
         `${ask}\n\n` +
-        `OUTPUT RULES (strict): respond with EXACTLY three markdown bullet points, one sentence each, and nothing else — ` +
+        `OUTPUT RULES (strict): respond with EXACTLY three markdown bullet points, one sentence each, and nothing else - ` +
         `no preamble, no closing line, no questions, no offers to search, no meta-commentary about data availability. ` +
         `Use the web search tool silently for anything the verified notes don't cover. ` +
         `If something truly cannot be confirmed, write the bullet around what IS verified instead of mentioning the gap. ` +
-        `The odds quoted above are from the user's own board — treat them as given; do not question or "verify" them.` +
-        (notes ? `\n\nVERIFIED MGP NOTES (authoritative — bullets MUST agree with these):\n${notes}` : "");
+        `The odds quoted above are from the user's own board - treat them as given; do not question or "verify" them.` +
+        (notes ? `\n\nVERIFIED MGP NOTES (authoritative - bullets MUST agree with these):\n${notes}` : "");
 
       const { data, error: fnError } = await supabase.functions.invoke("gemini-chat", {
         body: { messages: [{ role: "user", content: prompt }], webSearchEnabled: true },
@@ -129,7 +129,7 @@ export function FuturesInsight({ sport, subject, line, over, under, kind = "team
       setContent(data.content);
       try {
         localStorage.setItem(cacheKey(sport, subject, line), JSON.stringify({ at: Date.now(), content: data.content }));
-      } catch { /* storage full — fine, just no cache */ }
+      } catch { /* storage full - fine, just no cache */ }
     } catch {
       setError(true);
     } finally {
@@ -158,12 +158,12 @@ export function FuturesInsight({ sport, subject, line, over, under, kind = "team
       )}
       {error && (
         <button onClick={load} className="text-xs text-muted-foreground underline py-1">
-          Couldn't load the angle — tap to retry
+          Couldn't load the angle - tap to retry
         </button>
       )}
       {content && <MarkdownMessage content={content} />}
       <p className="text-[10px] text-muted-foreground mt-2">
-        AI-generated angle — can make mistakes. Please double-check.
+        AI-generated angle - can make mistakes. Please double-check.
       </p>
     </div>
   );

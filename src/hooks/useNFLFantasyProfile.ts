@@ -1,5 +1,5 @@
 // Fantasy trajectory data for one NFL player. nflverse rows are keyed by GSIS
-// id while our player pages are keyed by BDL players — so we match by
+// id while our player pages are keyed by BDL players - so we match by
 // normalized name + position group, then hydrate every ranked season plus the
 // prior-season second-half (weeks 10-18) window.
 import { useQuery } from "@tanstack/react-query";

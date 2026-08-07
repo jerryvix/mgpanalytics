@@ -2,7 +2,7 @@ import { useStreak } from "@/hooks/useStreak";
 import { tierFor, nextMilestone } from "@/lib/streaks";
 
 // Compact login-streak pill. Records today's visit on mount and shows the
-// running streak + tier — a lightweight loss-aversion hook ("don't break the
+// running streak + tier - a lightweight loss-aversion hook ("don't break the
 // chain") with a milestone target in the tooltip.
 export function StreakBadge() {
   const { data } = useStreak();

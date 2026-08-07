@@ -49,7 +49,7 @@ async function loadMlbPlayers() {
   const statMap = new Map(stats.map((s) => [s.player_id, s]));
 
   // Team abbreviations, data-driven from the players we already fetched
-  // ("San Diego Padres" → "SD") — no hand-kept 30-team map to go stale.
+  // ("San Diego Padres" → "SD") - no hand-kept 30-team map to go stale.
   const abbrByTeamName = new Map<string, string>();
   for (const p of players || []) {
     if (p.team_name && p.team_abbr && !abbrByTeamName.has(p.team_name)) {
@@ -59,7 +59,7 @@ async function loadMlbPlayers() {
 
   // Next matchup + probable pitcher, keyed by team name. Reach back 5h
   // (same as the slate) so a game that's underway still counts as the
-  // team's matchup — that's what the live badge hangs off.
+  // team's matchup - that's what the live badge hangs off.
   const in7 = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: games } = await supabase
     .from("mlb_games")
@@ -90,7 +90,7 @@ async function loadMlbPlayers() {
     for (const p of props || []) propIds.add(p.player_id);
   }
 
-  // Hit-streak rows — 5+ games qualifies as a genuine "hot" streak
+  // Hit-streak rows - 5+ games qualifies as a genuine "hot" streak
   const streaks: HitStreakRow[] = stats
     .filter((s) => (s.hit_streak ?? 0) >= 5)
     .map((s) => {
@@ -113,7 +113,7 @@ async function loadMlbPlayers() {
     })
     .sort((a, b) => b.streak - a.streak || b.streakAvg - a.streakAvg);
 
-  // Player grid — qualified hitters (>=40 AB) ranked by OPS
+  // Player grid - qualified hitters (>=40 AB) ranked by OPS
   const grid = (players || [])
     .map((p) => ({ player: p, stat: statMap.get(p.id) }))
     .filter((x) => x.stat && (x.stat.at_bats ?? 0) >= 40 && (x.stat.ops ?? 0) > 0)
@@ -163,7 +163,7 @@ export default function MLBPlayers() {
         </p>
       </div>
 
-      {/* Hit streak table — the headline feature */}
+      {/* Hit streak table - the headline feature */}
       <HitStreakTable rows={streaks} isLoading={isLoading} />
 
       {/* Player grid */}

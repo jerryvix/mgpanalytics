@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { FantasySeasonRank, FantasySecondHalfRank } from "@/hooks/useNFLFantasyProfile";
 
-// Mock the data hook — these tests cover rendering, not fetching.
+// Mock the data hook - these tests cover rendering, not fetching.
 const mockProfile = vi.fn();
 vi.mock("@/hooks/useNFLFantasyProfile", () => ({
   useNFLFantasyProfile: (...args: unknown[]) => mockProfile(...args),

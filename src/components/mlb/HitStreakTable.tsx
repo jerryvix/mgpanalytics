@@ -13,7 +13,7 @@ export interface HitStreakRow {
   playerId: string;
   name: string;
   team: string;
-  /** Full team name — used to match the ESPN live scoreboard. */
+  /** Full team name - used to match the ESPN live scoreboard. */
   teamName: string | null;
   headshotUrl?: string;
   streak: number;
@@ -27,7 +27,7 @@ export interface HitStreakRow {
 
 // Baseball average format: 3 decimals, no leading zero (.312)
 const fmtAvg = (val: number | null | undefined) => {
-  if (val === undefined || val === null) return "—";
+  if (val === undefined || val === null) return "-";
   return val.toFixed(3).replace(/^0/, "");
 };
 
@@ -36,7 +36,7 @@ import { heatText, streakHeat } from "@/lib/heat";
 const streakColor = (streak: number) => heatText(streakHeat(streak));
 
 // Career line vs tonight's probable starter, from MLB's public Stats API.
-// Sample size shown always — .333 in 3 AB and .320 in 25 AB are different
+// Sample size shown always - .333 in 3 AB and .320 in 25 AB are different
 // facts, and "never faced him" is itself an angle.
 function VsStarterCell({ batter, pitcher }: { batter: string; pitcher: string | null }) {
   const { data, isLoading } = useQuery({
@@ -48,9 +48,9 @@ function VsStarterCell({ batter, pitcher }: { batter: string; pitcher: string | 
     retry: 1,
   });
 
-  if (!pitcher) return <span className="text-muted-foreground">—</span>;
+  if (!pitcher) return <span className="text-muted-foreground">-</span>;
   if (isLoading) return <span className="text-muted-foreground animate-pulse">…</span>;
-  if (!data || data.status === "unavailable") return <span className="text-muted-foreground">—</span>;
+  if (!data || data.status === "unavailable") return <span className="text-muted-foreground">-</span>;
   if (data.status === "never-faced") {
     return (
       <span className="text-muted-foreground" title={`No career at-bats against ${pitcher}`}>
@@ -86,13 +86,13 @@ interface HitStreakTableProps {
 }
 
 // Game-state chip for the matchup cell. Live state comes from the same
-// 60s ESPN scoreboard polling as the slate badges — not the batch-synced
+// 60s ESPN scoreboard polling as the slate badges - not the batch-synced
 // status column, which can lag hours. Upcoming games show first pitch so
 // the pick window is visible at a glance.
 function GameStateChip({ liveGame, gameDate }: { liveGame: LiveGame | undefined; gameDate: string | null }) {
   if (liveGame?.state === "in") return <LiveBadge detail={liveGame.detail} />;
   if (liveGame?.state === "post") {
-    // Postponed/canceled report "post" too — for picks that's the opposite
+    // Postponed/canceled report "post" too - for picks that's the opposite
     // of Final (no game tonight), so say so.
     const calledOff = isCalledOff(liveGame);
     return (
@@ -117,7 +117,7 @@ function GameStateChip({ liveGame, gameDate }: { liveGame: LiveGame | undefined;
     return (
       <span
         className="font-mono text-[10px] text-terminal-green/80"
-        title="Scheduled first pitch (Pacific) — picks close at game time"
+        title="Scheduled first pitch (Pacific) - picks close at game time"
       >
         {fmtPacific(d)}
       </span>
@@ -147,7 +147,7 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
             Active Hit Streaks
           </h2>
           <span className="text-xs text-muted-foreground font-mono">
-            Hot bats — consecutive games with a hit
+            Hot bats - consecutive games with a hit
           </span>
         </div>
 
@@ -245,7 +245,7 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                           </span>
                         </span>
                       ) : (
-                        "—"
+                        "-"
                       )}
                     </td>
                   </tr>

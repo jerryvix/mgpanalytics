@@ -256,7 +256,7 @@ export function NBASlate() {
         />
       </motion.div>
 
-      {/* Loading State — skeleton cards shaped like the real slate */}
+      {/* Loading State - skeleton cards shaped like the real slate */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (

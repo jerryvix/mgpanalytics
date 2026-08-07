@@ -1,9 +1,9 @@
-// Trending Bets — full-season futures paired with a verifiable "did you know".
+// Trending Bets - full-season futures paired with a verifiable "did you know".
 //
 // Every `nugget` is a real, checkable fact with a `source`; lines/odds are the
 // live 2026-27 sportsbook boards (DraftKings/consensus) captured at build time
 // and web-verified July 2026. When a futures-odds + nugget sync lands it
-// replaces this file — the shape below is exactly what it emits, so no UI
+// replaces this file - the shape below is exactly what it emits, so no UI
 // rework is needed. Game-level props slot in via the "Game Props" category.
 //
 // RULE: never ship an unverifiable nugget. Set `verified: false` and it is
@@ -47,7 +47,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     odds: "Over +115 / Under -140",
     book: "DraftKings",
     nugget:
-      "Baltimore opens co-favorite for most wins in the AFC at 11.5 — despite going just 8-9 in '25 and missing the playoffs. It's the biggest projected turnaround on the board, and adding elite edge rusher Trey Hendrickson is a big reason the market believes it.",
+      "Baltimore opens co-favorite for most wins in the AFC at 11.5 - despite going just 8-9 in '25 and missing the playoffs. It's the biggest projected turnaround on the board, and adding elite edge rusher Trey Hendrickson is a big reason the market believes it.",
     source: "2026 NFL win totals; 2025 standings",
     verified: true,
     updated: D,
@@ -76,7 +76,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     line: "O/U 4.5",
     book: "DraftKings",
     nugget:
-      "At 4.5, Arizona owns the lowest win total in the entire NFL — a full seven games below the Ravens and Rams at the top. It's the market's clearest single signal of a team the books expect to rebuild.",
+      "At 4.5, Arizona owns the lowest win total in the entire NFL - a full seven games below the Ravens and Rams at the top. It's the market's clearest single signal of a team the books expect to rebuild.",
     source: "2026 NFL win totals",
     verified: true,
     updated: D,
@@ -91,7 +91,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     line: "+550",
     book: "DraftKings",
     nugget:
-      "Allen enters as the reigning MVP — but repeating is one of the hardest feats in the sport. Only five players have ever won back-to-back MVP, and none since Aaron Rodgers in ('20-'21).",
+      "Allen enters as the reigning MVP - but repeating is one of the hardest feats in the sport. Only five players have ever won back-to-back MVP, and none since Aaron Rodgers in ('20-'21).",
     source: "AP MVP voting history",
     verified: true,
     updated: D,
@@ -105,7 +105,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     line: "+700",
     book: "DraftKings",
     nugget:
-      "Jackson is already a two-time MVP ('19, '23). A third would put him in an exclusive club of three-time winners — a list still topped by Peyton Manning's five.",
+      "Jackson is already a two-time MVP ('19, '23). A third would put him in an exclusive club of three-time winners - a list still topped by Peyton Manning's five.",
     source: "AP MVP voting history",
     verified: true,
     updated: D,
@@ -132,7 +132,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     line: "Longshots",
     book: "DraftKings",
     nugget:
-      "Every serious MVP favorite is a quarterback — for good reason. The last 13 MVPs have all been QBs, and since 2001 only three non-quarterbacks have won the award, all of them running backs.",
+      "Every serious MVP favorite is a quarterback - for good reason. The last 13 MVPs have all been QBs, and since 2001 only three non-quarterbacks have won the award, all of them running backs.",
     source: "AP MVP winners since 2001",
     verified: true,
     updated: D,
@@ -147,7 +147,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     line: "-125",
     book: "DraftKings",
     nugget:
-      "Buffalo won five straight AFC East titles ('20-'24) before New England — behind second-year QB Drake Maye — grabbed it in '25 and rode it all the way to Super Bowl LX. The Bills are now favored to take the division right back.",
+      "Buffalo won five straight AFC East titles ('20-'24) before New England - behind second-year QB Drake Maye - grabbed it in '25 and rode it all the way to Super Bowl LX. The Bills are now favored to take the division right back.",
     source: "NFL division champions; 2025 standings",
     verified: true,
     updated: D,
@@ -161,7 +161,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     line: "-105",
     book: "DraftKings",
     nugget:
-      "The Ravens are favored to win the North despite an 8-9 '25 — while the Bengals, coming off 6-11, made the offseason's boldest swing, trading their first-round pick for star DT Dexter Lawrence. It's shaping up as the league's most volatile division.",
+      "The Ravens are favored to win the North despite an 8-9 '25 - while the Bengals, coming off 6-11, made the offseason's boldest swing, trading their first-round pick for star DT Dexter Lawrence. It's shaping up as the league's most volatile division.",
     source: "2026 division odds; offseason moves",
     verified: true,
     updated: D,
@@ -180,7 +180,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     odds: "Over -118 / Under -104",
     book: "DraftKings",
     nugget:
-      "Alabama won 10+ games in 16 straight seasons under Nick Saban ('08-'23). That streak ended the year after he retired — and with the SEC moving to a nine-game conference schedule in 2026, the Tide's total sits at a startling 8.5.",
+      "Alabama won 10+ games in 16 straight seasons under Nick Saban ('08-'23). That streak ended the year after he retired - and with the SEC moving to a nine-game conference schedule in 2026, the Tide's total sits at a startling 8.5.",
     source: "Alabama football records; 2026 win totals",
     verified: true,
     updated: D,
@@ -193,7 +193,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     line: "O/U 9.5",
     book: "DraftKings",
     nugget:
-      "Georgia, Texas, and Ohio State all open at 9.5 wins — and not a single SEC team cracked a 10-win total for 2026. The reason is structural: the SEC's new nine-game conference schedule means one more brutal game for everyone.",
+      "Georgia, Texas, and Ohio State all open at 9.5 wins - and not a single SEC team cracked a 10-win total for 2026. The reason is structural: the SEC's new nine-game conference schedule means one more brutal game for everyone.",
     source: "2026 college football win totals",
     verified: true,
     updated: D,
@@ -208,7 +208,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     line: "+700",
     book: "DraftKings",
     nugget:
-      "Carr (Notre Dame) opens as the +700 favorite. History is on his side positionally — quarterbacks have won 16 of the last 20 Heismans — but not institutionally: Notre Dame hasn't produced a Heisman winner since Tim Brown in 1987.",
+      "Carr (Notre Dame) opens as the +700 favorite. History is on his side positionally - quarterbacks have won 16 of the last 20 Heismans - but not institutionally: Notre Dame hasn't produced a Heisman winner since Tim Brown in 1987.",
     source: "Heisman Trust records",
     verified: true,
     updated: D,
@@ -222,7 +222,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     line: "+800",
     book: "DraftKings",
     nugget:
-      "Arch Manning opens second at +800 — and no Manning has ever won the Heisman. Grandfather Archie finished third in 1970 and Peyton was the runner-up in 1997. Arch carries the family's best shot yet.",
+      "Arch Manning opens second at +800 - and no Manning has ever won the Heisman. Grandfather Archie finished third in 1970 and Peyton was the runner-up in 1997. Arch carries the family's best shot yet.",
     source: "Heisman voting history",
     verified: true,
     updated: D,
@@ -251,7 +251,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     line: "+300",
     book: "DraftKings",
     nugget:
-      "Texas (+300) edges Georgia (+350) atop the SEC with Arch Manning back under center. Georgia is chasing history it already made once — its back-to-back national titles in ('21-'22) were the first repeat champion since Alabama in ('11-'12).",
+      "Texas (+300) edges Georgia (+350) atop the SEC with Arch Manning back under center. Georgia is chasing history it already made once - its back-to-back national titles in ('21-'22) were the first repeat champion since Alabama in ('11-'12).",
     source: "2026 SEC title odds; CFP champions",
     verified: true,
     updated: D,
@@ -265,7 +265,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     line: "+180",
     book: "DraftKings",
     nugget:
-      "Ohio State opens the clear Big Ten favorite at +180 with Julian Sayin and star WR Jeremiah Smith back. Reigning champ Indiana (+250) is close behind — the Hoosiers stunned the sport in '25 and now have to prove it wasn't a one-off.",
+      "Ohio State opens the clear Big Ten favorite at +180 with Julian Sayin and star WR Jeremiah Smith back. Reigning champ Indiana (+250) is close behind - the Hoosiers stunned the sport in '25 and now have to prove it wasn't a one-off.",
     source: "2026 Big Ten title odds",
     verified: true,
     updated: D,
@@ -280,7 +280,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     line: "+600",
     book: "DraftKings",
     nugget:
-      "Ohio State opens as the +600 national-title favorite — one year after Indiana shocked college football, going a perfect 16-0 to win its first-ever championship and become just the third 16-0 champion in history, joining 1894 Yale and 2019 North Dakota State.",
+      "Ohio State opens as the +600 national-title favorite - one year after Indiana shocked college football, going a perfect 16-0 to win its first-ever championship and become just the third 16-0 champion in history, joining 1894 Yale and 2019 North Dakota State.",
     source: "2026 national title odds; 2025 CFP",
     verified: true,
     updated: D,
@@ -293,7 +293,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     line: "Conference futures",
     book: "DraftKings",
     nugget:
-      "Since 2006, SEC programs have won more national titles than the rest of the FBS combined — yet the last two crowns both went to the Big Ten: Ohio State ('24) and Indiana ('25). The board reflects the shift, with Big Ten teams holding three of the four shortest title prices.",
+      "Since 2006, SEC programs have won more national titles than the rest of the FBS combined - yet the last two crowns both went to the Big Ten: Ohio State ('24) and Indiana ('25). The board reflects the shift, with Big Ten teams holding three of the four shortest title prices.",
     source: "National championship history",
     verified: true,
     updated: D,
@@ -311,7 +311,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     line: "+190",
     book: "DraftKings",
     nugget:
-      "The Dodgers enter the All-Star break the standalone favorite — chasing a THREE-PEAT after winning it all in '24 and '25. No team has won three straight World Series since the ('98-'00) Yankees, and no NL team has ever done it.",
+      "The Dodgers enter the All-Star break the standalone favorite - chasing a THREE-PEAT after winning it all in '24 and '25. No team has won three straight World Series since the ('98-'00) Yankees, and no NL team has ever done it.",
     source: "World Series champions; 2026 odds at the All-Star break",
     verified: true,
     updated: "2026-07-14",
@@ -325,7 +325,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     line: "+550",
     book: "DraftKings",
     nugget:
-      "The Yankees' 27 titles are the most in North American pro sports — but they haven't added one since '09, their longest championship drought since the ('78-'96) gap. They sit second on the board yet don't even lead their league: Tampa Bay owns the AL's best record at the break.",
+      "The Yankees' 27 titles are the most in North American pro sports - but they haven't added one since '09, their longest championship drought since the ('78-'96) gap. They sit second on the board yet don't even lead their league: Tampa Bay owns the AL's best record at the break.",
     source: "World Series history; 2026 AL standings at the break",
     verified: true,
     updated: "2026-07-14",
@@ -339,7 +339,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     line: "+1100",
     book: "DraftKings",
     nugget:
-      "Milwaukee holds the third-shortest price on the board — and is one of just five MLB franchises that has never won a World Series. The Brewers' only pennant came back in '82, before an entire generation of their fans was born.",
+      "Milwaukee holds the third-shortest price on the board - and is one of just five MLB franchises that has never won a World Series. The Brewers' only pennant came back in '82, before an entire generation of their fans was born.",
     source: "World Series history; 2026 odds",
     verified: true,
     updated: "2026-07-14",
@@ -354,7 +354,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     line: "-165",
     book: "DraftKings",
     nugget:
-      "Alvarez leads MLB in OPS at the break and has pulled away to odds-on favorite. He has never won an MVP — a first would also be Houston's first since Jose Altuve in '17.",
+      "Alvarez leads MLB in OPS at the break and has pulled away to odds-on favorite. He has never won an MVP - a first would also be Houston's first since Jose Altuve in '17.",
     source: "AP MVP history; 2026 leaderboards at the break",
     verified: true,
     updated: "2026-07-14",
@@ -369,7 +369,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     odds: "Field +650",
     book: "DraftKings",
     nugget:
-      "Ohtani is such a prohibitive favorite that DraftKings opened a 'vs. the field' market. He owns four MVPs ('21, '23, '24, '25) — three straight seasons — and a fifth would leave only Barry Bonds (7) ahead of him all-time.",
+      "Ohtani is such a prohibitive favorite that DraftKings opened a 'vs. the field' market. He owns four MVPs ('21, '23, '24, '25) - three straight seasons - and a fifth would leave only Barry Bonds (7) ahead of him all-time.",
     source: "AP/BBWAA MVP history",
     verified: true,
     updated: "2026-07-14",

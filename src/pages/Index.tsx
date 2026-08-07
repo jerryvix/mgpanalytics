@@ -77,8 +77,8 @@ const Index = () => {
           </p>
         </motion.div>
 
-        {/* Value prop — a cold visitor should get what MGP is in one glance.
-            Benefit headline (no category labels, no analogies — the Bloomberg
+        {/* Value prop - a cold visitor should get what MGP is in one glance.
+            Benefit headline (no category labels, no analogies - the Bloomberg
             framing stays in investor collateral), platforms named for instant
             recognition and breadth. */}
         <motion.div
@@ -121,7 +121,7 @@ const Index = () => {
           <AuthCard />
         </motion.div>
 
-        {/* Why MGP link — off the hero path, for the curious cold visitor */}
+        {/* Why MGP link - off the hero path, for the curious cold visitor */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

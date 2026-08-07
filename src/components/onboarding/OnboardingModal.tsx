@@ -100,7 +100,7 @@ export function OnboardingModal({ open, onComplete, dismissible = false }: Onboa
                   Welcome to MGP
                 </DialogTitle>
                 <DialogDescription className="text-muted-foreground text-sm mt-2">
-                  MGP helps you understand what markets are doing — not what to bet.
+                  MGP helps you understand what markets are doing - not what to bet.
                 </DialogDescription>
               </DialogHeader>
               <ul className="mt-4 space-y-3 text-sm text-foreground">

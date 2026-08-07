@@ -384,7 +384,7 @@ export function SportsDataManagement() {
               </div>
               <div className="flex items-center justify-between mb-1">
                 <Badge variant="outline" className={`border-${color}/50 text-${color} text-[8px] px-1 py-0`}>
-                  {key === "ncaab" || key === "ncaaf" ? counts[key].ranked ?? "—" : counts[key].games ?? "—"}
+                  {key === "ncaab" || key === "ncaaf" ? counts[key].ranked ?? "-" : counts[key].games ?? "-"}
                 </Badge>
                 {isOffSeason(key) && (
                   <Badge variant="outline" className="border-terminal-amber/50 text-terminal-amber text-[7px] px-0.5 py-0">

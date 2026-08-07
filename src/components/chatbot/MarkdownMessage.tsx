@@ -6,7 +6,7 @@ import remarkGfm from "remark-gfm";
 // Design intent (owner spec, Jul 2026): responses read like a modern chat
 // product, not a terminal dump. Body text is the app's sans face; monospace is
 // reserved for numbers/code where alignment matters. GFM tables render as real
-// bordered tables (react-markdown alone doesn't parse them — remark-gfm is
+// bordered tables (react-markdown alone doesn't parse them - remark-gfm is
 // required). Terminal-green stays as the accent color: that's the app's
 // intentional brand, applied with hierarchy instead of everywhere.
 

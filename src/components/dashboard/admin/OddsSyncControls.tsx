@@ -241,7 +241,7 @@ export function OddsSyncControls({ onSyncComplete }: OddsSyncControlsProps) {
             </div>
             <div className="flex justify-between col-span-2">
               <span className="text-muted-foreground">Snapshots in vault</span>
-              <span className="text-foreground">{snapshotCount?.toLocaleString() ?? "—"}</span>
+              <span className="text-foreground">{snapshotCount?.toLocaleString() ?? "-"}</span>
             </div>
           </div>
 

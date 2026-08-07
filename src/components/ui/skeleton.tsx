@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-// Shimmer sweep over the muted base — reads as "data incoming" rather than a
+// Shimmer sweep over the muted base - reads as "data incoming" rather than a
 // static pulse. Falls back to a still block under prefers-reduced-motion.
 function Skeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (

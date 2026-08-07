@@ -119,8 +119,8 @@ export default function PlayerProfile() {
             <StatCard label="Interceptions" value={stats.pass_int?.toString() || "0"} />
             <StatCard label="Comp %" value={stats.pass_attempts && stats.pass_attempts > 0 
               ? ((stats.pass_completions || 0) / stats.pass_attempts * 100).toFixed(1) + "%" 
-              : "—"} />
-            <StatCard label="Passer Rating" value={stats.passer_rating?.toFixed(1) || "—"} />
+              : "-"} />
+            <StatCard label="Passer Rating" value={stats.passer_rating?.toFixed(1) || "-"} />
           </>
         )}
         {(position === "RB" || position === "FB") && (
@@ -128,7 +128,7 @@ export default function PlayerProfile() {
             <StatCard label="Rush Yards" value={stats.rush_yards?.toLocaleString() || "0"} highlight />
             <StatCard label="Rush TDs" value={stats.rush_td?.toString() || "0"} />
             <StatCard label="Attempts" value={stats.rush_attempts?.toString() || "0"} />
-            <StatCard label="YPC" value={stats.yards_per_carry?.toFixed(1) || "—"} />
+            <StatCard label="YPC" value={stats.yards_per_carry?.toFixed(1) || "-"} />
             <StatCard label="Receptions" value={stats.receptions?.toString() || "0"} />
             <StatCard label="Rec Yards" value={stats.rec_yards?.toLocaleString() || "0"} />
             <StatCard label="Rec TDs" value={stats.rec_td?.toString() || "0"} />
@@ -140,7 +140,7 @@ export default function PlayerProfile() {
             <StatCard label="Rec TDs" value={stats.rec_td?.toString() || "0"} />
             <StatCard label="Receptions" value={stats.receptions?.toString() || "0"} />
             <StatCard label="Targets" value={stats.targets?.toString() || "0"} />
-            <StatCard label="YPR" value={stats.yards_per_reception?.toFixed(1) || "—"} />
+            <StatCard label="YPR" value={stats.yards_per_reception?.toFixed(1) || "-"} />
           </>
         )}
       </div>

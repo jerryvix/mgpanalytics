@@ -98,15 +98,15 @@ export function NCAABSyncCard() {
         
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <div className="text-lg font-bold text-terminal-amber">{gamesCount?.toLocaleString() ?? "—"}</div>
+            <div className="text-lg font-bold text-terminal-amber">{gamesCount?.toLocaleString() ?? "-"}</div>
             <div className="text-[9px] text-muted-foreground font-mono">Games</div>
           </div>
           <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <div className="text-lg font-bold text-terminal-amber">{rankedGamesCount?.toLocaleString() ?? "—"}</div>
+            <div className="text-lg font-bold text-terminal-amber">{rankedGamesCount?.toLocaleString() ?? "-"}</div>
             <div className="text-[9px] text-muted-foreground font-mono">Ranked</div>
           </div>
           <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <div className="text-lg font-bold text-terminal-amber">{oddsCount?.toLocaleString() ?? "—"}</div>
+            <div className="text-lg font-bold text-terminal-amber">{oddsCount?.toLocaleString() ?? "-"}</div>
             <div className="text-[9px] text-muted-foreground font-mono">Odds</div>
           </div>
         </div>

@@ -111,7 +111,7 @@ export function GamePreviewModal({ game, open, onOpenChange }: GamePreviewModalP
         record: homeData?.record || "0-0",
         homeRecord: homeData?.home_record || "0-0",
         awayRecord: homeData?.away_record || "0-0",
-        atsRecord: null, // Not yet available — historical odds being built
+        atsRecord: null, // Not yet available - historical odds being built
         overUnderRecord: null,
         last5: homeLast5Data.map((g: { result: string; opponent: string; score: string }) => ({
           result: g.result,
@@ -136,7 +136,7 @@ export function GamePreviewModal({ game, open, onOpenChange }: GamePreviewModalP
         })),
       });
 
-      // Process head to head — show which team leads
+      // Process head to head - show which team leads
       const h2hData = h2h.data;
       if (h2hData && h2hData.total_games > 0) {
         const t1 = getTeamAbbrev(h2hData.team1 || game.home_team_name, "NBA");

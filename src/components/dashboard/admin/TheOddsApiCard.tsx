@@ -234,7 +234,7 @@ export function TheOddsApiCard({ onSyncComplete }: TheOddsApiCardProps) {
 
           {/* Snapshots count */}
           <div className="text-[8px] text-muted-foreground font-mono text-center">
-            {snapshotCount?.toLocaleString() ?? "—"} snapshots in vault
+            {snapshotCount?.toLocaleString() ?? "-"} snapshots in vault
           </div>
         </CardContent>
       </Card>

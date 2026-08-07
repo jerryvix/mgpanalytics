@@ -96,7 +96,7 @@ export function DashboardHome() {
   const { preferredSports } = useTrialStatus();
   const [showSetup, setShowSetup] = useState(false);
 
-  // Sport filter pills — initialized from profile, locally toggled
+  // Sport filter pills - initialized from profile, locally toggled
   const [activeSports, setActiveSports] = useState<string[]>(ALL_SPORTS as unknown as string[]);
   const initializedFromProfile = useRef(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -145,7 +145,7 @@ export function DashboardHome() {
     });
   };
 
-  // Cleanup debounce on unmount — flush pending save
+  // Cleanup debounce on unmount - flush pending save
   useEffect(() => {
     return () => {
       if (debounceTimer.current) {
@@ -172,7 +172,7 @@ export function DashboardHome() {
       let mlbGames: any[] | null = null;
       let ncaafGames: any[] | null = null;
 
-      // The user's preferred sports, PLUS whatever is actually in season —
+      // The user's preferred sports, PLUS whatever is actually in season -
       // the home page should never hide the sport playing games this week.
       const month = now.getMonth(); // 0 = Jan
       const inSeasonNow = [
@@ -543,7 +543,7 @@ export function DashboardHome() {
   };
 
   const formatLine = (value: number | null) => {
-    if (value === null || value === undefined) return "\u2014";
+    if (value === null || value === undefined) return "-";
     return value > 0 ? `+${value}` : String(value);
   };
 
@@ -651,7 +651,7 @@ export function DashboardHome() {
         {/* Streak progress + milestone */}
         <StreakCard />
 
-        {/* Daily Edge — the habit hook */}
+        {/* Daily Edge - the habit hook */}
         <DailyEdge />
 
         {/* Personalized: followed teams' next games */}
@@ -663,7 +663,7 @@ export function DashboardHome() {
         {/* Fantasy form movers */}
         <FantasyMovers />
 
-        {/* Money Flows Section — hidden entirely until movement data exists;
+        {/* Money Flows Section - hidden entirely until movement data exists;
             sync plumbing (snapshot counts, freshness) is not user language */}
         {!loading && moneyFlows.length === 0 ? null : (
         <motion.section
@@ -723,7 +723,7 @@ export function DashboardHome() {
                     ) : (
                       <span className="text-muted-foreground text-xs">
                         {flow.currentValue !== null
-                          ? `${formatLine(flow.currentValue)} \u2014 no movement yet`
+                          ? `${formatLine(flow.currentValue)}, no movement yet`
                           : "Odds not available"
                         }
                       </span>
@@ -780,7 +780,7 @@ export function DashboardHome() {
                         {getTeamAbbrev(game.home_team_name, game.league)} {formatLine(game.spread)}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground/50">{"\u2014"}</span>
+                      <span className="text-muted-foreground/50">-</span>
                     )}
                   </span>
                 </div>
@@ -794,7 +794,7 @@ export function DashboardHome() {
         </motion.section>
       </div>
 
-      {/* Setup / Onboarding Modal — manually triggered */}
+      {/* Setup / Onboarding Modal - manually triggered */}
       <OnboardingModal
         open={showSetup}
         dismissible

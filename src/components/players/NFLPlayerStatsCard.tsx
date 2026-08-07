@@ -209,7 +209,7 @@ function WRTEStats({ stats }: { stats: NFLPlayerStats }) {
           label="Catch %" 
           value={stats.targets && stats.receptions 
             ? `${((stats.receptions / stats.targets) * 100).toFixed(1)}%` 
-            : "—"}
+            : "-"}
         />
       </StatBlock>
       

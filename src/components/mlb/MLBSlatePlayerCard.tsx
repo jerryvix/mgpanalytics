@@ -119,10 +119,10 @@ export function MLBSlatePlayerCard({
 
   // Baseball averages: 3-decimal, no leading zero (.312 not 0.312)
   const fmtAvg = (val?: number) => {
-    if (val === undefined || val === null) return "—";
+    if (val === undefined || val === null) return "-";
     return val.toFixed(3).replace(/^0/, "");
   };
-  const fmtInt = (val?: number) => (val === undefined || val === null ? "—" : String(Math.round(val)));
+  const fmtInt = (val?: number) => (val === undefined || val === null ? "-" : String(Math.round(val)));
 
   return (
     <Link to={`/dashboard/mlb/players/${id}`}>

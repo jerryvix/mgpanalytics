@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 
-// Last season's league leaders — the offseason answer to "who actually
+// Last season's league leaders - the offseason answer to "who actually
 // produced?", sitting right next to this season's prop-futures lines so
 // users can compare the O/U to real recent output.
 
@@ -63,7 +63,7 @@ export function SeasonLeaders({ season = 2025 }: { season?: number }) {
   const { data, isLoading } = useQuery({
     queryKey: ["nfl-season-leaders", season],
     queryFn: () => loadLeaders(season),
-    staleTime: 60 * 60 * 1000, // finished season — effectively static
+    staleTime: 60 * 60 * 1000, // finished season - effectively static
   });
 
   if (isLoading) {
@@ -79,7 +79,7 @@ export function SeasonLeaders({ season = 2025 }: { season?: number }) {
   return (
     <div className="space-y-4">
       <p className="text-xs text-muted-foreground font-mono">
-        {season} season, final — how last year's production stacks up against this year's futures lines.
+        {season} season, final - how last year's production stacks up against this year's futures lines.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {BOARDS.map((b, bi) => {

@@ -50,7 +50,7 @@ async function loadPlayer(playerId: string) {
   return { player, stats, logs: ((logs || []) as GameLog[]).reverse() }; // oldest → newest
 }
 
-// Rolling 10-game batting average across the log window — the form curve.
+// Rolling 10-game batting average across the log window - the form curve.
 function rollingAvgPoints(logs: GameLog[]): TrendPoint[] {
   const points: TrendPoint[] = [];
   for (let i = 9; i < logs.length; i++) {
@@ -61,7 +61,7 @@ function rollingAvgPoints(logs: GameLog[]): TrendPoint[] {
     const g = logs[i];
     const when = g.game_date ? format(parseISO(g.game_date), "MMM d") : "";
     points.push({
-      label: `${when}${g.opponent_abbr ? ` vs ${g.opponent_abbr}` : ""} — 10-game AVG ${(hits / ab).toFixed(3).replace(/^0/, "")}`,
+      label: `${when}${g.opponent_abbr ? ` vs ${g.opponent_abbr}` : ""} - 10-game AVG ${(hits / ab).toFixed(3).replace(/^0/, "")}`,
       value: hits / ab,
     });
   }
@@ -69,7 +69,7 @@ function rollingAvgPoints(logs: GameLog[]): TrendPoint[] {
 }
 
 const fmtAvg = (v: number | null | undefined) =>
-  v === null || v === undefined ? "—" : v.toFixed(3).replace(/^0/, "");
+  v === null || v === undefined ? "-" : v.toFixed(3).replace(/^0/, "");
 
 export default function MLBPlayerDetail() {
   const { playerId } = useParams<{ playerId: string }>();
@@ -165,7 +165,7 @@ export default function MLBPlayerDetail() {
         >
           {[
             { label: "AVG", node: <span>{fmtAvg(stats.batting_avg)}</span> },
-            { label: "OPS", node: <span>{stats.ops === null ? "—" : stats.ops.toFixed(3)}</span> },
+            { label: "OPS", node: <span>{stats.ops === null ? "-" : stats.ops.toFixed(3)}</span> },
             { label: "HR", node: <CountUp value={stats.home_runs ?? 0} /> },
             { label: "RBI", node: <CountUp value={stats.rbi ?? 0} /> },
           ].map((t) => (
@@ -188,7 +188,7 @@ export default function MLBPlayerDetail() {
                 Form Curve
               </h2>
               <p className="text-[11px] text-muted-foreground mb-2">
-                Rolling 10-game batting average vs. season line — is the bat heating up or cooling off?
+                Rolling 10-game batting average vs. season line - is the bat heating up or cooling off?
               </p>
               <TrendChart
                 points={chartPoints}
@@ -223,14 +223,14 @@ export default function MLBPlayerDetail() {
                     {recent.map((g, i) => (
                       <tr key={i} className={`border-b border-border/50 ${i % 2 === 1 ? "bg-muted/10" : ""}`}>
                         <td className="px-4 py-2 font-mono text-muted-foreground">
-                          {g.game_date ? format(parseISO(g.game_date), "MMM d") : "—"}
+                          {g.game_date ? format(parseISO(g.game_date), "MMM d") : "-"}
                         </td>
                         <td className="px-2 py-2 font-mono">
                           <span className="inline-flex items-center gap-1.5">
                             {g.opponent_abbr && (
                               <TeamLogo sport="MLB" name={g.opponent_abbr} abbr={g.opponent_abbr} size={14} />
                             )}
-                            {g.opponent_abbr || "—"}
+                            {g.opponent_abbr || "-"}
                           </span>
                         </td>
                         <td className={`px-2 py-2 text-right font-mono tabular-nums ${(g.hits || 0) > 0 ? "text-terminal-green" : "text-muted-foreground"}`}>

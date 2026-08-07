@@ -56,12 +56,12 @@ export function GuidedWalkthrough({ onComplete }: GuidedWalkthroughProps) {
   };
 
   // The tour is written for the Home screen; anywhere else (deep links,
-  // player pages) it must never gate the UI — it simply waits for Home.
+  // player pages) it must never gate the UI - it simply waits for Home.
   const onHome = location.pathname === "/dashboard" || location.pathname === "/dashboard/";
 
   // Auto-skip any step whose target isn't visibly on the page (e.g. the
   // chat-panel step while chat is closed). Without this, a step can stall
-  // invisibly — or worse, trap taps behind the barrier.
+  // invisibly - or worse, trap taps behind the barrier.
   useEffect(() => {
     if (!visible || !onHome) return;
     const check = () => {

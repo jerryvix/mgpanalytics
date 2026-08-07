@@ -37,7 +37,7 @@ export function StreakCard() {
               </div>
               {celebrating ? (
                 <p className="text-xs text-terminal-amber font-medium mt-0.5">
-                  🎉 Milestone hit — {n} days straight. Keep the chain alive!
+                  🎉 Milestone hit - {n} days straight. Keep the chain alive!
                 </p>
               ) : next ? (
                 <p className="text-[11px] text-muted-foreground mt-0.5">

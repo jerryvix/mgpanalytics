@@ -228,7 +228,7 @@ export function NCAABSlate() {
         </Badge>
       </motion.div>
 
-      {/* Loading State — skeleton cards shaped like the real slate */}
+      {/* Loading State - skeleton cards shaped like the real slate */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -266,7 +266,7 @@ export function NCAABSlate() {
             >
               <div className="flex items-center gap-2 text-purple-400">
                 <Star className="w-4 h-4" />
-                <span>No ranked matchups today — showing featured games</span>
+                <span>No ranked matchups today - showing featured games</span>
               </div>
             </motion.div>
           )}
@@ -306,7 +306,7 @@ export function NCAABSlate() {
                         )}
                       </div>
 
-                      {/* Matchup with Rankings — away team first */}
+                      {/* Matchup with Rankings - away team first */}
                       <div className="font-mono text-base text-foreground mb-4">
                         <div className="flex items-center gap-2">
                           <TeamLogo sport="NCAAB" name={game.visitor_team_name} espnId={game.visitor_team_id} size={22} />

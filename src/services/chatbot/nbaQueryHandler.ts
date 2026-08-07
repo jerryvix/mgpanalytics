@@ -165,21 +165,21 @@ function detectQueryType(query: string): "stats" | "game_log" | "props" | "game"
 
 // Format season stats response
 function formatSeasonStats(player: NBAPlayer, stats: NBASeasonStats): string {
-  const position = player.position || "—";
-  const team = player.team_name || "—";
+  const position = player.position || "-";
+  const team = player.team_name || "-";
   const injury = player.injury_status ? `\n⚠️ Status: ${player.injury_status}` : "";
   
   return `**${player.name}** - ${stats.season} Season
 ${position} • ${team}${injury}
 
 📊 **PER GAME AVERAGES**
-Points: ${stats.points_per_game?.toFixed(1) || "—"} | Rebounds: ${stats.rebounds_per_game?.toFixed(1) || "—"} | Assists: ${stats.assists_per_game?.toFixed(1) || "—"}
-Steals: ${stats.steals_per_game?.toFixed(1) || "—"} | Blocks: ${stats.blocks_per_game?.toFixed(1) || "—"} | Minutes: ${stats.minutes_per_game?.toFixed(1) || "—"}
+Points: ${stats.points_per_game?.toFixed(1) || "-"} | Rebounds: ${stats.rebounds_per_game?.toFixed(1) || "-"} | Assists: ${stats.assists_per_game?.toFixed(1) || "-"}
+Steals: ${stats.steals_per_game?.toFixed(1) || "-"} | Blocks: ${stats.blocks_per_game?.toFixed(1) || "-"} | Minutes: ${stats.minutes_per_game?.toFixed(1) || "-"}
 
 🎯 **SHOOTING**
-FG%: ${stats.field_goal_pct ? stats.field_goal_pct.toFixed(1) + "%" : "—"} | 3P%: ${stats.three_point_pct ? stats.three_point_pct.toFixed(1) + "%" : "—"} | FT%: ${stats.free_throw_pct ? stats.free_throw_pct.toFixed(1) + "%" : "—"}
+FG%: ${stats.field_goal_pct ? stats.field_goal_pct.toFixed(1) + "%" : "-"} | 3P%: ${stats.three_point_pct ? stats.three_point_pct.toFixed(1) + "%" : "-"} | FT%: ${stats.free_throw_pct ? stats.free_throw_pct.toFixed(1) + "%" : "-"}
 
-Games Played: ${stats.games_played || "—"}
+Games Played: ${stats.games_played || "-"}
 
 *Want to see their last 5 games or tonight's props?*`;
 }
@@ -187,7 +187,7 @@ Games Played: ${stats.games_played || "—"}
 // Format game log response
 function formatGameLog(player: NBAPlayer, logs: NBAGameLog[], count: number): string {
   if (logs.length === 0) {
-    return `No recent game logs found for **${player.name}**. I can look up their season stats instead — just ask!`;
+    return `No recent game logs found for **${player.name}**. I can look up their season stats instead - just ask!`;
   }
   
   const recentLogs = logs.slice(0, count);
@@ -196,11 +196,11 @@ function formatGameLog(player: NBAPlayer, logs: NBAGameLog[], count: number): st
   
   for (const log of recentLogs) {
     const date = new Date(log.game_date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const result = log.result || "—";
+    const result = log.result || "-";
     const pts = log.points ?? 0;
     const reb = log.rebounds ?? 0;
     const ast = log.assists ?? 0;
-    const opp = log.opponent_name || log.opponent_abbr || "—";
+    const opp = log.opponent_name || log.opponent_abbr || "-";
     
     response += `${date} vs ${opp}: **${pts} pts**, ${reb} reb, ${ast} ast (${result})\n`;
   }
@@ -313,7 +313,7 @@ export async function handleNbaQuery(query: string): Promise<string | null> {
     .limit(1);
   
   if (!stats || stats.length === 0) {
-    return `I found **${player.name}** (${player.position || "—"}, ${player.team_name || "—"}) but their stats aren't available yet. Try asking about their recent games or props instead.`;
+    return `I found **${player.name}** (${player.position || "-"}, ${player.team_name || "-"}) but their stats aren't available yet. Try asking about their recent games or props instead.`;
   }
   
   return formatSeasonStats(player, stats[0] as NBASeasonStats);
@@ -377,7 +377,7 @@ export async function handleSpecificStatQuery(stat: string, playerName: string):
   }
   
   const s = stats[0];
-  const team = player.team_name || "—";
+  const team = player.team_name || "-";
   
   switch (stat) {
     case "threes":
@@ -385,24 +385,24 @@ export async function handleSpecificStatQuery(stat: string, playerName: string):
       const rawData = s.raw_data as Record<string, unknown> | null;
       const tpm = rawData?.fg3m || rawData?.three_pointers_made;
       const gp = s.games_played || 1;
-      const tpmPerGame = tpm ? (Number(tpm) / gp).toFixed(1) : "—";
-      const pct = s.three_point_pct ? s.three_point_pct.toFixed(1) + "%" : "—";
+      const tpmPerGame = tpm ? (Number(tpm) / gp).toFixed(1) : "-";
+      const pct = s.three_point_pct ? s.three_point_pct.toFixed(1) + "%" : "-";
       return `🏀 **${player.name}** (${team}) averages **${tpmPerGame} three-pointers per game** this season on ${pct} shooting.`;
     
     case "points":
-      return `🏀 **${player.name}** (${team}) averages **${s.points_per_game?.toFixed(1) || "—"} points per game** this season.`;
+      return `🏀 **${player.name}** (${team}) averages **${s.points_per_game?.toFixed(1) || "-"} points per game** this season.`;
     
     case "rebounds":
-      return `🏀 **${player.name}** (${team}) averages **${s.rebounds_per_game?.toFixed(1) || "—"} rebounds per game** this season.`;
+      return `🏀 **${player.name}** (${team}) averages **${s.rebounds_per_game?.toFixed(1) || "-"} rebounds per game** this season.`;
     
     case "assists":
-      return `🏀 **${player.name}** (${team}) averages **${s.assists_per_game?.toFixed(1) || "—"} assists per game** this season.`;
+      return `🏀 **${player.name}** (${team}) averages **${s.assists_per_game?.toFixed(1) || "-"} assists per game** this season.`;
     
     case "steals":
-      return `🏀 **${player.name}** (${team}) averages **${s.steals_per_game?.toFixed(1) || "—"} steals per game** this season.`;
+      return `🏀 **${player.name}** (${team}) averages **${s.steals_per_game?.toFixed(1) || "-"} steals per game** this season.`;
     
     case "blocks":
-      return `🏀 **${player.name}** (${team}) averages **${s.blocks_per_game?.toFixed(1) || "—"} blocks per game** this season.`;
+      return `🏀 **${player.name}** (${team}) averages **${s.blocks_per_game?.toFixed(1) || "-"} blocks per game** this season.`;
     
     default:
       return null;

@@ -104,11 +104,11 @@ export function MLBSyncCard() {
         
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <div className="text-lg font-bold text-red-500">{gamesCount ?? "—"}</div>
+            <div className="text-lg font-bold text-red-500">{gamesCount ?? "-"}</div>
             <div className="text-[9px] text-muted-foreground font-mono">Games</div>
           </div>
           <div className="bg-muted/50 rounded-lg p-2 text-center">
-            <div className="text-lg font-bold text-red-500">{oddsCount ?? "—"}</div>
+            <div className="text-lg font-bold text-red-500">{oddsCount ?? "-"}</div>
             <div className="text-[9px] text-muted-foreground font-mono">Odds</div>
           </div>
         </div>

@@ -61,7 +61,7 @@ function QBGameLogTable({ logs, averages }: { logs: NFLGameLogEntry[]; averages?
           return (
             <TableRow key={idx} className="border-border/30 hover:bg-muted/20">
               <TableCell className="font-mono text-sm">{formatGameDate(log.game_date || "")}</TableCell>
-              <TableCell className="text-sm">{formatOpponent(log.opponent || "—", log.is_home || false)}</TableCell>
+              <TableCell className="text-sm">{formatOpponent(log.opponent || "-", log.is_home || false)}</TableCell>
               <TableCell className="text-right font-mono text-sm">
                 {log.pass_completions || 0}/{log.pass_attempts || 0}
               </TableCell>
@@ -112,7 +112,7 @@ function RBGameLogTable({ logs, averages }: { logs: NFLGameLogEntry[]; averages?
           return (
             <TableRow key={idx} className="border-border/30 hover:bg-muted/20">
               <TableCell className="font-mono text-sm">{formatGameDate(log.game_date || "")}</TableCell>
-              <TableCell className="text-sm">{formatOpponent(log.opponent || "—", log.is_home || false)}</TableCell>
+              <TableCell className="text-sm">{formatOpponent(log.opponent || "-", log.is_home || false)}</TableCell>
               <TableCell className="text-right font-mono text-sm">
                 {log.rush_attempts || 0}
               </TableCell>
@@ -162,7 +162,7 @@ function WRTEGameLogTable({ logs, averages }: { logs: NFLGameLogEntry[]; average
           return (
             <TableRow key={idx} className="border-border/30 hover:bg-muted/20">
               <TableCell className="font-mono text-sm">{formatGameDate(log.game_date || "")}</TableCell>
-              <TableCell className="text-sm">{formatOpponent(log.opponent || "—", log.is_home || false)}</TableCell>
+              <TableCell className="text-sm">{formatOpponent(log.opponent || "-", log.is_home || false)}</TableCell>
               <TableCell className="text-right font-mono text-sm">
                 {log.targets || 0}
               </TableCell>
@@ -204,7 +204,7 @@ function DEFGameLogTable({ logs }: { logs: NFLGameLogEntry[] }) {
         {logs.map((log, idx) => (
           <TableRow key={idx} className="border-border/30 hover:bg-muted/20">
             <TableCell className="font-mono text-sm">{formatGameDate(log.game_date || "")}</TableCell>
-            <TableCell className="text-sm">{formatOpponent(log.opponent || "—", log.is_home || false)}</TableCell>
+            <TableCell className="text-sm">{formatOpponent(log.opponent || "-", log.is_home || false)}</TableCell>
             <TableCell className="text-right font-mono text-sm">
               {log.tackles || 0}
             </TableCell>

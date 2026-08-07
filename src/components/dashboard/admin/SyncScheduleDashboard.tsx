@@ -101,7 +101,7 @@ export function SyncScheduleDashboard() {
       } else {
         toast({
           title: `${key} Dispatched`,
-          description: data?.message || "Sync started — check back in 30s for results.",
+          description: data?.message || "Sync started - check back in 30s for results.",
         });
         setTimeout(() => fetchSchedules(), 5000);
       }
@@ -263,7 +263,7 @@ export function SyncScheduleDashboard() {
                         </span>
                       </td>
                       <td className="py-1 px-1 w-12">{getStatusBadge(row.last_sync_status)}</td>
-                      <td className="py-1 px-1 text-right w-12">{row.records_synced ?? "—"}</td>
+                      <td className="py-1 px-1 text-right w-12">{row.records_synced ?? "-"}</td>
                       <td className="py-1 px-1 text-terminal-cyan w-28">{getNextSync(row)}</td>
                       <td className="py-1 px-1 text-right w-14">
                         <Button

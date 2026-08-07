@@ -18,6 +18,6 @@ export const avgDeltaHeat = (delta: number) => delta / 0.35; // +.350 form swing
 export const lineMoveHeat = (absMove: number, market: string) =>
   absMove / (market === "Moneyline" ? 80 : market === "Total" ? 4 : 3);
 
-// A subtle lift + border-glow on hover — reusable card interaction.
+// A subtle lift + border-glow on hover - reusable card interaction.
 export const hoverLift =
   "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-terminal-green/5";

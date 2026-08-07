@@ -178,7 +178,7 @@ export function SteamMoveAlerts() {
                       <span>{formatDiff(move)}</span>
                     </div>
                     <div className="font-mono text-[9px] text-muted-foreground/60 mt-0.5">
-                      {move.timestamp ? formatDistanceToNow(new Date(move.timestamp), { addSuffix: true }) : "—"}
+                      {move.timestamp ? formatDistanceToNow(new Date(move.timestamp), { addSuffix: true }) : "-"}
                     </div>
                   </div>
                 </div>

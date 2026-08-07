@@ -89,7 +89,7 @@ export function DailyEdge() {
         </Card>
       </motion.div>
 
-      {/* Hot Right Now — live computed edge, its own box so it never muddies the day's insight */}
+      {/* Hot Right Now - live computed edge, its own box so it never muddies the day's insight */}
       {live && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
           <Card className="bg-card border-terminal-amber/30">
@@ -113,7 +113,7 @@ export function DailyEdge() {
                   {live.streakAvg ? (
                     <>
                       {" "}
-                      — batting <span className="font-mono tabular-nums">{fmtAvg(live.streakAvg)}</span> during it
+                      - batting <span className="font-mono tabular-nums">{fmtAvg(live.streakAvg)}</span> during it
                     </>
                   ) : null}
                   .

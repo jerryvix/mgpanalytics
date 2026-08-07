@@ -20,7 +20,7 @@ describe("pickPerson", () => {
     expect(pickPerson([person(3, "J.T. Realmuto", "C")], "JT Realmuto", false)?.id).toBe(3);
   });
 
-  it("filters by role — pitchers for pitcher lookups, hitters otherwise", () => {
+  it("filters by role - pitchers for pitcher lookups, hitters otherwise", () => {
     const people = [person(1, "Will Smith", "P"), person(2, "Will Smith", "C")];
     expect(pickPerson(people, "Will Smith", true)?.id).toBe(1);
     expect(pickPerson(people, "Will Smith", false)?.id).toBe(2);

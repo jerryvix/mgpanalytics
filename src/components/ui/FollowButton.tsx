@@ -22,7 +22,7 @@ export function FollowButton({ entity, className, withLabel }: FollowButtonProps
         e.stopPropagation();
         toggleFollow(entity);
       }}
-      title={following ? "Following — click to unfollow" : "Follow"}
+      title={following ? "Following - click to unfollow" : "Follow"}
       aria-pressed={following}
       className={cn(
         "inline-flex items-center gap-1 rounded-md p-1 transition-colors hover:bg-muted/50",

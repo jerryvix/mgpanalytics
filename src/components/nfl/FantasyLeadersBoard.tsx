@@ -1,4 +1,4 @@
-// Fantasy finish leaderboard — the discovery surface for the trajectory
+// Fantasy finish leaderboard - the discovery surface for the trajectory
 // analyzer. Reads entirely from the nflverse-backed rank views (no BDL
 // dependency), so it works even when live-API search is down. Rows link to
 // the player detail page (Fantasy tab) when the name matches a known player.
@@ -69,14 +69,14 @@ export function FantasyLeadersBoard() {
   const { data, isLoading } = useQuery({
     queryKey: ["nfl-fantasy-leaders", posGroup],
     queryFn: () => loadBoard(posGroup),
-    staleTime: 60 * 60 * 1000, // finished season — effectively static
+    staleTime: 60 * 60 * 1000, // finished season - effectively static
   });
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-xs text-muted-foreground font-mono">
-          {data?.season ?? "Last"} season-end PPR finishes — click a player for their multi-year trajectory.
+          {data?.season ?? "Last"} season-end PPR finishes - click a player for their multi-year trajectory.
         </p>
         <div className="flex gap-1">
           {POS_GROUPS.map((g) => (
@@ -151,10 +151,10 @@ export function FantasyLeadersBoard() {
                           )}
                         </td>
                         <td className="px-2 py-2 text-right font-mono font-bold tabular-nums">
-                          {r.totalPpr?.toFixed(1) ?? "—"}
+                          {r.totalPpr?.toFixed(1) ?? "-"}
                         </td>
-                        <td className="px-2 py-2 text-right font-mono tabular-nums">{r.ppgPpr?.toFixed(1) ?? "—"}</td>
-                        <td className="pr-4 py-2 text-right font-mono tabular-nums">{r.games ?? "—"}</td>
+                        <td className="px-2 py-2 text-right font-mono tabular-nums">{r.ppgPpr?.toFixed(1) ?? "-"}</td>
+                        <td className="pr-4 py-2 text-right font-mono tabular-nums">{r.games ?? "-"}</td>
                       </tr>
                     ))}
                   </tbody>

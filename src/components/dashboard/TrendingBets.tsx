@@ -61,7 +61,7 @@ function BetRow({ bet, index }: { bet: TrendingBet; index: number }) {
             </div>
           </div>
 
-          {/* The insight nugget — the whole point of the tab */}
+          {/* The insight nugget - the whole point of the tab */}
           <div className="mt-3 rounded-lg bg-terminal-amber/5 border border-terminal-amber/20 p-3">
             <div className="flex items-center gap-1.5 mb-1">
               <Lightbulb className="w-3.5 h-3.5 text-terminal-amber" />
@@ -104,8 +104,8 @@ export function TrendingBets({ sport }: TrendingBetsProps) {
         </h1>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
           {view === "board"
-            ? "The day's board: lines, live game state, the sharpest market moves, and verified angles — all in one look."
-            : "Season-long markets with an angle most people miss — every bet paired with a verifiable stat that gives it a fresh read."}
+            ? "The day's board: lines, live game state, the sharpest market moves, and verified angles - all in one look."
+            : "Season-long markets with an angle most people miss - every bet paired with a verifiable stat that gives it a fresh read."}
         </p>
       </motion.div>
 
@@ -160,7 +160,7 @@ export function TrendingBets({ sport }: TrendingBetsProps) {
         <div className="flex items-start gap-1.5 pt-1">
           <Info className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
           <p className="text-[10px] text-muted-foreground leading-relaxed max-w-2xl">
-            Insights reflect historical fact, not predictions — context to inform your own read, not an MGP
+            Insights reflect historical fact, not predictions - context to inform your own read, not an MGP
             pick. Once games begin, weekly and in-season prop markets appear here alongside the season-long bets.
           </p>
         </div>

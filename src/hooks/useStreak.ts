@@ -8,7 +8,7 @@ export interface StreakRow {
   last_visit_date: string | null;
 }
 
-// Records today's visit and returns the updated streak. Idempotent per day —
+// Records today's visit and returns the updated streak. Idempotent per day -
 // the DB function no-ops if already counted today. Called once per session.
 export function useStreak() {
   return useQuery<StreakRow | null>({

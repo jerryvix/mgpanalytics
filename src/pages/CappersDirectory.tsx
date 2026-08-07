@@ -62,7 +62,7 @@ export default function CappersDirectory() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Back navigation — hidden on mobile */}
+        {/* Back navigation - hidden on mobile */}
         <div className="mb-6 hidden md:block">
           <Button variant="ghost" size="sm" asChild>
             <Link to="/dashboard/community/feed" className="flex items-center gap-2">

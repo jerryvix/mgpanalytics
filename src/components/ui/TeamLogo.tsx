@@ -11,7 +11,7 @@ interface TeamLogoProps {
 }
 
 // Resolves a real team logo where we can, and always falls back to a clean
-// colored monogram so every team looks polished — no broken images, ever.
+// colored monogram so every team looks polished - no broken images, ever.
 function logoUrl(sport: string, name: string, abbr?: string, espnId?: string | number | null): string | null {
   const s = (sport || "").toUpperCase();
   if (s === "NCAAF" || s === "NCAAB") {

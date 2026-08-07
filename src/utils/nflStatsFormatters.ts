@@ -2,7 +2,7 @@
  * Format a number with commas for thousands
  */
 export function formatNumber(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "—";
+  if (value === null || value === undefined) return "-";
   return value.toLocaleString();
 }
 
@@ -10,7 +10,7 @@ export function formatNumber(value: number | null | undefined): string {
  * Format a decimal to 1 decimal place
  */
 export function formatDecimal(value: number | null | undefined, places = 1): string {
-  if (value === null || value === undefined) return "—";
+  if (value === null || value === undefined) return "-";
   return value.toFixed(places);
 }
 
@@ -18,7 +18,7 @@ export function formatDecimal(value: number | null | undefined, places = 1): str
  * Format a percentage
  */
 export function formatPercent(value: number | null | undefined, places = 1): string {
-  if (value === null || value === undefined) return "—";
+  if (value === null || value === undefined) return "-";
   return `${(value * 100).toFixed(places)}%`;
 }
 
@@ -26,7 +26,7 @@ export function formatPercent(value: number | null | undefined, places = 1): str
  * Calculate completion percentage
  */
 export function calcCompletionPct(completions: number | null, attempts: number | null): string {
-  if (!completions || !attempts || attempts === 0) return "—";
+  if (!completions || !attempts || attempts === 0) return "-";
   return `${((completions / attempts) * 100).toFixed(1)}%`;
 }
 
@@ -34,7 +34,7 @@ export function calcCompletionPct(completions: number | null, attempts: number |
  * Calculate yards per carry
  */
 export function calcYPC(yards: number | null, attempts: number | null): string {
-  if (!yards || !attempts || attempts === 0) return "—";
+  if (!yards || !attempts || attempts === 0) return "-";
   return (yards / attempts).toFixed(1);
 }
 
@@ -42,7 +42,7 @@ export function calcYPC(yards: number | null, attempts: number | null): string {
  * Calculate yards per reception
  */
 export function calcYPR(yards: number | null, receptions: number | null): string {
-  if (!yards || !receptions || receptions === 0) return "—";
+  if (!yards || !receptions || receptions === 0) return "-";
   return (yards / receptions).toFixed(1);
 }
 
@@ -50,7 +50,7 @@ export function calcYPR(yards: number | null, receptions: number | null): string
  * Calculate yards per attempt (passing)
  */
 export function calcYPA(yards: number | null, attempts: number | null): string {
-  if (!yards || !attempts || attempts === 0) return "—";
+  if (!yards || !attempts || attempts === 0) return "-";
   return (yards / attempts).toFixed(1);
 }
 
@@ -58,7 +58,7 @@ export function calcYPA(yards: number | null, attempts: number | null): string {
  * Calculate per-game average
  */
 export function calcPerGame(total: number | null | undefined, games: number | null | undefined): string {
-  if (!total || !games || games === 0) return "—";
+  if (!total || !games || games === 0) return "-";
   return (total / games).toFixed(1);
 }
 

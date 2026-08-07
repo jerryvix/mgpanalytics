@@ -47,7 +47,7 @@ export function MyFollows() {
         {follows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Tap the <Star className="inline w-3.5 h-3.5 -mt-0.5 text-muted-foreground" /> on any team or
-            player to follow them — your favorites show up here for one-tap access.
+            player to follow them - your favorites show up here for one-tap access.
           </p>
         ) : (
           <div className="flex flex-wrap gap-2">

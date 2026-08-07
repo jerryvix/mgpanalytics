@@ -71,7 +71,7 @@ export function MobileSportNav() {
 
   return (
     <div className="mb-4 space-y-2">
-      {/* Sport tabs — five sports don't fit a phone width, so the row scrolls */}
+      {/* Sport tabs - five sports don't fit a phone width, so the row scrolls */}
       <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1">
         {sports.map((sport) => {
           const isActive = activeSport?.label === sport.label;

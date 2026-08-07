@@ -126,7 +126,7 @@ export function DataInspector() {
 
       setCoverage(coverageData);
 
-      // 3. Page Health — simulate user-facing queries
+      // 3. Page Health - simulate user-facing queries
       const pageChecks: PageHealthCheck[] = [];
       const now = new Date();
       const currentDbSeason = now.getMonth() >= 9 ? now.getFullYear() + 1 : now.getFullYear();
@@ -156,7 +156,7 @@ export function DataInspector() {
       let nbaMsg = `${nbaStats} players with season ${currentDbSeason} stats`;
       if (nbaStats === 0 && nbaGames > 0) {
         nbaStatus = "error";
-        nbaMsg = `${nbaGames} games exist but 0 players matched season ${currentDbSeason} — likely season mismatch`;
+        nbaMsg = `${nbaGames} games exist but 0 players matched season ${currentDbSeason} - likely season mismatch`;
       } else if (nbaStats === 0) {
         nbaStatus = "warning";
         nbaMsg = `No stats for season ${currentDbSeason}. Previous season (${currentDbSeason - 1}): ${nbaPrev} players`;
@@ -268,12 +268,12 @@ export function DataInspector() {
                   </div>
                   {failingSyncs.map(s => (
                     <div key={`${s.sport}-${s.data_type}`} className="font-mono text-[10px] text-destructive">
-                      {s.sport}:{s.data_type} — last sync failed
+                      {s.sport}:{s.data_type} - last sync failed
                     </div>
                   ))}
                   {staleSyncs.map(s => (
                     <div key={`${s.sport}-${s.data_type}`} className="font-mono text-[10px] text-terminal-amber">
-                      {s.sport}:{s.data_type} — stale ({timeAgo(s.last_sync_at)})
+                      {s.sport}:{s.data_type} - stale ({timeAgo(s.last_sync_at)})
                     </div>
                   ))}
                 </div>
@@ -364,7 +364,7 @@ export function DataInspector() {
                           <span className="text-foreground">{s.sport}:{s.data_type}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-muted-foreground">{s.cron_interval || "—"}</span>
+                          <span className="text-muted-foreground">{s.cron_interval || "-"}</span>
                           {s.records_synced !== null && (
                             <span className="text-muted-foreground">{s.records_synced} rec</span>
                           )}

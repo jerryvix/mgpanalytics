@@ -5,7 +5,7 @@ import { detectStatLeader, isHitStreakQuestion } from "@/lib/statLeaderDetect";
 // the model. A regression here = chat silently drifting back to web numbers
 // that contradict the dashboard.
 
-describe("detectStatLeader — grounded leaderboard questions", () => {
+describe("detectStatLeader - grounded leaderboard questions", () => {
   const grounded: Array<[q: string, sport: string, column: string]> = [
     ["Who leads MLB in OPS this season?", "MLB", "ops"],
     ["Who has the most home runs in MLB?", "MLB", "home_runs"],

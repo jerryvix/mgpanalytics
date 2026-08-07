@@ -10,7 +10,7 @@ import { NCAAF_TEAM_IDS } from "@/data/ncaafTeamIds";
 import { NFL_FUTURES, NCAAF_FUTURES } from "@/data/propFutures";
 
 // Pre-season futures board: team win totals + season-long player props.
-// Static by design — these lines mostly move only on major trades/injuries,
+// Static by design - these lines mostly move only on major trades/injuries,
 // so we snapshot once before the season rather than paying for a live feed.
 
 const MARKET_LABELS: Record<string, string> = {
@@ -189,7 +189,7 @@ export function PropFuturesBoard({ sport, view = "all" }: PropFuturesBoardProps)
       <div className="flex items-start gap-1.5">
         <Info className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
         <p className="text-[10px] text-muted-foreground leading-relaxed max-w-2xl">
-          Season-long futures captured before the season — lines can move on major trades or injuries.
+          Season-long futures captured before the season - lines can move on major trades or injuries.
           In-season live props will get their own view once the season starts.
         </p>
       </div>

@@ -110,7 +110,7 @@ const sportsMenuItems = [
 ];
 
 // Community hidden per owner (Jul 2026) until the capper-feed strategy is
-// decided — flip to true to restore the sidebar section.
+// decided - flip to true to restore the sidebar section.
 const SHOW_COMMUNITY: boolean = false;
 
 // Community menu items
@@ -406,7 +406,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
 
         {/* Community */}
         {/* Community hidden per owner (Jul 2026) until the capper-feed strategy
-            is decided — routes still work; restore via SHOW_COMMUNITY. */}
+            is decided - routes still work; restore via SHOW_COMMUNITY. */}
         {SHOW_COMMUNITY && (
           <SidebarGroup className="mt-1">
             {!collapsed && (

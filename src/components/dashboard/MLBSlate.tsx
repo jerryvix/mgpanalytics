@@ -155,7 +155,7 @@ export function MLBSlate() {
         </div>
       </motion.div>
 
-      {/* Loading State — skeleton cards shaped like the real slate */}
+      {/* Loading State - skeleton cards shaped like the real slate */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -178,7 +178,7 @@ export function MLBSlate() {
             <Signal className="w-8 h-8 mx-auto mb-4 text-terminal-amber" />
             <p className="text-foreground">No upcoming games on the board right now.</p>
             <p className="text-xs text-muted-foreground mt-2">
-              The next slate loads in as games are scheduled — during the season that's daily.
+              The next slate loads in as games are scheduled - during the season that's daily.
             </p>
           </CardContent>
         </Card>
@@ -220,7 +220,7 @@ export function MLBSlate() {
                       )}
                     </div>
 
-                    {/* Matchup — away team first */}
+                    {/* Matchup - away team first */}
                     <div className="font-mono text-base text-foreground mb-3">
                       <div className="flex items-center gap-2">
                         <TeamLogo sport="MLB" name={game.visitor_team_name} size={22} />
@@ -255,7 +255,7 @@ export function MLBSlate() {
                       </div>
                     </div>
 
-                    {/* Probable starters — the matchup within the matchup */}
+                    {/* Probable starters - the matchup within the matchup */}
                     {(game.starting_pitcher_away || game.starting_pitcher_home) && (
                       <div className="rounded-lg bg-muted/20 border border-border px-3 py-2 mb-3">
                         <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-0.5">
@@ -349,7 +349,7 @@ export function MLBSlate() {
                       )}
                     </div>
 
-                    {/* Game Insights Button — same target as tapping the card */}
+                    {/* Game Insights Button - same target as tapping the card */}
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -369,7 +369,7 @@ export function MLBSlate() {
         </motion.div>
       )}
 
-      {/* Game Insights panel — real synced data: consensus win prob, line
+      {/* Game Insights panel - real synced data: consensus win prob, line
           movement, hot bats, verified angles, and the book-by-book board */}
       <GameInsightsSheet sport="MLB" game={selectedGame} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>

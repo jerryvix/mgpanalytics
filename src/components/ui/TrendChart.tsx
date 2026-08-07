@@ -3,7 +3,7 @@
 // and per-point hover titles. Scales to its container width.
 
 export interface TrendPoint {
-  label: string; // hover text, e.g. "Jul 3 vs BOS — .312"
+  label: string; // hover text, e.g. "Jul 3 vs BOS - .312"
   value: number;
 }
 

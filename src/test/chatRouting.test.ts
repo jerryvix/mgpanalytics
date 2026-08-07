@@ -57,7 +57,7 @@ import { shouldHandleNFLStats } from "@/services/chatbot/nflStatsHandler";
 
 // ── NBA vs NFL detection ─────────────────────────────────────────────
 
-describe("Query routing — NBA vs NFL detection", () => {
+describe("Query routing - NBA vs NFL detection", () => {
   it("routes LeBron James query to NBA", () => {
     expect(isNbaQuery("lebron james stats this season")).toBe(true);
   });
@@ -89,7 +89,7 @@ describe("Query routing — NBA vs NFL detection", () => {
 
 // ── NBA props detection ──────────────────────────────────────────────
 
-describe("Query routing — NBA props", () => {
+describe("Query routing - NBA props", () => {
   it("detects NBA props query", () => {
     expect(shouldHandleNbaPropsQuery("nba props tonight")).toBe(true);
   });
@@ -105,7 +105,7 @@ describe("Query routing — NBA props", () => {
 
 // ── NBA specific stat extraction ─────────────────────────────────────
 
-describe("Query routing — NBA specific stat extraction", () => {
+describe("Query routing - NBA specific stat extraction", () => {
   it("extracts three-point stat for Curry", () => {
     const result = shouldExtractSpecificStat("how many 3s does curry average");
     expect(result).not.toBeNull();
@@ -126,7 +126,7 @@ describe("Query routing — NBA specific stat extraction", () => {
 
 // ── Market / betting queries ─────────────────────────────────────────
 
-describe("Query routing — market/betting queries", () => {
+describe("Query routing - market/betting queries", () => {
   it("detects sharp money query", () => {
     expect(isPublicBettingQuery("where is the sharp money on bills vs chiefs")).toBe(true);
   });
@@ -150,7 +150,7 @@ describe("Query routing — market/betting queries", () => {
 
 // ── Advanced stats ───────────────────────────────────────────────────
 
-describe("Query routing — advanced stats", () => {
+describe("Query routing - advanced stats", () => {
   it("detects EPA query", () => {
     expect(shouldHandleAdvancedStats("what's josh allen's epa")).toBe(true);
   });
@@ -174,7 +174,7 @@ describe("Query routing — advanced stats", () => {
 
 // ── Prop analysis ────────────────────────────────────────────────────
 
-describe("Query routing — prop analysis", () => {
+describe("Query routing - prop analysis", () => {
   it("detects passing yards prop with line", () => {
     expect(shouldHandlePropAnalysis("mahomes over 275.5 passing yards")).toBe(true);
   });
@@ -194,7 +194,7 @@ describe("Query routing — prop analysis", () => {
 
 // ── Game logs and matchups ───────────────────────────────────────────
 
-describe("Query routing — game logs and matchups", () => {
+describe("Query routing - game logs and matchups", () => {
   it("detects last N games query", () => {
     expect(isGameLogQuery("josh allen last 5 games")).toBe(true);
   });

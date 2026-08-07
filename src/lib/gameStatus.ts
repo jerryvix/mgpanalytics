@@ -1,6 +1,6 @@
 // Central status normalization. Sync functions store provider-raw status
-// strings — ESPN writes "STATUS_IN_PROGRESS"/"STATUS_FINAL", BDL writes
-// "Final"/"InProgress" — so every UI check must go through these helpers
+// strings - ESPN writes "STATUS_IN_PROGRESS"/"STATUS_FINAL", BDL writes
+// "Final"/"InProgress" - so every UI check must go through these helpers
 // instead of comparing literals.
 
 export function isLiveStatus(status: string | null | undefined): boolean {

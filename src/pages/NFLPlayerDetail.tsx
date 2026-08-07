@@ -56,7 +56,7 @@ export default function NFLPlayerDetail() {
   const isBdlId = playerId?.startsWith("bdl-");
   const lookupId = isBdlId ? playerId!.substring(4) : playerId;
 
-  // Fetch player from DB — by external_id for BDL IDs, by id for UUIDs
+  // Fetch player from DB - by external_id for BDL IDs, by id for UUIDs
   const { data: player, isLoading: playerLoading, error: playerError } = useQuery({
     queryKey: ["nfl-player-db", lookupId, isBdlId],
     queryFn: async () => {
@@ -124,7 +124,7 @@ export default function NFLPlayerDetail() {
     }
   }, [postseasonStats, postseasonLoading, seasonType]);
 
-  // Fetch game logs from DB — filtered by season type
+  // Fetch game logs from DB - filtered by season type
   // NFL regular season = weeks 1-18, postseason = weeks 19+ (or null week with Jan/Feb dates)
   const { data: gameLogs = [], isLoading: gameLogsLoading } = useQuery({
     queryKey: ["nfl-player-gamelogs-db", player?.id, seasonType],
@@ -298,11 +298,11 @@ export default function NFLPlayerDetail() {
     "pass+rush_yards": "Pass+Rush Yds", anytime_td: "Anytime TD",
   }[type] || type);
 
-  const fmtOdds = (o: number | null) => o === null ? "—" : o > 0 ? `+${o}` : `${o}`;
+  const fmtOdds = (o: number | null) => o === null ? "-" : o > 0 ? `+${o}` : `${o}`;
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Back Button — hidden on mobile (bottom nav handles it) */}
+      {/* Back Button - hidden on mobile (bottom nav handles it) */}
       <Link to="/dashboard/nfl/players" className="hidden md:inline-block">
         <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
           <ArrowLeft className="w-4 h-4 mr-2" />
@@ -397,19 +397,19 @@ export default function NFLPlayerDetail() {
                 {posGroup === "QB" && (
                   <>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-terminal-green">{stats.pass_yards?.toLocaleString() || "—"}</p>
+                      <p className="text-2xl font-bold text-terminal-green">{stats.pass_yards?.toLocaleString() || "-"}</p>
                       <p className="text-xs text-muted-foreground">Pass Yds</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-foreground">{stats.pass_td || "—"}</p>
+                      <p className="text-2xl font-bold text-foreground">{stats.pass_td || "-"}</p>
                       <p className="text-xs text-muted-foreground">TDs</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-destructive">{(stats as any).pass_int || "—"}</p>
+                      <p className="text-2xl font-bold text-destructive">{(stats as any).pass_int || "-"}</p>
                       <p className="text-xs text-muted-foreground">INTs</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-foreground">{stats.passer_rating?.toFixed(1) || "—"}</p>
+                      <p className="text-2xl font-bold text-foreground">{stats.passer_rating?.toFixed(1) || "-"}</p>
                       <p className="text-xs text-muted-foreground">Rating</p>
                     </div>
                     <div className="text-center">
@@ -421,15 +421,15 @@ export default function NFLPlayerDetail() {
                 {posGroup === "RB" && (
                   <>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-terminal-green">{stats.rush_yards?.toLocaleString() || "—"}</p>
+                      <p className="text-2xl font-bold text-terminal-green">{stats.rush_yards?.toLocaleString() || "-"}</p>
                       <p className="text-xs text-muted-foreground">Rush Yds</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-foreground">{stats.rush_td || "—"}</p>
+                      <p className="text-2xl font-bold text-foreground">{stats.rush_td || "-"}</p>
                       <p className="text-xs text-muted-foreground">Rush TDs</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-foreground">{stats.rec_yards?.toLocaleString() || "—"}</p>
+                      <p className="text-2xl font-bold text-foreground">{stats.rec_yards?.toLocaleString() || "-"}</p>
                       <p className="text-xs text-muted-foreground">Rec Yds</p>
                     </div>
                     <div className="text-center">
@@ -441,15 +441,15 @@ export default function NFLPlayerDetail() {
                 {posGroup === "WR_TE" && (
                   <>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-terminal-green">{stats.rec_yards?.toLocaleString() || "—"}</p>
+                      <p className="text-2xl font-bold text-terminal-green">{stats.rec_yards?.toLocaleString() || "-"}</p>
                       <p className="text-xs text-muted-foreground">Rec Yds</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-foreground">{stats.receptions || "—"}</p>
+                      <p className="text-2xl font-bold text-foreground">{stats.receptions || "-"}</p>
                       <p className="text-xs text-muted-foreground">Rec</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-foreground">{stats.rec_td || "—"}</p>
+                      <p className="text-2xl font-bold text-foreground">{stats.rec_td || "-"}</p>
                       <p className="text-xs text-muted-foreground">TDs</p>
                     </div>
                     <div className="text-center">
@@ -628,13 +628,13 @@ export default function NFLPlayerDetail() {
                           {propResults.map((prop) => {
                             const date = prop.game_date
                               ? new Date(prop.game_date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
-                              : "—";
+                              : "-";
                             return (
                               <tr key={prop.id} className="border-b border-border/50">
                                 <td className="py-1.5 pr-2 text-muted-foreground">{date}</td>
                                 <td className="py-1.5 pr-2">{propLabel(prop.prop_type)}</td>
                                 <td className="py-1.5 pr-2 text-right">{prop.line}</td>
-                                <td className="py-1.5 pr-2 text-right font-semibold">{prop.actual_value ?? "—"}</td>
+                                <td className="py-1.5 pr-2 text-right font-semibold">{prop.actual_value ?? "-"}</td>
                                 <td className="py-1.5 text-right">
                                   {prop.result === "over" && (
                                     <Badge className="bg-terminal-green/20 text-terminal-green border-terminal-green/50 text-[10px]">OVER</Badge>

@@ -35,7 +35,7 @@ const navItems: NavItem[] = [
     action: "chat",
   },
   // Community hidden per owner (Jul 2026) until the capper-feed strategy is
-  // decided — routes still work, restore by uncommenting this entry.
+  // decided - routes still work, restore by uncommenting this entry.
   // {
   //   label: "Community",
   //   icon: Users,
@@ -56,7 +56,7 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const { isOpen, toggleChat } = useChat();
-  // Remember the last sport page the user visited (default to MLB — the
+  // Remember the last sport page the user visited (default to MLB - the
   // sport most likely in season when someone first taps Sports)
   const lastSportPath = useRef("/dashboard/mlb");
 

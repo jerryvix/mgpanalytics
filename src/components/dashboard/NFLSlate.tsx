@@ -222,7 +222,7 @@ export function NFLSlate() {
         <PropFuturesBoard sport="NFL" view="team" />
       ) : (
       <>
-      {/* Loading State — skeleton cards shaped like the real slate */}
+      {/* Loading State - skeleton cards shaped like the real slate */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -293,7 +293,7 @@ export function NFLSlate() {
                     {liveGame && liveGame.state !== "pre" && liveGame.awayScore !== null && (
                       <div className="flex items-center gap-2 font-mono text-lg font-bold tabular-nums -mt-2 mb-3">
                         <span className="text-foreground">{liveGame.awayScore}</span>
-                        <span className="text-muted-foreground text-sm">—</span>
+                        <span className="text-muted-foreground text-sm">-</span>
                         <span className="text-foreground">{liveGame.homeScore}</span>
                         {liveGame.state === "in" && liveGame.clock && (
                           <span className="text-[10px] text-red-400 uppercase tracking-wider ml-1">

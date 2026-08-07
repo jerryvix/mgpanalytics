@@ -152,7 +152,7 @@ export function NFLSlateLeaderCard({
           </div>
           <div>
             <div className="text-sm font-semibold text-foreground">
-              {detailedStats.interceptions ?? "—"}
+              {detailedStats.interceptions ?? "-"}
             </div>
             <div className="text-[10px] text-muted-foreground uppercase">INTs</div>
           </div>

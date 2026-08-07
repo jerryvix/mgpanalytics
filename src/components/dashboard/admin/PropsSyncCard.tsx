@@ -132,7 +132,7 @@ export function PropsSyncCard() {
         <div className="bg-muted/30 rounded p-1.5">
           <div className="text-[8px] text-muted-foreground mb-0.5">Active Props</div>
           <Badge variant="outline" className={`border-${color}/50 text-${color} text-[9px] px-1`}>
-            {counts[statusKey].count ?? "—"}
+            {counts[statusKey].count ?? "-"}
           </Badge>
         </div>
         <div className="bg-muted/30 rounded p-1.5">

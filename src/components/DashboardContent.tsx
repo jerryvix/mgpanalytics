@@ -12,7 +12,7 @@ import Analyst from "@/pages/Analyst";
 import NFLPlayers from "@/pages/NFLPlayers";
 import NFLPlayerDetail from "@/pages/NFLPlayerDetail";
 import NBAPlayers from "@/pages/NBAPlayers";
-// NCAABPlayers removed — no props data available for NCAAB
+// NCAABPlayers removed - no props data available for NCAAB
 // PlayerProfile import removed with NCAAB players routes
 import NBAPlayerDetailPage from "@/pages/NBAPlayerDetailPage";
 import MLBPlayers from "@/pages/MLBPlayers";
@@ -59,12 +59,12 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
         <Route path="mlb/trending" element={<TrendingBets sport="MLB" />} />
         <Route path="ncaaf" element={<NCAAFSlate />} />
         <Route path="ncaaf/trending" element={<TrendingBets sport="NCAAF" />} />
-        {/* Legacy path — futures now live under the Games page's Futures tab */}
+        {/* Legacy path - futures now live under the Games page's Futures tab */}
         <Route path="ncaaf/futures" element={<Navigate to="/dashboard/ncaaf" replace />} />
         <Route path="ncaab" element={<NCAABSlate />} />
-        {/* NCAAB players routes removed — no props data available */}
+        {/* NCAAB players routes removed - no props data available */}
         <Route path="profile" element={<Profile />} />
-        {/* Community routes — inside dashboard for sidebar nav */}
+        {/* Community routes - inside dashboard for sidebar nav */}
         <Route path="community/feed" element={<FeedPage />} />
         <Route path="community/cappers" element={<CappersDirectory />} />
         <Route path="community/cappers/sharps" element={<SharpsPage />} />

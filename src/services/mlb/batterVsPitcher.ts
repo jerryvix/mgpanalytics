@@ -1,5 +1,5 @@
 // Career batter-vs-pitcher lines from MLB's public Stats API
-// (statsapi.mlb.com — free, no key, CORS-open; same client-side pattern as
+// (statsapi.mlb.com - free, no key, CORS-open; same client-side pattern as
 // the ESPN live-score polling). Our synced BDL tables don't carry BvP
 // history, so this is fetched on demand and cached hard: MLBAM player ids
 // never change (localStorage), and career-vs lines only move once a day.
@@ -14,7 +14,7 @@ export interface BvpLine {
   ops: number | null;
 }
 
-// Three honest states — "never faced him" is a real insight, an API hiccup is not.
+// Three honest states - "never faced him" is a real insight, an API hiccup is not.
 export type BvpResult =
   | { status: "ok"; line: BvpLine }
   | { status: "never-faced" }
@@ -37,8 +37,8 @@ const norm = (s: string) =>
 
 /**
  * Choose the right person from a name search: exact (accent/period-
- * insensitive) name match first, then the expected role — pitcher names
- * like "Cole" can collide with position players — then still-active.
+ * insensitive) name match first, then the expected role - pitcher names
+ * like "Cole" can collide with position players - then still-active.
  */
 export function pickPerson(
   people: StatsApiPerson[],
@@ -79,7 +79,7 @@ async function resolveId(name: string, wantPitcher: boolean): Promise<number | n
     const cached = localStorage.getItem(idCacheKey(name));
     if (cached) return Number(cached) || null;
   } catch {
-    /* storage unavailable — fall through to network */
+    /* storage unavailable - fall through to network */
   }
   const res = await fetch(`${API}/people/search?names=${encodeURIComponent(name)}`);
   if (!res.ok) return null;
@@ -89,7 +89,7 @@ async function resolveId(name: string, wantPitcher: boolean): Promise<number | n
   try {
     localStorage.setItem(idCacheKey(name), String(person.id));
   } catch {
-    /* fine — just uncached */
+    /* fine - just uncached */
   }
   return person.id;
 }
