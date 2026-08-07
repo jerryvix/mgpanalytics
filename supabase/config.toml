@@ -74,3 +74,24 @@ verify_jwt = false
 
 [functions.backfill-nfl-fantasy]
 verify_jwt = false
+
+[functions.sync-cfbd-roster-intel]
+verify_jwt = false
+
+[functions.sync-cfbd-games]
+verify_jwt = false
+
+[functions.sync-draft-board]
+verify_jwt = false
+
+[functions.sync-nfl-player-ids]
+verify_jwt = false
+
+[functions.sync-win-totals]
+verify_jwt = false
+
+[functions.sync-adp]
+verify_jwt = false
+
+[functions.sync-preseason-props]
+verify_jwt = false

@@ -123,7 +123,10 @@ export function PublicBettingPreview({
     }
   };
 
-  const handleToggle = () => {
+  const handleToggle = (e: React.MouseEvent) => {
+    // Rendered inside clickable slate cards - don't let the toggle bubble up
+    // and open the game insights sheet
+    e.stopPropagation();
     if (!isOpen && !bettingData) {
       fetchBettingData();
     }

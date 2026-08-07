@@ -11,6 +11,11 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "NFL:game_logs": "sync-nfl-game-logs",
   // NFL:advanced_stats — no dedicated function yet; skip
   // NFL:props — handled by ALL:player_props
+  // Projection backtester (annual-cadence preseason captures + crosswalk)
+  "NFL:player_ids": "sync-nfl-player-ids",
+  "NFL:win_totals": "sync-win-totals",
+  "NFL:adp": "sync-adp",
+  "NFL:preseason_props": "sync-preseason-props",
   "NBA:games": "sync-nba-games",
   "NBA:odds": "sync-nba-games",  // odds fetched inline by sync-nba-games
   "NBA:players": "sync-nba-players",
@@ -23,6 +28,9 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "NCAAB:odds": "sync-ncaab-games",
   "NCAAB:players": "sync-ncaab-players",
   "NCAAF:games": "sync-ncaaf-games",
+  "NCAAF:roster_intel": "sync-cfbd-roster-intel",
+  "NCAAF:results": "sync-cfbd-games",
+  "NCAAF:draft_board": "sync-draft-board",
   "MLB:games": "sync-mlb-games",
   "MLB:players": "sync-mlb-players",
   "MLB:hitting": "sync-mlb-hitting",
@@ -52,7 +60,14 @@ const FUNCTION_API_GROUP: Record<string, string> = {
   "sync-nba-game-logs": "bdl",
   "backfill-nba-games": "bdl",
   "sync-ncaab-players": "bdl",
+  "sync-cfbd-roster-intel": "cfbd",
+  "sync-cfbd-games": "cfbd",
+  "sync-draft-board": "tankathon",
   "grade-player-props": "none",
+  "sync-nfl-player-ids": "nflverse",
+  "sync-win-totals": "sportsoddshistory",
+  "sync-adp": "ffc",
+  "sync-preseason-props": "none",
 };
 
 // Delay in ms between dispatching functions that share an API group

@@ -580,6 +580,132 @@ export type Database = {
           },
         ]
       }
+      ncaaf_draft_picks: {
+        Row: {
+          college_school: string
+          created_at: string
+          draft_year: number
+          id: string
+          nfl_team: string | null
+          overall_pick: number | null
+          player_name: string
+          position: string | null
+          round: number | null
+        }
+        Insert: {
+          college_school: string
+          created_at?: string
+          draft_year: number
+          id?: string
+          nfl_team?: string | null
+          overall_pick?: number | null
+          player_name: string
+          position?: string | null
+          round?: number | null
+        }
+        Update: {
+          college_school?: string
+          created_at?: string
+          draft_year?: number
+          id?: string
+          nfl_team?: string | null
+          overall_pick?: number | null
+          player_name?: string
+          position?: string | null
+          round?: number | null
+        }
+        Relationships: []
+      }
+      ncaaf_draft_prospects: {
+        Row: {
+          captured_at: string
+          created_at: string
+          draft_year: number
+          height: string | null
+          id: string
+          player_name: string
+          position: string | null
+          rank: number
+          school: string
+          weight: number | null
+        }
+        Insert: {
+          captured_at: string
+          created_at?: string
+          draft_year: number
+          height?: string | null
+          id?: string
+          player_name: string
+          position?: string | null
+          rank: number
+          school: string
+          weight?: number | null
+        }
+        Update: {
+          captured_at?: string
+          created_at?: string
+          draft_year?: number
+          height?: string | null
+          id?: string
+          player_name?: string
+          position?: string | null
+          rank?: number
+          school?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      ncaaf_game_results: {
+        Row: {
+          away_conference: string | null
+          away_points: number
+          away_school: string
+          cfbd_game_id: number
+          created_at: string
+          date: string | null
+          home_conference: string | null
+          home_points: number
+          home_school: string
+          id: string
+          neutral_site: boolean | null
+          season: number
+          season_type: string | null
+          week: number | null
+        }
+        Insert: {
+          away_conference?: string | null
+          away_points: number
+          away_school: string
+          cfbd_game_id: number
+          created_at?: string
+          date?: string | null
+          home_conference?: string | null
+          home_points: number
+          home_school: string
+          id?: string
+          neutral_site?: boolean | null
+          season: number
+          season_type?: string | null
+          week?: number | null
+        }
+        Update: {
+          away_conference?: string | null
+          away_points?: number
+          away_school?: string
+          cfbd_game_id?: number
+          created_at?: string
+          date?: string | null
+          home_conference?: string | null
+          home_points?: number
+          home_school?: string
+          id?: string
+          neutral_site?: boolean | null
+          season?: number
+          season_type?: string | null
+          week?: number | null
+        }
+        Relationships: []
+      }
       ncaaf_games: {
         Row: {
           away_score: number | null
@@ -705,6 +831,90 @@ export type Database = {
           },
         ]
       }
+      ncaaf_returning_production: {
+        Row: {
+          conference: string | null
+          created_at: string
+          id: string
+          percent_passing_ppa: number | null
+          percent_ppa: number | null
+          percent_receiving_ppa: number | null
+          percent_rushing_ppa: number | null
+          school: string
+          season: number
+          total_ppa: number | null
+          usage_returning: number | null
+        }
+        Insert: {
+          conference?: string | null
+          created_at?: string
+          id?: string
+          percent_passing_ppa?: number | null
+          percent_ppa?: number | null
+          percent_receiving_ppa?: number | null
+          percent_rushing_ppa?: number | null
+          school: string
+          season: number
+          total_ppa?: number | null
+          usage_returning?: number | null
+        }
+        Update: {
+          conference?: string | null
+          created_at?: string
+          id?: string
+          percent_passing_ppa?: number | null
+          percent_ppa?: number | null
+          percent_receiving_ppa?: number | null
+          percent_rushing_ppa?: number | null
+          school?: string
+          season?: number
+          total_ppa?: number | null
+          usage_returning?: number | null
+        }
+        Relationships: []
+      }
+      ncaaf_transfers: {
+        Row: {
+          created_at: string
+          destination_school: string | null
+          eligibility: string | null
+          id: string
+          origin_school: string | null
+          player_name: string
+          position: string | null
+          rating: number | null
+          season: number
+          stars: number | null
+          transfer_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          destination_school?: string | null
+          eligibility?: string | null
+          id?: string
+          origin_school?: string | null
+          player_name: string
+          position?: string | null
+          rating?: number | null
+          season: number
+          stars?: number | null
+          transfer_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          destination_school?: string | null
+          eligibility?: string | null
+          id?: string
+          origin_school?: string | null
+          player_name?: string
+          position?: string | null
+          rating?: number | null
+          season?: number
+          stars?: number | null
+          transfer_date?: string | null
+        }
+        Relationships: []
+      }
       nfl_fantasy_weekly: {
         Row: {
           created_at: string
@@ -747,6 +957,231 @@ export type Database = {
           season_type?: string
           team?: string | null
           week?: number
+        }
+        Relationships: []
+      }
+      nfl_adp_snapshots: {
+        Row: {
+          adp: number
+          created_at: string
+          gsis_id: string | null
+          high: number | null
+          id: string
+          low: number | null
+          player_name: string
+          position: string | null
+          season: number
+          source: string
+          stdev: number | null
+          team: string | null
+          times_drafted: number | null
+        }
+        Insert: {
+          adp: number
+          created_at?: string
+          gsis_id?: string | null
+          high?: number | null
+          id?: string
+          low?: number | null
+          player_name: string
+          position?: string | null
+          season: number
+          source?: string
+          stdev?: number | null
+          team?: string | null
+          times_drafted?: number | null
+        }
+        Update: {
+          adp?: number
+          created_at?: string
+          gsis_id?: string | null
+          high?: number | null
+          id?: string
+          low?: number | null
+          player_name?: string
+          position?: string | null
+          season?: number
+          source?: string
+          stdev?: number | null
+          team?: string | null
+          times_drafted?: number | null
+        }
+        Relationships: []
+      }
+      nfl_name_overrides: {
+        Row: {
+          created_at: string
+          gsis_id: string
+          id: string
+          note: string | null
+          source: string
+          source_name: string
+        }
+        Insert: {
+          created_at?: string
+          gsis_id: string
+          id?: string
+          note?: string | null
+          source: string
+          source_name: string
+        }
+        Update: {
+          created_at?: string
+          gsis_id?: string
+          id?: string
+          note?: string | null
+          source?: string
+          source_name?: string
+        }
+        Relationships: []
+      }
+      nfl_player_ids: {
+        Row: {
+          display_name: string
+          draft_pick: number | null
+          draft_round: number | null
+          draft_team: string | null
+          draft_year: number | null
+          espn_id: string | null
+          gsis_id: string
+          id: string
+          last_season: number | null
+          latest_team: string | null
+          name_normalized: string
+          pfr_id: string | null
+          position: string | null
+          position_group: string | null
+          rookie_season: number | null
+          sleeper_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          display_name: string
+          draft_pick?: number | null
+          draft_round?: number | null
+          draft_team?: string | null
+          draft_year?: number | null
+          espn_id?: string | null
+          gsis_id: string
+          id?: string
+          last_season?: number | null
+          latest_team?: string | null
+          name_normalized: string
+          pfr_id?: string | null
+          position?: string | null
+          position_group?: string | null
+          rookie_season?: number | null
+          sleeper_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          display_name?: string
+          draft_pick?: number | null
+          draft_round?: number | null
+          draft_team?: string | null
+          draft_year?: number | null
+          espn_id?: string | null
+          gsis_id?: string
+          id?: string
+          last_season?: number | null
+          latest_team?: string | null
+          name_normalized?: string
+          pfr_id?: string | null
+          position?: string | null
+          position_group?: string | null
+          rookie_season?: number | null
+          sleeper_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      nfl_preseason_lines: {
+        Row: {
+          book: string | null
+          captured_at: string | null
+          created_at: string
+          entity_type: string
+          gsis_id: string | null
+          id: string
+          line: number
+          market: string
+          over_odds: number | null
+          player_uuid: string | null
+          season: number
+          source: string
+          subject_name: string
+          team_abbr: string | null
+          under_odds: number | null
+        }
+        Insert: {
+          book?: string | null
+          captured_at?: string | null
+          created_at?: string
+          entity_type: string
+          gsis_id?: string | null
+          id?: string
+          line: number
+          market: string
+          over_odds?: number | null
+          player_uuid?: string | null
+          season: number
+          source: string
+          subject_name: string
+          team_abbr?: string | null
+          under_odds?: number | null
+        }
+        Update: {
+          book?: string | null
+          captured_at?: string | null
+          created_at?: string
+          entity_type?: string
+          gsis_id?: string | null
+          id?: string
+          line?: number
+          market?: string
+          over_odds?: number | null
+          player_uuid?: string | null
+          season?: number
+          source?: string
+          subject_name?: string
+          team_abbr?: string | null
+          under_odds?: number | null
+        }
+        Relationships: []
+      }
+      nfl_team_season_results: {
+        Row: {
+          created_at: string
+          id: string
+          losses: number | null
+          season: number
+          source: string
+          team_abbr: string
+          team_name: string | null
+          ties: number | null
+          wins: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          losses?: number | null
+          season: number
+          source?: string
+          team_abbr: string
+          team_name?: string | null
+          ties?: number | null
+          wins: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          losses?: number | null
+          season?: number
+          source?: string
+          team_abbr?: string
+          team_name?: string | null
+          ties?: number | null
+          wins?: number
         }
         Relationships: []
       }
@@ -1948,6 +2383,23 @@ export type Database = {
       }
     }
     Views: {
+      ncaaf_roster_continuity: {
+        Row: {
+          conference: string | null
+          draft_departures: number | null
+          net_portal: number | null
+          percent_passing_ppa: number | null
+          percent_ppa: number | null
+          percent_receiving_ppa: number | null
+          percent_rushing_ppa: number | null
+          portal_in: number | null
+          portal_out: number | null
+          school: string | null
+          season: number | null
+          usage_returning: number | null
+        }
+        Relationships: []
+      }
       nfl_fantasy_season_ranks: {
         Row: {
           games: number | null
@@ -1978,6 +2430,108 @@ export type Database = {
         }
         Relationships: []
       }
+      nfl_backtest_prop_results: {
+        Row: {
+          actual: number | null
+          book: string | null
+          games_played: number | null
+          gsis_id: string | null
+          line: number | null
+          line_id: string | null
+          market: string | null
+          over_odds: number | null
+          player_uuid: string | null
+          position: string | null
+          result: string | null
+          season: number | null
+          source: string | null
+          subject_name: string | null
+          under_odds: number | null
+        }
+        Relationships: []
+      }
+      nfl_backtest_win_total_results: {
+        Row: {
+          actual: number | null
+          book: string | null
+          line: number | null
+          line_id: string | null
+          losses: number | null
+          over_odds: number | null
+          result: string | null
+          season: number | null
+          source: string | null
+          subject_name: string | null
+          team_abbr: string | null
+          ties: number | null
+          under_odds: number | null
+        }
+        Relationships: []
+      }
+      nfl_backtest_adp_results: {
+        Row: {
+          adp: number | null
+          adp_id: string | null
+          adp_pos_rank: number | null
+          finish_pos_rank: number | null
+          games: number | null
+          gsis_id: string | null
+          player_name: string | null
+          position: string | null
+          season: number | null
+          source: string | null
+          team: string | null
+          total_ppr: number | null
+        }
+        Relationships: []
+      }
+      nfl_backtest_unmatched: {
+        Row: {
+          kind: string | null
+          market: string | null
+          season: number | null
+          source: string | null
+          subject_name: string | null
+        }
+        Relationships: []
+      }
+      nfl_player_seasons: {
+        Row: {
+          draft_pick: number | null
+          draft_round: number | null
+          experience_year: number | null
+          gsis_id: string | null
+          new_team: boolean | null
+          prev_team: string | null
+          rookie_season: number | null
+          season: number | null
+          snap_share: number | null
+          team: string | null
+        }
+        Relationships: []
+      }
+      nfl_backtest_player_season: {
+        Row: {
+          adp: number | null
+          adp_pos_rank: number | null
+          draft_pick: number | null
+          draft_round: number | null
+          experience_year: number | null
+          finish_pos_rank: number | null
+          games: number | null
+          gsis_id: string | null
+          new_team: boolean | null
+          player_name: string | null
+          position: string | null
+          prev_team: string | null
+          rookie_season: number | null
+          season: number | null
+          snap_share: number | null
+          team: string | null
+          total_ppr: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_cache: { Args: never; Returns: undefined }
@@ -2005,6 +2559,10 @@ export type Database = {
       }
       get_nba_team_record: {
         Args: { p_season?: number; p_team_name: string }
+        Returns: Json
+      }
+      get_ncaaf_head_to_head: {
+        Args: { p_seasons?: number; p_team1: string; p_team2: string }
         Returns: Json
       }
       has_role: {

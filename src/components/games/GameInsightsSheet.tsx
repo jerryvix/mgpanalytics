@@ -6,11 +6,12 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
 import { consensusAmerican, consensusPriceMove } from "@/lib/odds";
 import { trendingFor } from "@/data/trendingBets";
+import { MatchupIntelSection } from "@/components/ncaaf/MatchupIntelSection";
 import { format, parseISO } from "date-fns";
 
-// Game Insights — the tap-a-game deep dive. Every number here is real MGP
+// Game Insights - the tap-a-game deep dive. Every number here is real MGP
 // data: synced sportsbook lines, odds_history movement, and player stats we
-// compute ourselves. No simulated or "estimated" figures — if a section has
+// compute ourselves. No simulated or "estimated" figures - if a section has
 // no verified data, it doesn't render. Adding a sport = one config entry
 // plus (optionally) a sport-specific rail.
 
@@ -72,8 +73,8 @@ interface HotBat {
 }
 
 const fmtPrice = (v: number | null | undefined) =>
-  v === null || v === undefined ? "—" : v > 0 ? `+${v}` : `${v}`;
-const fmtAvg = (v: number | null) => (v == null ? "—" : v.toFixed(3).replace(/^0/, ""));
+  v === null || v === undefined ? "-" : v > 0 ? `+${v}` : `${v}`;
+const fmtAvg = (v: number | null) => (v == null ? "-" : v.toFixed(3).replace(/^0/, ""));
 const short = (full: string) => full.split(" ").pop() || full;
 
 async function loadInsights(sport: InsightsSport, game: InsightsGame) {
@@ -155,7 +156,7 @@ async function loadInsights(sport: InsightsSport, game: InsightsGame) {
     }
   }
 
-  // 3) Hot bats in this game (MLB) — real streaks from our own game logs
+  // 3) Hot bats in this game (MLB) - real streaks from our own game logs
   let hotBats: HotBat[] = [];
   if (sport === "MLB") {
     const { data: players } = await supabase
@@ -189,7 +190,7 @@ async function loadInsights(sport: InsightsSport, game: InsightsGame) {
     }
   }
 
-  // 4) Verified angles touching either team — curated, checkable facts only
+  // 4) Verified angles touching either team - curated, checkable facts only
   const angles = trendingFor(sport)
     .filter((b) =>
       [game.home_team_name, game.visitor_team_name].some(
@@ -201,7 +202,7 @@ async function loadInsights(sport: InsightsSport, game: InsightsGame) {
   return { books, consHome, consAway, moves, hotBats, angles };
 }
 
-// Best price per market side across books — line shopping, the most
+// Best price per market side across books - line shopping, the most
 // concrete truthful edge we can hand someone.
 function bestIdx(books: BookOdds[], pick: (b: BookOdds) => number | null): Set<number> {
   let best: number | null = null;
@@ -280,7 +281,16 @@ export function GameInsightsSheet({
           </div>
         ) : (
           <div className="mt-5 space-y-6">
-            {/* Market consensus — no-vig win probability */}
+            {/* CFB matchup intelligence - executive summary first */}
+            {sport === "NCAAF" && (
+              <MatchupIntelSection
+                homeTeamName={game.home_team_name}
+                visitorTeamName={game.visitor_team_name}
+                gameDate={game.date}
+              />
+            )}
+
+            {/* Market consensus - no-vig win probability */}
             {data?.consHome != null && data?.consAway != null && (
               <section>
                 <SectionTitle icon={<Signal className="w-3.5 h-3.5" />} text="Market Read" />
@@ -292,8 +302,8 @@ export function GameInsightsSheet({
                     moneylineAway={data.consAway}
                   />
                   <p className="font-mono text-[10px] text-muted-foreground">
-                    Consensus of {present.length} book{present.length === 1 ? "" : "s"}, vig removed —
-                    the market's own probability, not an MGP pick.
+                    Consensus of {present.length} book{present.length === 1 ? "" : "s"}, vig removed.
+                    The market's own probability, not an MGP pick.
                   </p>
                 </div>
               </section>
@@ -359,7 +369,7 @@ export function GameInsightsSheet({
               <SectionTitle icon={<TrendingUp className="w-3.5 h-3.5" />} text="Shop the Line" />
               {present.length === 0 ? (
                 <p className="text-xs text-muted-foreground font-mono border border-border rounded-lg p-4 bg-card/50">
-                  No lines from tracked books yet — they post through the day.
+                  No lines from tracked books yet. They post through the day.
                 </p>
               ) : (
                 <div className="border border-border rounded-lg overflow-hidden">
@@ -376,7 +386,7 @@ export function GameInsightsSheet({
                     >
                       <span className="text-foreground">{SPORTSBOOK_LABELS[key]}</span>
                       <span className="text-right text-muted-foreground">
-                        {odds.spread_value != null ? `${fmtPrice(odds.spread_value)} (${fmtPrice(odds.spread_odds)})` : "—"}
+                        {odds.spread_value != null ? `${fmtPrice(odds.spread_value)} (${fmtPrice(odds.spread_odds)})` : "-"}
                       </span>
                       <span className="text-right">
                         <span className={bestMlAway.has(i) ? "text-terminal-green font-bold" : "text-muted-foreground"}>
@@ -390,7 +400,7 @@ export function GameInsightsSheet({
                       <span className="text-right text-muted-foreground">
                         {odds.total_value != null
                           ? `${odds.total_value} O${fmtPrice(odds.total_over_odds)}/U${fmtPrice(odds.total_under_odds)}`
-                          : "—"}
+                          : "-"}
                       </span>
                     </div>
                   ))}
@@ -402,7 +412,7 @@ export function GameInsightsSheet({
             </section>
 
             <p className="text-[10px] text-muted-foreground leading-relaxed">
-              Everything above is synced sportsbook data and MGP-computed stats — market signal,
+              Everything above is synced sportsbook data and MGP-computed stats: market signal,
               not a recommendation. Sections without verified data simply don't show.
             </p>
           </div>
