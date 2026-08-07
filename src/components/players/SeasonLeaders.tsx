@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trophy } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +19,7 @@ const BOARDS = [
 ] as const;
 
 interface LeaderRow {
+  id: string;
   name: string;
   team: string | null;
   headshot: string | null;
@@ -49,7 +51,7 @@ async function loadLeaders(season: number): Promise<Record<string, LeaderRow[]>>
         const p = pmap.get(s.player_id);
         if (!p || seen.has(p.name)) return null;
         seen.add(p.name);
-        return { name: p.name, team: p.team_abbr, headshot: p.headshot_url, value: s[b.column] };
+        return { id: p.id, name: p.name, team: p.team_abbr, headshot: p.headshot_url, value: s[b.column] };
       })
       .filter(Boolean)
       .slice(0, 10) as LeaderRow[];
@@ -104,7 +106,10 @@ export function SeasonLeaders({ season = 2025 }: { season?: number }) {
                         <tr key={r.name} className={`border-b border-border/40 ${i % 2 === 1 ? "bg-muted/10" : ""}`}>
                           <td className="pl-4 pr-1 py-1.5 font-mono text-muted-foreground w-8">{i + 1}</td>
                           <td className="px-1 py-1.5">
-                            <span className="inline-flex items-center gap-2 font-medium text-foreground">
+                            <Link
+                              to={`/dashboard/nfl/players/${r.id}`}
+                              className="inline-flex items-center gap-2 font-medium text-foreground hover:text-terminal-green transition-colors"
+                            >
                               {r.headshot && (
                                 <img
                                   src={r.headshot}
@@ -115,7 +120,7 @@ export function SeasonLeaders({ season = 2025 }: { season?: number }) {
                                 />
                               )}
                               {r.name}
-                            </span>
+                            </Link>
                           </td>
                           <td className="px-1 py-1.5">
                             {r.team && (

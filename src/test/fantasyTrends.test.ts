@@ -13,10 +13,19 @@ describe("classifyTrend", () => {
   });
 
   it("classifies a clear ascending trajectory (James Cook pattern)", () => {
-    // RB13 -> RB8 -> RB6: deltas +5, +2 => score 2*2 + 5 = 9 => ascending
+    // The spec's canonical example: RB13 -> RB8 -> RB6
     expect(
       classifyTrend([
         { season: 2023, rank: 13 },
+        { season: 2024, rank: 8 },
+        { season: 2025, rank: 6 },
+      ])
+    ).toBe("ascending");
+    // His real finishes: RB12 -> RB8 -> RB6 must also read ascending —
+    // top-of-ranks moves are big in ratio terms even when small in spots
+    expect(
+      classifyTrend([
+        { season: 2023, rank: 12 },
         { season: 2024, rank: 8 },
         { season: 2025, rank: 6 },
       ])
@@ -43,16 +52,27 @@ describe("classifyTrend", () => {
     ).toBe("flat");
   });
 
-  it("honors exact thresholds (score +9 ascending, -9 descending)", () => {
-    // Two seasons: single delta counts double. +5 => score 10 (ascending); +4 => 8 (flat)
+  it("treats back-of-the-pack drift as flat, not ascending", () => {
+    // 8 spots of "improvement" that never leaves the waiver wire
+    expect(
+      classifyTrend([
+        { season: 2023, rank: 44 },
+        { season: 2024, rank: 40 },
+        { season: 2025, rank: 36 },
+      ])
+    ).toBe("flat");
+  });
+
+  it("scores moves as rank ratios (two-season boundary cases)", () => {
+    // Single move counts double: 15 -> 10 (1.5x) clears the bar, 12 -> 10 doesn't
     expect(classifyTrend([{ season: 2024, rank: 15 }, { season: 2025, rank: 10 }])).toBe("ascending");
-    expect(classifyTrend([{ season: 2024, rank: 14 }, { season: 2025, rank: 10 }])).toBe("flat");
+    expect(classifyTrend([{ season: 2024, rank: 12 }, { season: 2025, rank: 10 }])).toBe("flat");
     expect(classifyTrend([{ season: 2024, rank: 10 }, { season: 2025, rank: 15 }])).toBe("descending");
-    expect(classifyTrend([{ season: 2024, rank: 10 }, { season: 2025, rank: 14 }])).toBe("flat");
+    expect(classifyTrend([{ season: 2024, rank: 10 }, { season: 2025, rank: 12 }])).toBe("flat");
   });
 
   it("weights the most recent move 2x", () => {
-    // deltas: prior +12 (24->12), recent -2 (12->14) => score 2*(-2) + 12 = 8 => flat
+    // prior: 24 -> 12 (big up), recent: 12 -> 14 (slip) => recency drags it to flat
     expect(
       classifyTrend([
         { season: 2023, rank: 24 },

@@ -2,13 +2,20 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Trophy, Clock } from "lucide-react";
+import { Loader2, RefreshCw, Trophy, Clock, Users, History, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 
+// CFB season labeled by start year: Jul-Dec = that year, Jan-Jun = prior
+const currentCfbSeason = () => {
+  const now = new Date();
+  return now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+};
+
 export function NCAAFSyncCard() {
   const [isSyncing, setIsSyncing] = useState(false);
+  const [intelRunning, setIntelRunning] = useState<string | null>(null);
   const [gamesCount, setGamesCount] = useState<number | null>(null);
   const [oddsCount, setOddsCount] = useState<number | null>(null);
   const [rankedCount, setRankedCount] = useState<number | null>(null);
@@ -74,6 +81,73 @@ export function NCAAFSyncCard() {
     }
   };
 
+  // Matchup-intel jobs (CFBD + Tankathon). label doubles as the running-state
+  // key; body is passed through to the edge function (e.g. backfill seasons).
+  const runIntelSync = async (
+    label: string,
+    fn: string,
+    body?: Record<string, unknown>
+  ) => {
+    setIntelRunning(label);
+    try {
+      const { data, error } = await supabase.functions.invoke(fn, body ? { body } : undefined);
+      if (error) throw error;
+      toast({ title: label, description: data?.message || "Done" });
+    } catch (error) {
+      console.error(`${fn} error:`, error);
+      toast({
+        title: `${label} Failed`,
+        description: error instanceof Error ? error.message : "Sync failed — check sync log",
+        variant: "destructive",
+      });
+    } finally {
+      setIntelRunning(null);
+    }
+  };
+
+  const backfillResults = async () => {
+    // One season per invocation (edge-fn timeout pattern); last 5 completed
+    // seasons + current = the H2H window
+    const season = currentCfbSeason();
+    setIntelRunning("Backfill Results");
+    try {
+      for (let y = season - 5; y <= season; y++) {
+        const { data, error } = await supabase.functions.invoke("sync-cfbd-games", {
+          body: { season: y },
+        });
+        if (error) throw error;
+        toast({ title: `Results ${y}`, description: data?.message || "Done" });
+      }
+    } catch (error) {
+      console.error("Backfill error:", error);
+      toast({
+        title: "Backfill Failed",
+        description: error instanceof Error ? error.message : "Check sync log",
+        variant: "destructive",
+      });
+    } finally {
+      setIntelRunning(null);
+    }
+  };
+
+  const intelButton = (
+    label: string,
+    icon: React.ReactNode,
+    onClick: () => void
+  ) => (
+    <Button
+      key={label}
+      variant="outline"
+      size="sm"
+      className="w-full justify-start font-mono text-xs border-orange-500/50 hover:bg-orange-500/10"
+      onClick={onClick}
+      disabled={intelRunning !== null}
+    >
+      {intelRunning === label ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : icon}
+      {label}
+    </Button>
+  );
+
   return (
     <Card className="bg-card border-orange-500/30">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -116,6 +190,24 @@ export function NCAAFSyncCard() {
             Last synced {lastSync}
           </div>
         )}
+
+        {/* Matchup Intel jobs — also the offseason escape hatch: dispatch
+            skips NCAAF Feb-Jun but the portal moves hardest Dec-Apr */}
+        <div className="pt-2 border-t border-orange-500/20 space-y-2">
+          <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
+            Matchup Intel
+          </div>
+          {intelButton("Sync Roster Intel (CFBD)", <Users className="w-3 h-3 mr-2" />, () =>
+            runIntelSync("Sync Roster Intel (CFBD)", "sync-cfbd-roster-intel")
+          )}
+          {intelButton("Sync Results (CFBD)", <History className="w-3 h-3 mr-2" />, () =>
+            runIntelSync("Sync Results (CFBD)", "sync-cfbd-games")
+          )}
+          {intelButton("Backfill Results (Last 5 Seasons)", <History className="w-3 h-3 mr-2" />, backfillResults)}
+          {intelButton("Refresh Draft Board (Tankathon)", <GraduationCap className="w-3 h-3 mr-2" />, () =>
+            runIntelSync("Refresh Draft Board (Tankathon)", "sync-draft-board")
+          )}
+        </div>
       </CardContent>
     </Card>
   );

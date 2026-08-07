@@ -12,31 +12,35 @@ export interface SeasonRankPoint {
 /**
  * Classify a player's multi-season trajectory from positional finishes.
  *
- * Uses the last (up to) 3 ranked seasons. Deltas between consecutive available
- * seasons are computed as prevRank - nextRank (positive = improving). Gap
- * seasons (missed year, no rank) are skipped, not interpolated. The score
- * weights the most recent move 2x over the prior one; ±9 works out to a
- * sustained ~3-spots-per-season move, or a single recent 5-spot leap.
+ * Uses the last (up to) 3 ranked seasons. Gap seasons (missed year, no rank)
+ * are skipped, not interpolated. Moves are scored as log(prevRank / nextRank)
+ * — positive = improving — because rank improvements compress near the top:
+ * RB8 -> RB6 is a real jump while RB44 -> RB40 is noise, and a ratio measure
+ * treats both honestly where an absolute spot count cannot. The most recent
+ * move is weighted 2x over the prior one. The ±0.45 threshold is roughly a
+ * sustained ~25% recency-weighted rank improvement; it classifies the spec's
+ * canonical example (James Cook RB12 -> RB8 -> RB6) as ascending while a
+ * back-of-the-pack drift (WR44 -> WR40 -> WR36) stays flat.
  */
 export function classifyTrend(seasons: SeasonRankPoint[]): TrendDirection {
   const sorted = [...seasons]
-    .filter((s) => Number.isFinite(s.rank))
+    .filter((s) => Number.isFinite(s.rank) && s.rank >= 1)
     .sort((a, b) => a.season - b.season)
     .slice(-3);
 
   if (sorted.length < 2) return "insufficient";
 
-  const deltas: number[] = [];
+  const moves: number[] = [];
   for (let i = 1; i < sorted.length; i++) {
-    deltas.push(sorted[i - 1].rank - sorted[i].rank);
+    moves.push(Math.log(sorted[i - 1].rank / sorted[i].rank));
   }
 
-  const mostRecent = deltas[deltas.length - 1];
-  const prior = deltas.length > 1 ? deltas[deltas.length - 2] : 0;
+  const mostRecent = moves[moves.length - 1];
+  const prior = moves.length > 1 ? moves[moves.length - 2] : 0;
   const trendScore = 2 * mostRecent + prior;
 
-  if (trendScore >= 9) return "ascending";
-  if (trendScore <= -9) return "descending";
+  if (trendScore >= 0.45) return "ascending";
+  if (trendScore <= -0.45) return "descending";
   return "flat";
 }
 

@@ -23,6 +23,9 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "NCAAB:odds": "sync-ncaab-games",
   "NCAAB:players": "sync-ncaab-players",
   "NCAAF:games": "sync-ncaaf-games",
+  "NCAAF:roster_intel": "sync-cfbd-roster-intel",
+  "NCAAF:results": "sync-cfbd-games",
+  "NCAAF:draft_board": "sync-draft-board",
   "MLB:games": "sync-mlb-games",
   "MLB:players": "sync-mlb-players",
   "MLB:hitting": "sync-mlb-hitting",
@@ -52,6 +55,9 @@ const FUNCTION_API_GROUP: Record<string, string> = {
   "sync-nba-game-logs": "bdl",
   "backfill-nba-games": "bdl",
   "sync-ncaab-players": "bdl",
+  "sync-cfbd-roster-intel": "cfbd",
+  "sync-cfbd-games": "cfbd",
+  "sync-draft-board": "tankathon",
   "grade-player-props": "none",
 };
 

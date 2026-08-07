@@ -3,8 +3,7 @@ import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Loader2, Signal, TrendingUp, Trophy, Star } from "lucide-react";
+import { Signal, TrendingUp, Trophy, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { PublicBettingPreview } from "@/components/PublicBettingPreview";
@@ -13,6 +12,7 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
+import { GameInsightsSheet } from "@/components/games/GameInsightsSheet";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
 import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
@@ -46,20 +46,10 @@ interface Odd {
 
 type GameOddsMap = Record<string, Odd | null>;
 
-const SPORTSBOOKS = ["draftkings", "fanduel", "caesars", "betrivers"];
-const SPORTSBOOK_LABELS: Record<string, string> = {
-  draftkings: "DraftKings",
-  fanduel: "FanDuel",
-  caesars: "Caesars",
-  betrivers: "BetRivers",
-};
-
 export function NCAAFSlate() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
-  const [allOdds, setAllOdds] = useState<Odd[]>([]);
-  const [oddsLoading, setOddsLoading] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
   const [pageView, setPageView] = useState<"games" | "futures">("games");
@@ -107,19 +97,9 @@ export function NCAAFSlate() {
     setLoading(false);
   };
 
-  const handleViewAllOdds = async (game: Game, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleOpenInsights = (game: Game) => {
     setSelectedGame(game);
     setSheetOpen(true);
-    setOddsLoading(true);
-    setAllOdds([]);
-    const { data } = await supabase
-      .from("ncaaf_odds")
-      .select("*")
-      .eq("game_id", game.id)
-      .in("sportsbook", SPORTSBOOKS);
-    setAllOdds(data || []);
-    setOddsLoading(false);
   };
 
   const formatGameDate = (dateString: string) => {
@@ -174,9 +154,6 @@ export function NCAAFSlate() {
     if (!rank || rank > 25) return null;
     return `#${rank}`;
   };
-  const getOddsBySportsbook = (sportsbook: string): Odd | undefined =>
-    allOdds.find((o) => o.sportsbook.toLowerCase().includes(sportsbook));
-
   const rankedGamesCount = games.filter(
     (g) => g.home_team_rank !== null || g.visitor_team_rank !== null
   ).length;
@@ -263,7 +240,12 @@ export function NCAAFSlate() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.03 }}
               >
-                <Card className="bg-gradient-to-b from-card to-card/70 border-terminal-amber/30 hover:border-terminal-amber/60 hover:shadow-[0_0_24px_-8px_hsl(var(--terminal-amber)/0.4)] transition-all">
+                <Card
+                  onClick={() => handleOpenInsights(game)}
+                  role="button"
+                  aria-label={`Game insights: ${game.visitor_team_name} at ${game.home_team_name}`}
+                  className="cursor-pointer bg-gradient-to-b from-card to-card/70 border-terminal-amber/30 hover:border-terminal-amber/60 hover:shadow-[0_0_24px_-8px_hsl(var(--terminal-amber)/0.4)] transition-all"
+                >
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
@@ -383,13 +365,17 @@ export function NCAAFSlate() {
                       sport="NCAAF"
                     />
 
+                    {/* Game Insights Button — same target as tapping the card */}
                     <Button
-                      onClick={(e) => handleViewAllOdds(game, e)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenInsights(game);
+                      }}
                       className="w-full bg-terminal-amber/20 hover:bg-terminal-amber/30 text-terminal-amber border border-terminal-amber/50 font-mono text-sm mt-2"
                       variant="outline"
                     >
                       <TrendingUp className="w-4 h-4 mr-2" />
-                      View All Odds
+                      Game Insights
                     </Button>
                   </CardContent>
                 </Card>
@@ -401,107 +387,9 @@ export function NCAAFSlate() {
       </>
       )}
 
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="bg-background/85 backdrop-blur-xl border-l border-terminal-amber/30 w-full sm:max-w-xl overflow-y-auto">
-          <SheetHeader className="flex flex-row items-center justify-between pb-4 border-b border-terminal-amber/20">
-            <SheetTitle className="font-mono text-foreground">
-              {selectedGame && (
-                <div>
-                  <div className="flex items-center gap-2 text-lg">
-                    {formatRank(selectedGame.visitor_team_rank) && (
-                      <Badge className="bg-terminal-amber text-background text-xs">
-                        {formatRank(selectedGame.visitor_team_rank)}
-                      </Badge>
-                    )}
-                    {selectedGame.visitor_team_name}
-                    <span className="text-terminal-amber">@</span>
-                    {formatRank(selectedGame.home_team_rank) && (
-                      <Badge className="bg-terminal-amber text-background text-xs">
-                        {formatRank(selectedGame.home_team_rank)}
-                      </Badge>
-                    )}
-                    {selectedGame.home_team_name}
-                  </div>
-                  <p className="text-xs text-muted-foreground font-normal mt-1">
-                    {formatGameDate(selectedGame.date)}
-                  </p>
-                </div>
-              )}
-            </SheetTitle>
-          </SheetHeader>
-
-          <div className="mt-6 space-y-6">
-            {oddsLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-5 h-5 animate-spin text-terminal-amber" />
-                <span className="ml-2 font-mono text-sm text-muted-foreground">FETCHING ALL ODDS...</span>
-              </div>
-            ) : allOdds.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic py-6 text-center">
-                *odds post closer to kickoff
-              </p>
-            ) : (
-              SPORTSBOOKS.map((sportsbook) => {
-                const odds = getOddsBySportsbook(sportsbook);
-                return (
-                  <div key={sportsbook} className="border border-terminal-amber/20 rounded-lg overflow-hidden">
-                    <div className="bg-terminal-amber/10 px-4 py-2 border-b border-terminal-amber/20">
-                      <span className="font-mono text-sm font-bold text-terminal-amber">
-                        {SPORTSBOOK_LABELS[sportsbook]}
-                      </span>
-                    </div>
-                    <div className="p-4 space-y-4 bg-card">
-                      {odds ? (
-                        <>
-                          <div>
-                            <h4 className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
-                              Spread
-                            </h4>
-                            <div className="font-mono text-sm">
-                              {odds.spread_value !== null ? (
-                                <span>
-                                  {selectedGame?.home_team_name}{" "}
-                                  <span className="text-terminal-amber">{formatLine(odds.spread_value)}</span>
-                                  <span className="text-muted-foreground ml-1">({formatPrice(odds.spread_odds)})</span>
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">N/A</span>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <h4 className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider mb-2">
-                              Total
-                            </h4>
-                            <div className="font-mono text-sm">
-                              {odds.total_value !== null ? (
-                                <div className="flex justify-between items-center">
-                                  <span>
-                                    O/U <span className="text-terminal-amber">{odds.total_value}</span>
-                                  </span>
-                                  <span>
-                                    Over <span className="text-terminal-green">{formatPrice(odds.total_over_odds)}</span>
-                                    <span className="text-muted-foreground mx-1">|</span>
-                                    Under <span className="text-terminal-amber">{formatPrice(odds.total_under_odds)}</span>
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">N/A</span>
-                              )}
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-sm text-muted-foreground italic">Odds not available</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Game Insights panel — matchup intel, consensus win prob, line
+          movement, verified angles, and the book-by-book board */}
+      <GameInsightsSheet sport="NCAAF" game={selectedGame} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
   );
 }

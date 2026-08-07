@@ -42,11 +42,21 @@ const Dashboard = () => {
     });
   }, [location.pathname, navigate]);
 
+  // Deep links to /dashboard/* opened while logged out are stashed here so the
+  // post-login landing can restore them instead of dropping users on home.
+  const stashDeepLink = useCallback(() => {
+    const path = window.location.pathname + window.location.search;
+    if (path.startsWith("/dashboard/") && path !== "/dashboard/") {
+      sessionStorage.setItem("mgp-post-login-redirect", path);
+    }
+  }, []);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user ?? null);
         if (!session) {
+          stashDeepLink();
           navigate("/");
         }
       }
@@ -55,13 +65,22 @@ const Dashboard = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (!session) {
+        stashDeepLink();
         navigate("/");
+      } else {
+        const stored = sessionStorage.getItem("mgp-post-login-redirect");
+        if (stored && stored.startsWith("/dashboard")) {
+          sessionStorage.removeItem("mgp-post-login-redirect");
+          if (stored !== window.location.pathname + window.location.search) {
+            navigate(stored);
+          }
+        }
       }
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, stashDeepLink]);
 
   // Show onboarding modal for users who haven't completed it — only on dashboard home
   const isOnDashboardHome = location.pathname === "/dashboard" || location.pathname === "/dashboard/";
