@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
+import { fetchEspnOddsBatch } from "../_shared/espn-odds.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,15 +49,10 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const THE_ODDS_API_KEY = Deno.env.get("THE_ODDS_API_KEY");
     const BALLDONTLIE_API_KEY = Deno.env.get("BALLDONTLIE_API_KEY");
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) {
       throw new Error("Supabase configuration missing");
-    }
-
-    if (!THE_ODDS_API_KEY && !BALLDONTLIE_API_KEY) {
-      throw new Error("Neither THE_ODDS_API_KEY nor BALLDONTLIE_API_KEY configured");
     }
 
     // Service client for database operations (used by both auth paths)
@@ -110,27 +106,19 @@ serve(async (req) => {
 
     console.log(`[sync-odds-snapshot] Starting odds snapshot sync... (testOnly: ${testOnly})`);
 
-    // Test mode - just verify API connection
+    // Test mode - just verify the ESPN odds source responds (keyless)
     if (testOnly) {
-      const testUrl = `https://api.the-odds-api.com/v4/sports?apiKey=${THE_ODDS_API_KEY}`;
+      const testUrl = "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard";
       const testResponse = await fetch(testUrl);
-      
-      if (!testResponse.ok) {
-        throw new Error(`The Odds API returned ${testResponse.status}`);
-      }
 
-      // Get usage info from headers
-      const requestsUsed = parseInt(testResponse.headers.get("x-requests-used") || "0");
-      const requestsRemaining = parseInt(testResponse.headers.get("x-requests-remaining") || "0");
+      if (!testResponse.ok) {
+        throw new Error(`ESPN API returned ${testResponse.status}`);
+      }
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: "The Odds API connection successful",
-          usage: {
-            requests_used: requestsUsed,
-            requests_remaining: requestsRemaining,
-          },
+          message: "ESPN odds source connection successful (no key required)",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -148,8 +136,8 @@ serve(async (req) => {
     function isSportInSeason(sport: string): boolean {
       const month = new Date().getMonth(); // 0=Jan, 11=Dec
       switch (sport) {
-        case "NFL":   return month >= 8 || month <= 0;   // Sep–Jan
-        case "NCAAF": return month >= 7 || month <= 0;   // Aug–Jan
+        case "NFL":   return month >= 7 || month <= 0;   // Aug-Jan (preseason lines are up)
+        case "NCAAF": return month >= 7 || month <= 0;   // Aug-Jan
         case "MLB":   return month >= 2 && month <= 10;   // Mar–Nov
         case "NBA":   return month >= 9 || month <= 5;    // Oct–Jun
         case "NCAAB": return month >= 10 || month <= 3;   // Nov–Apr
@@ -157,11 +145,13 @@ serve(async (req) => {
       }
     }
 
-    // Sports sourced from The Odds API — feeds odds_history (line movement)
-    const oddsApiSports = [
-      { key: "americanfootball_nfl", name: "NFL", source: "odds_api" as const },
-      { key: "americanfootball_ncaaf", name: "NCAAF", source: "odds_api" as const },
-      { key: "baseball_mlb", name: "MLB", source: "odds_api" as const },
+    // Sports sourced from ESPN (free, keyless) - feeds odds_history (line
+    // movement). Replaced The Odds API Aug 2026 after its key died; ESPN
+    // serves DraftKings lines with open + current values per event.
+    const espnSports = [
+      { key: "espn_nfl", name: "NFL", league: "nfl" as const, scoreboard: "football/nfl", lookaheadDays: 30 },
+      { key: "espn_ncaaf", name: "NCAAF", league: "college-football" as const, scoreboard: "football/college-football", lookaheadDays: 30 },
+      { key: "espn_mlb", name: "MLB", league: "mlb" as const, scoreboard: "baseball/mlb", lookaheadDays: 2 },
     ];
     // Sports sourced from BDL (NBA, NCAAB)
     const bdlSports = [
@@ -169,7 +159,7 @@ serve(async (req) => {
       { name: "NCAAB", bdlOddsUrl: "https://api.balldontlie.io/ncaab/v1/odds", bdlGamesUrl: "https://api.balldontlie.io/ncaab/v1/games", source: "bdl" as const },
     ];
 
-    const allSportNames = [...oddsApiSports.map(s => s.name), ...bdlSports.map(s => s.name)];
+    const allSportNames = [...espnSports.map(s => s.name), ...bdlSports.map(s => s.name)];
     const skippedOffseason = allSportNames.filter(n => !isSportInSeason(n));
     const skippedManual = allSportNames.filter(n => excludeSports.includes(n) && isSportInSeason(n));
     if (skippedOffseason.length > 0) {
@@ -187,80 +177,128 @@ serve(async (req) => {
     let requestsRemaining = 0;
     const perSportCounts: Record<string, number> = {};
 
-    // --- The Odds API sports (NFL) ---
-    for (const sport of oddsApiSports) {
+    // --- ESPN sports (NFL, NCAAF, MLB) ---
+    for (const sport of espnSports) {
       if (!isSportInSeason(sport.name) || excludeSports.includes(sport.name)) continue;
-      if (!THE_ODDS_API_KEY) {
-        console.log(`[sync-odds-snapshot] Skipping ${sport.name} — THE_ODDS_API_KEY not set`);
-        continue;
-      }
 
       try {
-        console.log(`Fetching odds for ${sport.name} via The Odds API...`);
+        console.log(`Fetching odds for ${sport.name} via ESPN...`);
 
-        const oddsUrl = `https://api.the-odds-api.com/v4/sports/${sport.key}/odds?apiKey=${THE_ODDS_API_KEY}&markets=spreads,h2h,totals&regions=us&oddsFormat=american`;
-        const response = await fetch(oddsUrl);
-
-        requestsUsed = parseInt(response.headers.get("x-requests-used") || String(requestsUsed));
-        requestsRemaining = parseInt(response.headers.get("x-requests-remaining") || String(requestsRemaining));
-
-        if (!response.ok) {
-          console.error(`Failed to fetch ${sport.name} odds: ${response.status} (used: ${requestsUsed}, remaining: ${requestsRemaining})`);
-          failedSports++;
-          continue;
-        }
-
-        const oddsData = await response.json();
-        console.log(`Got ${oddsData.length} games for ${sport.name}`);
-
-        for (const game of oddsData) {
-          const gameId = `${sport.key}_${game.id}`;
-
-          for (const bookmaker of game.bookmakers || []) {
-            if (!allowedBooks.includes(bookmaker.key.toLowerCase())) continue;
-
-            for (const market of bookmaker.markets || []) {
-              if (!["spreads", "h2h", "totals"].includes(market.key)) continue;
-
-              for (const outcome of market.outcomes || []) {
-                let oddsType = "";
-                let team: string | null = null;
-                let line: number | null = null;
-
-                if (market.key === "spreads") {
-                  oddsType = "spread";
-                  team = outcome.name;
-                  line = outcome.point || null;
-                } else if (market.key === "h2h") {
-                  oddsType = "moneyline";
-                  team = outcome.name;
-                  line = outcome.price;
-                } else if (market.key === "totals") {
-                  oddsType = "total";
-                  team = outcome.name;
-                  line = outcome.point || null;
-                }
-
-                allSnapshots.push({
-                  game_id: gameId,
-                  sport: sport.name,
-                  bookmaker: bookmaker.key.toLowerCase(),
-                  odds_type: oddsType,
-                  team: team,
-                  current_line: line,
-                  previous_line: null,
-                  line_movement: null,
-                  opening_line: null,
-                  current_price: outcome.price,
-                  previous_price: null,
-                });
-              }
+        // Enumerate upcoming events from the scoreboard, then pull each
+        // event's odds. Events without posted lines are skipped by the batch.
+        interface EventLite { id: string; home: string; away: string }
+        const events: EventLite[] = [];
+        const seenIds = new Set<string>();
+        for (let i = 0; i <= sport.lookaheadDays; i++) {
+          const d = new Date(Date.now() + i * 24 * 60 * 60 * 1000);
+          const dateStr = d.toISOString().split("T")[0].replace(/-/g, "");
+          try {
+            const res = await fetch(
+              `https://site.api.espn.com/apis/site/v2/sports/${sport.scoreboard}/scoreboard?dates=${dateStr}&limit=100`
+            );
+            if (!res.ok) continue;
+            const data = await res.json();
+            for (const ev of data.events || []) {
+              if (!ev.id || seenIds.has(String(ev.id))) continue;
+              if (ev.status?.type?.completed === true) continue;
+              const comp = ev.competitions?.[0];
+              const home = comp?.competitors?.find((c: { homeAway: string }) => c.homeAway === "home")?.team?.displayName;
+              const away = comp?.competitors?.find((c: { homeAway: string }) => c.homeAway === "away")?.team?.displayName;
+              if (!home || !away) continue;
+              seenIds.add(String(ev.id));
+              events.push({ id: String(ev.id), home, away });
             }
+          } catch (err) {
+            console.error(`ESPN scoreboard error ${sport.name} ${dateStr}:`, err);
           }
         }
 
-        totalProcessed += oddsData.length;
-        perSportCounts[sport.name] = oddsData.length;
+        // Nearest games first; cap so dense in-season windows stay fast
+        const capped = events.slice(0, 200);
+        const oddsMap = await fetchEspnOddsBatch(sport.league, capped.map((e) => e.id));
+        console.log(`Got ${events.length} events, odds posted for ${oddsMap.size} (${sport.name})`);
+
+        for (const ev of capped) {
+          const odds = oddsMap.get(ev.id);
+          if (!odds) continue;
+          if (!allowedBooks.includes(odds.sportsbook)) continue;
+
+          const gameId = `${sport.key}_${ev.id}`;
+          const base = {
+            game_id: gameId,
+            sport: sport.name,
+            bookmaker: odds.sportsbook,
+            previous_line: null,
+            line_movement: null,
+            previous_price: null,
+          };
+
+          // Spread: one row per side, line is that team's number
+          if (odds.spreadHome !== null) {
+            allSnapshots.push({
+              ...base,
+              odds_type: "spread",
+              team: ev.home,
+              current_line: odds.spreadHome,
+              current_price: odds.spreadHomeOdds,
+              opening_line: odds.openSpreadHome,
+            });
+            allSnapshots.push({
+              ...base,
+              odds_type: "spread",
+              team: ev.away,
+              current_line: -odds.spreadHome,
+              current_price: odds.spreadAwayOdds,
+              opening_line: odds.openSpreadHome !== null ? -odds.openSpreadHome : null,
+            });
+          }
+
+          // Moneyline: line and price both carry the american price,
+          // matching the old Odds API row shape downstream code expects
+          if (odds.moneylineHome !== null) {
+            allSnapshots.push({
+              ...base,
+              odds_type: "moneyline",
+              team: ev.home,
+              current_line: odds.moneylineHome,
+              current_price: odds.moneylineHome,
+              opening_line: odds.openMoneylineHome,
+            });
+          }
+          if (odds.moneylineAway !== null) {
+            allSnapshots.push({
+              ...base,
+              odds_type: "moneyline",
+              team: ev.away,
+              current_line: odds.moneylineAway,
+              current_price: odds.moneylineAway,
+              opening_line: odds.openMoneylineAway,
+            });
+          }
+
+          // Totals: Over and Under rows share the total line
+          if (odds.totalValue !== null) {
+            allSnapshots.push({
+              ...base,
+              odds_type: "total",
+              team: "Over",
+              current_line: odds.totalValue,
+              current_price: odds.totalOverOdds,
+              opening_line: odds.openTotal,
+            });
+            allSnapshots.push({
+              ...base,
+              odds_type: "total",
+              team: "Under",
+              current_line: odds.totalValue,
+              current_price: odds.totalUnderOdds,
+              opening_line: odds.openTotal,
+            });
+          }
+        }
+
+        totalProcessed += oddsMap.size;
+        perSportCounts[sport.name] = oddsMap.size;
       } catch (err) {
         console.error(`Error processing ${sport.name}:`, err);
         failedSports++;
@@ -511,7 +549,9 @@ serve(async (req) => {
       if (openingSnapshot) {
         snapshot.opening_line = openingSnapshot.current_line;
       } else {
-        snapshot.opening_line = snapshot.current_line;
+        // No history yet: keep ESPN's own opening number when we have it,
+        // otherwise treat the first sighting as the open
+        snapshot.opening_line = snapshot.opening_line ?? snapshot.current_line;
       }
     }
 
@@ -544,7 +584,7 @@ serve(async (req) => {
       records_added: allSnapshots.length,
       api_requests_used: requestsUsed,
       api_requests_remaining: requestsRemaining,
-      error_message: allFailed ? `All ${failedSports} sports failed (quota exhausted?)` : undefined,
+      error_message: allFailed ? `All ${failedSports} sports failed (source unreachable?)` : undefined,
       details: { games_processed: totalProcessed, per_sport: perSportCounts, skipped_offseason: skippedOffseason, skipped_manual: skippedManual, failed_sports: failedSports },
     });
 

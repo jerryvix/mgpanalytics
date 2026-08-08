@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
+import { fetchEspnOddsBatch } from "../_shared/espn-odds.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -60,7 +61,6 @@ serve(async (req) => {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const THE_ODDS_API_KEY = Deno.env.get("THE_ODDS_API_KEY");
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) {
       throw new Error("Supabase configuration missing");
@@ -252,7 +252,7 @@ serve(async (req) => {
       const { data: insertedData, error: insertError } = await supabase
         .from("ncaaf_games")
         .upsert(gamesToSync, { onConflict: "external_id" })
-        .select("id, home_team_name, visitor_team_name");
+        .select("id, home_team_name, visitor_team_name, external_id, date, is_final");
 
       if (insertError) {
         console.error("Error inserting games:", insertError);
@@ -262,109 +262,61 @@ serve(async (req) => {
       insertedCount = insertedData?.length || 0;
       console.log(`Upserted ${insertedCount} NCAAF games`);
 
-      // Fetch odds from The Odds API if available
-      if (THE_ODDS_API_KEY && insertedData && insertedData.length > 0) {
+      // Fetch DraftKings lines from ESPN (free, keyless) for upcoming games.
+      // ESPN event ids come straight from external_id, so no fuzzy matching.
+      // Games without posted lines simply return nothing (normal for FCS
+      // mismatches and far-out dates).
+      if (insertedData && insertedData.length > 0) {
         try {
-          const oddsUrl = `https://api.the-odds-api.com/v4/sports/americanfootball_ncaaf/odds?apiKey=${THE_ODDS_API_KEY}&markets=spreads,h2h,totals&regions=us&oddsFormat=american`;
-          const oddsResponse = await fetch(oddsUrl);
+          const oddsTargets = (insertedData as Array<{
+            id: string;
+            external_id: string;
+            date: string;
+            is_final: boolean | null;
+          }>)
+            .filter((g) => {
+              if (g.is_final || !g.external_id?.startsWith("espn_ncaaf_")) return false;
+              const d = new Date(g.date);
+              return d >= now && d <= windowEnd;
+            })
+            // Cap per run so a dense in-season window stays fast; nearest first
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+            .slice(0, 250);
 
-          if (oddsResponse.ok) {
-            const oddsData = await oddsResponse.json();
-            console.log(`Fetched odds for ${oddsData.length} NCAAF games`);
+          const idFor = (g: { external_id: string }) => g.external_id.replace("espn_ncaaf_", "");
+          const oddsMap = await fetchEspnOddsBatch(
+            "college-football",
+            oddsTargets.map(idFor),
+          );
 
-            const oddsToUpsert: Array<{
-              game_id: string;
-              sportsbook: string;
-              spread_value: number | null;
-              spread_odds: number | null;
-              moneyline_home: number | null;
-              moneyline_away: number | null;
-              total_value: number | null;
-              total_over_odds: number | null;
-              total_under_odds: number | null;
-            }> = [];
+          const oddsToUpsert = oddsTargets.flatMap((g) => {
+            const o = oddsMap.get(idFor(g));
+            if (!o) return [];
+            return [{
+              game_id: g.id,
+              sportsbook: o.sportsbook,
+              spread_value: o.spreadHome,
+              spread_odds: o.spreadHomeOdds,
+              moneyline_home: o.moneylineHome,
+              moneyline_away: o.moneylineAway,
+              total_value: o.totalValue,
+              total_over_odds: o.totalOverOdds,
+              total_under_odds: o.totalUnderOdds,
+            }];
+          });
 
-            for (const oddsGame of oddsData) {
-              const matchedGame = insertedData.find((g) => {
-                const homeMatch =
-                  g.home_team_name.toLowerCase().includes(oddsGame.home_team.toLowerCase().split(" ").pop()) ||
-                  oddsGame.home_team.toLowerCase().includes(g.home_team_name.toLowerCase().split(" ").pop());
-                const awayMatch =
-                  g.visitor_team_name.toLowerCase().includes(oddsGame.away_team.toLowerCase().split(" ").pop()) ||
-                  oddsGame.away_team.toLowerCase().includes(g.visitor_team_name.toLowerCase().split(" ").pop());
-                return homeMatch && awayMatch;
-              });
+          if (oddsToUpsert.length > 0) {
+            const { error: oddsError } = await supabase
+              .from("ncaaf_odds")
+              .upsert(oddsToUpsert, { onConflict: "game_id,sportsbook" });
 
-              if (!matchedGame) continue;
-
-              const allowedBooks = ["draftkings", "fanduel", "caesars", "betrivers"];
-              for (const bookmaker of oddsGame.bookmakers || []) {
-                if (!allowedBooks.includes(bookmaker.key.toLowerCase())) continue;
-
-                let spreadValue: number | null = null;
-                let spreadOdds: number | null = null;
-                let moneylineHome: number | null = null;
-                let moneylineAway: number | null = null;
-                let totalValue: number | null = null;
-                let totalOverOdds: number | null = null;
-                let totalUnderOdds: number | null = null;
-
-                for (const market of bookmaker.markets || []) {
-                  if (market.key === "spreads") {
-                    const homeOutcome = market.outcomes.find((o: { name: string }) =>
-                      oddsGame.home_team.toLowerCase().includes(o.name.toLowerCase().split(" ").pop())
-                    );
-                    if (homeOutcome) {
-                      spreadValue = homeOutcome.point || null;
-                      spreadOdds = homeOutcome.price;
-                    }
-                  }
-                  if (market.key === "h2h") {
-                    for (const outcome of market.outcomes) {
-                      if (oddsGame.home_team.toLowerCase().includes(outcome.name.toLowerCase().split(" ").pop())) {
-                        moneylineHome = outcome.price;
-                      } else {
-                        moneylineAway = outcome.price;
-                      }
-                    }
-                  }
-                  if (market.key === "totals") {
-                    for (const outcome of market.outcomes) {
-                      if (outcome.name === "Over") {
-                        totalValue = outcome.point || null;
-                        totalOverOdds = outcome.price;
-                      } else if (outcome.name === "Under") {
-                        totalUnderOdds = outcome.price;
-                      }
-                    }
-                  }
-                }
-
-                oddsToUpsert.push({
-                  game_id: matchedGame.id,
-                  sportsbook: bookmaker.key.toLowerCase(),
-                  spread_value: spreadValue,
-                  spread_odds: spreadOdds,
-                  moneyline_home: moneylineHome,
-                  moneyline_away: moneylineAway,
-                  total_value: totalValue,
-                  total_over_odds: totalOverOdds,
-                  total_under_odds: totalUnderOdds,
-                });
-              }
+            if (oddsError) {
+              console.error("Error inserting odds:", oddsError);
+            } else {
+              console.log(`Upserted ${oddsToUpsert.length} NCAAF odds records via ESPN`);
             }
-
-            if (oddsToUpsert.length > 0) {
-              const { error: oddsError } = await supabase
-                .from("ncaaf_odds")
-                .upsert(oddsToUpsert, { onConflict: "game_id,sportsbook" });
-
-              if (oddsError) {
-                console.error("Error inserting odds:", oddsError);
-              } else {
-                console.log(`Upserted ${oddsToUpsert.length} NCAAF odds records`);
-              }
-            }
+          } else {
+            console.log("No NCAAF odds posted yet for the window");
           }
         } catch (oddsErr) {
           console.error("Error fetching odds:", oddsErr);

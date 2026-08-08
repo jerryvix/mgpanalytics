@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
+import { fetchEspnOddsBatch } from "../_shared/espn-odds.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,65 +28,12 @@ interface BallDontLieResponse {
   meta?: { next_cursor?: number | string | null };
 }
 
-// The Odds API types
-interface OddsOutcome {
-  name: string;
-  price: number;
-  point?: number;
-}
-
-interface OddsMarket {
-  key: string;
-  outcomes: OddsOutcome[];
-}
-
-interface OddsBookmaker {
-  key: string;
-  title: string;
-  markets: OddsMarket[];
-}
-
-interface OddsAPIGame {
-  id: string;
-  sport_key: string;
-  sport_title: string;
-  commence_time: string;
-  home_team: string;
-  away_team: string;
-  bookmakers: OddsBookmaker[];
-}
-
 // Team name normalization for matching between APIs
 const normalizeTeamName = (name: string): string => {
   return name.toLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
 };
-
-// Find matching game by team names
-const findMatchingGame = (
-  oddsGame: OddsAPIGame,
-  games: { id: number; home_team_name: string; visitor_team_name: string }[]
-): { id: number; home_team_name: string; visitor_team_name: string } | null => {
-  const oddsHome = normalizeTeamName(oddsGame.home_team);
-  const oddsAway = normalizeTeamName(oddsGame.away_team);
-  
-  for (const game of games) {
-    const gameHome = normalizeTeamName(game.home_team_name);
-    const gameAway = normalizeTeamName(game.visitor_team_name);
-    
-    // Check if team names match (allowing for partial matches)
-    const homeMatch = gameHome.includes(oddsHome) || oddsHome.includes(gameHome);
-    const awayMatch = gameAway.includes(oddsAway) || oddsAway.includes(gameAway);
-    
-    if (homeMatch && awayMatch) {
-      return game;
-    }
-  }
-  return null;
-};
-
-const ALLOWED_SPORTSBOOKS = ['draftkings', 'fanduel', 'caesars', 'betrivers'];
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -99,16 +47,12 @@ Deno.serve(async (req) => {
 
   try {
     const ballDontLieApiKey = Deno.env.get("BALLDONTLIE_API_KEY");
-    const oddsApiKey = Deno.env.get("THE_ODDS_API_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    
+
     if (!ballDontLieApiKey) {
       throw new Error("BALLDONTLIE_API_KEY not configured");
-    }
-    if (!oddsApiKey) {
-      throw new Error("THE_ODDS_API_KEY not configured");
     }
     if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
       throw new Error("Supabase configuration missing");
@@ -254,41 +198,49 @@ Deno.serve(async (req) => {
 
     console.log(`Successfully upserted ${gamesToUpsert.length} games`);
 
-    // ===== STEP 2: Fetch odds from The Odds API =====
+    // ===== STEP 2: Fetch DraftKings lines from ESPN (free, keyless) =====
     let oddsCount = 0;
     let oddsError: string | null = null;
 
     try {
-      const oddsUrl = new URL("https://api.the-odds-api.com/v4/sports/americanfootball_nfl/odds");
-      oddsUrl.searchParams.set("apiKey", oddsApiKey);
-      oddsUrl.searchParams.set("markets", "spreads,h2h,totals");
-      oddsUrl.searchParams.set("regions", "us");
-      oddsUrl.searchParams.set("oddsFormat", "american");
-
-      console.log("Fetching odds from The Odds API...");
-
-      const oddsResponse = await fetch(oddsUrl.toString());
-
-      if (!oddsResponse.ok) {
-        const errorText = await oddsResponse.text();
-        console.error("The Odds API error:", oddsResponse.status, errorText);
-        throw new Error(`Failed to fetch odds: ${oddsResponse.status}`);
+      // NFL games come from BDL (numeric ids, no ESPN id stored), so
+      // enumerate ESPN's scoreboard for the next 14 days and match events to
+      // BDL games by team names + date. ESPN displayName equals BDL
+      // full_name for NFL teams, and the date guard keeps a team pair from
+      // matching the wrong leg of a season series.
+      const nowMs = Date.now();
+      const scoreboardDates: string[] = [];
+      for (let i = 0; i <= 14; i++) {
+        const d = new Date(nowMs + i * 24 * 60 * 60 * 1000);
+        scoreboardDates.push(d.toISOString().split("T")[0].replace(/-/g, ""));
       }
 
-      const oddsGames: OddsAPIGame[] = await oddsResponse.json();
-      console.log(`Fetched odds for ${oddsGames.length} games from The Odds API`);
+      interface EspnEventLite { id: string; date: string; home: string; away: string }
+      const espnEvents: EspnEventLite[] = [];
+      for (const date of scoreboardDates) {
+        try {
+          const res = await fetch(
+            `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${date}&limit=100`
+          );
+          if (!res.ok) continue;
+          const data = await res.json();
+          for (const ev of data.events || []) {
+            const comp = ev.competitions?.[0];
+            const home = comp?.competitors?.find((c: { homeAway: string }) => c.homeAway === "home")?.team?.displayName;
+            const away = comp?.competitors?.find((c: { homeAway: string }) => c.homeAway === "away")?.team?.displayName;
+            const completed = ev.status?.type?.completed === true;
+            if (ev.id && home && away && !completed) {
+              espnEvents.push({ id: String(ev.id), date: ev.date, home, away });
+            }
+          }
+        } catch (err) {
+          console.error(`ESPN scoreboard error for ${date}:`, err);
+        }
+      }
+      console.log(`ESPN NFL events with possible odds in window: ${espnEvents.length}`);
 
-      // Prepare games lookup with normalized names
-      const gamesLookup = gamesToUpsert.map(g => ({
-        id: g.id,
-        home_team_name: g.home_team_name,
-        visitor_team_name: g.visitor_team_name,
-      }));
+      const oddsMap = await fetchEspnOddsBatch("nfl", espnEvents.map((e) => e.id));
 
-      // Get game IDs to delete odds for
-      const gameIds = gamesToUpsert.map(g => g.id);
-      
-      // Process and upsert odds (onConflict handles updates, preserves history)
       const oddsToInsert: {
         game_id: number;
         sportsbook: string;
@@ -301,78 +253,39 @@ Deno.serve(async (req) => {
         total_under_odds: number | null;
       }[] = [];
 
-      for (const oddsGame of oddsGames) {
-        const matchedGame = findMatchingGame(oddsGame, gamesLookup);
-        
+      const MATCH_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+      for (const ev of espnEvents) {
+        const odds = oddsMap.get(ev.id);
+        if (!odds) continue;
+
+        const evTime = new Date(ev.date).getTime();
+        const evHome = normalizeTeamName(ev.home);
+        const evAway = normalizeTeamName(ev.away);
+        const matchedGame = gamesToUpsert.find((g) => {
+          if (Math.abs(new Date(g.date).getTime() - evTime) > MATCH_WINDOW_MS) return false;
+          const gameHome = normalizeTeamName(g.home_team_name);
+          const gameAway = normalizeTeamName(g.visitor_team_name);
+          const homeMatch = gameHome.includes(evHome) || evHome.includes(gameHome);
+          const awayMatch = gameAway.includes(evAway) || evAway.includes(gameAway);
+          return homeMatch && awayMatch;
+        });
+
         if (!matchedGame) {
-          console.log(`No match found for: ${oddsGame.away_team} @ ${oddsGame.home_team}`);
+          console.log(`No BDL match for: ${ev.away} @ ${ev.home} (${ev.date})`);
           continue;
         }
 
-        console.log(`Matched: ${oddsGame.away_team} @ ${oddsGame.home_team} -> Game ID ${matchedGame.id}`);
-
-        for (const bookmaker of oddsGame.bookmakers) {
-          // Only process allowed sportsbooks
-          if (!ALLOWED_SPORTSBOOKS.includes(bookmaker.key.toLowerCase())) {
-            continue;
-          }
-
-          const oddRow: {
-            game_id: number;
-            sportsbook: string;
-            spread_value: number | null;
-            spread_odds: number | null;
-            moneyline_home: number | null;
-            moneyline_away: number | null;
-            total_value: number | null;
-            total_over_odds: number | null;
-            total_under_odds: number | null;
-          } = {
-            game_id: matchedGame.id,
-            sportsbook: bookmaker.key.toLowerCase(),
-            spread_value: null,
-            spread_odds: null,
-            moneyline_home: null,
-            moneyline_away: null,
-            total_value: null,
-            total_over_odds: null,
-            total_under_odds: null,
-          };
-
-          for (const market of bookmaker.markets) {
-            if (market.key === "spreads") {
-              // Find home team spread
-              const homeSpread = market.outcomes.find(
-                o => normalizeTeamName(o.name).includes(normalizeTeamName(oddsGame.home_team).split(' ').pop() || '')
-              );
-              if (homeSpread) {
-                oddRow.spread_value = homeSpread.point || null;
-                oddRow.spread_odds = homeSpread.price;
-              }
-            } else if (market.key === "h2h") {
-              // Moneyline
-              for (const outcome of market.outcomes) {
-                if (normalizeTeamName(outcome.name).includes(normalizeTeamName(oddsGame.home_team).split(' ').pop() || '')) {
-                  oddRow.moneyline_home = outcome.price;
-                } else {
-                  oddRow.moneyline_away = outcome.price;
-                }
-              }
-            } else if (market.key === "totals") {
-              // Totals (over/under)
-              for (const outcome of market.outcomes) {
-                if (outcome.name === "Over") {
-                  oddRow.total_value = outcome.point || null;
-                  oddRow.total_over_odds = outcome.price;
-                } else if (outcome.name === "Under") {
-                  oddRow.total_under_odds = outcome.price;
-                }
-              }
-            }
-          }
-
-          oddsToInsert.push(oddRow);
-        }
+        oddsToInsert.push({
+          game_id: matchedGame.id,
+          sportsbook: odds.sportsbook,
+          spread_value: odds.spreadHome,
+          spread_odds: odds.spreadHomeOdds,
+          moneyline_home: odds.moneylineHome,
+          moneyline_away: odds.moneylineAway,
+          total_value: odds.totalValue,
+          total_over_odds: odds.totalOverOdds,
+          total_under_odds: odds.totalUnderOdds,
+        });
       }
 
       console.log(`Inserting ${oddsToInsert.length} odds rows...`);
@@ -407,8 +320,8 @@ Deno.serve(async (req) => {
       .from("odds")
       .select("*", { count: "exact", head: true });
 
-    const sportsbooksMessage = oddsCount > 0 
-      ? "DraftKings, FanDuel, Caesars, BetRivers" 
+    const sportsbooksMessage = oddsCount > 0
+      ? "DraftKings (via ESPN)"
       : "no sportsbooks";
 
     const message = oddsError
