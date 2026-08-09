@@ -371,7 +371,7 @@ export function NCAAFSlate() {
                         e.stopPropagation();
                         handleOpenInsights(game);
                       }}
-                      className="w-full bg-terminal-amber/20 hover:bg-terminal-amber/30 text-terminal-amber border border-terminal-amber/50 font-mono text-sm mt-2"
+                      className="w-full h-11 md:h-10 bg-terminal-amber/20 hover:bg-terminal-amber/30 text-terminal-amber border border-terminal-amber/50 font-mono text-sm mt-2 active:scale-[0.99]"
                       variant="outline"
                     >
                       <TrendingUp className="w-4 h-4 mr-2" />

@@ -100,6 +100,11 @@ export function BottomNav() {
       if (isOpen) {
         toggleChat();
       }
+      // iOS convention: re-tapping the active tab scrolls its view to the top
+      if (isActive(item)) {
+        document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
       // For Sports tab, navigate to last visited sport
       if (item.label === "Sports") {
         navigate(lastSportPath.current);
@@ -124,7 +129,8 @@ export function BottomNav() {
                 data-coach={item.label === "Sports" ? "sports-nav" : undefined}
                 onClick={() => handleTap(item)}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors",
+                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full select-none",
+                  "transition-[color,transform] duration-150 active:scale-90",
                   active
                     ? "text-terminal-green"
                     : "text-muted-foreground active:text-foreground"

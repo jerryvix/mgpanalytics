@@ -574,7 +574,7 @@ export function DashboardHome() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Ask about any game, market, or move"
-              className="h-12 md:h-16 text-sm md:text-lg px-4 pr-12 md:px-6 md:pr-14 bg-card border-border focus:border-primary rounded-xl"
+              className="h-12 md:h-16 text-base md:text-lg px-4 pr-12 md:px-6 md:pr-14 bg-card border-border focus:border-primary rounded-xl"
             />
             <Button
               type="submit"

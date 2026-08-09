@@ -41,7 +41,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
   const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab|ncaaf|mlb)/.test(location.pathname);
 
   return (
-    <div className="p-4 pb-20 md:p-6 md:pb-6">
+    <div className="p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] pb-20 md:p-6 md:pb-6 md:pt-6">
       <BackButton />
       {isSportsPage && <MobileSportNav />}
       <Routes>

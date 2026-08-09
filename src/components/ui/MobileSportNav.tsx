@@ -70,9 +70,10 @@ export function MobileSportNav() {
   );
 
   return (
-    <div className="mb-4 space-y-2">
-      {/* Sport tabs - five sports don't fit a phone width, so the row scrolls */}
-      <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1">
+    <div className="mb-4 space-y-2.5">
+      {/* Sport tabs - five sports don't fit a phone width, so the row scrolls.
+          Hidden scrollbar + contained overscroll keeps it feeling native. */}
+      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide overscroll-x-contain -mx-4 px-4">
         {sports.map((sport) => {
           const isActive = activeSport?.label === sport.label;
           return (
@@ -80,22 +81,23 @@ export function MobileSportNav() {
               key={sport.label}
               onClick={() => navigate(sport.path)}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0",
+                "flex items-center gap-1.5 px-3.5 min-h-[40px] rounded-full text-[13px] font-medium shrink-0 select-none",
+                "transition-[color,background-color,transform] duration-150 active:scale-[0.96]",
                 isActive
                   ? "bg-terminal-green/15 text-terminal-green border border-terminal-green/40"
-                  : "bg-card/50 text-muted-foreground border border-border hover:text-foreground"
+                  : "bg-card/50 text-muted-foreground border border-border active:text-foreground"
               )}
             >
-              <img src={sport.logo} alt={sport.label} className="w-4 h-4 object-contain" />
+              <img src={sport.logo} alt="" className="w-4 h-4 object-contain pointer-events-none" />
               {sport.label}
             </button>
           );
         })}
       </div>
 
-      {/* Sub-tabs (Games / Players) */}
+      {/* Sub-tabs (Games / Players / Trending) as an iOS-style segmented control */}
       {activeSport?.subTabs && (
-        <div className="flex gap-1">
+        <div className="inline-flex rounded-lg bg-card/70 border border-border p-0.5 gap-0.5">
           {activeSport.subTabs.map((sub) => {
             const isActive = location.pathname === sub.path;
             return (
@@ -103,10 +105,11 @@ export function MobileSportNav() {
                 key={sub.path}
                 onClick={() => navigate(sub.path)}
                 className={cn(
-                  "px-3 py-1 rounded text-xs font-medium transition-colors",
+                  "px-3.5 min-h-[34px] rounded-md text-xs font-medium select-none",
+                  "transition-[color,background-color] duration-150",
                   isActive
-                    ? "bg-foreground/10 text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-foreground/10 text-foreground shadow-sm"
+                    : "text-muted-foreground active:text-foreground"
                 )}
               >
                 {sub.label}

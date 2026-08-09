@@ -106,12 +106,30 @@
 
   html {
     font-family: 'Space Grotesk', sans-serif;
+    /* iOS: kill the gray tap flash and stop Safari from inflating text in
+       landscape; our own active: states provide touch feedback instead */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Space Grotesk', sans-serif;
     overflow-x: hidden;
+  }
+
+  /* iOS: removes the 350ms double-tap-to-zoom wait so taps feel instant */
+  button, a, [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* iOS Safari force-zooms the page when a focused field is under 16px and
+     the zoom sticks after blur. Enforce the floor on phones only; !important
+     is needed to beat utility classes like text-sm at the source */
+  @media (max-width: 767px) {
+    input, select, textarea {
+      font-size: max(16px, 1em) !important;
+    }
   }
 
   /* Custom scrollbar for terminal feel */

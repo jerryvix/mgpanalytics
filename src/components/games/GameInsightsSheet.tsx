@@ -1,6 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, TrendingUp, Flame, Lightbulb, ArrowRightLeft, Signal } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
@@ -238,6 +240,8 @@ export function GameInsightsSheet({
     staleTime: 60_000,
   });
 
+  const isMobile = useIsMobile();
+
   const orderedBooks = SPORTSBOOKS.map((key) => ({
     key,
     odds: data?.books.find((b) => b.sportsbook.toLowerCase().includes(key)) || null,
@@ -246,35 +250,30 @@ export function GameInsightsSheet({
   const bestMlHome = bestIdx(present.map((p) => p.odds), (b) => b.moneyline_home);
   const bestMlAway = bestIdx(present.map((p) => p.odds), (b) => b.moneyline_away);
 
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="bg-background/85 backdrop-blur-xl border-l border-terminal-green/30 w-full sm:max-w-xl overflow-y-auto">
-        <SheetHeader className="pb-4 border-b border-terminal-green/20">
-          <SheetTitle className="font-mono text-foreground">
-            {game && (
-              <div>
-                <div className="flex items-center gap-2 text-lg">
-                  <TeamLogo sport={sport} name={game.visitor_team_name} size={20} />
-                  {short(game.visitor_team_name)}
-                  <span className="text-terminal-green">@</span>
-                  <TeamLogo sport={sport} name={game.home_team_name} size={20} />
-                  {short(game.home_team_name)}
-                </div>
-                <p className="text-xs text-muted-foreground font-normal mt-1">
-                  {format(parseISO(game.date), "EEE MMM d, h:mm a")}
-                  {game.venue ? ` · ${game.venue}` : ""}
-                </p>
-                {(game.starting_pitcher_away || game.starting_pitcher_home) && (
-                  <p className="text-xs text-muted-foreground font-normal mt-0.5">
-                    ⚾ {game.starting_pitcher_away || "TBD"} vs {game.starting_pitcher_home || "TBD"}
-                  </p>
-                )}
-              </div>
-            )}
-          </SheetTitle>
-        </SheetHeader>
+  const headerBlock = game && (
+    <div>
+      <div className="flex items-center gap-2 text-lg">
+        <TeamLogo sport={sport} name={game.visitor_team_name} size={20} />
+        {short(game.visitor_team_name)}
+        <span className="text-terminal-green">@</span>
+        <TeamLogo sport={sport} name={game.home_team_name} size={20} />
+        {short(game.home_team_name)}
+      </div>
+      <p className="text-xs text-muted-foreground font-normal mt-1">
+        {format(parseISO(game.date), "EEE MMM d, h:mm a")}
+        {game.venue ? ` · ${game.venue}` : ""}
+      </p>
+      {(game.starting_pitcher_away || game.starting_pitcher_home) && (
+        <p className="text-xs text-muted-foreground font-normal mt-0.5">
+          ⚾ {game.starting_pitcher_away || "TBD"} vs {game.starting_pitcher_home || "TBD"}
+        </p>
+      )}
+    </div>
+  );
 
-        {isLoading || !game ? (
+  const body = (
+    <>
+      {isLoading || !game ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-terminal-green" />
             <span className="ml-2 font-mono text-sm text-muted-foreground">BUILDING GAME INTEL...</span>
@@ -419,6 +418,34 @@ export function GameInsightsSheet({
             </p>
           </div>
         )}
+    </>
+  );
+
+  // Phones get a draggable bottom sheet (the pattern DraftKings/FanDuel
+  // users know for game detail): swipe the handle down to dismiss. Desktop
+  // keeps the right-side panel.
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="h-[92dvh] bg-background/95 backdrop-blur-xl border-terminal-green/30">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-8">
+            <DrawerHeader className="px-0 pt-2 pb-4 border-b border-terminal-green/20 text-left">
+              <DrawerTitle className="font-mono text-foreground">{headerBlock}</DrawerTitle>
+            </DrawerHeader>
+            {body}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="bg-background/85 backdrop-blur-xl border-l border-terminal-green/30 w-full sm:max-w-xl overflow-y-auto">
+        <SheetHeader className="pb-4 border-b border-terminal-green/20">
+          <SheetTitle className="font-mono text-foreground">{headerBlock}</SheetTitle>
+        </SheetHeader>
+        {body}
       </SheetContent>
     </Sheet>
   );

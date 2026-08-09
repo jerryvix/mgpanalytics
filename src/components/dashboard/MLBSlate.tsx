@@ -355,7 +355,7 @@ export function MLBSlate() {
                         e.stopPropagation();
                         handleOpenInsights(game);
                       }}
-                      className="w-full bg-terminal-green/20 hover:bg-terminal-green/30 text-terminal-green border border-terminal-green/50 font-mono text-sm"
+                      className="w-full h-11 md:h-10 bg-terminal-green/20 hover:bg-terminal-green/30 text-terminal-green border border-terminal-green/50 font-mono text-sm active:scale-[0.99]"
                       variant="outline"
                     >
                       <TrendingUp className="w-4 h-4 mr-2" />

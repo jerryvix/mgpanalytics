@@ -125,7 +125,10 @@ const Dashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="h-screen flex w-full bg-background overflow-hidden">
+      {/* h-dvh (not h-screen): iOS Safari's collapsing toolbar makes 100vh
+          taller than the visible area, which pushed the bottom nav half
+          off-screen until the user scrolled */}
+      <div className="h-dvh flex w-full bg-background overflow-hidden">
         {/* Always mounted: fixed rail on desktop, off-canvas sheet on mobile
             (opened from BottomNav's Menu tab). Do not gate this on isMobile -
             that leaves phones with no full navigation (see mobileNav test). */}
@@ -136,7 +139,7 @@ const Dashboard = () => {
           onTogglePreview={handleTogglePreview}
         />
 
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto overscroll-contain">
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
         {/* ChatPanel: docked on desktop, full-screen overlay on mobile */}

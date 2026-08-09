@@ -41,7 +41,7 @@ export function BackButton() {
     <button
       onClick={handleBack}
       aria-label="Go back"
-      className="group mb-2 -ml-1.5 inline-flex items-center gap-0.5 rounded-full py-2 pl-1 pr-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 md:mb-3 md:py-1"
+      className="group mb-2 -ml-1.5 inline-flex min-h-[44px] items-center gap-0.5 rounded-full pl-1 pr-3 text-[13px] font-medium text-muted-foreground transition-colors select-none hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10 md:mb-3 md:min-h-0 md:py-1 md:pr-2.5 md:text-xs"
     >
       <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
       Back
