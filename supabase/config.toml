@@ -98,3 +98,12 @@ verify_jwt = false
 
 [functions.sync-preseason-props]
 verify_jwt = false
+
+[functions.sync-mlb-players]
+verify_jwt = false
+
+[functions.sync-mlb-hitting]
+verify_jwt = false
+
+[functions.daily-digest]
+verify_jwt = false

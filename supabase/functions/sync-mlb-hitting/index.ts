@@ -150,12 +150,12 @@ serve(async (req) => {
           if (h > 0) { streak++; streakHits += h; streakAb += ab; }
           else break;
         }
-        if (streak > 0) {
-          streakUpdates.push({
-            player_id: internal, streak,
-            streak_avg: streakAb > 0 ? streakHits / streakAb : 0,
-          });
-        }
+        // Always push, including streak 0: an ended streak must reset the
+        // previously stored value or the UI keeps showing it forever.
+        streakUpdates.push({
+          player_id: internal, streak,
+          streak_avg: streakAb > 0 ? streakHits / streakAb : 0,
+        });
         processed++;
       } catch (err) {
         console.error(`Game log error for ${cand.extId}:`, err);
@@ -185,8 +185,8 @@ serve(async (req) => {
       seasonRows: seasonRows.length,
       hittersProcessed: processed,
       gameLogs: gameLogRows.length,
-      activeStreaks: streakUpdates.length,
-      message: `Synced ${seasonRows.length} MLB season lines, ${gameLogRows.length} game logs, ${streakUpdates.length} active hit streaks`,
+      activeStreaks: streakUpdates.filter((u) => u.streak > 0).length,
+      message: `Synced ${seasonRows.length} MLB season lines, ${gameLogRows.length} game logs, ${streakUpdates.filter((u) => u.streak > 0).length} active hit streaks`,
     };
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success", records_added: seasonRows.length + gameLogRows.length, details: response,
