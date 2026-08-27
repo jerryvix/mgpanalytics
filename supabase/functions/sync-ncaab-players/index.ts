@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
+import { espnFetch as espnRequest } from "../_shared/espn-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,7 +52,7 @@ async function espnFetch(endpoint: string): Promise<any> {
   const url = `${ESPN_BASE_URL}${endpoint}`;
   console.log(`[sync-ncaab-players] Fetching: ${url}`);
   
-  const response = await fetch(url);
+  const response = await espnRequest(url);
 
   if (!response.ok) {
     const errorText = await response.text();

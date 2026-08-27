@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 import { fetchEspnOddsBatch } from "../_shared/espn-odds.ts";
+import { espnFetch } from "../_shared/espn-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,7 +110,7 @@ serve(async (req) => {
     // Test mode - just verify the ESPN odds source responds (keyless)
     if (testOnly) {
       const testUrl = "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard";
-      const testResponse = await fetch(testUrl);
+      const testResponse = await espnFetch(testUrl);
 
       if (!testResponse.ok) {
         throw new Error(`ESPN API returned ${testResponse.status}`);
@@ -193,7 +194,7 @@ serve(async (req) => {
           const d = new Date(Date.now() + i * 24 * 60 * 60 * 1000);
           const dateStr = d.toISOString().split("T")[0].replace(/-/g, "");
           try {
-            const res = await fetch(
+            const res = await espnFetch(
               `https://site.api.espn.com/apis/site/v2/sports/${sport.scoreboard}/scoreboard?dates=${dateStr}&limit=100`
             );
             if (!res.ok) continue;

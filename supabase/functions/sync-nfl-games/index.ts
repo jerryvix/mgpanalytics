@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 import { fetchEspnOddsBatch } from "../_shared/espn-odds.ts";
+import { espnFetch } from "../_shared/espn-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -219,7 +220,7 @@ Deno.serve(async (req) => {
       const espnEvents: EspnEventLite[] = [];
       for (const date of scoreboardDates) {
         try {
-          const res = await fetch(
+          const res = await espnFetch(
             `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard?dates=${date}&limit=100`
           );
           if (!res.ok) continue;

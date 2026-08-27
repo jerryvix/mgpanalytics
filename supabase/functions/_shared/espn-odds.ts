@@ -1,3 +1,4 @@
+import { espnFetch } from "./espn-fetch.ts";
 // Shared ESPN odds fetcher. ESPN's core API exposes per-event sportsbook
 // lines (DraftKings) with BOTH opening and current values, free and keyless.
 // This replaced The Odds API (paid, key died Jul 2026) as MGP's game-odds
@@ -117,7 +118,7 @@ export async function fetchEspnEventOdds(
   eventId: string,
 ): Promise<EspnEventOdds | null> {
   const url = `https://sports.core.api.espn.com/v2/${LEAGUE_PATH[league]}/events/${eventId}/competitions/${eventId}/odds`;
-  const res = await fetch(url);
+  const res = await espnFetch(url);
   if (!res.ok) return null;
 
   const data = await res.json().catch(() => null);

@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
+import { espnFetch } from "../_shared/espn-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -168,7 +169,7 @@ serve(async (req) => {
     let rankedTeams: Map<string, number> = new Map();
     try {
       const rankingsUrl = "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/rankings";
-      const rankingsResponse = await fetch(rankingsUrl);
+      const rankingsResponse = await espnFetch(rankingsUrl);
       if (rankingsResponse.ok) {
         const rankingsData = await rankingsResponse.json();
         // Find AP Poll
@@ -202,7 +203,7 @@ serve(async (req) => {
     for (const date of dates) {
       try {
         const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${date}&limit=100`;
-        const response = await fetch(espnUrl);
+        const response = await espnFetch(espnUrl);
 
         if (!response.ok) {
           console.error(`ESPN API error for ${date}: ${response.status}`);

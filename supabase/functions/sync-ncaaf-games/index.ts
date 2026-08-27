@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 import { fetchEspnOddsBatch } from "../_shared/espn-odds.ts";
+import { espnFetch } from "../_shared/espn-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -137,7 +138,7 @@ serve(async (req) => {
     const rankedTeams: RankedTeam[] = [];
     try {
       const rankingsUrl = "https://site.api.espn.com/apis/site/v2/sports/football/college-football/rankings";
-      const rankingsRes = await fetch(rankingsUrl);
+      const rankingsRes = await espnFetch(rankingsUrl);
       if (rankingsRes.ok) {
         const rankingsData = await rankingsRes.json();
         const apPoll = rankingsData.rankings?.find(
@@ -169,11 +170,12 @@ serve(async (req) => {
     console.log(`Fetching NCAAF games for dates: ${dates.join(", ")}`);
 
     const allGames: ESPNGame[] = [];
+    let scoreboardOk = 0;
 
     for (const date of dates) {
       try {
         const espnUrl = `https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${date}&limit=100`;
-        const response = await fetch(espnUrl);
+        const response = await espnFetch(espnUrl);
 
         if (!response.ok) {
           console.error(`ESPN API error for ${date}: ${response.status}`);
@@ -184,9 +186,18 @@ serve(async (req) => {
         const games = data.events || [];
         console.log(`Found ${games.length} NCAAF games for ${date}`);
         allGames.push(...games);
+        scoreboardOk++;
       } catch (err) {
         console.error(`Error fetching date ${date}:`, err);
       }
+    }
+
+    // If every scoreboard request failed the upstream is refusing us rather
+    // than the slate being empty (see _shared/espn-fetch.ts). Fail loudly:
+    // upserting nothing and returning success is how the Aug 19 2026 outage
+    // stayed hidden for a week.
+    if (scoreboardOk === 0) {
+      throw new Error(`All ${dates.length} ESPN NCAAF scoreboard requests failed`);
     }
 
     // Filter games within the window — including the lookback, so completed
