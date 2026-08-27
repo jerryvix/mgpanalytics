@@ -8,6 +8,8 @@ const corsHeaders = {
 };
 
 const MLB_API = "https://statsapi.mlb.com/api/v1";
+// Days without a game before a hit streak stops counting as live (injury, demotion).
+const STREAK_STALE_DAYS = 7;
 const num = (v: unknown): number => {
   const n = typeof v === "string" ? parseFloat(v) : (v as number);
   return Number.isFinite(n) ? n : 0;
@@ -150,6 +152,14 @@ serve(async (req) => {
           if (h > 0) { streak++; streakHits += h; streakAb += ab; }
           else break;
         }
+        // A streak is only current if the hitter is still playing. Without this,
+        // an injured or demoted player keeps showing the streak he was frozen at.
+        const lastGameDate = chron.length ? chron[chron.length - 1].date : null;
+        const daysSinceLastGame = lastGameDate
+          ? (Date.now() - Date.parse(`${lastGameDate}T00:00:00Z`)) / 86400000
+          : Infinity;
+        if (daysSinceLastGame > STREAK_STALE_DAYS) { streak = 0; streakHits = 0; streakAb = 0; }
+
         // Always push, including streak 0: an ended streak must reset the
         // previously stored value or the UI keeps showing it forever.
         streakUpdates.push({
