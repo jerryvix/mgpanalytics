@@ -522,7 +522,7 @@ export function DashboardHome() {
         />
 
         <p className="text-xs md:text-sm text-muted-foreground mb-2 font-medium">
-          {getGreeting()} — here's what's moving.
+          {getGreeting()}. Here's what's moving.
         </p>
 
         <h1 className="text-xl md:text-4xl font-semibold text-foreground text-center tracking-tight mb-4 md:mb-6">

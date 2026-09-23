@@ -92,8 +92,8 @@ function CurrentContext({ activeSports }: { activeSports: string[] }) {
         {rows.map((row) => (
           <span key={row.sport} className="font-mono text-[11px] text-muted-foreground">
             <span className="text-foreground/80">{row.sport}</span>
-            {row.week !== null && <> — Week {row.week}</>}
-            {" — "}
+            {row.week !== null && <>, Week {row.week}</>}
+            {" · "}
             {row.gameCount} game{row.gameCount === 1 ? "" : "s"}
           </span>
         ))}
