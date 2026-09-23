@@ -19,6 +19,10 @@ interface ChatContextType {
   // Active sports for multi-sport chat queries
   activeSports: string[];
   setActiveSports: (sports: string[]) => void;
+  // Timestamp of the last successful live-data fetch (dashboard home), shown
+  // in the sidebar's Live Data status.
+  lastDataRefresh: Date | null;
+  setLastDataRefresh: (date: Date) => void;
   // Chat history
   conversations: Conversation[];
   conversationsLoading: boolean;
@@ -37,6 +41,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   
   const [pendingQuery, setPendingQuery] = useState("");
   const [activeSports, setActiveSports] = useState<string[]>(["NFL", "NBA", "NCAAB"]);
+  const [lastDataRefresh, setLastDataRefresh] = useState<Date | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -151,6 +156,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       openWithQuery,
       activeSports,
       setActiveSports,
+      lastDataRefresh,
+      setLastDataRefresh,
       conversations,
       conversationsLoading,
       activeConversationId,

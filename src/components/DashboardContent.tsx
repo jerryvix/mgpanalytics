@@ -1,5 +1,8 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
+import { ComingSoon } from "@/components/dashboard/ComingSoon";
+import Watchlist from "@/pages/Watchlist";
+import SavedChats from "@/pages/SavedChats";
 import { NFLSlate } from "@/components/dashboard/NFLSlate";
 import { NBASlate } from "@/components/dashboard/NBASlate";
 import { NCAABSlate } from "@/components/dashboard/NCAABSlate";
@@ -47,6 +50,13 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
       <Routes>
         <Route index element={<DashboardHome />} />
         <Route path="analyst" element={<Analyst />} />
+        <Route path="watchlist" element={<Watchlist />} />
+        <Route path="chats" element={<SavedChats />} />
+        <Route path="market/live-edges" element={<ComingSoon sport="Live Edges" emoji="⚡" />} />
+        <Route path="market/game-finder" element={<ComingSoon sport="Game Finder" emoji="🔎" />} />
+        <Route path="market/line-movement" element={<ComingSoon sport="Line Movement" emoji="📈" />} />
+        <Route path="market/props" element={<ComingSoon sport="Player Props" emoji="🎯" />} />
+        <Route path="market/trends" element={<ComingSoon sport="Trends" emoji="📊" />} />
         <Route path="nfl" element={<NFLSlate />} />
         <Route path="nfl/players" element={<NFLPlayers />} />
         <Route path="nfl/players/bdl-:playerId" element={<NFLPlayerDetail />} />

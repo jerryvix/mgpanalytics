@@ -1,12 +1,29 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, MessageCircle, PanelRightClose, PanelRightOpen, Trash2, ArrowLeft, History, Plus } from "lucide-react";
+import {
+  Send,
+  Loader2,
+  MessageCircle,
+  PanelRightClose,
+  PanelRightOpen,
+  Trash2,
+  ArrowLeft,
+  History,
+  Plus,
+  Calendar,
+  TrendingUp,
+  Target,
+  BarChart3,
+  Activity,
+  Users2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useGeminiChat } from "@/hooks/useGeminiChat";
 import { useChat } from "@/contexts/ChatContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useMarketContext } from "@/hooks/useMarketContext";
 import { cn } from "@/lib/utils";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +68,55 @@ function getQuestionTypeFooter(questionType?: QuestionType): string | null {
     default:
       return null;
   }
+}
+
+const SUGGESTED_QUESTIONS = [
+  { label: "Tonight's slate", icon: Calendar },
+  { label: "Biggest favorites", icon: TrendingUp },
+  { label: "Value plays", icon: Target },
+  { label: "Player props", icon: BarChart3 },
+  { label: "Line movement", icon: Activity },
+  { label: "Team matchups", icon: Users2 },
+];
+
+function CurrentContext({ activeSports }: { activeSports: string[] }) {
+  const { data: rows = [] } = useMarketContext(activeSports);
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="px-4 pt-3 pb-1 shrink-0">
+      <p className="font-mono text-[9px] font-bold uppercase tracking-widest text-terminal-purple/70 mb-1.5">
+        Current Context
+      </p>
+      <div className="flex flex-wrap gap-x-3 gap-y-1">
+        {rows.map((row) => (
+          <span key={row.sport} className="font-mono text-[11px] text-muted-foreground">
+            <span className="text-foreground/80">{row.sport}</span>
+            {row.week !== null && <> — Week {row.week}</>}
+            {" — "}
+            {row.gameCount} game{row.gameCount === 1 ? "" : "s"}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SuggestedQuestions({ onSelect }: { onSelect: (q: string) => void }) {
+  return (
+    <div className="px-4 pb-2 flex flex-wrap gap-1.5">
+      {SUGGESTED_QUESTIONS.map(({ label, icon: Icon }) => (
+        <button
+          key={label}
+          onClick={() => onSelect(label)}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono bg-terminal-purple/10 hover:bg-terminal-purple/20 border border-terminal-purple/20 hover:border-terminal-purple/40 rounded-full text-foreground/80 hover:text-foreground transition-colors"
+        >
+          <Icon className="w-3 h-3 text-terminal-purple shrink-0" />
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 export function ChatPanel() {
@@ -413,6 +479,7 @@ export function ChatPanel() {
 
   const chatContent = (
     <div className="flex flex-col flex-1 min-h-0">
+      <CurrentContext activeSports={activeSports} />
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollRef}>
         <div className="space-y-2 md:space-y-4">
@@ -425,7 +492,7 @@ export function ChatPanel() {
                 className={`max-w-[90%] md:max-w-[70%] rounded-lg px-4 py-2.5 text-sm break-words ${
                   message.role === "user"
                     ? "bg-muted text-foreground"
-                    : "bg-terminal-green/10 border border-terminal-green/20"
+                    : "bg-terminal-purple/10 border border-terminal-purple/20"
                 }`}
                 style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
               >
@@ -450,17 +517,18 @@ export function ChatPanel() {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-terminal-green/10 border border-terminal-green/20 rounded-lg px-4 py-3">
-                <Loader2 className="w-4 h-4 animate-spin text-terminal-green" />
+              <div className="bg-terminal-purple/10 border border-terminal-purple/20 rounded-lg px-4 py-3">
+                <Loader2 className="w-4 h-4 animate-spin text-terminal-purple" />
               </div>
             </div>
           )}
         </div>
+        {messages.length === 1 && <SuggestedQuestions onSelect={handleSendWithQuery} />}
       </ScrollArea>
 
       {/* Context warning */}
       {messages.length >= 16 && (
-        <div className="px-4 py-2 bg-yellow-500/10 border-t border-yellow-500/20 text-xs text-yellow-400 font-mono text-center">
+        <div className="px-4 py-2 bg-terminal-amber/10 border-t border-terminal-amber/20 text-xs text-terminal-amber font-mono text-center">
           Long conversation - older messages may lose context. Consider starting a new chat for fresh topics.
         </div>
       )}
@@ -477,13 +545,13 @@ export function ChatPanel() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask about games, odds, or teams..."
-            className="flex-1 font-mono text-base md:text-sm bg-background border-border focus-visible:ring-terminal-green/50"
+            className="flex-1 font-mono text-base md:text-sm bg-background border-border focus-visible:ring-terminal-purple/50"
             disabled={isLoading}
           />
           <Button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="bg-terminal-green hover:bg-terminal-green/90 text-background h-11 w-11 p-0 shrink-0"
+            className="bg-gradient-to-br from-terminal-purple to-terminal-cyan hover:opacity-90 text-background h-11 w-11 p-0 shrink-0"
             aria-label="Send message"
           >
             <Send className="w-5 h-5" />
@@ -563,7 +631,7 @@ export function ChatPanel() {
                           startNewConversation();
                           setShowMobileHistory(false);
                         }}
-                        className="h-7 text-xs text-terminal-green hover:text-terminal-green"
+                        className="h-7 text-xs text-terminal-purple hover:text-terminal-purple"
                       >
                         <Plus className="w-3 h-3 mr-1" />
                         New
@@ -583,7 +651,7 @@ export function ChatPanel() {
                             className={cn(
                               "w-full text-left px-3 py-2 rounded-lg text-xs transition-colors truncate",
                               activeConversationId === conv.id
-                                ? "bg-terminal-green/10 text-terminal-green"
+                                ? "bg-terminal-purple/10 text-terminal-purple"
                                 : "text-foreground hover:bg-muted/50"
                             )}
                           >
@@ -599,6 +667,7 @@ export function ChatPanel() {
 
             {/* Chat content fills remaining space, input padded for bottom nav */}
             <div className="flex flex-col flex-1 min-h-0">
+              <CurrentContext activeSports={activeSports} />
               <ScrollArea className="flex-1 p-4" ref={scrollRef}>
                 <div className="space-y-2">
                   {messages.map((message) => (
@@ -610,7 +679,7 @@ export function ChatPanel() {
                         className={`max-w-[85%] rounded-lg px-4 py-2.5 text-sm break-words ${
                           message.role === "user"
                             ? "bg-muted text-foreground"
-                            : "bg-terminal-green/10 border border-terminal-green/20"
+                            : "bg-terminal-purple/10 border border-terminal-purple/20"
                         }`}
                         style={{ overflowWrap: "anywhere", wordBreak: "break-word" }}
                       >
@@ -635,17 +704,18 @@ export function ChatPanel() {
                   ))}
                   {isLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-terminal-green/10 border border-terminal-green/20 rounded-lg px-4 py-3">
-                        <Loader2 className="w-4 h-4 animate-spin text-terminal-green" />
+                      <div className="bg-terminal-purple/10 border border-terminal-purple/20 rounded-lg px-4 py-3">
+                        <Loader2 className="w-4 h-4 animate-spin text-terminal-purple" />
                       </div>
                     </div>
                   )}
                 </div>
+                {messages.length === 1 && <SuggestedQuestions onSelect={handleSendWithQuery} />}
               </ScrollArea>
 
               {/* Context warning */}
               {messages.length >= 16 && (
-                <div className="px-4 py-2 bg-yellow-500/10 border-t border-yellow-500/20 text-xs text-yellow-400 font-mono text-center">
+                <div className="px-4 py-2 bg-terminal-amber/10 border-t border-terminal-amber/20 text-xs text-terminal-amber font-mono text-center">
                   Long conversation - older messages may lose context. Consider starting a new chat for fresh topics.
                 </div>
               )}
@@ -662,13 +732,13 @@ export function ChatPanel() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask about games, odds, or teams..."
-                    className="flex-1 font-mono text-base bg-background border-border focus-visible:ring-terminal-green/50"
+                    className="flex-1 font-mono text-base bg-background border-border focus-visible:ring-terminal-purple/50"
                     disabled={isLoading}
                   />
                   <Button
                     onClick={handleSend}
                     disabled={!input.trim() || isLoading}
-                    className="bg-terminal-green hover:bg-terminal-green/90 text-background h-11 w-11 p-0 shrink-0"
+                    className="bg-gradient-to-br from-terminal-purple to-terminal-cyan hover:opacity-90 text-background h-11 w-11 p-0 shrink-0"
                     aria-label="Send message"
                   >
                     <Send className="w-5 h-5" />
@@ -701,21 +771,21 @@ export function ChatPanel() {
               variant="ghost"
               size="icon"
               onClick={toggleChat}
-              className="h-10 w-10 text-terminal-green hover:text-terminal-green hover:bg-terminal-green/10 mb-3"
+              className="h-10 w-10 text-terminal-purple hover:text-terminal-purple hover:bg-terminal-purple/10 mb-3"
             >
               <PanelRightClose className="w-5 h-5" />
             </Button>
             <div className="flex-1 flex items-center">
               <div
-                className="px-2 py-3 rounded-md bg-terminal-green/10 border border-terminal-green/30"
+                className="px-2 py-3 rounded-md bg-terminal-purple/10 border border-terminal-purple/30"
                 style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
               >
-                <span className="text-xs font-semibold tracking-wider text-terminal-green">
+                <span className="text-xs font-semibold tracking-wider text-terminal-purple">
                   MGP ANALYST
                 </span>
               </div>
             </div>
-            <MessageCircle className="w-4 h-4 text-terminal-green mt-3" />
+            <MessageCircle className="w-4 h-4 text-terminal-purple mt-3" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -736,20 +806,20 @@ export function ChatPanel() {
               className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 group"
             >
               <div className={`absolute inset-y-0 left-0 w-full transition-colors ${
-                isDragging ? "bg-terminal-green/40" : "bg-transparent group-hover:bg-terminal-green/20"
+                isDragging ? "bg-terminal-purple/40" : "bg-transparent group-hover:bg-terminal-purple/20"
               }`} />
               {/* Visible drag indicator - centered dot cluster */}
               <div className="absolute top-1/2 -translate-y-1/2 left-0 w-1.5 flex flex-col items-center gap-1 py-2">
-                <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-green" : "bg-muted-foreground/30 group-hover:bg-terminal-green/60"}`} />
-                <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-green" : "bg-muted-foreground/30 group-hover:bg-terminal-green/60"}`} />
-                <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-green" : "bg-muted-foreground/30 group-hover:bg-terminal-green/60"}`} />
+                <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-purple" : "bg-muted-foreground/30 group-hover:bg-terminal-purple/60"}`} />
+                <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-purple" : "bg-muted-foreground/30 group-hover:bg-terminal-purple/60"}`} />
+                <div className={`w-1 h-1 rounded-full transition-colors ${isDragging ? "bg-terminal-purple" : "bg-muted-foreground/30 group-hover:bg-terminal-purple/60"}`} />
               </div>
             </div>
 
             {/* Header */}
             <div data-coach="chat-panel" className="flex items-center justify-between p-4 border-b border-border shrink-0">
               <div className="flex items-center gap-3">
-                <MessageCircle className="w-5 h-5 text-terminal-green" />
+                <MessageCircle className="w-5 h-5 text-terminal-purple" />
                 <div>
                   <h2 className="font-mono font-bold text-foreground">MGP Analyst</h2>
                   <p className="font-mono text-[10px] text-muted-foreground">

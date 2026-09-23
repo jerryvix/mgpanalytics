@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -18,19 +18,26 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
-import { 
-  Activity, 
-  Settings, 
+import {
+  Activity,
+  Settings,
   LogOut,
   Eye,
   EyeOff,
-  UserCircle,
   PenLine,
   MessageSquare,
   Trash2,
   Newspaper,
   Users,
-  Home
+  Home,
+  Zap,
+  Search,
+  TrendingUp,
+  Target,
+  BarChart3,
+  Star,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -59,6 +66,16 @@ interface AppSidebarProps {
   isPreviewingAsUser?: boolean;
   onTogglePreview?: () => void;
 }
+
+// Market - cross-sport tools. Some of these are still being built; they route
+// to a ComingSoon page rather than a dead link until the real feature ships.
+const marketMenuItems = [
+  { title: "Live Edges", url: "/dashboard/market/live-edges", icon: Zap },
+  { title: "Game Finder", url: "/dashboard/market/game-finder", icon: Search },
+  { title: "Line Movement", url: "/dashboard/market/line-movement", icon: TrendingUp },
+  { title: "Player Props", url: "/dashboard/market/props", icon: Target },
+  { title: "Trends", url: "/dashboard/market/trends", icon: BarChart3 },
+];
 
 // Sports slates - secondary navigation with logos
 const sportsMenuItems = [
@@ -137,15 +154,23 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
   useEffect(() => {
     setOpenMobile(false);
   }, [location.pathname, setOpenMobile]);
-  const { 
-    conversations, 
-    conversationsLoading, 
+  const {
+    conversations,
+    conversationsLoading,
     activeConversationId,
     startNewConversation,
     loadConversation,
-    refreshConversations 
+    refreshConversations,
+    lastDataRefresh,
   } = useChat();
-  
+
+  // Sports sub-nav: NFL open by default, others collapsed - avoids a wall of
+  // sub-links for sports the user isn't currently looking at.
+  const [expandedSports, setExpandedSports] = useState<Record<string, boolean>>({ NFL: true });
+  const toggleSportExpanded = (sport: string) => {
+    setExpandedSports(prev => ({ ...prev, [sport]: !prev[sport] }));
+  };
+
   // Use preview mode to show user view when testing
   const effectiveIsAdmin = isAdmin && !isPreviewingAsUser;
 
@@ -263,8 +288,8 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                         onClick={() => navigate("/dashboard")}
                         className={`w-full flex items-center gap-3 px-3 py-1.5 rounded transition-colors font-medium ${
                           location.pathname === "/dashboard"
-                            ? "bg-terminal-green/15 text-terminal-green"
-                            : "text-sidebar-foreground hover:bg-terminal-green/10 hover:text-terminal-green"
+                            ? "bg-terminal-blue/15 text-terminal-blue"
+                            : "text-sidebar-foreground hover:bg-terminal-blue/10 hover:text-terminal-blue"
                         }`}
                       >
                         <Home className="w-4 h-4 shrink-0" />
@@ -353,7 +378,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                               loadConversation(conv.id);
                             }}
                             className={`w-full flex items-center gap-2 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent transition-colors text-left ${
-                              activeConversationId === conv.id ? "bg-sidebar-accent text-terminal-green" : ""
+                              activeConversationId === conv.id ? "bg-sidebar-accent text-terminal-blue" : ""
                             }`}
                           >
                             <MessageSquare className="w-3 h-3 shrink-0" />
@@ -371,6 +396,40 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
           </SidebarGroup>
         )}
 
+        {/* Market - cross-sport tools */}
+        <SidebarGroup className="mt-1">
+          {!collapsed && (
+            <SidebarGroupLabel className="text-[10px] text-sidebar-foreground/60 uppercase tracking-widest px-2 mb-1">
+              Market
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {marketMenuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SidebarMenuButton asChild>
+                        <NavLink
+                          to={item.url}
+                          className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                          activeClassName="bg-sidebar-accent text-terminal-blue"
+                        >
+                          <item.icon className="w-4 h-4 shrink-0" />
+                          {!collapsed && <span className="text-sm">{item.title}</span>}
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </TooltipTrigger>
+                    {collapsed && (
+                      <TooltipContent side="right">{item.title}</TooltipContent>
+                    )}
+                  </Tooltip>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         {/* Sports */}
         <SidebarGroup className="mt-1" data-coach="sports-nav">
           {!collapsed && (
@@ -380,20 +439,37 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
           )}
           <SidebarGroupContent>
             <SidebarMenu>
-              {sportsMenuItems.map((item) => (
+              {sportsMenuItems.map((item) => {
+                const isExpanded = !!expandedSports[item.title];
+                return (
                 <div key={item.title}>
                   <SidebarMenuItem>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <SidebarMenuButton asChild>
-                          <NavLink
-                            to={item.url}
-                            className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                            activeClassName="bg-sidebar-accent text-terminal-green"
-                          >
-                            <img src={item.logo} alt={item.title} className="w-4 h-4 object-contain shrink-0" />
-                            {!collapsed && <span className="text-sm">{item.title}</span>}
-                          </NavLink>
+                          <div className="flex items-center gap-1">
+                            <NavLink
+                              to={item.url}
+                              className="flex-1 flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                              activeClassName="bg-sidebar-accent text-terminal-blue"
+                            >
+                              <img src={item.logo} alt={item.title} className="w-4 h-4 object-contain shrink-0" />
+                              {!collapsed && <span className="text-sm">{item.title}</span>}
+                            </NavLink>
+                            {!collapsed && item.subItems && (
+                              <button
+                                onClick={() => toggleSportExpanded(item.title)}
+                                className="p-1 mr-1 text-sidebar-foreground/50 hover:text-sidebar-foreground shrink-0"
+                                aria-label={isExpanded ? `Collapse ${item.title}` : `Expand ${item.title}`}
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="w-3.5 h-3.5" />
+                                ) : (
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+                            )}
+                          </div>
                         </SidebarMenuButton>
                       </TooltipTrigger>
                       {collapsed && (
@@ -401,16 +477,16 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                       )}
                     </Tooltip>
                   </SidebarMenuItem>
-                  {/* Sub-items for sports with players */}
-                  {!collapsed && item.subItems && (
+                  {/* Sub-items for sports with players - NFL open by default, others collapsed */}
+                  {!collapsed && item.subItems && isExpanded && (
                     <div className="ml-8 space-y-0.5 mt-0.5">
                       {item.subItems.map((sub) => (
                         <SidebarMenuItem key={sub.url}>
                           <SidebarMenuButton asChild>
-                            <NavLink 
-                              to={sub.url} 
+                            <NavLink
+                              to={sub.url}
                               className="flex items-center gap-2 px-3 py-1.5 rounded text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                              activeClassName="bg-sidebar-accent/50 text-terminal-green"
+                              activeClassName="bg-sidebar-accent/50 text-terminal-blue"
                             >
                               <span>{sub.title}</span>
                             </NavLink>
@@ -420,7 +496,8 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -445,7 +522,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                           <NavLink
                             to={item.url}
                             className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-                            activeClassName="bg-sidebar-accent text-terminal-green"
+                            activeClassName="bg-sidebar-accent text-terminal-blue"
                           >
                             <item.icon className="w-4 h-4 shrink-0" />
                             {!collapsed && <span className="text-sm">{item.title}</span>}
@@ -479,8 +556,8 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                       <Link 
                         to="/dashboard/admin"
                         className={`flex items-center gap-3 px-3 py-1.5 rounded transition-colors w-full cursor-pointer relative z-10 ${
-                          location.pathname === "/dashboard/admin" 
-                            ? "bg-sidebar-accent text-terminal-green" 
+                          location.pathname === "/dashboard/admin"
+                            ? "bg-sidebar-accent text-terminal-blue"
                             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                         }`}
                       >
@@ -500,32 +577,38 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-2">
+        {/* My Watchlist / Saved Chats / Settings */}
+        <SidebarMenu>
+          {[
+            { title: "My Watchlist", url: "/dashboard/watchlist", icon: Star },
+            { title: "Saved Chats", url: "/dashboard/chats", icon: MessageSquare },
+            { title: "Settings", url: "/dashboard/profile", icon: Settings },
+          ].map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                      activeClassName="bg-sidebar-accent text-terminal-blue"
+                    >
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      {!collapsed && <span className="text-sm">{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </TooltipTrigger>
+                {collapsed && <TooltipContent side="right">{item.title}</TooltipContent>}
+              </Tooltip>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+
         {!collapsed && (
-          <div className="mb-1 text-[10px] text-sidebar-foreground/60 font-mono truncate">
+          <div className="mt-1 mb-1 text-[10px] text-sidebar-foreground/60 font-mono truncate px-1">
             {user.email}
           </div>
         )}
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size={collapsed ? "icon" : "sm"}
-              onClick={() => navigate("/dashboard/profile")}
-              className={`w-full justify-start ${
-                location.pathname === "/dashboard/profile"
-                  ? "text-terminal-green bg-sidebar-accent"
-                  : "text-sidebar-foreground hover:text-terminal-green hover:bg-sidebar-accent"
-              }`}
-            >
-              <UserCircle className="w-4 h-4 shrink-0" />
-              {!collapsed && <span className="ml-2">Profile</span>}
-            </Button>
-          </TooltipTrigger>
-          {collapsed && (
-            <TooltipContent side="right">Profile</TooltipContent>
-          )}
-        </Tooltip>
 
         {/* Admin Preview Toggle - only show for actual admins */}
         {isAdmin && !collapsed && onTogglePreview && (
@@ -565,6 +648,24 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
             <TooltipContent side="right">Logout</TooltipContent>
           )}
         </Tooltip>
+
+        {/* Live Data status - real timestamp of the last successful data fetch */}
+        {!collapsed && (
+          <div className="mt-1.5 flex items-center gap-2 px-2 py-1.5 rounded bg-sidebar-accent/40">
+            <span className="relative flex h-1.5 w-1.5 shrink-0">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-terminal-cyan opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-terminal-cyan" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[10px] font-mono font-medium text-terminal-cyan leading-tight">Live Data</p>
+              <p className="text-[9px] font-mono text-sidebar-foreground/50 leading-tight truncate">
+                {lastDataRefresh
+                  ? `Last updated ${lastDataRefresh.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                  : "Connecting..."}
+              </p>
+            </div>
+          </div>
+        )}
       </SidebarFooter>
     </Sidebar>
   );
