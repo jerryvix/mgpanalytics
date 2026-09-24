@@ -154,7 +154,9 @@ const Dashboard = () => {
           onTogglePreview={handleTogglePreview}
         />
 
-        <main className="flex-1 overflow-auto overscroll-contain">
+        {/* Phones: no sideways scrolling at all (a stray wide child used to
+            let a swipe drag the pinned bars off screen) */}
+        <main className="flex-1 overflow-auto overscroll-contain max-md:overflow-x-clip">
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
         {/* ChatPanel: docked on desktop, full-screen overlay on mobile */}

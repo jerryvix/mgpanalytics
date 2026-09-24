@@ -105,7 +105,10 @@ export default function NFLPlayers() {
 
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search" | "season" | "futures" | "fantasy" | "accuracy")}>
-        <TabsList className="bg-muted/50">
+        {/* Five tabs are ~560px wide: on phones they scroll inside their own
+            strip instead of pushing the whole page sideways */}
+        <div className="max-w-full overflow-x-auto scrollbar-hide">
+        <TabsList className="bg-muted/50 w-max">
           <TabsTrigger value="slate" className="gap-2 text-xs sm:text-sm">
             <Trophy className="w-4 h-4" />
             <span className="hidden sm:inline">Top </span>Leaders
@@ -127,6 +130,7 @@ export default function NFLPlayers() {
             Where Oddsmakers Missed
           </TabsTrigger>
         </TabsList>
+        </div>
 
         {/* Top Leaders Tab */}
         <TabsContent value="slate" className="mt-6">

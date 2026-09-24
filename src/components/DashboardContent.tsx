@@ -47,9 +47,12 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
 
   // Phones: the pinned top bar owns the status-bar inset, and the bottom
   // padding clears the floating tab bar plus the home indicator so the last
-  // row of every page can scroll fully into view. Desktop is unchanged.
+  // row of every page can scroll fully into view. overflow-x: clip keeps any
+  // over-wide child from widening the scroller: a sideways swipe can never
+  // drag the pinned bars off screen (clip, unlike hidden, is not a scroll
+  // container, so the sticky bars still pin to <main>). Desktop is unchanged.
   return (
-    <div className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] md:p-6 md:pb-6 md:pt-6">
+    <div className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] max-md:overflow-x-clip md:p-6 md:pb-6 md:pt-6">
       <MobileTopBar />
       <BackButton />
       {isSportsPage && <MobileSportNav />}
