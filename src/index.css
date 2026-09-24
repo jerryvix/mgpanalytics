@@ -102,6 +102,17 @@
 }
 
 @layer base {
+  /* Mobile shell geometry, shared by the pinned top bar, the floating tab
+     bar, the sidebar sheet, and the content padding that keeps the last row
+     visible above the tab bar. Insets are 0 on desktop and in Safari portrait;
+     they matter when MGP runs from the Home Screen (black-translucent bar). */
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    /* Tab bar footprint above the home indicator: 3.5rem bar + 0.5rem lift */
+    --bottom-nav-h: 4rem;
+  }
+
   * {
     @apply border-border;
   }

@@ -34,6 +34,7 @@ import { FeedPage } from "@/pages/community";
 import Profile from "@/pages/Profile";
 import { MobileSportNav } from "@/components/ui/MobileSportNav";
 import { BackButton } from "@/components/ui/BackButton";
+import { MobileTopBar } from "@/components/ui/MobileTopBar";
 
 interface DashboardContentProps {
   isAdmin: boolean;
@@ -43,8 +44,12 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
   const location = useLocation();
   const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab|ncaaf|mlb)/.test(location.pathname);
 
+  // Phones: the pinned top bar owns the status-bar inset, and the bottom
+  // padding clears the floating tab bar plus the home indicator so the last
+  // row of every page can scroll fully into view. Desktop is unchanged.
   return (
-    <div className="p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] pb-20 md:p-6 md:pb-6 md:pt-6">
+    <div className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] md:p-6 md:pb-6 md:pt-6">
+      <MobileTopBar />
       <BackButton />
       {isSportsPage && <MobileSportNav />}
       <Routes>
