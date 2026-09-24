@@ -451,7 +451,7 @@ export function ChatPanel() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted max-md:relative max-md:after:absolute max-md:after:-inset-1.5"
           title="Clear chat"
         >
           <Trash2 className="w-4 h-4" />
@@ -586,7 +586,7 @@ export function ChatPanel() {
                   variant="ghost"
                   size="icon"
                   onClick={toggleChat}
-                  className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                  className="relative h-9 w-9 text-muted-foreground hover:text-foreground after:absolute after:-inset-1"
                 >
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
@@ -597,12 +597,12 @@ export function ChatPanel() {
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowMobileHistory(h => !h)}
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                  className="relative h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted after:absolute after:-inset-1.5"
                   title="Chat history"
                 >
                   <History className="w-4 h-4" />
@@ -723,7 +723,7 @@ export function ChatPanel() {
               {/* Mobile input - padded for bottom nav + safe area */}
               <div
                 className="p-4 border-t border-border bg-card"
-                style={{ paddingBottom: "max(calc(3.5rem + env(safe-area-inset-bottom, 0px) + 0.5rem), 1rem)" }}
+                style={{ paddingBottom: "calc(var(--bottom-nav-h) + var(--safe-bottom) + 0.5rem)" }}
               >
                 <div className="flex gap-2">
                   <Input
