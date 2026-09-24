@@ -117,7 +117,9 @@ const Dashboard = () => {
     }
   }, [location.pathname, isAdmin, roleLoading, navigate]);
 
-  if (loading || roleLoading) {
+  // Only the admin route has to wait for the role; every other page renders
+  // as soon as auth resolves and picks up admin chrome when the role lands.
+  if (loading || (roleLoading && location.pathname === "/dashboard/admin")) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-terminal-green glow-green animate-pulse-glow font-mono">

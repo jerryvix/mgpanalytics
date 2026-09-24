@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { renderHook, waitFor, act } from "@testing-library/react";
 import type { User } from "@supabase/supabase-js";
 
 type RoleResult = { data: { role: string }[] | null; error: { message: string } | null };
@@ -11,7 +11,7 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-import { highestRole, useUserRole } from "@/hooks/useUserRole";
+import { highestRole, useUserRole, ROLE_TIMEOUT_MS } from "@/hooks/useUserRole";
 
 const asUser = (id: string) => ({ id }) as User;
 
@@ -86,5 +86,20 @@ describe("useUserRole", () => {
     releaseFirst({ data: [{ role: "admin" }], error: null });
     await new Promise((r) => setTimeout(r, 20));
     expect(result.current.role).toBe("user");
+  });
+  it("falls back to user when the role query stalls, then upgrades on a late answer", async () => {
+    vi.useFakeTimers();
+    try {
+      let release: (v: RoleResult) => void = () => {};
+      mockEq.mockImplementationOnce(() => new Promise<RoleResult>((r) => { release = r; }));
+      const { result } = renderHook(() => useUserRole(asUser("u1")));
+      expect(result.current.loading).toBe(true);
+      await act(async () => { vi.advanceTimersByTime(ROLE_TIMEOUT_MS); });
+      expect(result.current).toEqual({ role: "user", isAdmin: false, loading: false });
+      await act(async () => { release({ data: [{ role: "admin" }], error: null }); });
+      expect(result.current.isAdmin).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

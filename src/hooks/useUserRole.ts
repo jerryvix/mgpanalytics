@@ -12,6 +12,8 @@ interface UseUserRoleResult {
 
 const ROLE_RANK: Record<AppRole, number> = { user: 0, moderator: 1, admin: 2 };
 
+export const ROLE_TIMEOUT_MS = 8000;
+
 // A user can hold several user_roles rows (a default 'user' row plus a granted
 // 'admin' row), so resolve to the highest one instead of expecting exactly one.
 export function highestRole(rows: { role: string | null }[] | null): AppRole {
@@ -36,6 +38,15 @@ export function useUserRole(user: User | null): UseUserRoleResult {
     // Logged-out visitors are sent away by the page itself.
     if (!userId) return;
     let cancelled = false;
+
+    // A role query can stall (for example while another tab holds the auth
+    // lock). Don't leave the admin route spinning: after ROLE_TIMEOUT_MS fall
+    // back to "user", and let a late answer still upgrade the role.
+    const timer = setTimeout(() => {
+      if (!cancelled) {
+        setResolved((prev) => (prev?.userId === userId ? prev : { userId, role: "user" }));
+      }
+    }, ROLE_TIMEOUT_MS);
 
     const load = async (attempt: number): Promise<void> => {
       let rows: { role: string | null }[] | null = null;
@@ -69,6 +80,7 @@ export function useUserRole(user: User | null): UseUserRoleResult {
     void load(0);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [userId]);
 
