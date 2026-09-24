@@ -189,4 +189,23 @@ describe("sport tabs on phones", () => {
     }
     expect(screen.getByRole("button", { name: "Players" })).toHaveAttribute("aria-current", "page");
   });
+
+  // Tucked, the segmented control sits flush under the top bar (its 1px
+  // border + 2px padding put each segment 3px below the bar's edge). A 5px
+  // extension above reached 2px into the bar, where a tap hit Back or the
+  // title; 3px above + 7px below keeps the full 44px, all of it below the bar.
+  it("keeps the whole 44px tab target below the top bar while the pills are tucked", () => {
+    render(
+      <MemoryRouter initialEntries={["/dashboard/mlb"]}>
+        <MobileSportNav collapsed />
+      </MemoryRouter>
+    );
+    for (const label of ["Games", "Players", "Trending"]) {
+      const seg = screen.getByRole("button", { name: label });
+      expect(seg.className).toContain("after:-top-[3px]");
+      expect(seg.className).toContain("after:-bottom-[7px]");
+      expect(seg.className).not.toContain("after:-top-[5px]");
+      expect(seg.className).toContain("min-h-[34px]"); // 3 + 34 + 7 = 44
+    }
+  });
 });

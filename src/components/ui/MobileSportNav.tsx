@@ -156,6 +156,9 @@ export function MobileSportNav({ collapsed = false }: MobileSportNavProps) {
       {/* Sub-tabs (Games / Players / Trending) as an iOS-style segmented control.
           Segments stay 34px tall; an invisible ::after extends each tap
           target to 44px above and below without overlapping its neighbors.
+          Tucked, the control sits flush under the top bar, so the extension
+          shifts down (3px above, 7px below): 5px above would reach 2px into
+          the bar, where a tap lands on Back or the title.
           Block-level (flex w-fit) so no inline line box pads its height. */}
       {activeSport?.subTabs && (
         <div className="flex w-fit rounded-lg bg-card/70 border border-border p-0.5 gap-0.5">
@@ -168,7 +171,8 @@ export function MobileSportNav({ collapsed = false }: MobileSportNavProps) {
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative px-3.5 min-h-[34px] rounded-md text-xs font-medium select-none touch-manipulation",
-                  "after:absolute after:inset-x-0 after:-top-[5px] after:-bottom-[5px]",
+                  "after:absolute after:inset-x-0",
+                  collapsed ? "after:-top-[3px] after:-bottom-[7px]" : "after:-top-[5px] after:-bottom-[5px]",
                   "transition-[color,background-color] duration-150",
                   isActive
                     ? "bg-foreground/10 text-foreground shadow-sm"
