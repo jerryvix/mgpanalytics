@@ -45,6 +45,7 @@ async function searchDbPlayers(query: string): Promise<DbPlayerResult[]> {
   return (data || []) as DbPlayerResult[];
 }
 import { useNFLSlateLeaders } from "@/hooks/useNFLSlateLeaders";
+import { ScrollStrip } from "@/components/ui/ScrollStrip";
 
 // Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -105,10 +106,12 @@ export default function NFLPlayers() {
 
       {/* Tab Navigation */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "slate" | "search" | "season" | "futures" | "fantasy" | "accuracy")}>
-        {/* Five tabs are ~560px wide: on phones they scroll inside their own
-            strip instead of pushing the whole page sideways */}
-        <div className="max-w-full overflow-x-auto scrollbar-hide">
-        <TabsList className="bg-muted/50 w-max">
+        {/* Five tabs are ~560px wide. Phones: they scroll inside their own
+            strip (never the whole page), with a right-edge fade while more
+            are off-screen. From sm up they wrap, so a narrow desktop column
+            (chat docked at 1280) never clips the last tab. */}
+        <ScrollStrip>
+        <TabsList className="bg-muted/50 w-max sm:h-auto sm:w-auto sm:max-w-full sm:flex-wrap sm:justify-start sm:gap-y-1">
           <TabsTrigger value="slate" className="gap-2 text-xs sm:text-sm">
             <Trophy className="w-4 h-4" />
             <span className="hidden sm:inline">Top </span>Leaders
@@ -130,7 +133,7 @@ export default function NFLPlayers() {
             Where Oddsmakers Missed
           </TabsTrigger>
         </TabsList>
-        </div>
+        </ScrollStrip>
 
         {/* Top Leaders Tab */}
         <TabsContent value="slate" className="mt-6">
