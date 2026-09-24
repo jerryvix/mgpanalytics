@@ -36,8 +36,10 @@ export function ProjectedTag({ className = "" }: { className?: string }) {
 }
 
 /**
- * One probable starter on a game card: logo, name and hand, ERA as the
- * headline number, then the season line and the last three starts.
+ * One probable starter: logo, name and hand, ERA as the headline number, then
+ * the season line and the last three starts. With `showStats` off (the slate
+ * cards) it is just the logo, name, hand and Projected tag; the numbers live
+ * in Game Insights.
  *
  * `line` is MLB's announced starter, a projected one (line.projected), or null
  * (TBD). `fallbackName` is only for when MLB's data could not be loaded at
@@ -47,17 +49,24 @@ export function ProbablePitcherRow({
   teamName,
   line,
   fallbackName,
+  showStats = true,
 }: {
   teamName: string;
   line: PitcherLine | null | undefined;
   fallbackName?: string | null;
+  showStats?: boolean;
 }) {
   const name = line?.name || fallbackName || null;
   const hand = handLabel(line);
-  const season = line?.season;
-  const l3 = last3Line(line);
+  const season = showStats ? line?.season : null;
+  const l3 = showStats ? last3Line(line) : null;
+  const title = showStats
+    ? fullTitle(line, name)
+    : line?.projected
+      ? `${line.name}, projected: MLB has not announced this starter`
+      : name ?? undefined;
   return (
-    <div className="min-w-0" title={fullTitle(line, name)}>
+    <div className="min-w-0" title={title}>
       <div className="flex items-center gap-2 min-w-0">
         <TeamLogo sport="MLB" name={teamName} size={14} />
         <span className={`text-xs font-mono truncate ${name ? "text-foreground" : "text-muted-foreground"}`}>

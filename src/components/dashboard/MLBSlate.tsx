@@ -344,7 +344,9 @@ export function MLBSlate() {
 
                     {/* Probable starters - the matchup within the matchup. MLB's
                         announced starter wins; the synced name covers the gap
-                        when MLB has not named one yet. */}
+                        when MLB has not named one yet. Names only: the slate
+                        stays light and the pitching lines live in Game
+                        Insights, the Hit Streaks table and chat. */}
                     <div className="rounded-lg bg-muted/20 border border-border px-3 py-2 mb-3 space-y-1.5">
                       <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
                         Probable Starters
@@ -353,11 +355,13 @@ export function MLBSlate() {
                         teamName={game.visitor_team_name}
                         line={matchup?.away}
                         fallbackName={pitcherFallback ? game.starting_pitcher_away : null}
+                        showStats={false}
                       />
                       <ProbablePitcherRow
                         teamName={game.home_team_name}
                         line={matchup?.home}
                         fallbackName={pitcherFallback ? game.starting_pitcher_home : null}
+                        showStats={false}
                       />
                     </div>
 
