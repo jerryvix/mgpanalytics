@@ -77,7 +77,7 @@ describe("NCAAFSlate: TBD kickoff", () => {
 
   it("shows the Eastern game day and TBD, with no placeholder clock time", async () => {
     render(<NCAAFSlate />);
-    const card = await screen.findByRole("button", { name: /Vanderbilt Commodores at Georgia Bulldogs/ });
+    const card = await screen.findByRole("button", { name: /Vanderbilt at Georgia/ });
     expect(card.textContent).toContain("Sat Oct 3 · TBD");
     expect(card.textContent).not.toMatch(/\d{1,2}:\d{2}\s?(AM|PM)/);
     expect(card.textContent).not.toContain("Fri Oct 2");
@@ -85,7 +85,7 @@ describe("NCAAFSlate: TBD kickoff", () => {
 
   it("still prints a real kickoff time for a scheduled game", async () => {
     render(<NCAAFSlate />);
-    const card = await screen.findByRole("button", { name: /Texas A&M Aggies at LSU Tigers/ });
+    const card = await screen.findByRole("button", { name: /Texas A&M at LSU/ });
     await waitFor(() => expect(card.textContent).toMatch(/\d{1,2}:\d{2}\s?(AM|PM)/));
     expect(card.textContent).not.toContain("TBD");
   });

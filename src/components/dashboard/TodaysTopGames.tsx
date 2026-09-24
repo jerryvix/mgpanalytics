@@ -2,6 +2,8 @@ import { ArrowUpRight, ArrowDownRight, ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { getTeamAbbrev } from "@/utils/teamAbbreviations";
+import { displayTeamName } from "@/lib/teamNames";
+import { NCAAF_TEAM_IDS } from "@/data/ncaafTeamIds";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
 import { tbdKickoffLabel } from "@/lib/kickoff";
@@ -73,8 +75,14 @@ export function TodaysTopGames({ games, loading }: TodaysTopGamesProps) {
       ) : games.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {games.map((game) => {
-            const homeAbbr = isMobile ? getTeamAbbrev(game.home_team_name, game.league) : game.home_team_name;
-            const awayAbbr = isMobile ? getTeamAbbrev(game.visitor_team_name, game.league) : game.visitor_team_name;
+            // College football reads by school at every width ("Texas A&M");
+            // pro teams shorten to abbreviations on phones
+            const college = game.league === "NCAAF";
+            const label = (name: string) =>
+              college ? displayTeamName(name, game.league) : isMobile ? getTeamAbbrev(name, game.league) : name;
+            const homeAbbr = label(game.home_team_name);
+            const awayAbbr = label(game.visitor_team_name);
+            const espnId = (name: string) => (college ? NCAAF_TEAM_IDS[name] : undefined);
             const showMove = game.lineMove !== null && Math.abs(game.lineMove) >= 0.5;
 
             return (
@@ -90,11 +98,11 @@ export function TodaysTopGames({ games, loading }: TodaysTopGamesProps) {
 
                 <div className="space-y-1 mb-2">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <TeamLogo sport={game.league} name={game.visitor_team_name} size={16} />
+                    <TeamLogo sport={game.league} name={game.visitor_team_name} espnId={espnId(game.visitor_team_name)} size={16} />
                     <span className="text-sm text-foreground truncate">{awayAbbr}</span>
                   </div>
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <TeamLogo sport={game.league} name={game.home_team_name} size={16} />
+                    <TeamLogo sport={game.league} name={game.home_team_name} espnId={espnId(game.home_team_name)} size={16} />
                     <span className="text-sm text-foreground truncate">{homeAbbr}</span>
                   </div>
                 </div>

@@ -8,6 +8,7 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { FuturesInsight } from "@/components/players/FuturesInsight";
 import { NCAAF_TEAM_IDS } from "@/data/ncaafTeamIds";
 import { NFL_FUTURES, NCAAF_FUTURES } from "@/data/propFutures";
+import { displayTeamName } from "@/lib/teamNames";
 
 // Pre-season futures board: team win totals + season-long player props.
 // Static by design - these lines mostly move only on major trades/injuries,
@@ -142,7 +143,7 @@ export function PropFuturesBoard({ sport, view = "all" }: PropFuturesBoardProps)
                                   {teamRow && (
                                     <TeamLogo sport={sport} name={f.subject} espnId={espnIdFor(f.subject)} size={18} />
                                   )}
-                                  {f.subject}
+                                  {teamRow ? displayTeamName(f.subject, sport) : f.subject}
                                 </span>
                               </td>
                               <td className="px-2 py-2 text-right font-mono font-bold tabular-nums text-terminal-green">

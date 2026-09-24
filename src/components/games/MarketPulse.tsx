@@ -4,6 +4,7 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NCAAF_TEAM_IDS } from "@/data/ncaafTeamIds";
 import { cn } from "@/lib/utils";
+import { displayTeamName } from "@/lib/teamNames";
 import {
   agoLabel,
   openToNow,
@@ -139,7 +140,7 @@ export function MarketPulse({ sport, awayName, homeName, spreadLabel, state }: M
 
           <MarketFooter
             view={view}
-            awayName={awayName}
+            awayName={displayTeamName(awayName, sport)}
             splitsEnabled={SPLITS_SPORTS.has(sport)}
             anySplits={anySplits}
           />
@@ -163,7 +164,8 @@ function SideRow({
   homeName: string;
 }) {
   const team = side.side === "away" ? awayName : side.side === "home" ? homeName : null;
-  const name = team ?? (side.side === "over" ? "Over" : "Under");
+  // Shown by school for college football; the full name still keys the logo
+  const name = team ? displayTeamName(team, sport) : side.side === "over" ? "Over" : "Under";
   const main =
     view.market === "moneyline"
       ? fmtPrice(side.price) ?? "-"

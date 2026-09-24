@@ -5,6 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { shortTeamName } from "@/lib/teamNames";
 import {
   agoLabel,
   buildMarketPulse,
@@ -53,7 +54,6 @@ interface SlateLineRow extends LineRowLike {
 }
 
 const MARKET_LABELS: Record<PulseMarket, string> = { spread: "Spread", total: "Total", moneyline: "Moneyline" };
-const shortName = (name: string) => name.split(" ").pop() ?? name;
 
 function groupByGame<T extends { game_id: string }>(rows: T[]): Map<string, T[]> {
   const byGame = new Map<string, T[]>();
@@ -198,8 +198,9 @@ export function PublicBettingPreview({ homeTeam, awayTeam, gameId, sport, odds, 
   const markets = PULSE_MARKETS.filter((m) => pulse[m]?.hasSplits);
   if (markets.length === 0) return null;
 
-  const home = shortName(homeTeam);
-  const away = shortName(awayTeam);
+  // College football by school ("Coastal"), pro teams by nickname ("Chiefs")
+  const home = shortTeamName(homeTeam, sport);
+  const away = shortTeamName(awayTeam, sport);
   const headline = pulse[markets[0]]!; // the spread whenever DK posts one
   const headSides = orient(headline, home, away);
   const sharp = headline.thin ? undefined : headSides.find((s) => s.view.sharp);

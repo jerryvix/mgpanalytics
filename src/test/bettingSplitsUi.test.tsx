@@ -102,18 +102,18 @@ describe("PublicBettingPreview (slate cards)", () => {
     );
     // Same orientation as the card's WinProbBar: home left, away right, both labeled
     const trigger = await screen.findByRole("button", {
-      name: "DraftKings spread bets: Chanticleers 21%, Flames 79%",
+      name: "DraftKings spread bets: Coastal 21%, Liberty 79%",
     });
-    expect(trigger).toHaveTextContent("Chanticleers 21%");
-    expect(trigger).toHaveTextContent("79% Flames");
+    expect(trigger).toHaveTextContent("Coastal 21%");
+    expect(trigger).toHaveTextContent("79% Liberty");
     expect(trigger).not.toHaveTextContent("Sharp"); // 90% money on 79% of bets is the crowd, not sharps
 
     fireEvent.click(trigger);
     expect(cardClick).not.toHaveBeenCalled();
-    expect(await screen.findByText("Public side: Flames")).toBeInTheDocument();
+    expect(await screen.findByText("Public side: Liberty")).toBeInTheDocument();
     expect(screen.getAllByText("Money")).toHaveLength(2);
-    expect(screen.getByText("Chanticleers 10%")).toBeInTheDocument();
-    expect(screen.getByText("90% Flames")).toBeInTheDocument();
+    expect(screen.getByText("Coastal 10%")).toBeInTheDocument();
+    expect(screen.getByText("90% Liberty")).toBeInTheDocument();
     expect(screen.getByText("Over 55%")).toBeInTheDocument();
     expect(screen.getByText("45% Under")).toBeInTheDocument();
     expect(screen.queryByText(/-2\.5|50\.5|-110/)).toBeNull();
@@ -122,10 +122,10 @@ describe("PublicBettingPreview (slate cards)", () => {
   it("tags the canonical sharp side and reads reverse moves from the stored line", async () => {
     renderWithQuery(<PublicBettingPreview sport="NCAAF" gameId="g-ou" homeTeam="Georgia Bulldogs" awayTeam="Oklahoma Sooners" />);
     const trigger = await screen.findByRole("button", { name: /DraftKings spread bets/i });
-    expect(trigger).toHaveTextContent("Sharp: Sooners"); // 32% of bets, 65% of money
+    expect(trigger).toHaveTextContent("Sharp: Oklahoma"); // 32% of bets, 65% of money
     fireEvent.click(trigger);
     // Georgia opened -10 and is -14: the line moved WITH the public, so no reverse move
-    expect(await screen.findByText("Public side: Bulldogs · Sharp money: Sooners")).toBeInTheDocument();
+    expect(await screen.findByText("Public side: Georgia · Sharp money: Oklahoma")).toBeInTheDocument();
   });
 
   it("holds a placeholder on a first read that is still out or paused offline, never an empty card", async () => {

@@ -245,17 +245,17 @@ describe("Today's Board (NCAAF): the stored line and one move per market", () =>
     await (await grid()).findByText("-142");
     const sharpest = rail("Sharpest Moves");
     // Liberty's spread moved +1.5 to -3 (the odds row's later number, as the grid shows it)
-    expect(within(sharpest).getByText("Flames Spread")).toBeInTheDocument();
+    expect(within(sharpest).getByText("Liberty Spread")).toBeInTheDocument();
     expect(within(sharpest).getByText("+1.5 → -3")).toBeInTheDocument();
-    expect(within(sharpest).getByText("Cougars Spread")).toBeInTheDocument();
+    expect(within(sharpest).getByText("Washington State Spread")).toBeInTheDocument();
     expect(within(sharpest).getByText("+13.5 → +10")).toBeInTheDocument();
     // One side per market, and nothing from a game that is not on the board
-    expect(within(sharpest).queryByText("Chanticleers Spread")).toBeNull();
-    expect(within(sharpest).queryByText("Wildcats Spread")).toBeNull();
-    expect(screen.queryByText(/Hurricanes (Spread|ML)|Tigers (Spread|ML)/)).toBeNull();
+    expect(within(sharpest).queryByText("Coastal Carolina Spread")).toBeNull();
+    expect(within(sharpest).queryByText("Arizona Spread")).toBeNull();
+    expect(screen.queryByText(/Miami (Spread|ML)|Clemson (Spread|ML)/)).toBeNull();
     const signal = rail("Market Signal");
     // Liberty's even-money open reads +100, never -100
-    expect(within(signal).getByText("Flames ML")).toBeInTheDocument();
+    expect(within(signal).getByText("Liberty ML")).toBeInTheDocument();
     expect(within(signal).getByText("steamed from +100")).toBeInTheDocument();
     expect(within(signal).getByText("dropping from 54.5")).toBeInTheDocument();
   });
@@ -266,7 +266,7 @@ describe("Today's Board (NCAAF): the stored line and one move per market", () =>
     // +425 to +340 on WSU's own number (not the 08:52 snapshot's +310)
     expect((await screen.findByText("+340")).parentElement).toHaveTextContent("+340▲");
     expect(screen.getByText("-440").parentElement).toHaveTextContent("-440▼");
-    const cmu = screen.getByText("Chippewas").closest("div.grid") as HTMLElement;
+    const cmu = screen.getByText("Central Michigan").closest("div.grid") as HTMLElement;
     expect(cmu).not.toHaveTextContent(/▲|▼/);
   });
 });

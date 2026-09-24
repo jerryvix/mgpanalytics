@@ -1,4 +1,5 @@
 // Consolidated team abbreviation maps for all supported leagues
+import { ncaafAbbrev } from "@/lib/teamNames";
 
 const NBA_TEAM_ABBREVS: Record<string, string> = {
   "Atlanta Hawks": "ATL",
@@ -152,6 +153,11 @@ export function getTeamAbbrev(teamName: string, league?: string): string {
     if (upper === "NFL" && NFL_TEAM_ABBREVS[teamName]) return NFL_TEAM_ABBREVS[teamName];
     if ((upper === "NCAAB" || upper === "CBB") && NCAAB_TEAM_ABBREVS[teamName]) return NCAAB_TEAM_ABBREVS[teamName];
     if (upper === "MLB" && MLB_TEAM_ABBREVS[teamName]) return MLB_TEAM_ABBREVS[teamName];
+    // College football: ESPN's own abbreviation ("TA&M"), never a guess
+    if (upper === "NCAAF" || upper === "CFB") {
+      const abbr = ncaafAbbrev(teamName);
+      if (abbr) return abbr;
+    }
   }
 
   // Try all maps

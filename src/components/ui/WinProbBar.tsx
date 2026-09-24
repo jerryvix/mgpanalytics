@@ -1,25 +1,28 @@
 import { impliedPair } from "@/lib/odds";
 import { cn } from "@/lib/utils";
 import { CountUp } from "@/components/ui/CountUp";
+import { shortTeamName } from "@/lib/teamNames";
 
 interface WinProbBarProps {
   homeName: string;
   awayName: string;
   moneylineHome: number | null;
   moneylineAway: number | null;
+  /** Labels college football teams by school instead of mascot */
+  sport?: string;
   className?: string;
 }
 
 // Implied win probability from the moneyline, vig removed - a Bloomberg-style
 // read on who the market favors. Home keeps the terminal-green side, away the
 // amber side, matching the ML row colors. Renders nothing without both prices.
-export function WinProbBar({ homeName, awayName, moneylineHome, moneylineAway, className }: WinProbBarProps) {
+export function WinProbBar({ homeName, awayName, moneylineHome, moneylineAway, sport, className }: WinProbBarProps) {
   const pair = impliedPair(moneylineHome, moneylineAway);
   if (!pair) return null;
 
   const homePct = Math.round(pair.home * 100);
   const awayPct = 100 - homePct;
-  const shortName = (name: string) => name.split(" ").pop();
+  const shortName = (name: string) => shortTeamName(name, sport);
 
   return (
     <div className={cn("space-y-1", className)} title="Implied win probability (moneyline, vig removed)">

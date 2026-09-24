@@ -103,12 +103,15 @@ describe("TodaysBoard (NCAAF): the whole window", () => {
       </QueryClientProvider>,
     );
     fireEvent.click(await screen.findByRole("button", { name: /Sat Sep 26/i }));
-    await screen.findByText("Home0");
-    // Team short names as rendered in the grid rows, collected once
+    await screen.findByText("Saturday Home0");
+    // Team names as rendered in the grid rows, collected once (a name with no
+    // ESPN school entry, like these fixtures, shows whole)
     const names = new Set([...document.querySelectorAll("span.truncate")].map((s) => s.textContent?.trim()));
-    const missing = Array.from({ length: 64 }, (_, i) => `Home${i}`).filter((n) => !names.has(n));
+    const missing = Array.from({ length: 64 }, (_, i) => `Saturday Home${i}`).filter((n) => !names.has(n));
     expect(missing).toEqual([]);
-    expect(names.has("Aggies") && names.has("Tigers")).toBe(true);
+    // Real schools read the way ESPN names them, never by mascot
+    expect(names.has("Texas A&M") && names.has("LSU")).toBe(true);
+    expect(names.has("Aggies") || names.has("Tigers")).toBe(false);
     // Paged, and one request covers a 71-game window
     expect(rangesAsked[0]).toEqual([0, 499]);
   }, 15_000);
@@ -121,7 +124,7 @@ describe("TodaysBoard (NCAAF): the whole window", () => {
     );
     const header = (await screen.findAllByText("Matchup"))[0];
     expect(header.className).toContain("hidden sm:block");
-    const row = (await screen.findAllByText("Liberty Flames".split(" ").pop()!))[0].closest("div.grid") as HTMLElement;
+    const row = (await screen.findAllByText("Liberty"))[0].closest("div.grid") as HTMLElement;
     expect(row.className).toContain("grid-cols-3");
     expect(row.className).toContain("sm:grid-cols-[1fr_88px_88px_88px]");
     expect((row.firstElementChild as HTMLElement).className).toContain("col-span-3 sm:col-span-1");

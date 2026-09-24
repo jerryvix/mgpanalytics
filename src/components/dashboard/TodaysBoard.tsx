@@ -19,6 +19,7 @@ import { InlineStarters } from "@/components/mlb/ProbablePitcher";
 import { format, parseISO, isSameDay, addDays } from "date-fns";
 import { tbdGameDay, tbdGameDayKey, tbdKickoffLabel } from "@/lib/kickoff";
 import { fetchAllPages } from "@/lib/fetchAllPages";
+import { nickname, shortTeamName, titleTeamName } from "@/lib/teamNames";
 
 // Today's Board - the day-to-day companion to the Season Long futures view.
 // Layout approved from the v3 mockup: odds grid on the left, three rails on
@@ -216,14 +217,14 @@ async function loadBoard(sport: BoardSport) {
   return { games: list, nextGames, oddsMap, moves, mlMoveByKey, streaks };
 }
 
-const shortName = (full: string) => full.split(" ").pop() || full;
 const fmtAvg = (v: number | null) => (v == null ? "" : v.toFixed(3).replace(/^0/, ""));
 
-// "Yankees ML" · "Rays/Sox Total (Over)" · "Guardians Spread"
-const moveLabel = (m: MoveRow) => {
-  const matchup = m.teamsInGame.map(shortName).join("/");
+// "Yankees ML" · "Rays/Sox Total (Over)" · "Guardians Spread"; college
+// football by school: "Texas A&M Spread" · "Coastal/Liberty Total (Over)"
+const moveLabel = (m: MoveRow, sport: BoardSport) => {
+  const matchup = m.teamsInGame.map((t) => shortTeamName(t, sport)).join("/");
   if (m.market === "Total") return `${matchup || "Game"} Total${m.team ? ` (${m.team})` : ""}`;
-  const who = m.team ? shortName(m.team) : matchup || "Game";
+  const who = m.team ? titleTeamName(m.team, sport) : matchup || "Game";
   return `${who} ${m.market === "Moneyline" ? "ML" : m.market}`;
 };
 // Prices get +/- signs; total lines are plain numbers (a 8.5 total isn't "+8.5")
@@ -263,7 +264,7 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
   const signal = (data?.moves || []).filter((m) => m.market === "Moneyline" || m.market === "Total").slice(0, 2);
   const todaysTeams = new Set(dayGames.flatMap((g) => [g.home_team_name, g.visitor_team_name]));
   const angles = trendingFor(sport)
-    .filter((b) => [...todaysTeams].some((t) => b.nugget.includes(shortName(t)) || b.subject.includes(shortName(t))))
+    .filter((b) => [...todaysTeams].some((t) => b.nugget.includes(nickname(t)) || b.subject.includes(nickname(t))))
     .slice(0, 2);
   const spreadLabel = sport === "MLB" ? "Run Line" : "Spread";
 
@@ -319,10 +320,10 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
                         className="flex items-center gap-2 py-2 border-b border-border/60 last:border-none text-sm"
                       >
                         <TeamLogo sport={sport} name={g.visitor_team_name} espnId={g.visitor_team_id} size={16} />
-                        <span className="truncate">{shortName(g.visitor_team_name)}</span>
+                        <span className="truncate">{titleTeamName(g.visitor_team_name, sport)}</span>
                         <span className="text-muted-foreground text-xs">@</span>
                         <TeamLogo sport={sport} name={g.home_team_name} espnId={g.home_team_id} size={16} />
-                        <span className="truncate">{shortName(g.home_team_name)}</span>
+                        <span className="truncate">{titleTeamName(g.home_team_name, sport)}</span>
                         <span className="ml-auto font-mono text-[10px] text-muted-foreground shrink-0">
                           {g.time_tbd ? tbdKickoffLabel(g.date) : format(parseISO(g.date), "EEE h:mm a")}
                         </span>
@@ -367,14 +368,14 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
                     <div className="min-w-0 col-span-3 sm:col-span-1">
                       <div className="flex items-center gap-2 font-semibold text-sm">
                         <TeamLogo sport={sport} name={g.visitor_team_name} espnId={g.visitor_team_id} size={18} />
-                        <span className="truncate">{shortName(g.visitor_team_name)}</span>
+                        <span className="truncate">{titleTeamName(g.visitor_team_name, sport)}</span>
                         {liveGame?.state !== "pre" && liveGame?.awayScore != null && (
                           <span className="ml-auto font-mono tabular-nums">{liveGame.awayScore}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 font-semibold text-sm mt-1.5">
                         <TeamLogo sport={sport} name={g.home_team_name} espnId={g.home_team_id} size={18} />
-                        <span className="truncate">{shortName(g.home_team_name)}</span>
+                        <span className="truncate">{titleTeamName(g.home_team_name, sport)}</span>
                         {liveGame?.state !== "pre" && liveGame?.homeScore != null && (
                           <span className="ml-auto font-mono tabular-nums">{liveGame.homeScore}</span>
                         )}
@@ -439,7 +440,7 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
               sharpest.map((m, i) => (
                 <div key={i} className="py-2 border-b border-dashed border-border last:border-none text-sm">
                   <span className="font-mono text-terminal-amber text-[11px] mr-1.5">#{i + 1}</span>
-                  {moveLabel(m)}
+                  {moveLabel(m, sport)}
                   <span className="float-right font-mono font-bold text-terminal-green tabular-nums">
                     {fmtMoveVal(m, m.open)} → {fmtMoveVal(m, m.current)}
                   </span>
@@ -459,7 +460,7 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
               signal.map((m, i) => (
                 <div key={i} className="py-2 border-b border-dashed border-border last:border-none text-sm">
                   <span className="font-mono text-terminal-amber text-[11px] mr-1.5">#{i + 1}</span>
-                  {moveLabel(m)}
+                  {moveLabel(m, sport)}
                   <span className="float-right font-mono font-bold text-terminal-green tabular-nums">{fmtMoveVal(m, m.current)}</span>
                   <span className="block font-mono text-[10px] text-muted-foreground mt-0.5">
                     {m.market === "Moneyline"

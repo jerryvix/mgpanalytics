@@ -7,6 +7,7 @@ import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { useFollows, FollowRow } from "@/hooks/useFollows";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { tbdKickoffLabel } from "@/lib/kickoff";
+import { displayTeamName } from "@/lib/teamNames";
 
 const SPORT_TABLE: Record<string, { table: string; league?: string; slug: string }> = {
   NFL: { table: "games", league: "NFL", slug: "nfl" },
@@ -121,10 +122,10 @@ export function YourTeams() {
                 <TeamLogo sport={g.sport} name={g.team} size={22} />
                 <span className="truncate">
                   <span className="font-bold text-foreground group-hover:text-terminal-green transition-colors">
-                    {g.team}
+                    {displayTeamName(g.team, g.sport)}
                   </span>{" "}
                   <span className="text-muted-foreground">
-                    {g.isHome ? "vs" : "@"} {g.opponent}
+                    {g.isHome ? "vs" : "@"} {displayTeamName(g.opponent, g.sport)}
                   </span>
                 </span>
               </span>

@@ -16,6 +16,8 @@ import { findMatchupForGame } from "@/services/mlb/probablePitchers";
 import { queryView } from "@/lib/queryView";
 import { format, parseISO } from "date-fns";
 import { tbdKickoffLabel } from "@/lib/kickoff";
+import { nickname, titleTeamName } from "@/lib/teamNames";
+import { NCAAF_TEAM_IDS } from "@/data/ncaafTeamIds";
 
 // Game Insights - the tap-a-game deep dive. Every number here is real MGP
 // data: DraftKings' line and its move since open (one number per market, in
@@ -72,7 +74,6 @@ interface HotBat {
 }
 
 const fmtAvg = (v: number | null) => (v == null ? "-" : v.toFixed(3).replace(/^0/, ""));
-const short = (full: string) => full.split(" ").pop() || full;
 
 async function loadInsights(sport: InsightsSport, game: InsightsGame) {
   const cfg = SPORT_CONFIG[sport];
@@ -120,7 +121,7 @@ async function loadInsights(sport: InsightsSport, game: InsightsGame) {
         const p = s.player_id ? pm.get(s.player_id) : undefined;
         return {
           name: p?.name || "Unknown",
-          team: p?.team_abbr || short(p?.team_name || ""),
+          team: p?.team_abbr || nickname(p?.team_name || ""),
           streak: s.hit_streak as number,
           streakAvg: s.hit_streak_avg as number | null,
           seasonAvg: s.batting_avg as number | null,
@@ -133,7 +134,7 @@ async function loadInsights(sport: InsightsSport, game: InsightsGame) {
   const angles = trendingFor(sport)
     .filter((b) =>
       [game.home_team_name, game.visitor_team_name].some(
-        (t) => b.subject.includes(short(t)) || b.nugget.includes(short(t))
+        (t) => b.subject.includes(nickname(t)) || b.nugget.includes(nickname(t))
       )
     )
     .slice(0, 3);
@@ -185,14 +186,17 @@ export function GameInsightsSheet({
   const mlAway = ml?.sides[0].price ?? null;
   const mlHome = ml?.sides[1].price ?? null;
 
+  // College logos need ESPN's team id (TeamLogo has no name-based URL for them)
+  const espnId = (name: string) => (sport === "NCAAF" ? NCAAF_TEAM_IDS[name] : undefined);
+
   const headerBlock = game && (
     <div>
       <div className="flex items-center gap-2 text-lg">
-        <TeamLogo sport={sport} name={game.visitor_team_name} size={20} />
-        {short(game.visitor_team_name)}
+        <TeamLogo sport={sport} name={game.visitor_team_name} espnId={espnId(game.visitor_team_name)} size={20} />
+        {titleTeamName(game.visitor_team_name, sport)}
         <span className="text-terminal-green">@</span>
-        <TeamLogo sport={sport} name={game.home_team_name} size={20} />
-        {short(game.home_team_name)}
+        <TeamLogo sport={sport} name={game.home_team_name} espnId={espnId(game.home_team_name)} size={20} />
+        {titleTeamName(game.home_team_name, sport)}
       </div>
       <p className="text-xs text-muted-foreground font-normal mt-1">
         {game.time_tbd ? tbdKickoffLabel(game.date) : format(parseISO(game.date), "EEE MMM d, h:mm a")}
@@ -262,6 +266,7 @@ export function GameInsightsSheet({
                     awayName={game.visitor_team_name}
                     moneylineHome={mlHome}
                     moneylineAway={mlAway}
+                    sport={sport}
                   />
                   <p className="font-mono text-[10px] text-muted-foreground">
                     DraftKings moneyline, vig removed. The market's own probability, not an MGP pick.

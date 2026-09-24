@@ -17,6 +17,7 @@ import { useMlbProbables } from "@/hooks/useMlbProbables";
 import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
 import { findMatchupForGame } from "@/services/mlb/probablePitchers";
 import { ProbablePitcherRow } from "@/components/mlb/ProbablePitcher";
+import { nickname } from "@/lib/teamNames";
 
 interface Game {
   id: string;
@@ -386,7 +387,7 @@ export function MLBSlate() {
                             <span className="text-foreground">
                               {dkOdds.spread_value !== null ? (
                                 <>
-                                  {game.home_team_name.split(" ").pop()} {formatLine(dkOdds.spread_value)}{" "}
+                                  {nickname(game.home_team_name)} {formatLine(dkOdds.spread_value)}{" "}
                                   <span className="text-terminal-green">({formatPrice(dkOdds.spread_odds)})</span>
                                 </>
                               ) : (
@@ -401,10 +402,10 @@ export function MLBSlate() {
                             <span className="text-foreground">
                               {dkOdds.moneyline_home !== null || dkOdds.moneyline_away !== null ? (
                                 <>
-                                  {game.home_team_name.split(" ").pop()}{" "}
+                                  {nickname(game.home_team_name)}{" "}
                                   <span className="text-terminal-green">{formatPrice(dkOdds.moneyline_home)}</span>
                                   <span className="text-muted-foreground mx-1">|</span>
-                                  {game.visitor_team_name.split(" ").pop()}{" "}
+                                  {nickname(game.visitor_team_name)}{" "}
                                   <span className="text-terminal-amber">{formatPrice(dkOdds.moneyline_away)}</span>
                                 </>
                               ) : (

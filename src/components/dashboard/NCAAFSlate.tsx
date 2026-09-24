@@ -20,6 +20,7 @@ import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
 import { isTop25, slateRank } from "@/lib/apPoll";
 import { tbdKickoffLabel } from "@/lib/kickoff";
 import { fetchStoredLines, overlayStoredLines } from "@/lib/storedLines";
+import { ncaafSchool } from "@/lib/teamNames";
 
 interface Game {
   id: string;
@@ -297,7 +298,7 @@ export function NCAAFSlate() {
                 <Card
                   onClick={() => handleOpenInsights(game)}
                   role="button"
-                  aria-label={`Game insights: ${game.visitor_team_name} at ${game.home_team_name}`}
+                  aria-label={`Game insights: ${ncaafSchool(game.visitor_team_name)} at ${ncaafSchool(game.home_team_name)}`}
                   className="cursor-pointer bg-gradient-to-b from-card to-card/70 border-terminal-amber/30 hover:border-terminal-amber/60 hover:shadow-[0_0_24px_-8px_hsl(var(--terminal-amber)/0.4)] transition-all"
                 >
                   <CardContent className="p-4">
@@ -327,7 +328,8 @@ export function NCAAFSlate() {
                             {formatRank(ranks.away)}
                           </Badge>
                         )}
-                        <span className="font-bold">{game.visitor_team_name}</span>
+                        {/* The school, as ESPN's scoreboard shows it */}
+                        <span className="font-bold">{ncaafSchool(game.visitor_team_name)}</span>
                         <FollowButton
                           entity={{
                             entityType: "team",
@@ -351,7 +353,7 @@ export function NCAAFSlate() {
                             {formatRank(ranks.home)}
                           </Badge>
                         )}
-                        <span className="font-bold">{game.home_team_name}</span>
+                        <span className="font-bold">{ncaafSchool(game.home_team_name)}</span>
                         <FollowButton
                           entity={{
                             entityType: "team",
@@ -384,7 +386,7 @@ export function NCAAFSlate() {
                             <span className="text-foreground">
                               {dkOdds.spread_value !== null ? (
                                 <>
-                                  {game.home_team_name.split(" ").pop()} {formatLine(dkOdds.spread_value)}{" "}
+                                  {ncaafSchool(game.home_team_name)} {formatLine(dkOdds.spread_value)}{" "}
                                   <span className="text-terminal-green">({formatPrice(dkOdds.spread_odds)})</span>
                                 </>
                               ) : (
@@ -414,6 +416,7 @@ export function NCAAFSlate() {
                             awayName={game.visitor_team_name}
                             moneylineHome={dkOdds.moneyline_home}
                             moneylineAway={dkOdds.moneyline_away}
+                            sport="NCAAF"
                           />
                         </div>
                       </div>
