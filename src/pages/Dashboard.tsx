@@ -16,7 +16,10 @@ import { toast } from "sonner";
 
 // TEMPORARY DEV-ONLY BYPASS: lets the dashboard render without a real Supabase
 // session when VITE_DEV_BYPASS_AUTH=true. Revert before shipping real auth work.
-const DEV_BYPASS_AUTH = import.meta.env.VITE_DEV_BYPASS_AUTH === "true";
+// import.meta.env.DEV is statically false in `vite build`, so the bypass is
+// compiled out of production bundles even if the variable leaks into a
+// deploy environment.
+const DEV_BYPASS_AUTH = import.meta.env.DEV && import.meta.env.VITE_DEV_BYPASS_AUTH === "true";
 const DEV_FAKE_USER = { id: "dev-preview-user", email: "preview@local.dev" } as User;
 
 const Dashboard = () => {
