@@ -167,6 +167,18 @@ describe("dashboard scroll restoration", () => {
     expect(scroller.scrollTop).toBe(5000); // from memory
   });
 
+  // e.g. MLB opened fresh (its spot lives in memory only), NFL reloaded, then
+  // Back: nothing saved for MLB, so it must not inherit NFL's offset
+  it("Back to a screen with no saved spot opens it at the top", () => {
+    const scroller = renderAt("/dashboard/mlb");
+    tap("NFL");
+    scrollTo(scroller, 900);
+    resetScrollMemory(); // what a reload of NFL leaves behind for MLB
+    tap("Back");
+    expect(screen.getByTestId("path")).toHaveTextContent("/dashboard/mlb");
+    expect(scroller.scrollTop).toBe(0);
+  });
+
   it("keeps working when sessionStorage throws", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
       throw new Error("QuotaExceededError");

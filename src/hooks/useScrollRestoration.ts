@@ -8,6 +8,8 @@ import { useLocation, useNavigationType } from "react-router-dom";
 //   starts it at the top, instead of inheriting the last screen's offset.
 // - Back/Forward (POP) returns to where that history entry was left, waiting
 //   for late-loading content if the page is still too short to reach it.
+//   With nothing saved for the entry (e.g. it was a fresh load's first
+//   screen and the tab has since reloaded), it starts at the top too.
 //
 // Positions are keyed by React Router's location.key, kept in memory and
 // mirrored to sessionStorage so a reload of the tab restores too. Storage
@@ -126,9 +128,8 @@ export function useScrollRestoration(getScroller: () => HTMLElement | null) {
     if (navigationType === "POP") {
       const y = positions().get(location.key);
       if (y !== undefined) return restoreTo(el, y);
-    } else if (pathChanged) {
-      el.scrollTop = 0;
     }
+    if (pathChanged) el.scrollTop = 0;
     // Only the entry changing matters; the other values are read fresh here
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]);

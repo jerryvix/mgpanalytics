@@ -159,9 +159,12 @@ const Dashboard = () => {
 
         {/* Phones: no sideways scrolling at all (a stray wide child used to
             let a swipe drag the pinned bars off screen), and scroll padding
-            equal to the pinned header (plus the sport tabs when present) so
-            anything scrolled into view lands below it, not underneath */}
-        <main className="flex-1 overflow-auto overscroll-contain phone:overflow-x-clip phone:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)] phone:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))]">
+            equal to the pinned header (plus the sport tabs when present) on
+            top and the floating tab bar below, so anything scrolled or
+            focused into view lands between them, not underneath. The top
+            padding keeps the sport pills' full height even while they are
+            tucked away: scrolling up to a target brings them back */}
+        <main className="flex-1 overflow-auto overscroll-contain phone:overflow-x-clip phone:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)] phone:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))] phone:scroll-pb-[calc(var(--bottom-nav-h)+var(--safe-bottom))]">
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
         {/* ChatPanel: docked on desktop, full-screen overlay on mobile */}

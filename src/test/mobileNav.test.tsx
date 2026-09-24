@@ -167,12 +167,15 @@ describe("sport tabs on phones", () => {
     expect(src).toMatch(/onRevealSubnav=\{pillsCollapsed \? revealPills : undefined\}/);
   });
 
-  it("the dashboard scroller pads scroll-into-view by the pinned header heights and never scrolls sideways", () => {
+  it("the dashboard scroller pads scroll-into-view by the pinned chrome above and below and never scrolls sideways", () => {
     const src = readFileSync(path.resolve(__dirname, "../pages/Dashboard.tsx"), "utf8");
     const main = src.match(/<main className="([^"]+)"/)![1];
     expect(main).toContain("phone:overflow-x-clip");
     expect(main).toContain("phone:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)]");
     expect(main).toContain("phone:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))]");
+    // the floating tab bar: keyboard focus in a short landscape viewport
+    // used to land underneath it
+    expect(main).toContain("phone:scroll-pb-[calc(var(--bottom-nav-h)+var(--safe-bottom))]");
   });
 
   it("extends each segmented-control tab to 44px without changing its look", () => {
