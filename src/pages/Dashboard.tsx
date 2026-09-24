@@ -119,7 +119,7 @@ const Dashboard = () => {
 
   if (loading || roleLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <div className="text-terminal-green glow-green animate-pulse-glow font-mono">
           LOADING TERMINAL...
         </div>
@@ -141,8 +141,9 @@ const Dashboard = () => {
           off-screen until the user scrolled */}
       <div className="h-dvh flex w-full bg-background overflow-hidden">
         {/* Always mounted: fixed rail on desktop, off-canvas sheet on mobile
-            (opened from BottomNav's Menu tab). Do not gate this on isMobile -
-            that leaves phones with no full navigation (see mobileNav test). */}
+            (opened from MobileTopBar's menu button or BottomNav's Menu tab).
+            Do not gate this on isMobile - that leaves phones with no full
+            navigation (see mobileNav test). */}
         <AppSidebar
           user={user}
           isAdmin={isAdmin}
