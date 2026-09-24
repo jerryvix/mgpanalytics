@@ -586,6 +586,7 @@ export function ChatPanel() {
                   variant="ghost"
                   size="icon"
                   onClick={toggleChat}
+                  aria-label="Close chat"
                   className="relative h-9 w-9 text-muted-foreground hover:text-foreground after:absolute after:-inset-1"
                 >
                   <ArrowLeft className="w-5 h-5" />
