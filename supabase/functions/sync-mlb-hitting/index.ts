@@ -174,6 +174,9 @@ serve(async (req) => {
       // it a live game ends streaks again, and the last run's numbers are better.
       statsapiJson<any>(gameStatusUrl(addDays(today, -UNFINISHED_LOOKBACK_DAYS), today)),
     ]);
+    // A 200 without a schedule would read as "nothing live" and let live games
+    // end streaks again; treat it like a failed read
+    if (!Array.isArray(statusJson?.dates)) throw new Error("statsapi returned no schedule for recent game states");
     const unfinished = unfinishedGamePks(parseSchedule(statusJson));
     const allSplits: any[] = allJson?.stats?.[0]?.splits || [];
     const qualifiedIds = new Set<string>((qualifiedJson?.stats?.[0]?.splits || []).map((sp: any) => String(sp.player?.id)));
