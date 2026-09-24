@@ -79,7 +79,7 @@ Cross-check freshness through player_season_stats sport=NFL (the games/odds tabl
     prompt: `${common}
 
 DOMAIN: NCAAF/CFB. Cover: games+odds (ncaaf_games/ncaaf_odds via ESPN), CFBD results/H2H (ncaaf_game_results),
-roster intel (7d cadence), draft board (ncaaf_draft_prospects via Tankathon, 7d cadence).
+roster intel (7d cadence), draft board (ncaaf_draft_prospects, DraftTek top 200 since Sep 2026, 24h cadence; judge freshness by source_as_of, DraftTek's own revision date, not captured_at).
 Verify ncaaf_games has upcoming season games with odds coverage, results table has prior-season data, and
 roster intel + draft board tables are populated. Flag anything that would embarrass the product during
 season kickoff weeks.`,

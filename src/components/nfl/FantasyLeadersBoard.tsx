@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { isTopTenFinish, normalizePlayerName } from "@/utils/fantasyTrends";
+import { selectAll } from "../../../supabase/functions/_shared/select-all";
 
 const POS_GROUPS = ["QB", "RB", "WR", "TE"] as const;
 type PosGroup = (typeof POS_GROUPS)[number];
@@ -101,7 +102,7 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
           .eq("position", posGroup)
           .order("adp", { ascending: true });
 
-  const [{ data: ranks }, { data: finishes }, { data: players }] = await Promise.all([
+  const [{ data: ranks }, { data: finishes }, players] = await Promise.all([
     rankSource,
     supabase
       .from("nfl_fantasy_season_ranks")
@@ -109,11 +110,23 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
       .eq("season", finishSeason)
       .eq("pos_group", posGroup)
       .order("position_rank", { ascending: true }),
-    supabase.from("players").select("id, name").eq("sport", "NFL"),
+    // Paged: there are more NFL players than PostgREST's 1,000-row cap, and a
+    // plain select silently dropped the rest (Jeanty, Hampton and
+    // Smith-Njigba lost their links)
+    selectAll<{ id: string; name: string; team_abbr: string | null; status: string | null }>(
+      () => supabase.from("players").select("id, name, team_abbr, status").eq("sport", "NFL").order("id"),
+      { label: "NFL players" },
+    ),
   ]);
 
+  // Rostered players win a name collision (a retired namesake keeps his row)
   const idByName = new Map<string, string>();
-  for (const p of players || []) idByName.set(normalizePlayerName(p.name), p.id);
+  const currentTeamByName = new Map<string, string>();
+  for (const p of [...players].sort((a, b) => Number(a.status === "active") - Number(b.status === "active"))) {
+    const key = normalizePlayerName(p.name);
+    idByName.set(key, p.id);
+    if (p.status === "active" && p.team_abbr) currentTeamByName.set(key, p.team_abbr);
+  }
 
   const finishList = (finishes || []) as FinishRow[];
   const finishByGsis = new Map<string, FinishRow>();
@@ -141,7 +154,12 @@ async function loadBoard(posGroup: PosGroup, view: BoardView): Promise<BoardData
     return {
       rankLabel: `${posGroup}${posRank}`,
       name: a.player_name,
-      team: finish?.team ?? a.team,
+      // Draft board: where the player plays now (Kenneth Walker III is no
+      // longer a Seahawk). Results view: the club he produced that season for.
+      team:
+        view === "draft"
+          ? currentTeamByName.get(normalizePlayerName(a.player_name)) ?? a.team ?? finish?.team ?? null
+          : finish?.team ?? a.team,
       adp: a.adp ?? null,
       adpHigh: a.high ?? null,
       adpLow: a.low ?? null,

@@ -172,7 +172,7 @@ export function MLBSlatePlayerCard({
             </Badge>
           )}
 
-          {hitStreak && hitStreak >= 5 && (
+          {(hitStreak ?? 0) >= 5 && (
             <Badge className="bg-terminal-amber/15 text-terminal-amber border-terminal-amber/30 text-xs">
               <Flame className="w-3 h-3 mr-1" />
               {hitStreak}-Game Hit Streak

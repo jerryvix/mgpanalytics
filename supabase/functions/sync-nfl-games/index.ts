@@ -2,32 +2,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 import { fetchEspnOddsBatch } from "../_shared/espn-odds.ts";
 import { espnFetch } from "../_shared/espn-fetch.ts";
+import { bdlNflFetchAll } from "../_shared/bdl-nfl.ts";
+import { currentNflSeason, nflGameRow, type BdlGame } from "../_shared/nfl-sync.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
-
-interface NFLTeam {
-  id: number;
-  full_name: string;
-}
-
-interface NFLGame {
-  id: number;
-  home_team: NFLTeam;
-  visitor_team: NFLTeam;
-  status: string;
-  date: string;
-  week?: number;
-  postseason: boolean;
-  season: number;
-}
-
-interface BallDontLieResponse {
-  data: NFLGame[];
-  meta?: { next_cursor?: number | string | null };
-}
 
 // Team name normalization for matching between APIs
 const normalizeTeamName = (name: string): string => {
@@ -62,10 +43,13 @@ Deno.serve(async (req) => {
     // Service client for database operations (used by both auth paths)
     supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    // Auth: cron secret (dispatch-syncs), service role key, or admin JWT
     const cronSecret = req.headers.get("x-cron-secret");
+    const bearer = req.headers.get("Authorization")?.replace(/^Bearer /, "") ?? null;
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[sync-nfl-games] Authenticated via cron secret`);
+    } else if (bearer && bearer === supabaseServiceKey) {
+      console.log(`[sync-nfl-games] Authenticated via service role key`);
     } else {
       // Authenticate user - require admin role
       const authHeader = req.headers.get("Authorization");
@@ -121,51 +105,37 @@ Deno.serve(async (req) => {
     // NFL seasons are labeled by START year everywhere (BDL convention and
     // ours): the 2026 season runs Sep 2026 – Feb 2027. Jan/Feb belong to the
     // prior season; from March we target the upcoming season's schedule.
-    const now = new Date();
-    const nflDbSeason = now.getMonth() <= 1 ? now.getFullYear() - 1 : now.getFullYear();
+    // An explicit { season } body re-syncs another season (e.g. to backfill
+    // final scores for a finished year).
+    let nflDbSeason = currentNflSeason();
+    try {
+      const body = await req.json();
+      if (body?.season) nflDbSeason = parseInt(String(body.season), 10);
+    } catch {
+      // No body: current season
+    }
     console.log(`[sync-nfl-games] Season: ${nflDbSeason}`);
 
     // ===== STEP 1: Fetch games from BallDontLie =====
-    // Full season (regular + postseason), paginated via cursor.
-    const allSeasonGames: NFLGame[] = [];
-    let cursor: string | null = null;
-
-    do {
-      const gamesParams = new URLSearchParams({
-        "seasons[]": String(nflDbSeason),
-        "per_page": "100",
-      });
-      if (cursor) gamesParams.set("cursor", cursor);
-
-      const gamesUrl = `https://api.balldontlie.io/nfl/v1/games?${gamesParams.toString()}`;
-
-      const gamesResponse = await fetch(gamesUrl, {
-        method: "GET",
-        headers: {
-          "Authorization": ballDontLieApiKey,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!gamesResponse.ok) {
-        const errorText = await gamesResponse.text();
-        console.error("BallDontLie API error:", gamesResponse.status, errorText);
-
-        if (gamesResponse.status === 401) {
-          throw new Error("Authorization failed - check API key");
-        }
-        throw new Error(`Failed to fetch games: ${gamesResponse.status} ${gamesResponse.statusText}`);
-      }
-
-      const gamesData: BallDontLieResponse = await gamesResponse.json();
-      allSeasonGames.push(...(gamesData.data || []));
-      cursor = gamesData.meta?.next_cursor != null ? String(gamesData.meta.next_cursor) : null;
-    } while (cursor);
+    // Full season (regular + postseason), paginated via cursor, with 429/5xx
+    // retry. BDL /games carries final scores (home_team_score /
+    // visitor_team_score) and status_state; both are stored now so results,
+    // H2H and records have something to read (is_final was never set before).
+    const allSeasonGames: BdlGame[] = await bdlNflFetchAll(
+      ballDontLieApiKey,
+      "/games",
+      [["seasons[]", nflDbSeason]],
+    );
 
     console.log(`Fetched ${allSeasonGames.length} season ${nflDbSeason} games from BallDontLie`);
 
     if (allSeasonGames.length === 0) {
       console.log(`No games found for season ${nflDbSeason}`);
+      await completeSyncLog(supabase, syncLogId, syncStartTime, {
+        status: "success",
+        records_added: 0,
+        details: { season: nflDbSeason, message: "No games on the BDL schedule" },
+      });
       return new Response(
         JSON.stringify({ success: true, gamesCount: 0, oddsCount: 0, message: `No games found for season ${nflDbSeason}` }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
@@ -173,20 +143,10 @@ Deno.serve(async (req) => {
     }
 
     // Transform and upsert games (UPSERT handles duplicates via onConflict)
-    const gamesToUpsert = allSeasonGames.map((game) => ({
-      id: game.id,
-      league: "NFL",
-      season: game.season ?? nflDbSeason,
-      week: game.week || null,
-      date: game.date,
-      status: game.status,
-      postseason: game.postseason ?? false,
-      home_team_name: game.home_team?.full_name || "Unknown",
-      visitor_team_name: game.visitor_team?.full_name || "Unknown",
-      external_id: `nfl_${game.id}`,
-    }));
+    const gamesToUpsert = allSeasonGames.map((game) => nflGameRow(game, nflDbSeason));
+    const finalCount = gamesToUpsert.filter((g) => g.is_final).length;
 
-    console.log(`Upserting ${gamesToUpsert.length} games...`);
+    console.log(`Upserting ${gamesToUpsert.length} games (${finalCount} final with scores)...`);
 
     const { error: upsertGamesError } = await supabase
       .from("games")
@@ -218,6 +178,12 @@ Deno.serve(async (req) => {
 
       interface EspnEventLite { id: string; date: string; home: string; away: string }
       const espnEvents: EspnEventLite[] = [];
+      // site.api 403s edge functions, so these calls are usually served by the
+      // cdn.espn.com mirror, which is WEEK-scoped for football: every date in
+      // the same week returns that whole week. Without this dedupe each game
+      // appeared up to 7 times, and the odds upsert then tried to write the
+      // same (game_id, sportsbook) row twice in one statement and failed.
+      const seenEventIds = new Set<string>();
       for (const date of scoreboardDates) {
         try {
           const res = await espnFetch(
@@ -226,11 +192,13 @@ Deno.serve(async (req) => {
           if (!res.ok) continue;
           const data = await res.json();
           for (const ev of data.events || []) {
+            if (!ev.id || seenEventIds.has(String(ev.id))) continue;
             const comp = ev.competitions?.[0];
             const home = comp?.competitors?.find((c: { homeAway: string }) => c.homeAway === "home")?.team?.displayName;
             const away = comp?.competitors?.find((c: { homeAway: string }) => c.homeAway === "away")?.team?.displayName;
             const completed = ev.status?.type?.completed === true;
-            if (ev.id && home && away && !completed) {
+            if (home && away && !completed) {
+              seenEventIds.add(String(ev.id));
               espnEvents.push({ id: String(ev.id), date: ev.date, home, away });
             }
           }
@@ -242,17 +210,19 @@ Deno.serve(async (req) => {
 
       const oddsMap = await fetchEspnOddsBatch("nfl", espnEvents.map((e) => e.id));
 
-      const oddsToInsert: {
+      // Keyed on the upsert conflict target so one statement never touches
+      // the same row twice
+      const oddsByKey = new Map<string, {
         game_id: number;
         sportsbook: string;
-        spread_value: number | null;
-        spread_odds: number | null;
+        spread_value: number;
+        spread_odds: number;
         moneyline_home: number | null;
         moneyline_away: number | null;
         total_value: number | null;
         total_over_odds: number | null;
         total_under_odds: number | null;
-      }[] = [];
+      }>();
 
       const MATCH_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
       for (const ev of espnEvents) {
@@ -276,7 +246,14 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        oddsToInsert.push({
+        // odds.spread_value / spread_odds are NOT NULL; a row without them
+        // would fail the whole batch
+        if (odds.spreadHome === null || odds.spreadHomeOdds === null) {
+          console.log(`Skipping ${ev.away} @ ${ev.home}: no spread posted yet`);
+          continue;
+        }
+
+        oddsByKey.set(`${matchedGame.id}|${odds.sportsbook}`, {
           game_id: matchedGame.id,
           sportsbook: odds.sportsbook,
           spread_value: odds.spreadHome,
@@ -288,6 +265,7 @@ Deno.serve(async (req) => {
           total_under_odds: odds.totalUnderOdds,
         });
       }
+      const oddsToInsert = [...oddsByKey.values()];
 
       console.log(`Inserting ${oddsToInsert.length} odds rows...`);
 
@@ -311,36 +289,41 @@ Deno.serve(async (req) => {
     }
 
     // ===== STEP 3: Build response =====
-    const { count: finalGamesCount } = await supabase
-      .from("games")
-      .select("*", { count: "exact", head: true })
-      .eq("league", "NFL")
-      .eq("postseason", true);
-
-    const { count: finalOddsCount } = await supabase
-      .from("odds")
-      .select("*", { count: "exact", head: true });
-
+    // Counts describe THIS run (the old response reported the number of
+    // postseason games in the table, which is why sync_schedule showed 13).
     const sportsbooksMessage = oddsCount > 0
       ? "DraftKings (via ESPN)"
       : "no sportsbooks";
 
     const message = oddsError
-      ? `Synced ${gamesToUpsert.length} games. Odds error: ${oddsError}`
-      : `Synced ${gamesToUpsert.length} games with live odds from ${sportsbooksMessage}`;
+      ? `Synced ${gamesToUpsert.length} games (${finalCount} final). Odds error: ${oddsError}`
+      : `Synced ${gamesToUpsert.length} games (${finalCount} final) with ${oddsCount} lines from ${sportsbooksMessage}`;
 
-    // Complete sync log — success
+    // Complete sync log: success
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: oddsError ? "partial" : "success",
       records_added: gamesToUpsert.length,
-      details: { games_upserted: gamesToUpsert.length, odds_count: oddsCount, odds_error: oddsError },
+      details: { season: nflDbSeason, games_upserted: gamesToUpsert.length, final_games: finalCount, odds_count: oddsCount, odds_error: oddsError },
     });
+
+    // Record the run here too (the dispatcher only records runs it fired, so
+    // admin-triggered syncs left the schedule row looking stale)
+    await supabase.from("sync_schedule").upsert({
+      sport: "NFL",
+      data_type: "games",
+      last_sync_at: new Date().toISOString(),
+      last_sync_status: oddsError ? "partial" : "success",
+      records_synced: gamesToUpsert.length,
+      error_message: oddsError,
+    }, { onConflict: "sport,data_type" });
 
     return new Response(
       JSON.stringify({
         success: true,
-        gamesCount: finalGamesCount || gamesToUpsert.length,
-        oddsCount: finalOddsCount || oddsCount,
+        season: nflDbSeason,
+        gamesCount: gamesToUpsert.length,
+        finalGames: finalCount,
+        oddsCount,
         message,
         oddsError,
       }),
@@ -357,7 +340,7 @@ Deno.serve(async (req) => {
       timestamp: new Date().toISOString()
     });
 
-    // Complete sync log — failure
+    // Complete sync log: failure
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "failed",
       error_message: error instanceof Error ? error.message : "Unknown error",

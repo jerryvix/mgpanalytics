@@ -1,0 +1,885 @@
+{
+ "content": {
+  "title": "2026 NCAA College Football Polls and Rankings for Week 4 - ESPN",
+  "data": {
+   "rankings": [
+    {
+     "id": 2,
+     "name": "AFCA Coaches Poll",
+     "short_name": "AFCA Coaches Poll",
+     "selected": false,
+     "ranks": [
+      {
+       "rank": 1,
+       "previous_rank": 1,
+       "team_display_name": "Texas",
+       "team_abbreviation": "TEX",
+       "team_url": "https://www.espn.com/college-football/team/_/id/251/texas-longhorns",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png",
+       "formatted_record": "3-0",
+       "points": 1807,
+       "first_place_votes": 46
+      },
+      {
+       "rank": 2,
+       "previous_rank": 2,
+       "team_display_name": "Georgia",
+       "team_abbreviation": "UGA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/61/georgia-bulldogs",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png",
+       "formatted_record": "3-0",
+       "points": 1742,
+       "first_place_votes": 16
+      },
+      {
+       "rank": 3,
+       "previous_rank": 3,
+       "team_display_name": "Notre Dame",
+       "team_abbreviation": "ND",
+       "team_url": "https://www.espn.com/college-football/team/_/id/87/notre-dame-fighting-irish",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/87.png",
+       "formatted_record": "3-0",
+       "points": 1636,
+       "first_place_votes": 2
+      },
+      {
+       "rank": 4,
+       "previous_rank": 4,
+       "team_display_name": "Indiana",
+       "team_abbreviation": "IU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/84/indiana-hoosiers",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/84.png",
+       "formatted_record": "3-0",
+       "points": 1613,
+       "first_place_votes": 9
+      },
+      {
+       "rank": 5,
+       "previous_rank": 5,
+       "team_display_name": "Miami",
+       "team_abbreviation": "MIA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2390/miami-hurricanes",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2390.png",
+       "formatted_record": "3-0",
+       "points": 1552,
+       "first_place_votes": 1
+      },
+      {
+       "rank": 6,
+       "previous_rank": 9,
+       "team_display_name": "Ole Miss",
+       "team_abbreviation": "MISS",
+       "team_url": "https://www.espn.com/college-football/team/_/id/145/ole-miss-rebels",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/145.png",
+       "formatted_record": "3-0",
+       "points": 1501,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 7,
+       "previous_rank": 6,
+       "team_display_name": "Ohio State",
+       "team_abbreviation": "OSU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/194/ohio-state-buckeyes",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png",
+       "formatted_record": "2-1",
+       "points": 1473,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 8,
+       "previous_rank": 10,
+       "team_display_name": "Alabama",
+       "team_abbreviation": "ALA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/333/alabama-crimson-tide",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png",
+       "formatted_record": "3-0",
+       "points": 1309,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 9,
+       "previous_rank": 13,
+       "team_display_name": "BYU",
+       "team_abbreviation": "BYU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/252/byu-cougars",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png",
+       "formatted_record": "3-0",
+       "points": 1089,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 10,
+       "previous_rank": 12,
+       "team_display_name": "Texas Tech",
+       "team_abbreviation": "TTU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2641/texas-tech-red-raiders",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png",
+       "formatted_record": "3-0",
+       "points": 1079,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 11,
+       "previous_rank": 7,
+       "team_display_name": "LSU",
+       "team_abbreviation": "LSU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/99/lsu-tigers",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/99.png",
+       "formatted_record": "2-1",
+       "points": 1067,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 12,
+       "previous_rank": 11,
+       "team_display_name": "USC",
+       "team_abbreviation": "USC",
+       "team_url": "https://www.espn.com/college-football/team/_/id/30/usc-trojans",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/30.png",
+       "formatted_record": "4-0",
+       "points": 1057,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 13,
+       "previous_rank": 14,
+       "team_display_name": "Tennessee",
+       "team_abbreviation": "TENN",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2633/tennessee-volunteers",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png",
+       "formatted_record": "3-0",
+       "points": 833,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 14,
+       "previous_rank": 15,
+       "team_display_name": "Penn State",
+       "team_abbreviation": "PSU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/213/penn-state-nittany-lions",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/213.png",
+       "formatted_record": "3-0",
+       "points": 814,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 15,
+       "previous_rank": 17,
+       "team_display_name": "Utah",
+       "team_abbreviation": "UTAH",
+       "team_url": "https://www.espn.com/college-football/team/_/id/254/utah-utes",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/254.png",
+       "formatted_record": "3-0",
+       "points": 743,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 16,
+       "previous_rank": 18,
+       "team_display_name": "Oregon",
+       "team_abbreviation": "ORE",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2483/oregon-ducks",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2483.png",
+       "formatted_record": "2-1",
+       "points": 594,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 17,
+       "previous_rank": 20,
+       "team_display_name": "Iowa",
+       "team_abbreviation": "IOWA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2294/iowa-hawkeyes",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2294.png",
+       "formatted_record": "3-0",
+       "points": 580,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 18,
+       "previous_rank": 19,
+       "team_display_name": "Michigan",
+       "team_abbreviation": "MICH",
+       "team_url": "https://www.espn.com/college-football/team/_/id/130/michigan-wolverines",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png",
+       "formatted_record": "3-0",
+       "points": 545,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 19,
+       "previous_rank": 0,
+       "team_display_name": "Louisville",
+       "team_abbreviation": "LOU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/97/louisville-cardinals",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png",
+       "formatted_record": "2-1",
+       "points": 519,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 20,
+       "previous_rank": 8,
+       "team_display_name": "Texas A&M",
+       "team_abbreviation": "TA&M",
+       "team_url": "https://www.espn.com/college-football/team/_/id/245/texas-am-aggies",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/245.png",
+       "formatted_record": "2-1",
+       "points": 447,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 21,
+       "previous_rank": 22,
+       "team_display_name": "Missouri",
+       "team_abbreviation": "MIZ",
+       "team_url": "https://www.espn.com/college-football/team/_/id/142/missouri-tigers",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png",
+       "formatted_record": "3-0",
+       "points": 382,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 22,
+       "previous_rank": 0,
+       "team_display_name": "Florida",
+       "team_abbreviation": "FLA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/57/florida-gators",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/57.png",
+       "formatted_record": "3-0",
+       "points": 370,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 23,
+       "previous_rank": 24,
+       "team_display_name": "Washington",
+       "team_abbreviation": "WASH",
+       "team_url": "https://www.espn.com/college-football/team/_/id/264/washington-huskies",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/264.png",
+       "formatted_record": "3-0",
+       "points": 251,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 24,
+       "previous_rank": 21,
+       "team_display_name": "Oklahoma",
+       "team_abbreviation": "OU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/201/oklahoma-sooners",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/201.png",
+       "formatted_record": "2-1",
+       "points": 213,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 25,
+       "previous_rank": 16,
+       "team_display_name": "SMU",
+       "team_abbreviation": "SMU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2567/smu-mustangs",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2567.png",
+       "formatted_record": "2-1",
+       "points": 162,
+       "first_place_votes": 0
+      }
+     ]
+    },
+    {
+     "id": 1,
+     "name": "AP Top 25",
+     "short_name": "AP Poll",
+     "selected": false,
+     "ranks": [
+      {
+       "rank": 1,
+       "previous_rank": 1,
+       "team_display_name": "Texas",
+       "team_abbreviation": "TEX",
+       "team_url": "https://www.espn.com/college-football/team/_/id/251/texas-longhorns",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/251.png",
+       "formatted_record": "3-0",
+       "points": 1706,
+       "first_place_votes": 58
+      },
+      {
+       "rank": 2,
+       "previous_rank": 2,
+       "team_display_name": "Georgia",
+       "team_abbreviation": "UGA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/61/georgia-bulldogs",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/61.png",
+       "formatted_record": "3-0",
+       "points": 1580,
+       "first_place_votes": 3
+      },
+      {
+       "rank": 3,
+       "previous_rank": 3,
+       "team_display_name": "Notre Dame",
+       "team_abbreviation": "ND",
+       "team_url": "https://www.espn.com/college-football/team/_/id/87/notre-dame-fighting-irish",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/87.png",
+       "formatted_record": "3-0",
+       "points": 1517,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 4,
+       "previous_rank": 8,
+       "team_display_name": "Ole Miss",
+       "team_abbreviation": "MISS",
+       "team_url": "https://www.espn.com/college-football/team/_/id/145/ole-miss-rebels",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/145.png",
+       "formatted_record": "3-0",
+       "points": 1488,
+       "first_place_votes": 3
+      },
+      {
+       "rank": 5,
+       "previous_rank": 4,
+       "team_display_name": "Indiana",
+       "team_abbreviation": "IU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/84/indiana-hoosiers",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/84.png",
+       "formatted_record": "3-0",
+       "points": 1467,
+       "first_place_votes": 4
+      },
+      {
+       "rank": 6,
+       "previous_rank": 5,
+       "team_display_name": "Miami",
+       "team_abbreviation": "MIA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2390/miami-hurricanes",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2390.png",
+       "formatted_record": "3-0",
+       "points": 1445,
+       "first_place_votes": 1
+      },
+      {
+       "rank": 7,
+       "previous_rank": 6,
+       "team_display_name": "Ohio State",
+       "team_abbreviation": "OSU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/194/ohio-state-buckeyes",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/194.png",
+       "formatted_record": "2-1",
+       "points": 1415,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 8,
+       "previous_rank": 10,
+       "team_display_name": "Alabama",
+       "team_abbreviation": "ALA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/333/alabama-crimson-tide",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/333.png",
+       "formatted_record": "3-0",
+       "points": 1182,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 9,
+       "previous_rank": 11,
+       "team_display_name": "BYU",
+       "team_abbreviation": "BYU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/252/byu-cougars",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/252.png",
+       "formatted_record": "3-0",
+       "points": 1090,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 10,
+       "previous_rank": 7,
+       "team_display_name": "LSU",
+       "team_abbreviation": "LSU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/99/lsu-tigers",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/99.png",
+       "formatted_record": "2-1",
+       "points": 1078,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 11,
+       "previous_rank": 13,
+       "team_display_name": "Texas Tech",
+       "team_abbreviation": "TTU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2641/texas-tech-red-raiders",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2641.png",
+       "formatted_record": "3-0",
+       "points": 1067,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 12,
+       "previous_rank": 12,
+       "team_display_name": "USC",
+       "team_abbreviation": "USC",
+       "team_url": "https://www.espn.com/college-football/team/_/id/30/usc-trojans",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/30.png",
+       "formatted_record": "4-0",
+       "points": 907,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 13,
+       "previous_rank": 14,
+       "team_display_name": "Penn State",
+       "team_abbreviation": "PSU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/213/penn-state-nittany-lions",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/213.png",
+       "formatted_record": "3-0",
+       "points": 850,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 14,
+       "previous_rank": 15,
+       "team_display_name": "Tennessee",
+       "team_abbreviation": "TENN",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2633/tennessee-volunteers",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2633.png",
+       "formatted_record": "3-0",
+       "points": 826,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 15,
+       "previous_rank": 17,
+       "team_display_name": "Utah",
+       "team_abbreviation": "UTAH",
+       "team_url": "https://www.espn.com/college-football/team/_/id/254/utah-utes",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/254.png",
+       "formatted_record": "3-0",
+       "points": 752,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 16,
+       "previous_rank": 23,
+       "team_display_name": "Louisville",
+       "team_abbreviation": "LOU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/97/louisville-cardinals",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/97.png",
+       "formatted_record": "2-1",
+       "points": 692,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 17,
+       "previous_rank": 18,
+       "team_display_name": "Iowa",
+       "team_abbreviation": "IOWA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2294/iowa-hawkeyes",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2294.png",
+       "formatted_record": "3-0",
+       "points": 561,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 18,
+       "previous_rank": 19,
+       "team_display_name": "Michigan",
+       "team_abbreviation": "MICH",
+       "team_url": "https://www.espn.com/college-football/team/_/id/130/michigan-wolverines",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/130.png",
+       "formatted_record": "3-0",
+       "points": 432,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 19,
+       "previous_rank": 20,
+       "team_display_name": "Missouri",
+       "team_abbreviation": "MIZ",
+       "team_url": "https://www.espn.com/college-football/team/_/id/142/missouri-tigers",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/142.png",
+       "formatted_record": "3-0",
+       "points": 369,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 20,
+       "previous_rank": 21,
+       "team_display_name": "Oregon",
+       "team_abbreviation": "ORE",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2483/oregon-ducks",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2483.png",
+       "formatted_record": "2-1",
+       "points": 364,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 21,
+       "previous_rank": 0,
+       "team_display_name": "Florida",
+       "team_abbreviation": "FLA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/57/florida-gators",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/57.png",
+       "formatted_record": "3-0",
+       "points": 269,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 22,
+       "previous_rank": 16,
+       "team_display_name": "SMU",
+       "team_abbreviation": "SMU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2567/smu-mustangs",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2567.png",
+       "formatted_record": "2-1",
+       "points": 212,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 23,
+       "previous_rank": 9,
+       "team_display_name": "Texas A&M",
+       "team_abbreviation": "TA&M",
+       "team_url": "https://www.espn.com/college-football/team/_/id/245/texas-am-aggies",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/245.png",
+       "formatted_record": "2-1",
+       "points": 202,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 24,
+       "previous_rank": 0,
+       "team_display_name": "Mississippi State",
+       "team_abbreviation": "MSST",
+       "team_url": "https://www.espn.com/college-football/team/_/id/344/mississippi-state-bulldogs",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/344.png",
+       "formatted_record": "3-0",
+       "points": 179,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 25,
+       "previous_rank": 22,
+       "team_display_name": "Houston",
+       "team_abbreviation": "HOU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/248/houston-cougars",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/248.png",
+       "formatted_record": "2-1",
+       "points": 127,
+       "first_place_votes": 0
+      }
+     ]
+    },
+    {
+     "id": 20,
+     "name": "FCS Coaches Poll",
+     "short_name": "FCS Coaches Poll",
+     "selected": false,
+     "ranks": [
+      {
+       "rank": 1,
+       "previous_rank": 1,
+       "team_display_name": "Montana State",
+       "team_abbreviation": "MTST",
+       "team_url": "https://www.espn.com/college-football/team/_/id/147/montana-state-bobcats",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/147.png",
+       "formatted_record": "4-0",
+       "points": 649,
+       "first_place_votes": 25
+      },
+      {
+       "rank": 2,
+       "previous_rank": 3,
+       "team_display_name": "South Dakota State",
+       "team_abbreviation": "SDST",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2571/south-dakota-state-jackrabbits",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2571.png",
+       "formatted_record": "3-1",
+       "points": 598,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 3,
+       "previous_rank": 5,
+       "team_display_name": "Tarleton State",
+       "team_abbreviation": "TAR",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2627/tarleton-state-texans",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2627.png",
+       "formatted_record": "4-0",
+       "points": 566,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 4,
+       "previous_rank": 4,
+       "team_display_name": "Illinois State",
+       "team_abbreviation": "ILST",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2287/illinois-state-redbirds",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2287.png",
+       "formatted_record": "4-0",
+       "points": 561,
+       "first_place_votes": 1
+      },
+      {
+       "rank": 4,
+       "previous_rank": 2,
+       "team_display_name": "Montana",
+       "team_abbreviation": "MONT",
+       "team_url": "https://www.espn.com/college-football/team/_/id/149/montana-grizzlies",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/149.png",
+       "formatted_record": "3-1",
+       "points": 561,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 6,
+       "previous_rank": 8,
+       "team_display_name": "Stephen F. Austin",
+       "team_abbreviation": "SFA",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2617/stephen-f-austin-lumberjacks",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2617.png",
+       "formatted_record": "4-0",
+       "points": 480,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 7,
+       "previous_rank": 7,
+       "team_display_name": "Lehigh",
+       "team_abbreviation": "LEH",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2329/lehigh-mountain-hawks",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2329.png",
+       "formatted_record": "4-0",
+       "points": 461,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 8,
+       "previous_rank": 6,
+       "team_display_name": "North Dakota",
+       "team_abbreviation": "UND",
+       "team_url": "https://www.espn.com/college-football/team/_/id/155/north-dakota-fighting-hawks",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/155.png",
+       "formatted_record": "3-1",
+       "points": 459,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 9,
+       "previous_rank": 11,
+       "team_display_name": "UC Davis",
+       "team_abbreviation": "UCD",
+       "team_url": "https://www.espn.com/college-football/team/_/id/302/uc-davis-aggies",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/302.png",
+       "formatted_record": "3-1",
+       "points": 439,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 10,
+       "previous_rank": 10,
+       "team_display_name": "Tennessee Tech",
+       "team_abbreviation": "TNTC",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2635/tennessee-tech-golden-eagles",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2635.png",
+       "formatted_record": "3-0",
+       "points": 415,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 11,
+       "previous_rank": 14,
+       "team_display_name": "Austin Peay",
+       "team_abbreviation": "APSU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2046/austin-peay-governors",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2046.png",
+       "formatted_record": "3-1",
+       "points": 378,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 12,
+       "previous_rank": 12,
+       "team_display_name": "South Dakota",
+       "team_abbreviation": "SDAK",
+       "team_url": "https://www.espn.com/college-football/team/_/id/233/south-dakota-coyotes",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/233.png",
+       "formatted_record": "3-1",
+       "points": 366,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 13,
+       "previous_rank": 9,
+       "team_display_name": "Youngstown State",
+       "team_abbreviation": "YSU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2754/youngstown-state-penguins",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2754.png",
+       "formatted_record": "2-2",
+       "points": 363,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 14,
+       "previous_rank": 16,
+       "team_display_name": "South Carolina State",
+       "team_abbreviation": "SCST",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2569/south-carolina-state-bulldogs",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2569.png",
+       "formatted_record": "4-0",
+       "points": 303,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 15,
+       "previous_rank": 15,
+       "team_display_name": "Lamar",
+       "team_abbreviation": "LAM",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2320/lamar-cardinals",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2320.png",
+       "formatted_record": "2-1",
+       "points": 296,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 16,
+       "previous_rank": 18,
+       "team_display_name": "Idaho State",
+       "team_abbreviation": "IDST",
+       "team_url": "https://www.espn.com/college-football/team/_/id/304/idaho-state-bengals",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/304.png",
+       "formatted_record": "3-0",
+       "points": 273,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 17,
+       "previous_rank": 19,
+       "team_display_name": "Northern Arizona",
+       "team_abbreviation": "NAU",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2464/northern-arizona-lumberjacks",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2464.png",
+       "formatted_record": "3-1",
+       "points": 228,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 18,
+       "previous_rank": 20,
+       "team_display_name": "Yale",
+       "team_abbreviation": "YALE",
+       "team_url": "https://www.espn.com/college-football/team/_/id/43/yale-bulldogs",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/43.png",
+       "formatted_record": "1-0",
+       "points": 188,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 19,
+       "previous_rank": 0,
+       "team_display_name": "Richmond",
+       "team_abbreviation": "RICH",
+       "team_url": "https://www.espn.com/college-football/team/_/id/257/richmond-spiders",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/257.png",
+       "formatted_record": "3-1",
+       "points": 104,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 20,
+       "previous_rank": 17,
+       "team_display_name": "West Florida",
+       "team_abbreviation": "UWF",
+       "team_url": "https://www.espn.com/college-football/team/_/id/110242/west-florida-argonauts",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/110242.png",
+       "formatted_record": "2-1",
+       "points": 97,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 21,
+       "previous_rank": 13,
+       "team_display_name": "Rhode Island",
+       "team_abbreviation": "URI",
+       "team_url": "https://www.espn.com/college-football/team/_/id/227/rhode-island-rams",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/227.png",
+       "formatted_record": "2-2",
+       "points": 93,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 22,
+       "previous_rank": 23,
+       "team_display_name": "Villanova",
+       "team_abbreviation": "VILL",
+       "team_url": "https://www.espn.com/college-football/team/_/id/222/villanova-wildcats",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/222.png",
+       "formatted_record": "2-2",
+       "points": 85,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 23,
+       "previous_rank": 0,
+       "team_display_name": "Colgate",
+       "team_abbreviation": "COLG",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2142/colgate-raiders",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2142.png",
+       "formatted_record": "3-1",
+       "points": 71,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 23,
+       "previous_rank": 22,
+       "team_display_name": "Mercer",
+       "team_abbreviation": "MER",
+       "team_url": "https://www.espn.com/college-football/team/_/id/2382/mercer-bears",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/2382.png",
+       "formatted_record": "2-2",
+       "points": 71,
+       "first_place_votes": 0
+      },
+      {
+       "rank": 25,
+       "previous_rank": 0,
+       "team_display_name": "Harvard",
+       "team_abbreviation": "HARV",
+       "team_url": "https://www.espn.com/college-football/team/_/id/108/harvard-crimson",
+       "team_logo": "https://a.espncdn.com/i/teamlogos/ncaa/500/108.png",
+       "formatted_record": "1-0",
+       "points": 50,
+       "first_place_votes": 0
+      }
+     ]
+    }
+   ],
+   "weekFilters": [
+    {
+     "label": "Preseason",
+     "href": "/college-football/rankings/_/week/1/year/2026/seasontype/1",
+     "selected": false
+    },
+    {
+     "label": "Week 2",
+     "href": "/college-football/rankings/_/week/1/year/2026/seasontype/2",
+     "selected": false
+    },
+    {
+     "label": "Week 3",
+     "href": "/college-football/rankings/_/week/2/year/2026/seasontype/2",
+     "selected": false
+    },
+    {
+     "label": "Week 4",
+     "href": "/college-football/rankings/_/week/3/year/2026/seasontype/2",
+     "selected": false
+    },
+    {
+     "label": "Week 5",
+     "href": "/college-football/rankings/_/week/4/year/2026/seasontype/2",
+     "selected": true
+    }
+   ]
+  }
+ }
+}

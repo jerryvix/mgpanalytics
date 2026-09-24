@@ -46,42 +46,58 @@ export function NCAAFSyncCard() {
     fetchCounts();
   }, []);
 
+  // Records and reports what the function actually returned. This used to
+  // write "success" and toast "Synced" even when the call failed, which is
+  // how a dead NCAAF sync could look healthy from this card.
   const handleSync = async () => {
     setIsSyncing(true);
+    let ok = false;
+    let detail = "Failed to sync NCAAF games";
     try {
       const { data, error } = await supabase.functions.invoke("sync-ncaaf-games");
-      
       if (error) {
-        console.error("Sync error:", error);
+        // supabase-js hides the JSON body on non-2xx; surface it when there is one
+        detail = error.message || detail;
+        const ctx = (error as { context?: Response }).context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) detail = body.error;
+          } catch { /* not JSON */ }
+        }
+      } else if (!data || data.success === false) {
+        detail = data?.error || detail;
+      } else {
+        ok = true;
+        detail = data.message || `Synced ${data.gamesCount ?? 0} games`;
       }
 
-      // Update sync schedule
       await supabase.from("sync_schedule").upsert({
         sport: "NCAAF",
         data_type: "games",
         last_sync_at: new Date().toISOString(),
-        last_sync_status: "success",
+        last_sync_status: ok ? "success" : "failed",
+        records_synced: ok ? data?.gamesCount ?? 0 : 0,
+        error_message: ok ? null : detail,
       }, { onConflict: "sport,data_type" });
 
       await fetchCounts();
-
-      toast({
-        title: "NCAAF Games Synced",
-        description: data?.message || `Synced ${data?.gamesCount || 0} games`,
-      });
     } catch (error) {
       console.error("Sync error:", error);
-      toast({
-        title: "Sync Failed",
-        description: "Failed to sync NCAAF games",
-        variant: "destructive",
-      });
+      detail = error instanceof Error ? error.message : detail;
     } finally {
       setIsSyncing(false);
     }
+
+    if (ok) {
+      toast({ title: "NCAAF Games Synced", description: detail });
+    } else {
+      console.error("NCAAF sync failed:", detail);
+      toast({ title: "NCAAF Sync Failed", description: detail, variant: "destructive" });
+    }
   };
 
-  // Matchup-intel jobs (CFBD + Tankathon). label doubles as the running-state
+  // Matchup-intel jobs (CFBD + DraftTek). label doubles as the running-state
   // key; body is passed through to the edge function (e.g. backfill seasons).
   const runIntelSync = async (
     label: string,
@@ -166,8 +182,12 @@ export function NCAAFSyncCard() {
           disabled={isSyncing}
         >
           {isSyncing ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-2" />}
-          Sync NCAAF Games (Top 25, 7 Days)
+          Sync NCAAF Games (All FBS, -7/+60 Days)
         </Button>
+        <p className="text-[10px] text-muted-foreground font-mono leading-snug">
+          Every FBS game in the window with AP ranks, finals and DraftKings lines;
+          also re-pulls any game from the last 45 days still missing its final.
+        </p>
         
         <div className="grid grid-cols-3 gap-2">
           <div className="bg-muted/50 rounded-lg p-2 text-center">
@@ -204,8 +224,8 @@ export function NCAAFSyncCard() {
             runIntelSync("Sync Results (CFBD)", "sync-cfbd-games")
           )}
           {intelButton("Backfill Results (Last 5 Seasons)", <History className="w-3 h-3 mr-2" />, backfillResults)}
-          {intelButton("Refresh Draft Board (Tankathon)", <GraduationCap className="w-3 h-3 mr-2" />, () =>
-            runIntelSync("Refresh Draft Board (Tankathon)", "sync-draft-board")
+          {intelButton("Refresh Draft Board (DraftTek Top 200)", <GraduationCap className="w-3 h-3 mr-2" />, () =>
+            runIntelSync("Refresh Draft Board (DraftTek Top 200)", "sync-draft-board")
           )}
         </div>
       </CardContent>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { MarkdownMessage } from "@/components/chatbot/MarkdownMessage";
 import { Loader2, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { NFL_TRENDING, NCAAF_TRENDING } from "@/data/trendingBets";
+import { NFL_TRENDING, NCAAF_TRENDING, currentTrending } from "@/data/trendingBets";
 
 // Click-to-generate insight for a season futures line. Powered by the MGP
 // Analyst (same grounding + zero-hallucination rules as chat). Cached in
@@ -95,8 +95,10 @@ export function FuturesInsight({ sport, subject, line, over, under, kind = "team
       // nuggets (teams) and the player's real prior-season stat line from our
       // own database - the angle must never claim ignorance of a number the
       // dashboard displays.
-      const curated = [...NFL_TRENDING, ...NCAAF_TRENDING]
-        .filter((b) => b.verified && (b.subject.includes(subject) || b.nugget.includes(subject) || subject.includes(b.subject)))
+      // Only still-current angles: an expired preseason claim fed to the
+      // analyst would come back as a stale "insight".
+      const curated = currentTrending([...NFL_TRENDING, ...NCAAF_TRENDING])
+        .filter((b) => b.subject.includes(subject) || b.nugget.includes(subject) || subject.includes(b.subject))
         .map((b) => `- ${b.nugget}`)
         .slice(0, 3)
         .join("\n");

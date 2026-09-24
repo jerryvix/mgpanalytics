@@ -282,7 +282,7 @@ export function NCAABSlate() {
               const dkOdds = gameOddsMap[game.id];
               const isRanked =
                 game.home_team_rank !== null || game.visitor_team_rank !== null;
-              const liveGame = live.getGame(game.visitor_team_name, game.home_team_name);
+              const liveGame = live.getGame(game.visitor_team_name, game.home_team_name, { start: game.date });
               const showScore = liveGame && liveGame.state !== "pre" && liveGame.awayScore !== null;
 
               return (

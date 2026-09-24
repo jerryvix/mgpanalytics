@@ -1,19 +1,40 @@
-// Weekly consensus big-board refresh from Tankathon's NFL Top 101 (server-
-// rendered HTML, no key). Parse lives in ./parse.ts (pure, vitest-covered
-// against a checked-in fixture). The board is replaced per run: upsert on
-// (draft_year, player_name), then prune rows that fell off. A parse failure
-// throws loudly - the last good board stays in place and goes stale-aware
-// client-side (>21 days → talent signal reads "insufficient").
+// Big-board refresh from DraftTek's NFL Draft Big Board (server-rendered
+// HTML, no key), cut at the top 200 and checked daily. Parse lives in
+// ./parse.ts and the board swap in ./replace.ts (both pure, vitest-covered).
+// Each run replaces the board as one capture inside one SQL transaction
+// (replace_draft_board, service_role only), so overlapping runs serialize
+// and can never empty the board. A fetch, parse, or swap failure throws
+// loudly and the last good board stays in place. Rows
+// carry DraftTek's own revision date (source_as_of), which the client's
+// 21-day staleness check uses, so a source that stops revising reads
+// "insufficient" even though we keep re-scraping it.
+//
+// Source history: Tankathon's board (Aug 2026) stops near 120 prospects;
+// DraftTek publishes 300+ in-season and revises weekly, so the board moved
+// there when it expanded to a top 200 (Sep 2026).
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
-import { parseBigBoard } from "./parse.ts";
+import { assembleBoard, parseAsOfDate, parseDrafttekPage, type ParsedBoardPage } from "./parse.ts";
+import { replaceBoard, type BoardRow } from "./replace.ts";
 
-const BOARD_URL = "https://www.tankathon.com/nfl/big_board";
-// A real board has ~101 rows; far fewer means the markup changed under us
-const MIN_EXPECTED_PROSPECTS = 50;
+const SOURCE_NAME = "DraftTek";
+
+// Ranks 1..BOARD_DEPTH must all parse (assembleBoard throws and names any
+// missing rank), so a markup or paging change can't ship a board with holes
+const BOARD_DEPTH = 200;
+const PAGE_SIZE = 150; // DraftTek's paging
+
+/** The draft class of the current CFB season (Jul-Dec = that year's season, Jan-Jun = prior). */
+function upcomingDraftYear(now = new Date()): number {
+  const season = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+  return season + 1;
+}
+
+const boardPageUrl = (year: number, page: number) =>
+  `https://www.drafttek.com/${year}-NFL-Draft-Big-Board/Top-NFL-Draft-Prospects-${year}-Page-${page}.asp`;
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
@@ -88,73 +109,101 @@ serve(async (req) => {
       data_type: "draft_board",
       function_name: "sync-draft-board",
       trigger_source: triggerSource,
-      api_source: "tankathon",
+      api_source: "drafttek",
     });
 
-    const res = await fetch(BOARD_URL, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; MGPAnalytics/1.0)",
-        Accept: "text/html",
-      },
-    });
-    if (!res.ok) {
-      throw new Error(`Tankathon fetch failed: ${res.status} ${res.statusText}`);
+    // One board, paged; fetch just enough pages to cover BOARD_DEPTH
+    const draftYear = upcomingDraftYear();
+    const pageCount = Math.ceil(BOARD_DEPTH / PAGE_SIZE);
+    const pages: ParsedBoardPage[] = [];
+    for (let page = 1; page <= pageCount; page++) {
+      const res = await fetch(boardPageUrl(draftYear, page), {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; MGPAnalytics/1.0)",
+          Accept: "text/html",
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`DraftTek page ${page} fetch failed: ${res.status} ${res.statusText}`);
+      }
+      const parsed = parseDrafttekPage(await res.text());
+      if (parsed.draftYear !== draftYear) {
+        throw new Error(
+          `DraftTek page ${page} is not the ${draftYear} board (title says ${parsed.draftYear ?? "nothing"}) - markup changed?`
+        );
+      }
+      pages.push(parsed);
     }
-    const html = await res.text();
 
-    const { draftYear, prospects } = parseBigBoard(html);
-    if (!draftYear) {
-      throw new Error("Could not determine draft year from page title - markup changed?");
+    // Throws, naming the missing ranks, unless 1..BOARD_DEPTH all parsed
+    const { prospects, duplicates, skipped } = assembleBoard(pages, BOARD_DEPTH);
+    if (duplicates.length) {
+      console.warn(`[sync-draft-board] Skipped repeat names: ${duplicates.join(", ")}`);
     }
-    if (prospects.length < MIN_EXPECTED_PROSPECTS) {
+    if (skipped.length) {
+      // Only rows past BOARD_DEPTH (or with no readable rank) can get here
+      console.warn(
+        `[sync-draft-board] ${skipped.length} unparseable row(s) outside the top ${BOARD_DEPTH}: ${skipped
+          .slice(0, 10)
+          .map((s) => `${s.rank ?? "?"} (${s.reason})`)
+          .join(", ")}`
+      );
+    }
+    const asOf = pages[0].asOf;
+    const revision = pages[0].revision;
+    // Staleness is judged by the source's own date, so a board without one
+    // can't be trusted to go stale honestly - fail and keep the last good one
+    const asOfDate = parseAsOfDate(asOf);
+    if (!asOfDate) {
       throw new Error(
-        `Parsed only ${prospects.length} prospects (expected ~101) - markup changed? Keeping last good board.`
+        `DraftTek page 1 has no readable revision date ("${asOf ?? "missing"}") - markup changed? Keeping last good board.`
       );
     }
 
     const capturedAt = new Date().toISOString();
-    const rows = prospects.map((p) => ({
-      draft_year: draftYear,
+    const rows: BoardRow[] = prospects.map((p) => ({
       rank: p.rank,
       player_name: p.player_name,
       position: p.position,
       school: p.school,
       height: p.height,
       weight: p.weight,
-      captured_at: capturedAt,
+      source: SOURCE_NAME,
+      source_as_of: asOfDate,
     }));
 
-    const { error: upsertError } = await supabase
-      .from("ncaaf_draft_prospects")
-      .upsert(rows, { onConflict: "draft_year,player_name" });
-    if (upsertError) {
-      throw new Error(`Upsert failed: ${upsertError.message}`);
-    }
-
-    // Prune players who fell off the board this week
-    const { error: pruneError, count: pruned } = await supabase
-      .from("ncaaf_draft_prospects")
-      .delete({ count: "exact" })
-      .eq("draft_year", draftYear)
-      .lt("captured_at", capturedAt);
-    if (pruneError) {
-      console.error(`[sync-draft-board] Prune failed (board still valid): ${pruneError.message}`);
-    }
+    // One transaction in SQL (replace_draft_board): refuses if a newer
+    // capture is on the board, upserts this one, deletes strictly older rows,
+    // raises unless exactly this capture remains. Any failure throws here, so
+    // the sync is FAILED and the previous board is untouched.
+    const { pruned } = await replaceBoard(supabase, draftYear, rows, capturedAt);
 
     const result = {
       success: true,
       draftYear,
       prospects: rows.length,
-      pruned: pruned ?? 0,
-      message: `Refreshed ${draftYear} big board: ${rows.length} prospects (${pruned ?? 0} dropped off)`,
+      pruned,
+      asOf: asOfDate,
+      revision,
+      message: `Refreshed ${draftYear} DraftTek board (${asOf}, ${revision ?? "no revision label"}): ${rows.length} prospects (${pruned} dropped off)`,
     };
     console.log("[sync-draft-board] Complete:", result);
 
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success",
       records_added: rows.length,
-      api_requests_used: 1,
-      details: { draft_year: draftYear, pruned: pruned ?? 0 },
+      api_requests_used: pageCount,
+      details: {
+        draft_year: draftYear,
+        pruned,
+        source: "DraftTek NFL Draft Big Board",
+        source_url: boardPageUrl(draftYear, 1),
+        as_of: asOfDate,
+        revision,
+        depth: BOARD_DEPTH,
+        duplicates,
+        skipped_rows: skipped,
+      },
     });
 
     return new Response(JSON.stringify(result), {

@@ -1,0 +1,734 @@
+{
+ "note": "Week 4 2026 NCAAF: every matchup on the DK Network splits pages 1-5 (n7days, captured 2026-09-24 06:05 UTC) and our ncaaf_games rows for Sep 24-28 at the same time (ESPN names; T04:00Z = TBD kickoff placeholder).",
+ "capturedAt": "2026-09-24T06:05:00Z",
+ "dkEvents": [
+  {
+   "eventId": "34674727",
+   "away": "Liberty",
+   "home": "Coastal Carolina",
+   "kickoffLabel": "9/24, 07:30PM"
+  },
+  {
+   "eventId": "34674728",
+   "away": "Army",
+   "home": "Temple",
+   "kickoffLabel": "9/25, 04:00PM"
+  },
+  {
+   "eventId": "34674730",
+   "away": "Navy",
+   "home": "UAB",
+   "kickoffLabel": "9/25, 07:00PM"
+  },
+  {
+   "eventId": "34674731",
+   "away": "Northwestern",
+   "home": "Indiana",
+   "kickoffLabel": "9/25, 08:00PM"
+  },
+  {
+   "eventId": "34674732",
+   "away": "Clemson",
+   "home": "California",
+   "kickoffLabel": "9/25, 10:30PM"
+  },
+  {
+   "eventId": "34226055",
+   "away": "Texas",
+   "home": "Tennessee",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674747",
+   "away": "Wake Forest",
+   "home": "Louisville",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674734",
+   "away": "Illinois",
+   "home": "Ohio State",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674751",
+   "away": "Virginia Tech",
+   "home": "Boston College",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674748",
+   "away": "Colorado",
+   "home": "Baylor",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674754",
+   "away": "UNLV",
+   "home": "Akron",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674753",
+   "away": "Colorado State",
+   "home": "UTSA",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674752",
+   "away": "San Diego State",
+   "home": "Toledo",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674746",
+   "away": "Sam Houston",
+   "home": "Texas Tech",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674755",
+   "away": "Ball State",
+   "home": "Kent State",
+   "kickoffLabel": "9/26, 12:00PM"
+  },
+  {
+   "eventId": "34674756",
+   "away": "South Alabama",
+   "home": "Kentucky",
+   "kickoffLabel": "9/26, 12:45PM"
+  },
+  {
+   "eventId": "34674741",
+   "away": "UCLA",
+   "home": "Maryland",
+   "kickoffLabel": "9/26, 01:30PM"
+  },
+  {
+   "eventId": "34674733",
+   "away": "Notre Dame",
+   "home": "Purdue",
+   "kickoffLabel": "9/26, 02:00PM"
+  },
+  {
+   "eventId": "34674758",
+   "away": "Northern Illinois",
+   "home": "Georgia State",
+   "kickoffLabel": "9/26, 02:00PM"
+  },
+  {
+   "eventId": "34674760",
+   "away": "Hawaii",
+   "home": "Wyoming",
+   "kickoffLabel": "9/26, 03:00PM"
+  },
+  {
+   "eventId": "34674761",
+   "away": "Ole Miss",
+   "home": "Florida",
+   "kickoffLabel": "9/26, 03:30PM"
+  },
+  {
+   "eventId": "34226053",
+   "away": "Oklahoma",
+   "home": "Georgia",
+   "kickoffLabel": "9/26, 03:30PM"
+  },
+  {
+   "eventId": "34674737",
+   "away": "Iowa",
+   "home": "Michigan",
+   "kickoffLabel": "9/26, 03:30PM"
+  },
+  {
+   "eventId": "34674736",
+   "away": "Utah",
+   "home": "Iowa State",
+   "kickoffLabel": "9/26, 03:30PM"
+  },
+  {
+   "eventId": "34674744",
+   "away": "Boise State",
+   "home": "Western Michigan",
+   "kickoffLabel": "9/26, 03:30PM"
+  },
+  {
+   "eventId": "34674739",
+   "away": "TCU",
+   "home": "UCF",
+   "kickoffLabel": "9/26, 03:30PM"
+  },
+  {
+   "eventId": "34674763",
+   "away": "UConn",
+   "home": "Miami OH",
+   "kickoffLabel": "9/26, 03:30PM"
+  },
+  {
+   "eventId": "34674764",
+   "away": "New Mexico",
+   "home": "New Mexico State",
+   "kickoffLabel": "9/26, 03:30PM"
+  },
+  {
+   "eventId": "34674738",
+   "away": "Houston",
+   "home": "Georgia Southern",
+   "kickoffLabel": "9/26, 04:00PM"
+  },
+  {
+   "eventId": "34674769",
+   "away": "Vanderbilt",
+   "home": "Auburn",
+   "kickoffLabel": "9/26, 04:15PM"
+  },
+  {
+   "eventId": "34674735",
+   "away": "Wisconsin",
+   "home": "Penn State",
+   "kickoffLabel": "9/26, 05:00PM"
+  },
+  {
+   "eventId": "34674772",
+   "away": "South Florida",
+   "home": "Bowling Green",
+   "kickoffLabel": "9/26, 05:00PM"
+  },
+  {
+   "eventId": "34674742",
+   "away": "Nebraska",
+   "home": "Michigan State",
+   "kickoffLabel": "9/26, 05:00PM"
+  },
+  {
+   "eventId": "34674773",
+   "away": "Delaware",
+   "home": "Virginia",
+   "kickoffLabel": "9/26, 06:00PM"
+  },
+  {
+   "eventId": "34674776",
+   "away": "James Madison",
+   "home": "Old Dominion",
+   "kickoffLabel": "9/26, 06:00PM"
+  },
+  {
+   "eventId": "34674777",
+   "away": "Central Michigan",
+   "home": "Miami FL",
+   "kickoffLabel": "9/26, 06:30PM"
+  },
+  {
+   "eventId": "34674778",
+   "away": "Louisiana",
+   "home": "Charlotte",
+   "kickoffLabel": "9/26, 06:30PM"
+  },
+  {
+   "eventId": "34674779",
+   "away": "South Carolina",
+   "home": "Alabama",
+   "kickoffLabel": "9/26, 07:00PM"
+  },
+  {
+   "eventId": "34674740",
+   "away": "Oklahoma State",
+   "home": "West Virginia",
+   "kickoffLabel": "9/26, 07:00PM"
+  },
+  {
+   "eventId": "34674781",
+   "away": "Kansas State",
+   "home": "Cincinnati",
+   "kickoffLabel": "9/26, 07:00PM"
+  },
+  {
+   "eventId": "34674782",
+   "away": "Southern Miss",
+   "home": "Tulane",
+   "kickoffLabel": "9/26, 07:00PM"
+  },
+  {
+   "eventId": "34226058",
+   "away": "Oregon",
+   "home": "USC",
+   "kickoffLabel": "9/26, 07:30PM"
+  },
+  {
+   "eventId": "34226054",
+   "away": "Texas A&M",
+   "home": "LSU",
+   "kickoffLabel": "9/26, 07:30PM"
+  },
+  {
+   "eventId": "34674789",
+   "away": "Appalachian State",
+   "home": "NC State",
+   "kickoffLabel": "9/26, 07:30PM"
+  },
+  {
+   "eventId": "34674790",
+   "away": "Missouri",
+   "home": "Mississippi State",
+   "kickoffLabel": "9/26, 07:45PM"
+  },
+  {
+   "eventId": "34674803",
+   "away": "Missouri State",
+   "home": "SMU",
+   "kickoffLabel": "9/26, 09:00PM"
+  },
+  {
+   "eventId": "34674805",
+   "away": "UMass",
+   "home": "Sacramento State",
+   "kickoffLabel": "9/26, 09:00PM"
+  },
+  {
+   "eventId": "34674804",
+   "away": "Oregon State",
+   "home": "UTEP",
+   "kickoffLabel": "9/26, 09:00PM"
+  },
+  {
+   "eventId": "34674806",
+   "away": "Rice",
+   "home": "Fresno State",
+   "kickoffLabel": "9/26, 10:00PM"
+  },
+  {
+   "eventId": "34674743",
+   "away": "Minnesota",
+   "home": "Washington",
+   "kickoffLabel": "9/26, 11:00PM"
+  }
+ ],
+ "games": [
+  {
+   "id": "ca78e9b1-878c-41ba-a6d8-4315d8053c4b",
+   "date": "2026-09-24T23:30:00+00:00",
+   "visitor_team_name": "Liberty Flames",
+   "home_team_name": "Coastal Carolina Chanticleers"
+  },
+  {
+   "id": "118ab08c-7387-497a-b986-dc8c4fc8fb1f",
+   "date": "2026-09-25T20:00:00+00:00",
+   "visitor_team_name": "Army Black Knights",
+   "home_team_name": "Temple Owls"
+  },
+  {
+   "id": "e1e614de-9218-4951-9fe1-36e5d3de107d",
+   "date": "2026-09-25T23:00:00+00:00",
+   "visitor_team_name": "Howard Bison",
+   "home_team_name": "Rutgers Scarlet Knights"
+  },
+  {
+   "id": "15508010-f0b8-4030-9b88-ca25fde4a317",
+   "date": "2026-09-25T23:00:00+00:00",
+   "visitor_team_name": "Navy Midshipmen",
+   "home_team_name": "UAB Blazers"
+  },
+  {
+   "id": "7c1c909e-74e1-4908-b54f-d3f33591962c",
+   "date": "2026-09-26T00:00:00+00:00",
+   "visitor_team_name": "Northwestern Wildcats",
+   "home_team_name": "Indiana Hoosiers"
+  },
+  {
+   "id": "fe305144-3ea2-423a-b7b5-27ac01de0513",
+   "date": "2026-09-26T02:30:00+00:00",
+   "visitor_team_name": "Clemson Tigers",
+   "home_team_name": "California Golden Bears"
+  },
+  {
+   "id": "7d564c01-160f-43fd-9638-6255de223ed7",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Texas A&M Aggies",
+   "home_team_name": "LSU Tigers"
+  },
+  {
+   "id": "4b50a661-7e7d-47ee-9768-02ce7e3df889",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Sam Houston Bearkats",
+   "home_team_name": "Texas Tech Red Raiders"
+  },
+  {
+   "id": "d3bfb3c6-8d56-47aa-90b4-c8e9ec9ea78d",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "South Carolina Gamecocks",
+   "home_team_name": "Alabama Crimson Tide"
+  },
+  {
+   "id": "9c7f01e9-c20e-4311-babb-9c0d17bba229",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Iowa Hawkeyes",
+   "home_team_name": "Michigan Wolverines"
+  },
+  {
+   "id": "f1e6bca9-ddde-4146-a054-a825d21fe618",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Minnesota Golden Gophers",
+   "home_team_name": "Washington Huskies"
+  },
+  {
+   "id": "fcf84e11-964a-4491-a316-799ca348a25b",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Missouri State Bears",
+   "home_team_name": "SMU Mustangs"
+  },
+  {
+   "id": "305646bd-a272-45b2-92e4-cd9d0e825bff",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Utah Utes",
+   "home_team_name": "Iowa State Cyclones"
+  },
+  {
+   "id": "78137475-04f1-4ec4-9300-c595620b2d8f",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Houston Cougars",
+   "home_team_name": "Georgia Southern Eagles"
+  },
+  {
+   "id": "8f5452e0-eea2-4d69-a3e9-be37be29bf08",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Wake Forest Demon Deacons",
+   "home_team_name": "Louisville Cardinals"
+  },
+  {
+   "id": "039219a7-a1ba-48d3-b8c9-b074184c6998",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Missouri Tigers",
+   "home_team_name": "Mississippi State Bulldogs"
+  },
+  {
+   "id": "65c17b7c-b7a9-4644-b6ef-820e7a6b2fdf",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Vanderbilt Commodores",
+   "home_team_name": "Auburn Tigers"
+  },
+  {
+   "id": "05975056-49c4-4ec8-808b-32f3f9ac1a1a",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Colorado Buffaloes",
+   "home_team_name": "Baylor Bears"
+  },
+  {
+   "id": "f098f115-76b3-431f-aeab-f203238bcb43",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Kansas State Wildcats",
+   "home_team_name": "Cincinnati Bearcats"
+  },
+  {
+   "id": "a3c08473-8750-416c-acf3-82a0466da4ee",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "TCU Horned Frogs",
+   "home_team_name": "UCF Knights"
+  },
+  {
+   "id": "1c1d7e17-7d18-402b-b6f3-7d5195e9d8aa",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Oklahoma State Cowboys",
+   "home_team_name": "West Virginia Mountaineers"
+  },
+  {
+   "id": "4ee6330e-ba77-4fee-8dd2-5ee9bc85ff0f",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Central Arkansas Bears",
+   "home_team_name": "Florida State Seminoles"
+  },
+  {
+   "id": "e87802b0-9e38-48db-a8b3-c30baf87d8b8",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Delaware Blue Hens",
+   "home_team_name": "Virginia Cavaliers"
+  },
+  {
+   "id": "565aa94c-32ba-40d0-b3c7-84dc4c2a7b13",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Virginia Tech Hokies",
+   "home_team_name": "Boston College Eagles"
+  },
+  {
+   "id": "6095d8bc-3dd7-45f9-946d-b73980cf3205",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "UCLA Bruins",
+   "home_team_name": "Maryland Terrapins"
+  },
+  {
+   "id": "873a35da-6c81-484f-89e9-ae9a7e7a1e7c",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Nebraska Cornhuskers",
+   "home_team_name": "Michigan State Spartans"
+  },
+  {
+   "id": "8e7aae07-6e62-4051-8acf-3eccaedf186a",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "San Diego State Aztecs",
+   "home_team_name": "Toledo Rockets"
+  },
+  {
+   "id": "609c0fa3-1cc0-4b98-b7ba-5ccfc937cd01",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Colorado State Rams",
+   "home_team_name": "UTSA Roadrunners"
+  },
+  {
+   "id": "1128b9af-1650-48b1-8a77-7e0a2d13ed63",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Boise State Broncos",
+   "home_team_name": "Western Michigan Broncos"
+  },
+  {
+   "id": "6e8fb924-9be2-46b0-a816-50e142f9a1d3",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "UConn Huskies",
+   "home_team_name": "Miami (OH) RedHawks"
+  },
+  {
+   "id": "facb9f32-f998-42b9-9cc7-012f827c7c04",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Louisiana Ragin' Cajuns",
+   "home_team_name": "Charlotte 49ers"
+  },
+  {
+   "id": "4caf759a-d3eb-4af6-939b-298d74877b69",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Florida Atlantic Owls",
+   "home_team_name": "UL Monroe Warhawks"
+  },
+  {
+   "id": "7ff3d0c3-6452-4c87-b0ae-ec3f089facc0",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Southern Miss Golden Eagles",
+   "home_team_name": "Tulane Green Wave"
+  },
+  {
+   "id": "116f53d0-b6ae-45be-a678-8582ca2c5461",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "South Florida Bulls",
+   "home_team_name": "Bowling Green Falcons"
+  },
+  {
+   "id": "d9417ae5-c3e4-4253-bf98-b921d375c46b",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Air Force Falcons",
+   "home_team_name": "Nevada Wolf Pack"
+  },
+  {
+   "id": "960c57d3-b3f7-4b3e-b74d-18035ac5ea8e",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Northern Illinois Huskies",
+   "home_team_name": "Georgia State Panthers"
+  },
+  {
+   "id": "99cc80eb-610d-4265-9691-4d2994647338",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "UNLV Rebels",
+   "home_team_name": "Akron Zips"
+  },
+  {
+   "id": "59421399-8da9-412b-9887-5534a7abe858",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "App State Mountaineers",
+   "home_team_name": "NC State Wolfpack"
+  },
+  {
+   "id": "3e4b42f9-83bc-459c-9d36-fdf721ee8e9d",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Ball State Cardinals",
+   "home_team_name": "Kent State Golden Flashes"
+  },
+  {
+   "id": "41db4613-fbf2-427d-9fb0-152076660620",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Massachusetts Minutemen",
+   "home_team_name": "Sacramento State Hornets"
+  },
+  {
+   "id": "58492a77-a7b1-418c-8d7c-29f4a81d94ba",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "James Madison Dukes",
+   "home_team_name": "Old Dominion Monarchs"
+  },
+  {
+   "id": "5dc4c7ac-3a26-4456-b837-24d97baa8b43",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Wisconsin Badgers",
+   "home_team_name": "Penn State Nittany Lions"
+  },
+  {
+   "id": "3e8ee2fd-7e01-474d-b23d-c67a9c5d798f",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Oklahoma Sooners",
+   "home_team_name": "Georgia Bulldogs"
+  },
+  {
+   "id": "c4d5c47c-86b6-47a4-8659-3db27aa9d68a",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Ole Miss Rebels",
+   "home_team_name": "Florida Gators"
+  },
+  {
+   "id": "0e38597d-a2a1-4ecc-9957-466a244662c8",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Illinois Fighting Illini",
+   "home_team_name": "Ohio State Buckeyes"
+  },
+  {
+   "id": "d5d90b97-fb86-4b6f-9863-0556a48b242c",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Oregon Ducks",
+   "home_team_name": "USC Trojans"
+  },
+  {
+   "id": "f4d04690-c954-44b8-91af-cf21324ae5cc",
+   "date": "2026-09-26T04:00:00+00:00",
+   "visitor_team_name": "Notre Dame Fighting Irish",
+   "home_team_name": "Purdue Boilermakers"
+  },
+  {
+   "id": "60804fe9-41e2-4830-aae1-ed381db3362d",
+   "date": "2026-09-26T16:00:00+00:00",
+   "visitor_team_name": "Texas Longhorns",
+   "home_team_name": "Tennessee Volunteers"
+  },
+  {
+   "id": "2786a89e-8bdd-47cd-abb4-c943f982853a",
+   "date": "2026-09-26T16:00:00+00:00",
+   "visitor_team_name": "Bucknell Bison",
+   "home_team_name": "Pittsburgh Panthers"
+  },
+  {
+   "id": "1f59fa8a-ef03-44f8-9365-d188d3f120ee",
+   "date": "2026-09-26T16:45:00+00:00",
+   "visitor_team_name": "South Alabama Jaguars",
+   "home_team_name": "Kentucky Wildcats"
+  },
+  {
+   "id": "7d4350ee-8747-458a-9e91-51bb304e57e6",
+   "date": "2026-09-26T17:00:00+00:00",
+   "visitor_team_name": "Lindenwood Lions",
+   "home_team_name": "Eastern Michigan Eagles"
+  },
+  {
+   "id": "d41b60ec-6a84-4b2f-86b7-13a78f0db3b5",
+   "date": "2026-09-26T19:00:00+00:00",
+   "visitor_team_name": "Hawai'i Rainbow Warriors",
+   "home_team_name": "Wyoming Cowboys"
+  },
+  {
+   "id": "358faca0-9be1-427c-bf07-a8b6ac95b888",
+   "date": "2026-09-26T19:30:00+00:00",
+   "visitor_team_name": "William & Mary Tribe",
+   "home_team_name": "Duke Blue Devils"
+  },
+  {
+   "id": "987bd93b-281d-488a-9bdf-9574f4bb35cb",
+   "date": "2026-09-26T19:30:00+00:00",
+   "visitor_team_name": "New Mexico Lobos",
+   "home_team_name": "New Mexico State Aggies"
+  },
+  {
+   "id": "d053a92a-fd69-4d9e-95ab-490397c5a128",
+   "date": "2026-09-26T19:30:00+00:00",
+   "visitor_team_name": "Robert Morris Colonials",
+   "home_team_name": "Buffalo Bulls"
+  },
+  {
+   "id": "e3763e00-e56a-484b-af17-82b20e892fa0",
+   "date": "2026-09-26T19:30:00+00:00",
+   "visitor_team_name": "Stonehill Skyhawks",
+   "home_team_name": "Ohio Bobcats"
+  },
+  {
+   "id": "936d2b02-0f41-4a6a-ba80-c5e4909cc6e6",
+   "date": "2026-09-26T19:30:00+00:00",
+   "visitor_team_name": "Gardner-Webb Runnin' Bulldogs",
+   "home_team_name": "Marshall Thundering Herd"
+  },
+  {
+   "id": "ed7594c1-2eb1-4da5-9992-119149ca9a07",
+   "date": "2026-09-26T20:00:00+00:00",
+   "visitor_team_name": "North Carolina Central Eagles",
+   "home_team_name": "East Carolina Pirates"
+  },
+  {
+   "id": "b7d3e78f-4768-409a-8b25-049b9e544c47",
+   "date": "2026-09-26T22:00:00+00:00",
+   "visitor_team_name": "Incarnate Word Cardinals",
+   "home_team_name": "Texas State Bobcats"
+  },
+  {
+   "id": "36e88ebe-fe36-4d3e-8cb7-971669486357",
+   "date": "2026-09-26T22:00:00+00:00",
+   "visitor_team_name": "Long Island University Sharks",
+   "home_team_name": "Florida International Panthers"
+  },
+  {
+   "id": "cfc9ec2f-3fbe-4afa-8075-0037f6cce1cc",
+   "date": "2026-09-26T22:30:00+00:00",
+   "visitor_team_name": "Central Michigan Chippewas",
+   "home_team_name": "Miami Hurricanes"
+  },
+  {
+   "id": "687ccb0d-5310-4bf3-a858-75db29f6938c",
+   "date": "2026-09-26T23:00:00+00:00",
+   "visitor_team_name": "Kennesaw State Owls",
+   "home_team_name": "Arkansas State Red Wolves"
+  },
+  {
+   "id": "653bc24d-c67a-4388-aad8-d47592285361",
+   "date": "2026-09-26T23:00:00+00:00",
+   "visitor_team_name": "Mercyhurst Lakers",
+   "home_team_name": "Western Kentucky Hilltoppers"
+  },
+  {
+   "id": "646b601f-8a8d-4630-b8c6-fadbeca530d0",
+   "date": "2026-09-26T23:00:00+00:00",
+   "visitor_team_name": "Middle Tennessee Blue Raiders",
+   "home_team_name": "Jacksonville State Gamecocks"
+  },
+  {
+   "id": "df988ca5-ab79-400c-9f1b-d576d7708042",
+   "date": "2026-09-26T23:30:00+00:00",
+   "visitor_team_name": "Arizona Wildcats",
+   "home_team_name": "Washington State Cougars"
+  },
+  {
+   "id": "694ccae9-be1b-4821-b2d2-d658a119c379",
+   "date": "2026-09-26T23:30:00+00:00",
+   "visitor_team_name": "Troy Trojans",
+   "home_team_name": "Utah State Aggies"
+  },
+  {
+   "id": "7aa9b94d-a7da-45ea-9f1e-dc5963943be1",
+   "date": "2026-09-26T23:30:00+00:00",
+   "visitor_team_name": "Houston Christian Huskies",
+   "home_team_name": "North Texas Mean Green"
+  },
+  {
+   "id": "f8a2750b-a388-4b4a-8070-1a53ef4481e5",
+   "date": "2026-09-27T00:00:00+00:00",
+   "visitor_team_name": "Tulsa Golden Hurricane",
+   "home_team_name": "Arkansas Razorbacks"
+  },
+  {
+   "id": "e0fd29cb-e5ca-4726-a933-c483ca242d1f",
+   "date": "2026-09-27T01:00:00+00:00",
+   "visitor_team_name": "Oregon State Beavers",
+   "home_team_name": "UTEP Miners"
+  },
+  {
+   "id": "93b4ea47-d648-4855-a23d-17d2bf55f97b",
+   "date": "2026-09-27T02:00:00+00:00",
+   "visitor_team_name": "Rice Owls",
+   "home_team_name": "Fresno State Bulldogs"
+  },
+  {
+   "id": "31271d8f-e768-44bc-8285-7f9a342e3ef7",
+   "date": "2026-09-27T02:30:00+00:00",
+   "visitor_team_name": "Georgia Tech Yellow Jackets",
+   "home_team_name": "Stanford Cardinal"
+  }
+ ]
+}

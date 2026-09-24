@@ -1,14 +1,14 @@
 // Hand-curated 2025 preseason season-long player prop lines, compiled from
 // free public articles (source URL retained per line; captured May-Sep 2025,
-// mostly Aug 11-20). There is no programmatic archive of season-long props —
+// mostly Aug 11-20). There is no programmatic archive of season-long props:
 // The Odds API never carried them and the good article databases are
-// paywalled — so this seed is the 2025 slice of MGP's owned archive; 2026
+// paywalled, so this seed is the 2025 slice of MGP's owned archive; 2026
 // onward comes from the annual futures capture (futures-2026.ts).
 //
 // Every line here was confirmed against the cited source. Do not add
 // estimated or recalled numbers. Known gaps, stated plainly:
 //  - receptions: no individual season O/U found in free sources (only
-//    "most receptions" leader futures) — the market slot is empty, not padded.
+//    "most receptions" leader futures): the market slot is empty, not padded.
 //  - most recommendation articles quote one side's odds only; the other side
 //    is null.
 //  - four rows are milestone-style "X+" markets (flagged inline): a result

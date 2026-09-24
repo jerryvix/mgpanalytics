@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 import { fetchEspnOddsBatch } from "../_shared/espn-odds.ts";
 import { espnFetch } from "../_shared/espn-fetch.ts";
+import { recordedOpen, resolveOpeningLine } from "../_shared/odds-open.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,7 +60,7 @@ serve(async (req) => {
     // Service client for database operations (used by both auth paths)
     supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    // Cron auth bypass: allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[sync-odds-snapshot] Authenticated via cron secret`);
@@ -486,17 +487,25 @@ serve(async (req) => {
 
     // Batch-fetch all odds_history for these games (latest + oldest per combo)
     const prevMap = new Map<string, { current_line: number | null; current_price: number | null; timestamp: string }>();
-    const openingMap = new Map<string, { current_line: number | null }>();
+    // The OPENING line already on record for each combo. Sep 24 2026: this
+    // used to hold the oldest row's CURRENT line, so the second snapshot of
+    // every game replaced ESPN's true DraftKings open with whatever the line
+    // was at the first capture (272 of 450 NFL rows at 07:12Z, e.g. PHI ML
+    // open -102 stored as -225). The open is recorded once, at first sight,
+    // and every later row carries it forward unchanged.
+    const openingMap = new Map<string, { opening_line: number | null }>();
 
-    // Fetch in chunks of 50 game_ids to avoid query size limits
-    for (let i = 0; i < uniqueGameIds.length; i += 50) {
-      const gameIdBatch = uniqueGameIds.slice(i, i + 50);
+    // Fetch in chunks of 25 game_ids: PostgREST caps each response at 1,000
+    // rows, and smaller chunks keep several snapshots of every combo in view.
+    // (Rows carry the open forward, so even a truncated window reads it right.)
+    for (let i = 0; i < uniqueGameIds.length; i += 25) {
+      const gameIdBatch = uniqueGameIds.slice(i, i + 25);
 
       try {
         // Get all history rows for this batch of games, ordered by timestamp desc
         const { data: historyRows } = await supabase
           .from("odds_history")
-          .select("game_id, bookmaker, odds_type, team, current_line, current_price, timestamp")
+          .select("game_id, bookmaker, odds_type, team, current_line, current_price, opening_line, timestamp")
           .in("game_id", gameIdBatch)
           .order("timestamp", { ascending: false });
 
@@ -511,12 +520,14 @@ serve(async (req) => {
                 timestamp: row.timestamp,
               });
             }
-            // Keep overwriting = last occurrence (desc order) = oldest = opening
-            openingMap.set(key, { current_line: row.current_line });
+            // Keep overwriting = last occurrence (desc order) = oldest row.
+            // Take its recorded open (its current line only if no open was
+            // ever stored, which is how pre-ESPN rows were written).
+            openingMap.set(key, { opening_line: recordedOpen(row) });
           }
         }
       } catch (err) {
-        console.error(`Error batch-fetching odds_history chunk ${i / 50 + 1}:`, err);
+        console.error(`Error batch-fetching odds_history chunk ${i / 25 + 1}:`, err);
       }
     }
 
@@ -547,13 +558,14 @@ serve(async (req) => {
         }
       }
 
-      if (openingSnapshot) {
-        snapshot.opening_line = openingSnapshot.current_line;
-      } else {
-        // No history yet: keep ESPN's own opening number when we have it,
-        // otherwise treat the first sighting as the open
-        snapshot.opening_line = snapshot.opening_line ?? snapshot.current_line;
-      }
+      // The open on record wins and a newer capture never replaces it. On
+      // first sight, ESPN's own opening number (DraftKings' real open, the
+      // same one Market Pulse reads from betting_splits), else the sighting.
+      snapshot.opening_line = resolveOpeningLine(
+        openingSnapshot?.opening_line,
+        snapshot.opening_line,
+        snapshot.current_line,
+      );
     }
 
     // Insert all snapshots

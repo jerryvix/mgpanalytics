@@ -126,6 +126,13 @@ export function formatOpponent(opponent: string, isHome: boolean): string {
 export function calcFantasyPoints(stats: {
   pass_yards?: number | null;
   pass_td?: number | null;
+  /** Thrown interceptions (player_season_stats / player_game_logs column) */
+  pass_int?: number | null;
+  /**
+   * Thrown interceptions under the name the game-log mapping uses. On a raw
+   * player_season_stats row this column is DEFENSIVE interceptions, so it is
+   * only read when the row has no pass_int.
+   */
   interceptions?: number | null;
   rush_yards?: number | null;
   rush_td?: number | null;
@@ -135,11 +142,12 @@ export function calcFantasyPoints(stats: {
   fumbles_lost?: number | null;
 }): number {
   let points = 0;
-  
+
   // Passing
   points += (stats.pass_yards || 0) * 0.04; // 1 point per 25 yards
   points += (stats.pass_td || 0) * 4;
-  points -= (stats.interceptions || 0) * 2;
+  const thrownPicks = "pass_int" in stats ? stats.pass_int : stats.interceptions;
+  points -= (thrownPicks || 0) * 2;
   
   // Rushing
   points += (stats.rush_yards || 0) * 0.1; // 1 point per 10 yards

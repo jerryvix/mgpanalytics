@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { EDGE_POOL } from "@/data/edges";
+import { activeEdges } from "@/data/edges";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 
 // A live, always-moving ticker across the top of the dashboard - the signature
@@ -137,7 +137,8 @@ async function loadNuggets(): Promise<NuggetItem[]> {
     }
   }
 
-  for (const e of EDGE_POOL.slice(0, 5)) {
+  // A few evergreen edges to keep it full year-round
+  for (const e of activeEdges().slice(0, 5)) {
     items.push({ kind: "nugget", icon: "💡", text: e.headline });
   }
 

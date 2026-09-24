@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { format, isValid, parseISO } from "date-fns";
 import { Users, History, GraduationCap, Gauge } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,8 +19,25 @@ const CONTINUITY_META: Record<ContinuityVerdict, { label: string; className: str
 };
 
 const fmtPct = (v: number | null | undefined) => (v == null ? "-" : `${Math.round(v)}%`);
-// Keep prospect lists scannable on a phone; a loaded roster collapses to a count
+// Keep prospect lists scannable on a phone: best-ranked first, a loaded
+// roster (Ohio State and Texas carry 14-15 on a top-200 board) collapses to
+// a count the reader can expand
 const MAX_PROSPECTS_SHOWN = 4;
+
+const shortDate = (iso: string) => {
+  const d = parseISO(iso);
+  return isValid(d) ? format(d, "MMM d") : null;
+};
+
+// "DraftTek Top 200, updated Sep 17": the board's own revision date when the
+// source prints one, otherwise when we captured it
+function boardFooter(t: { source: string | null; asOf: string | null; capturedAt: string; boardSize: number }): string {
+  const name = t.source ? `${t.source} Top ${t.boardSize}` : `Top-${t.boardSize} big board`;
+  const updated = t.asOf ? shortDate(t.asOf) : null;
+  if (updated) return `${name}, updated ${updated}`;
+  const captured = shortDate(t.capturedAt);
+  return captured ? `${name}, captured ${captured}` : name;
+}
 
 function leanLabel(lean: SignalLean, home: string, away: string): string {
   switch (lean) {
@@ -47,6 +66,7 @@ export function MatchupIntelSection({
   const season = d.getMonth() >= 6 ? d.getFullYear() : d.getFullYear() - 1;
 
   const intel = useMatchupIntel(homeTeamName, visitorTeamName, season);
+  const [showAllProspects, setShowAllProspects] = useState(false);
 
   if (intel.isLoading) {
     return (
@@ -156,7 +176,7 @@ export function MatchupIntelSection({
             </div>
             {talent.homeProspects.length === 0 && talent.awayProspects.length === 0 ? (
               <p className="font-mono text-[11px] text-muted-foreground">
-                No consensus top-100 prospects on either roster, so the talent edge reads even.
+                No top-{talent.boardSize} draft prospects on either roster, so the talent edge reads even.
               </p>
             ) : (
               <div className="grid grid-cols-2 gap-3">
@@ -164,22 +184,31 @@ export function MatchupIntelSection({
                   { school: away, prospects: talent.awayProspects },
                   { school: home, prospects: talent.homeProspects },
                 ].map(({ school, prospects }) => (
-                  <div key={school}>
-                    <p className="font-mono text-[11px] font-bold mb-1">{school}</p>
+                  <div key={school} className="min-w-0">
+                    <p className="font-mono text-[11px] font-bold mb-1 truncate">{school}</p>
                     {prospects.length === 0 ? (
                       <p className="font-mono text-[10px] text-muted-foreground">none on board</p>
                     ) : (
                       <>
-                        {prospects.slice(0, MAX_PROSPECTS_SHOWN).map((p) => (
+                        {(showAllProspects ? prospects : prospects.slice(0, MAX_PROSPECTS_SHOWN)).map((p) => (
                           <p key={p.rank} className="font-mono text-[11px] tabular-nums leading-relaxed truncate">
                             <span className="text-terminal-amber">#{p.rank}</span> {p.player_name}
                             <span className="text-muted-foreground"> {p.position ?? ""}</span>
                           </p>
                         ))}
                         {prospects.length > MAX_PROSPECTS_SHOWN && (
-                          <p className="font-mono text-[10px] text-muted-foreground">
-                            +{prospects.length - MAX_PROSPECTS_SHOWN} more on board
-                          </p>
+                          // Phones get a full 44px tap target; negative margin keeps
+                          // it in the list's rhythm so it still reads as a text link.
+                          // relative z-10 lifts the whole box above the row text and
+                          // footer it overlaps, so all 44px win hit-testing.
+                          <button
+                            type="button"
+                            onClick={() => setShowAllProspects((v) => !v)}
+                            aria-expanded={showAllProspects}
+                            className="relative z-10 flex w-full min-h-[44px] -my-2.5 items-center font-mono text-[10px] text-muted-foreground hover:text-foreground md:w-auto md:min-h-0 md:my-0 md:py-1"
+                          >
+                            {showAllProspects ? "show fewer" : `+${prospects.length - MAX_PROSPECTS_SHOWN} more on board`}
+                          </button>
                         )}
                       </>
                     )}
@@ -189,7 +218,7 @@ export function MatchupIntelSection({
             )}
             {talent.capturedAt && (
               <p className="font-mono text-[10px] text-muted-foreground mt-2">
-                Consensus big board captured {new Date(talent.capturedAt).toLocaleDateString()}
+                {boardFooter({ ...talent, capturedAt: talent.capturedAt })}
               </p>
             )}
           </div>

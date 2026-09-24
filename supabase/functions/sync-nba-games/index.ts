@@ -90,7 +90,7 @@ serve(async (req) => {
     // Service client for database operations (used by both auth paths)
     supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    // Cron auth bypass: allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[sync-nba-games] Authenticated via cron secret`);
@@ -240,7 +240,7 @@ serve(async (req) => {
       console.log(`Upserted ${insertedCount} NBA games`);
     }
 
-    // Fetch odds from BDL (GOAT tier) — no quota limits, 600 req/min
+    // Fetch odds from BDL (GOAT tier): no quota limits, 600 req/min
     if (BALLDONTLIE_API_KEY) {
       const { data: gamesForOdds } = await supabase
         .from("nba_games")
@@ -272,7 +272,7 @@ serve(async (req) => {
               oddsByBdlGame.set(odd.game_id, group);
             }
 
-            // BDL odds don't include team names directly — we need to match via the
+            // BDL odds don't include team names directly. We need to match via the
             // BDL games endpoint or infer from spread signs. Fetch BDL games for mapping.
             const bdlGamesUrl = `https://api.balldontlie.io/v2/games?dates[]=${todayStr}&dates[]=${tomorrowStr}`;
             const bdlGamesResp = await fetch(bdlGamesUrl, {
@@ -364,7 +364,7 @@ serve(async (req) => {
 
     console.log("NBA sync completed:", response);
 
-    // Complete sync log — success
+    // Complete sync log: success
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success",
       records_added: insertedCount,
@@ -384,7 +384,7 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error("Error in sync-nba-games:", error);
 
-    // Complete sync log — failure
+    // Complete sync log: failure
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "failed",
       error_message: error instanceof Error ? error.message : "Unknown error",

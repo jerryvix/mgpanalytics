@@ -298,7 +298,7 @@ export function NBASlate() {
               key={game.id}
               game={game}
               odds={gameOddsMap[game.id] || null}
-              liveGame={live.getGame(game.visitor_team_name, game.home_team_name)}
+              liveGame={live.getGame(game.visitor_team_name, game.home_team_name, { start: game.date })}
               index={index}
               onViewOdds={handleViewAllOdds}
               onViewPreview={handleViewPreview}

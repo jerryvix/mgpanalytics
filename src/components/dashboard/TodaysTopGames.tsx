@@ -4,6 +4,7 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { getTeamAbbrev } from "@/utils/teamAbbreviations";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
+import { tbdKickoffLabel } from "@/lib/kickoff";
 
 export interface TopGame {
   id: number | string;
@@ -16,6 +17,8 @@ export interface TopGame {
   total: number | null;
   hasOdds: boolean;
   lineMove: number | null; // signed movement vs. open, when we have history
+  /** NCAAF kickoff not set yet: `date` is a midnight-ET placeholder. */
+  timeTbd?: boolean;
 }
 
 const SPORT_SLATE_PATH: Record<string, string> = {
@@ -81,7 +84,7 @@ export function TodaysTopGames({ games, loading }: TodaysTopGamesProps) {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wide">
-                    {formatGameTime(game.date)} · {game.league}
+                    {game.timeTbd ? tbdKickoffLabel(game.date) : formatGameTime(game.date)} · {game.league}
                   </span>
                 </div>
 

@@ -1,8 +1,8 @@
 // Refresh the NFL player identity crosswalk (nfl_player_ids) from nflverse
-// players.csv (players_components release — free, no API key). One file
+// players.csv (players_components release, free, no API key). One file
 // carries everything the backtester needs: GSIS id, display name, position,
 // draft capital (draft_round/draft_pick, blank = UDFA), and rookie_season
-// (entry year). Idempotent — upserts on gsis_id. No season parameter; the
+// (entry year). Idempotent: upserts on gsis_id. No season parameter; the
 // file is the full player universe.
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";

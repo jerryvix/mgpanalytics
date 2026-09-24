@@ -1,6 +1,6 @@
 // Full NFL team name -> abbreviation, matching src/utils/teamAbbreviations.ts
 // conventions, plus historical names so the 2018+ backtest backfill resolves
-// (Oakland through 2019, all three Washington names). Pure data — safe to
+// (Oakland through 2019, all three Washington names). Pure data, safe to
 // import from vitest and from any edge function.
 
 export const NFL_TEAM_ABBR: Record<string, string> = {

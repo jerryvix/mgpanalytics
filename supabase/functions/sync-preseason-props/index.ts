@@ -3,7 +3,7 @@
 //   { "season": 2025 } -> hand-curated seed (data/seed-2025.ts, source
 //                         'manual_seed', per-line sourcing)
 //   { "season": 2026 } -> the static preseason futures capture
-//                         (data/futures-2026.ts — verbatim copy of
+//                         (data/futures-2026.ts, verbatim copy of
 //                         src/data/propFutures.ts, source 'matchbetwin')
 // Player names resolve to GSIS ids (nfl_player_ids) AND to players.id (BDL)
 // so the grading view can join player_season_stats. Raw names always stored;
@@ -22,7 +22,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-// The season the futures capture belongs to — first NFL season after the
+// The season the futures capture belongs to: first NFL season after the
 // capture date (captures happen in the July preseason window).
 const FUTURES_SEASON = Number(FUTURES_CAPTURED_AT.slice(0, 4));
 
@@ -38,7 +38,7 @@ const FUTURES_MARKET: Record<string, string> = {
   "Regular Season - Total Sacks": "sacks",
 };
 
-// Positions a prop market can belong to — disambiguates duplicate names
+// Positions a prop market can belong to: disambiguates duplicate names
 // (the Bills QB Josh Allen vs the Jaguars edge rusher). sacks is left open:
 // it belongs to defenders, whose positions vary (DE/OLB/DT/LB).
 const MARKET_POSITIONS: Record<string, string[]> = {
@@ -88,7 +88,7 @@ function futuresLines(): LineInput[] {
   const out: LineInput[] = [];
   for (const f of NFL_FUTURES) {
     const market = FUTURES_MARKET[f.market];
-    if (!market) continue; // unmapped market — not part of the backtest
+    if (!market) continue; // unmapped market, not part of the backtest
     out.push({
       market,
       entityType: market === "season_wins" ? "team" : "player",
@@ -105,7 +105,7 @@ function futuresLines(): LineInput[] {
 }
 
 async function loadCrosswalk(supabase: any): Promise<CrosswalkRow[]> {
-  // All positions — season sack props belong to defenders.
+  // All positions: season sack props belong to defenders.
   const rows: CrosswalkRow[] = [];
   const pageSize = 1000;
   for (let from = 0; ; from += pageSize) {
@@ -114,7 +114,7 @@ async function loadCrosswalk(supabase: any): Promise<CrosswalkRow[]> {
       .select("gsis_id, name_normalized, position, latest_team")
       // Modern archive window, INCLUDING rookies (no games yet -> NULL last_season)
       .or("last_season.gte.2016,last_season.is.null")
-      .order("gsis_id") // stable ordering — unordered .range() pages can skip rows
+      .order("gsis_id") // stable ordering: unordered .range() pages can skip rows
       .range(from, from + pageSize - 1);
     if (error) throw new Error(`Crosswalk load failed: ${error.message}`);
     rows.push(...(data ?? []));
@@ -132,7 +132,7 @@ async function loadBdlPlayers(supabase: any): Promise<Map<string, string[]>> {
       .from("players")
       .select("id, name")
       .eq("sport", "NFL")
-      .order("id") // stable ordering — unordered .range() pages can skip rows
+      .order("id") // stable ordering: unordered .range() pages can skip rows
       .range(from, from + pageSize - 1);
     if (error) throw new Error(`players load failed: ${error.message}`);
     for (const p of data ?? []) {
@@ -225,7 +225,7 @@ serve(async (req) => {
       const body = await req.json();
       if (body.season) season = Number(body.season);
     } catch {
-      // No body — require an explicit season below
+      // No body: require an explicit season below
     }
 
     // Cron/dispatch runs come with no body: ingest the latest capture.
@@ -235,7 +235,7 @@ serve(async (req) => {
     if (season === SEED_SEASON) {
       inputs = seedLines();
       if (inputs.length === 0) {
-        throw new Error(`Seed for ${SEED_SEASON} is empty — data/seed-2025.ts not yet curated`);
+        throw new Error(`Seed for ${SEED_SEASON} is empty: data/seed-2025.ts not yet curated`);
       }
     } else if (season === FUTURES_SEASON) {
       inputs = futuresLines();

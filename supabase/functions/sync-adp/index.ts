@@ -1,7 +1,7 @@
 // Ingest one season of fantasy ADP from the Fantasy Football Calculator
 // public API (free for third-party apps, years 2007+). PPR 12-team is the
 // canonical snapshot; the API returns a late-August capture window in meta.
-// Names are resolved to GSIS ids through nfl_player_ids at ingest — raw
+// Names are resolved to GSIS ids through nfl_player_ids at ingest. Raw
 // names are always stored, misses grade as unmatched and surface in
 // nfl_backtest_unmatched. One season per invocation, body { "season": 2024 }.
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
@@ -32,7 +32,7 @@ async function loadCrosswalk(supabase: any): Promise<CrosswalkRow[]> {
       .from("nfl_player_ids")
       .select("gsis_id, name_normalized, position, latest_team")
       .in("position", [...GRADED_POSITIONS])
-      .order("gsis_id") // stable ordering — unordered .range() pages can skip rows
+      .order("gsis_id") // stable ordering: unordered .range() pages can skip rows
       .range(from, from + pageSize - 1);
     if (error) throw new Error(`Crosswalk load failed: ${error.message}`);
     rows.push(...(data ?? []));
@@ -131,7 +131,7 @@ serve(async (req) => {
       const body = await req.json();
       if (body.season) season = Number(body.season);
     } catch {
-      // No body — require an explicit season below
+      // No body: require an explicit season below
     }
 
     if (season === null) {

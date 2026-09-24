@@ -1,5 +1,13 @@
 // Sharp Money Detection Utilities
 
+// The canonical sharp read (a minority of the bets, a majority of the money,
+// money SHARP_THRESHOLD points or more above bets) lives with the other
+// Market Pulse rules in supabase/functions/_shared/market-pulse.ts, which the
+// chat edge functions import too: one rule everywhere.
+import { isSharpSide, SHARP_THRESHOLD } from "../../supabase/functions/_shared/market-pulse";
+
+export { isSharpSide, SHARP_THRESHOLD };
+
 export interface BettingSide {
   team: string;
   betsPercent: number;
@@ -20,19 +28,11 @@ export interface SharpIndicator {
   description: string;
 }
 
-// Threshold for detecting sharp action (percentage point difference)
-const SHARP_THRESHOLD = 10;
-
-/**
- * Detect sharp money on a betting line
- * Sharp action = when % money significantly differs from % bets
- */
 export function detectSharpMoney(line: BettingLine): SharpIndicator {
   const diffA = line.sideA.moneyPercent - line.sideA.betsPercent;
   const diffB = line.sideB.moneyPercent - line.sideB.betsPercent;
-  
-  // Check side A for sharp action (more money than bets)
-  if (diffA >= SHARP_THRESHOLD) {
+
+  if (isSharpSide(line.sideA.betsPercent, line.sideA.moneyPercent)) {
     return {
       isSharp: true,
       direction: "sideA",
@@ -40,9 +40,8 @@ export function detectSharpMoney(line: BettingLine): SharpIndicator {
       description: `Sharp money on ${line.sideA.team} (${diffA.toFixed(0)}% more money than bets)`
     };
   }
-  
-  // Check side B for sharp action
-  if (diffB >= SHARP_THRESHOLD) {
+
+  if (isSharpSide(line.sideB.betsPercent, line.sideB.moneyPercent)) {
     return {
       isSharp: true,
       direction: "sideB",
@@ -50,7 +49,7 @@ export function detectSharpMoney(line: BettingLine): SharpIndicator {
       description: `Sharp money on ${line.sideB.team} (${diffB.toFixed(0)}% more money than bets)`
     };
   }
-  
+
   return {
     isSharp: false,
     direction: null,

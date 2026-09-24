@@ -9,6 +9,12 @@
 // RULE: never ship an unverifiable nugget. Set `verified: false` and it is
 // hidden from users until a source is attached. Year ranges use the compact
 // apostrophe style, e.g. ('20-'21).
+//
+// RULE: a line or claim that is only true for a while ("opens at", "is
+// favored", "at the break") carries `validThrough`, and trendingFor() hides it
+// from that day on, everywhere it renders. Sep 24 2026: a Game Insights sheet
+// was still telling users the Dodgers "enter the All-Star break" as the World
+// Series favorite, ten weeks after the break.
 
 export type BetCategory =
   | "Win Totals"
@@ -31,9 +37,36 @@ export interface TrendingBet {
   source: string;
   verified: boolean;
   updated: string; // ISO date the line was captured
+  /**
+   * Last day (Eastern, YYYY-MM-DD) the line and the nugget are current. Omit
+   * only for timeless facts with no price. Checked by isCurrentAngle().
+   */
+  validThrough?: string;
 }
 
 const D = "2026-07-14"; // capture date for these boards
+
+// Preseason boards stop being the market once games are played. Dates from
+// the leagues' own calendars (ESPN scoreboard calendar, MLB schedule):
+// - NFL: the 2026 opener (Patriots at Seahawks) kicked off the night of Sep 9 ET.
+const NFL_PRESEASON = "2026-09-09";
+// - NCAAF: the first 2026 games were Aug 29.
+const NCAAF_PRESEASON = "2026-08-28";
+// - MLB: "at the break" claims; the 2026 All-Star break ran Jul 13-16 and the
+//   full schedule resumed Jul 17.
+const MLB_ALL_STAR_BREAK = "2026-07-16";
+
+const ET_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" });
+
+/** Is this angle still current on `now` (Eastern calendar day)? */
+export function isCurrentAngle(b: Pick<TrendingBet, "validThrough">, now: Date = new Date()): boolean {
+  return !b.validThrough || ET_DAY.format(now) <= b.validThrough;
+}
+
+/** Verified angles that are still current: the only ones any surface may show. */
+export function currentTrending(list: TrendingBet[], now: Date = new Date()): TrendingBet[] {
+  return list.filter((b) => b.verified && isCurrentAngle(b, now));
+}
 
 export const NFL_TRENDING: TrendingBet[] = [
   // ---- Win Totals ----
@@ -51,6 +84,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     source: "2026 NFL win totals; 2025 standings",
     verified: true,
     updated: D,
+    validThrough: NFL_PRESEASON,
   },
   {
     id: "nfl-wins-bills",
@@ -66,6 +100,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     source: "NFL standings '19-'25",
     verified: true,
     updated: D,
+    validThrough: NFL_PRESEASON,
   },
   {
     id: "nfl-wins-cardinals",
@@ -80,6 +115,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     source: "2026 NFL win totals",
     verified: true,
     updated: D,
+    validThrough: NFL_PRESEASON,
   },
   // ---- Awards ----
   {
@@ -95,6 +131,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     source: "AP MVP voting history",
     verified: true,
     updated: D,
+    validThrough: NFL_PRESEASON,
   },
   {
     id: "nfl-mvp-jackson",
@@ -109,6 +146,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     source: "AP MVP voting history",
     verified: true,
     updated: D,
+    validThrough: NFL_PRESEASON,
   },
   {
     id: "nfl-dpoy-garrett",
@@ -123,6 +161,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     source: "AP DPOY history; 2026 NFL Honors",
     verified: true,
     updated: D,
+    validThrough: NFL_PRESEASON,
   },
   {
     id: "nfl-mvp-nonqb",
@@ -136,6 +175,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     source: "AP MVP winners since 2001",
     verified: true,
     updated: D,
+    validThrough: NFL_PRESEASON,
   },
   // ---- Division ----
   {
@@ -151,6 +191,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     source: "NFL division champions; 2025 standings",
     verified: true,
     updated: D,
+    validThrough: NFL_PRESEASON,
   },
   {
     id: "nfl-div-afcnorth",
@@ -165,6 +206,7 @@ export const NFL_TRENDING: TrendingBet[] = [
     source: "2026 division odds; offseason moves",
     verified: true,
     updated: D,
+    validThrough: NFL_PRESEASON,
   },
 ];
 
@@ -184,6 +226,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     source: "Alabama football records; 2026 win totals",
     verified: true,
     updated: D,
+    validThrough: NCAAF_PRESEASON,
   },
   {
     id: "ncaaf-wins-sec",
@@ -197,6 +240,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     source: "2026 college football win totals",
     verified: true,
     updated: D,
+    validThrough: NCAAF_PRESEASON,
   },
   // ---- Awards ----
   {
@@ -212,6 +256,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     source: "Heisman Trust records",
     verified: true,
     updated: D,
+    validThrough: NCAAF_PRESEASON,
   },
   {
     id: "ncaaf-heisman-manning",
@@ -226,6 +271,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     source: "Heisman voting history",
     verified: true,
     updated: D,
+    validThrough: NCAAF_PRESEASON,
   },
   {
     id: "ncaaf-heisman-smith",
@@ -240,6 +286,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     source: "Heisman winners by position",
     verified: true,
     updated: D,
+    validThrough: NCAAF_PRESEASON,
   },
   // ---- Conference ----
   {
@@ -255,6 +302,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     source: "2026 SEC title odds; CFP champions",
     verified: true,
     updated: D,
+    validThrough: NCAAF_PRESEASON,
   },
   {
     id: "ncaaf-bigten-title",
@@ -269,6 +317,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     source: "2026 Big Ten title odds",
     verified: true,
     updated: D,
+    validThrough: NCAAF_PRESEASON,
   },
   // ---- Championship ----
   {
@@ -284,6 +333,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     source: "2026 national title odds; 2025 CFP",
     verified: true,
     updated: D,
+    validThrough: NCAAF_PRESEASON,
   },
   {
     id: "ncaaf-natl-conference",
@@ -297,6 +347,7 @@ export const NCAAF_TRENDING: TrendingBet[] = [
     source: "National championship history",
     verified: true,
     updated: D,
+    validThrough: NCAAF_PRESEASON,
   },
 ];
 
@@ -315,6 +366,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     source: "World Series champions; 2026 odds at the All-Star break",
     verified: true,
     updated: "2026-07-14",
+    validThrough: MLB_ALL_STAR_BREAK,
   },
   {
     id: "mlb-ws-yankees",
@@ -329,6 +381,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     source: "World Series history; 2026 AL standings at the break",
     verified: true,
     updated: "2026-07-14",
+    validThrough: MLB_ALL_STAR_BREAK,
   },
   {
     id: "mlb-ws-brewers",
@@ -343,6 +396,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     source: "World Series history; 2026 odds",
     verified: true,
     updated: "2026-07-14",
+    validThrough: MLB_ALL_STAR_BREAK,
   },
   // ---- Awards ----
   {
@@ -358,6 +412,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     source: "AP MVP history; 2026 leaderboards at the break",
     verified: true,
     updated: "2026-07-14",
+    validThrough: MLB_ALL_STAR_BREAK,
   },
   {
     id: "mlb-nlmvp-ohtani",
@@ -373,6 +428,7 @@ export const MLB_TRENDING: TrendingBet[] = [
     source: "AP/BBWAA MVP history",
     verified: true,
     updated: "2026-07-14",
+    validThrough: MLB_ALL_STAR_BREAK,
   },
   {
     id: "mlb-almvp-caminero",
@@ -387,10 +443,11 @@ export const MLB_TRENDING: TrendingBet[] = [
     source: "2026 MVP odds movement; MVP history",
     verified: true,
     updated: "2026-07-14",
+    validThrough: MLB_ALL_STAR_BREAK,
   },
 ];
 
-export function trendingFor(sport: "NFL" | "NCAAF" | "MLB"): TrendingBet[] {
+export function trendingFor(sport: "NFL" | "NCAAF" | "MLB", now: Date = new Date()): TrendingBet[] {
   const all = sport === "NFL" ? NFL_TRENDING : sport === "NCAAF" ? NCAAF_TRENDING : MLB_TRENDING;
-  return all.filter((b) => b.verified);
+  return currentTrending(all, now);
 }

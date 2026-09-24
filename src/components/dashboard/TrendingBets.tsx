@@ -105,7 +105,7 @@ export function TrendingBets({ sport }: TrendingBetsProps) {
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
           {view === "board"
             ? "The day's board: lines, live game state, the sharpest market moves, and verified angles - all in one look."
-            : "Season-long markets with an angle most people miss - every bet paired with a verifiable stat that gives it a fresh read."}
+            : "Season-long futures, each shown with a verified stat while its line is current."}
         </p>
       </motion.div>
 
@@ -131,7 +131,7 @@ export function TrendingBets({ sport }: TrendingBetsProps) {
       ) : bets.length === 0 ? (
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center text-sm text-muted-foreground font-mono">
-            Trending markets load in as {sport} futures boards open. Check back soon.
+            No current angles. Curated angles show here when they're verified against today's lines.
           </CardContent>
         </Card>
       ) : (
@@ -160,8 +160,7 @@ export function TrendingBets({ sport }: TrendingBetsProps) {
         <div className="flex items-start gap-1.5 pt-1">
           <Info className="w-3 h-3 text-muted-foreground mt-0.5 shrink-0" />
           <p className="text-[10px] text-muted-foreground leading-relaxed max-w-2xl">
-            Insights reflect historical fact, not predictions - context to inform your own read, not an MGP
-            pick. Once games begin, weekly and in-season prop markets appear here alongside the season-long bets.
+            Insights reflect historical fact, not predictions: context for your own read, not an MGP pick.
           </p>
         </div>
       )}

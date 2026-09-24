@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
 
     const statsData = statsResponse.ok ? JSON.parse(statsText) : null;
 
-    // Test 4: NFL API tier — teams (basic) and season_stats (the endpoint the
+    // Test 4: NFL API tier - teams (basic) and season_stats (the endpoint the
     // NFL sync pipeline actually depends on)
     const nflTeamsResponse = await fetch("https://api.balldontlie.io/nfl/v1/teams", {
       headers: { "Authorization": BDL_API_KEY, "Content-Type": "application/json" },

@@ -1,169 +1,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
+import { rebuildNflSeasonStats, type SeasonRebuildResult } from "../_shared/nfl-season-rebuild.ts";
+import { currentNflSeason } from "../_shared/nfl-sync.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
-
-// Base URL for NFL API
-const NFL_BASE_URL = "https://api.balldontlie.io/nfl/v1";
-
-// Rate limiting delay (100ms between calls)
-const RATE_LIMIT_DELAY = 100;
-let lastCallTime = 0;
-
-async function rateLimitedDelay(): Promise<void> {
-  const now = Date.now();
-  const timeSinceLastCall = now - lastCallTime;
-  if (timeSinceLastCall < RATE_LIMIT_DELAY) {
-    await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_DELAY - timeSinceLastCall));
-  }
-  lastCallTime = Date.now();
-}
-
-// Generic fetch function for Ball Don't Lie API
-async function bdlFetch(
-  apiKey: string,
-  endpoint: string,
-  params?: Record<string, string | number>
-): Promise<{ data: any[]; meta?: { next_cursor?: string } }> {
-  await rateLimitedDelay();
-  
-  const url = new URL(`${NFL_BASE_URL}${endpoint}`);
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        url.searchParams.append(key, String(value));
-      }
-    });
-  }
-
-  console.log(`[Sync NFL Season Stats] Fetching: ${url.toString()}`);
-  
-  const response = await fetch(url.toString(), {
-    headers: {
-      "Authorization": apiKey,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[Sync NFL Season Stats] Error ${response.status}: ${errorText}`);
-    throw new Error(`API Error ${response.status}: ${errorText}`);
-  }
-
-  const json = await response.json();
-  console.log(`[Sync NFL Season Stats] Got ${json.data?.length || 0} records`);
-  return json;
-}
-
-// Fetch all pages using cursor pagination
-async function fetchAllPages(
-  apiKey: string,
-  endpoint: string,
-  params?: Record<string, string | number>
-): Promise<any[]> {
-  const allData: any[] = [];
-  let cursor: string | undefined = undefined;
-  let pageCount = 0;
-  const maxPages = 100; // Safety limit
-
-  do {
-    pageCount++;
-    console.log(`[Sync NFL Season Stats] Fetching page ${pageCount}...`);
-    
-    const fetchParams: Record<string, string | number> = { 
-      ...params,
-      per_page: 100, // Max per page
-    };
-    if (cursor) {
-      fetchParams.cursor = cursor;
-    }
-
-    const response = await bdlFetch(apiKey, endpoint, fetchParams);
-    
-    if (response.data && Array.isArray(response.data)) {
-      allData.push(...response.data);
-    }
-
-    cursor = response.meta?.next_cursor;
-    
-    if (pageCount >= maxPages) {
-      console.log(`[Sync NFL Season Stats] Reached max page limit (${maxPages})`);
-      break;
-    }
-  } while (cursor);
-
-  console.log(`[Sync NFL Season Stats] Total records fetched: ${allData.length} across ${pageCount} pages`);
-  return allData;
-}
-
-// Calculate fantasy points - using correct API field names (passing_yards, rushing_yards, etc.)
-function calculateFantasyPoints(stat: any): { fantasy_points: number; fantasy_points_ppr: number } {
-  // API uses "passing_yards", "rushing_yards", etc. - not "pass_yards", "rush_yards"
-  const passYards = stat.passing_yards || stat.pass_yards || 0;
-  const passTd = stat.passing_touchdowns || stat.pass_touchdowns || 0;
-  const passInt =
-    stat.passing_interceptions ??
-    stat.pass_interceptions ??
-    stat?.passing?.interceptions ??
-    stat.interceptions ??
-    0;
-  const rushYards = stat.rushing_yards || stat.rush_yards || 0;
-  const rushTd = stat.rushing_touchdowns || stat.rush_touchdowns || 0;
-  const recYards = stat.receiving_yards || stat.rec_yards || 0;
-  const recTd = stat.receiving_touchdowns || stat.rec_touchdowns || 0;
-  const receptions = stat.receptions || 0;
-
-  // Standard fantasy scoring
-  const fantasy_points = 
-    (passYards * 0.04) + 
-    (passTd * 4) - 
-    (passInt * 2) + 
-    (rushYards * 0.1) + 
-    (rushTd * 6) + 
-    (recYards * 0.1) + 
-    (recTd * 6);
-
-  // PPR scoring (add 1 point per reception)
-  const fantasy_points_ppr = fantasy_points + receptions;
-
-  return {
-    fantasy_points: Math.round(fantasy_points * 100) / 100,
-    fantasy_points_ppr: Math.round(fantasy_points_ppr * 100) / 100,
-  };
-}
-
-// API response uses "passing_yards", "rushing_yards", etc.
-interface NFLSeasonStat {
-  id: number;
-  player: {
-    id: number;
-    first_name: string;
-    last_name: string;
-    position: string;
-  };
-  season: number;
-  games_played?: number;
-  // Passing stats (API uses "passing_" prefix)
-  passing_attempts?: number;
-  passing_completions?: number;
-  passing_yards?: number;
-  passing_touchdowns?: number;
-  passing_interceptions?: number;
-  qbr?: number;
-  // Rushing stats (API uses "rushing_" prefix)
-  rushing_attempts?: number;
-  rushing_yards?: number;
-  rushing_touchdowns?: number;
-  // Receiving stats (API uses "receiving_" prefix)
-  receptions?: number;
-  receiving_yards?: number;
-  receiving_touchdowns?: number;
-  receiving_targets?: number;
-}
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -173,6 +16,7 @@ Deno.serve(async (req) => {
 
   const startTime = Date.now();
   let syncLogId: string | null = null;
+  // deno-lint-ignore no-explicit-any
   let supabase: any;
 
   try {
@@ -191,10 +35,13 @@ Deno.serve(async (req) => {
     // Service client for database operations (used by both auth paths)
     supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    // Auth: cron secret (dispatch-syncs), service role key, or admin JWT
     const cronSecret = req.headers.get("x-cron-secret");
+    const bearer = req.headers.get("Authorization")?.replace(/^Bearer /, "") ?? null;
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[sync-nfl-season-stats] Authenticated via cron secret`);
+    } else if (bearer && bearer === supabaseServiceKey) {
+      console.log(`[sync-nfl-season-stats] Authenticated via service role key`);
     } else {
       // Authenticate user - require admin role
       const authHeader = req.headers.get("Authorization");
@@ -217,12 +64,10 @@ Deno.serve(async (req) => {
         );
       }
 
-      const userId = user.id;
-
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .eq("role", "admin")
         .limit(1)
         .maybeSingle();
@@ -245,24 +90,46 @@ Deno.serve(async (req) => {
       api_source: "balldontlie",
     });
 
-    // Parse request body for season parameter. Default: the current season
-    // once games begin (Sep+), else the most recently completed one
-    // (BDL NFL seasons are labeled by start year)
+    // Season default: the current season once games begin (Sep+), else the
+    // most recently completed one (BDL NFL seasons are labeled by start year).
+    // { prune: false } skips the stale-row cleanup below.
     const nowDate = new Date();
     let season = nowDate.getMonth() >= 8 ? nowDate.getFullYear() : nowDate.getFullYear() - 1;
+    let prune = true;
+    let explicitSeason = false;
+    let allowPastSeason = false;
     try {
       const body = await req.json();
       if (body.season) {
         season = parseInt(body.season, 10);
+        explicitSeason = true;
       }
+      if (body.prune === false) prune = false;
+      if (body.allowPastSeason === true) allowPastSeason = true;
     } catch {
-      // No body or invalid JSON, use default season
+      // No body or invalid JSON, use defaults
     }
 
-    console.log(`[Sync NFL Season Stats] Authenticated, starting sync for season ${season}...`);
+    // Past seasons are final: 2020-2025 were checked line by line against
+    // ESPN (Sep 24 2026) and change only through reviewed repairs. The Admin
+    // panel builds before that wrote seasons 2020-2025 on every click, so an
+    // explicit past season now needs { allowPastSeason: true }.
+    if (explicitSeason && season < currentNflSeason() && !allowPastSeason) {
+      const message = `Season ${season} is final and was left untouched (send allowPastSeason: true to rebuild it)`;
+      console.log(`[sync-nfl-season-stats] ${message}`);
+      await completeSyncLog(supabase, syncLogId, startTime, {
+        status: "success",
+        records_added: 0,
+        details: { season, skipped: message },
+      });
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, season, statsSync: 0, count: 0, message }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
 
-    // Step 1: Update sync_schedule to 'in_progress'
-    console.log("[Sync NFL Season Stats] Updating sync_schedule to in_progress...");
+    console.log(`[sync-nfl-season-stats] Starting sync for season ${season} (prune=${prune})`);
+
     await supabase
       .from("sync_schedule")
       .upsert({
@@ -273,136 +140,29 @@ Deno.serve(async (req) => {
         error_message: null,
       }, { onConflict: "sport,data_type" });
 
-    // Step 2: Get skill-position NFL players from DB to map external_id to internal id
-    // Only sync stats for bet-relevant positions — reduces API volume ~60%
-    // Roster sync stores full position names; accept abbreviations too
-    const SKILL_POSITIONS = [
-      "QB", "RB", "WR", "TE", "FB",
-      "Quarterback", "Running Back", "Wide Receiver", "Tight End", "Fullback",
-    ];
-    const { data: players, error: playersError } = await supabase
-      .from("players")
-      .select("id, external_id")
-      .eq("sport", "NFL")
-      .in("position", SKILL_POSITIONS);
-
-    if (playersError) {
-      throw new Error(`Failed to fetch players: ${playersError.message}`);
-    }
-
-    // Create a map of external_id -> internal id
-    const playerMap = new Map<string, string>();
-    if (players) {
-      players.forEach(p => {
-        playerMap.set(p.external_id, p.id);
-      });
-    }
-    console.log(`[Sync NFL Season Stats] Found ${playerMap.size} NFL players in database`);
-
-    // Helper to transform stats for upsert
-    const transformStats = (stats: NFLSeasonStat[], seasonType: "regular" | "postseason"): any[] => {
-      const result: any[] = [];
-      for (const stat of stats) {
-        const playerId = playerMap.get(String(stat.player.id));
-        if (!playerId) continue;
-
-        const fantasyPoints = calculateFantasyPoints(stat);
-        const passIntRaw: number | null =
-          (stat.passing_interceptions ?? null) ??
-          ((stat as unknown as any)?.passing?.interceptions ?? null) ??
-          ((stat as unknown as any)?.interceptions ?? null);
-
-        result.push({
-          player_id: playerId,
-          sport: "NFL",
-          season: stat.season,
-          season_type: seasonType,
-          games_played: stat.games_played || 0,
-          pass_attempts: stat.passing_attempts || 0,
-          pass_completions: stat.passing_completions || 0,
-          pass_yards: stat.passing_yards || 0,
-          pass_td: stat.passing_touchdowns || 0,
-          pass_int: passIntRaw,
-          passer_rating: stat.qbr || null,
-          rush_attempts: stat.rushing_attempts || 0,
-          rush_yards: stat.rushing_yards || 0,
-          rush_td: stat.rushing_touchdowns || 0,
-          receptions: stat.receptions || 0,
-          rec_yards: stat.receiving_yards || 0,
-          rec_td: stat.receiving_touchdowns || 0,
-          targets: stat.receiving_targets || 0,
-          fantasy_points: fantasyPoints.fantasy_points,
-          fantasy_points_ppr: fantasyPoints.fantasy_points_ppr,
-          raw_data: stat,
-          updated_at: new Date().toISOString(),
-        });
-      }
-      return result;
-    };
-
-    // Step 3: Fetch BOTH regular season AND postseason stats
-    let statsToUpsert: any[] = [];
-    let skippedCount = 0;
-
+    // Totals are summed from our stored game logs (BDL box scores after the
+    // ESPN phantom guard), with BDL's season line supplying only official
+    // games played. See _shared/nfl-season-rebuild.ts. Seasons with no stored
+    // logs are left untouched.
+    let rebuild: SeasonRebuildResult;
     try {
-      // Fetch regular season stats
-      console.log(`[Sync NFL Season Stats] Fetching regular season stats for ${season}...`);
-      const regularStats = await fetchAllPages(apiKey, "/season_stats", { season, postseason: "false" });
-      console.log(`[Sync NFL Season Stats] Got ${regularStats.length} regular season records`);
-      const regularTransformed = transformStats(regularStats, "regular");
-      skippedCount += regularStats.length - regularTransformed.length;
-      statsToUpsert.push(...regularTransformed);
-
-      // Fetch postseason stats
-      console.log(`[Sync NFL Season Stats] Fetching postseason stats for ${season}...`);
-      const postseasonStats = await fetchAllPages(apiKey, "/season_stats", { season, postseason: "true" });
-      console.log(`[Sync NFL Season Stats] Got ${postseasonStats.length} postseason records`);
-      const postseasonTransformed = transformStats(postseasonStats, "postseason");
-      skippedCount += postseasonStats.length - postseasonTransformed.length;
-      statsToUpsert.push(...postseasonTransformed);
-
+      rebuild = await rebuildNflSeasonStats(supabase, apiKey, season, { prune });
     } catch (error) {
-      // Update sync status to failed
       await supabase
         .from("sync_schedule")
         .update({
           last_sync_status: "failed",
-          error_message: error instanceof Error ? error.message : "Failed to fetch season stats",
+          error_message: error instanceof Error ? error.message : "Failed to rebuild season stats",
         })
         .eq("sport", "NFL")
         .eq("data_type", "season_stats");
       throw error;
     }
+    const successCount = rebuild.upserted;
+    const errorMessages = rebuild.errors;
 
-    console.log(`[Sync NFL Season Stats] Upserting ${statsToUpsert.length} stats (skipped ${skippedCount} - players not found)...`);
-
-    // Upsert in batches to avoid timeouts
-    const batchSize = 500;
-    let successCount = 0;
-    let errorMessages: string[] = [];
-
-    for (let i = 0; i < statsToUpsert.length; i += batchSize) {
-      const batch = statsToUpsert.slice(i, i + batchSize);
-      console.log(`[Sync NFL Season Stats] Upserting batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(statsToUpsert.length / batchSize)}...`);
-      
-      const { error: upsertError } = await supabase
-        .from("player_season_stats")
-        .upsert(batch, { 
-          onConflict: "player_id,sport,season,season_type",
-          ignoreDuplicates: false 
-        });
-
-      if (upsertError) {
-        console.error(`[Sync NFL Season Stats] Batch upsert error:`, upsertError);
-        errorMessages.push(upsertError.message);
-      } else {
-        successCount += batch.length;
-      }
-    }
-
-    // Step 5: Update sync_schedule with results
     const duration = Math.round((Date.now() - startTime) / 1000);
-    const finalStatus = errorMessages.length === 0 ? "success" : 
+    const finalStatus = errorMessages.length === 0 ? "success" :
                        successCount > 0 ? "partial" : "failed";
 
     await supabase
@@ -415,21 +175,22 @@ Deno.serve(async (req) => {
       .eq("sport", "NFL")
       .eq("data_type", "season_stats");
 
-    console.log(`[Sync NFL Season Stats] Sync completed: ${successCount} stats in ${duration}s`);
+    console.log(`[sync-nfl-season-stats] Sync completed: ${successCount} stats in ${duration}s`);
 
-    // Complete sync log — success
     await completeSyncLog(supabase, syncLogId, startTime, {
       status: finalStatus === "failed" ? "failed" : finalStatus === "partial" ? "partial" : "success",
       records_added: successCount,
-      details: { skipped: skippedCount, total: statsToUpsert.length, status: finalStatus, season, errors: errorMessages.length > 0 ? errorMessages : undefined },
+      details: { ...rebuild, errors: errorMessages.length > 0 ? errorMessages : undefined },
     });
 
-    // Step 6: Return summary
     return new Response(
       JSON.stringify({
         success: finalStatus !== "failed",
         statsSync: successCount,
-        skipped: skippedCount,
+        count: successCount,
+        regular: rebuild.regular,
+        postseason: rebuild.postseason,
+        pruned: rebuild.pruned,
         duration: `${duration}s`,
         season,
         status: finalStatus,
@@ -438,14 +199,13 @@ Deno.serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+        status: finalStatus === "failed" ? 500 : 200,
       }
     );
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("[Sync NFL Season Stats] Error:", errorMessage);
+    console.error("[sync-nfl-season-stats] Error:", errorMessage);
 
-    // Complete sync log — failure
     await completeSyncLog(supabase, syncLogId, startTime, {
       status: "failed",
       error_message: errorMessage,

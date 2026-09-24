@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { withDkLines } from "../_shared/dk-line.ts";
 
 // ============================================================
 // TYPES
@@ -89,6 +90,11 @@ async function fetchOddsData(
     if (gameId) {
       query = query.eq("game_id", gameId);
     }
+  } else if (normalizedLeague === "NCAAF") {
+    query = supabase.from("ncaaf_odds").select("*, ncaaf_games!inner(*)");
+    if (gameId) {
+      query = query.eq("game_id", gameId);
+    }
   } else if (normalizedLeague === "NBA") {
     query = supabase.from("nba_odds").select("*, nba_games!inner(*)");
     if (gameId) {
@@ -128,8 +134,19 @@ async function fetchOddsData(
     };
   }
 
+  // NCAAF/NFL: the same DraftKings number the app shows. The odds tables are
+  // written once a day; sync-betting-splits stores DraftKings' line every run,
+  // and the app shows whichever is the fresher capture (_shared/dk-line.ts).
+  let rows: any[] = data || [];
+  try {
+    // Each DraftKings row keeps its embedded game; other leagues pass through
+    rows = await withDkLines(supabase, normalizedLeague, rows);
+  } catch (e) {
+    console.error("Error fetching betting_lines:", e);
+  }
+
   return {
-    data: data || [],
+    data: rows,
     source: {
       provider: "mgp_database",
       endpoint: `${league}/odds`,
@@ -353,7 +370,7 @@ function formatFallbackAnswer(
       if (!odds?.length) return "No odds data available for this matchup." + sourceNote;
       
       const first = odds[0] as any;
-      const game = first.games || first.nba_games || first.ncaab_games;
+      const game = first.games || first.ncaaf_games || first.nba_games || first.ncaab_games;
       return `**${game?.visitor_team_name || "Away"} @ ${game?.home_team_name || "Home"}**\n` +
         `Spread: ${first.spread_value > 0 ? "+" : ""}${first.spread_value}\n` +
         `Total: O/U ${first.total_value}\n` +
@@ -365,14 +382,14 @@ function formatFallbackAnswer(
       if (!games?.length) return "No upcoming games found in the next 48 hours." + sourceNote;
       
       return games.slice(0, 5).map((g: any) => {
-        const date = new Date(g.date).toLocaleString("en-US", { 
-          weekday: "short", 
-          month: "short", 
-          day: "numeric", 
-          hour: "numeric", 
-          minute: "2-digit" 
-        });
-        return `• ${g.visitor_team_name} @ ${g.home_team_name} - ${date}`;
+        // Eastern time, labeled: the edge runtime's default zone is UTC, which
+        // printed a 7:30 PM ET kickoff as "11:30 PM". An NCAAF kickoff the
+        // networks have not set (time_tbd) is a midnight-ET placeholder, so
+        // it gets its Eastern calendar day and "kickoff time TBD" instead.
+        const when = g.time_tbd
+          ? `${new Date(g.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York" })}, kickoff time TBD`
+          : `${new Date(g.date).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" })} ET`;
+        return `• ${g.visitor_team_name} @ ${g.home_team_name} - ${when}`;
       }).join("\n") + sourceNote;
     }
     

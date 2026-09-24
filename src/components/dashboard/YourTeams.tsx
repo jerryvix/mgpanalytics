@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format, parseISO, differenceInCalendarDays } from "date-fns";
 import { useFollows, FollowRow } from "@/hooks/useFollows";
 import { TeamLogo } from "@/components/ui/TeamLogo";
+import { tbdKickoffLabel } from "@/lib/kickoff";
 
 const SPORT_TABLE: Record<string, { table: string; league?: string; slug: string }> = {
   NFL: { table: "games", league: "NFL", slug: "nfl" },
@@ -22,6 +23,8 @@ interface NextGame {
   opponent: string;
   isHome: boolean;
   date: string;
+  /** NCAAF kickoff not set yet: `date` is a midnight-ET placeholder. */
+  timeTbd?: boolean;
 }
 
 async function loadFollowedGames(teamFollows: FollowRow[]): Promise<NextGame[]> {
@@ -43,7 +46,9 @@ async function loadFollowedGames(teamFollows: FollowRow[]): Promise<NextGame[]> 
     const list = teams.map((t) => `"${t.replace(/"/g, '')}"`).join(",");
     let q = supabase
       .from(cfg.table as "games")
-      .select("home_team_name, visitor_team_name, date")
+      // NCAAF rows also carry time_tbd; "*" keeps this working on a database
+      // that predates that column.
+      .select(sport === "NCAAF" ? "*" : "home_team_name, visitor_team_name, date")
       .gte("date", nowIso)
       .or(`home_team_name.in.(${list}),visitor_team_name.in.(${list})`)
       .order("date", { ascending: true })
@@ -67,6 +72,7 @@ async function loadFollowedGames(teamFollows: FollowRow[]): Promise<NextGame[]> 
           opponent: isHome ? g.visitor_team_name : g.home_team_name,
           isHome,
           date: g.date,
+          timeTbd: g.time_tbd === true,
         });
       }
     }
@@ -86,7 +92,8 @@ export function YourTeams() {
 
   if (teamFollows.length === 0 || games.length === 0) return null;
 
-  const label = (d: string) => {
+  const label = (d: string, timeTbd?: boolean) => {
+    if (timeTbd) return tbdKickoffLabel(d);
     const dt = parseISO(d);
     const days = differenceInCalendarDays(dt, new Date());
     if (days <= 0) return `Today · ${format(dt, "h:mm a")}`;
@@ -123,7 +130,7 @@ export function YourTeams() {
               </span>
               <span className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono shrink-0">
                 <CalendarClock className="w-3 h-3" />
-                {label(g.date)}
+                {label(g.date, g.timeTbd)}
               </span>
             </Link>
           ))}

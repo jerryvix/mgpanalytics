@@ -27,7 +27,9 @@ function renderMobileShell() {
   );
 }
 
-describe("mobile navigation", () => {
+// The Radix sheet renders slowly when the whole suite runs in parallel: these
+// timed out at the 5s default under load and pass alone.
+describe("mobile navigation", { timeout: 20_000 }, () => {
   it("keeps the full sidebar reachable on phones via the Menu tab", async () => {
     renderMobileShell();
 
@@ -37,7 +39,7 @@ describe("mobile navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: /menu/i }));
 
     // Opening the Menu tab reveals the complete sidebar
-    expect(await screen.findByText("Full navigation content")).toBeInTheDocument();
+    expect(await screen.findByText("Full navigation content", {}, { timeout: 10_000 })).toBeInTheDocument();
   });
 
   it("still shows the core tabs alongside Menu", () => {

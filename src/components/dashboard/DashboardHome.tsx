@@ -28,6 +28,8 @@ import { FantasyMovers } from "@/components/dashboard/FantasyMovers";
 import { EdgeTicker } from "@/components/dashboard/EdgeTicker";
 import { TodaysTopGames, type TopGame } from "@/components/dashboard/TodaysTopGames";
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
+import { withStoredLine } from "@/lib/marketPulse";
+import { fetchStoredLines } from "@/lib/storedLines";
 
 interface Game {
   id: number | string;
@@ -44,6 +46,8 @@ interface GameWithOdds extends Game {
   total: number | null;
   hasOdds: boolean;
   lineMove: number | null;
+  /** NCAAF kickoff not set yet: `date` is a midnight-ET placeholder. */
+  timeTbd?: boolean;
 }
 
 interface QuickPrompt {
@@ -331,11 +335,19 @@ export function DashboardHome() {
             .eq("sportsbook", "draftkings")
         : { data: [] };
 
+      // NFL and NCAAF: the stored DraftKings line where it is the fresher
+      // capture (lib/marketPulse chooseLine), so these spreads match the slate
+      // cards and Game Insights
+      const [nflLines, ncaafLines] = await Promise.all([
+        fetchStoredLines("NFL", nflGameIds),
+        fetchStoredLines("NCAAF", ncaafGameIds),
+      ]);
+
       // Combine games with odds
       const gamesWithOdds: GameWithOdds[] = [];
 
       nflGames?.forEach(game => {
-        const odds = nflOdds?.find(o => o.game_id === game.id);
+        const odds = withStoredLine(nflOdds?.find(o => o.game_id === game.id) ?? null, nflLines.get(String(game.id)) ?? []);
         gamesWithOdds.push({
           id: game.id,
           home_team_name: game.home_team_name,
@@ -403,7 +415,7 @@ export function DashboardHome() {
       });
 
       ncaafGames?.forEach(game => {
-        const odds = ncaafOdds?.find(o => o.game_id === game.id);
+        const odds = withStoredLine(ncaafOdds?.find(o => o.game_id === game.id) ?? null, ncaafLines.get(String(game.id)) ?? []);
         gamesWithOdds.push({
           id: game.id,
           home_team_name: game.home_team_name,
@@ -416,6 +428,7 @@ export function DashboardHome() {
           total: odds?.total_value ?? null,
           hasOdds: !!odds,
           lineMove: null,
+          timeTbd: (game as { time_tbd?: boolean | null }).time_tbd === true,
         });
       });
 

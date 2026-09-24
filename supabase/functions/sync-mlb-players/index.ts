@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-// Free official MLB Stats API — no key required
+// Free official MLB Stats API, no key required
 const MLB_API = "https://statsapi.mlb.com/api/v1";
 
 interface MlbTeam {

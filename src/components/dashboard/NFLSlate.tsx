@@ -15,6 +15,7 @@ import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
 import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
+import { fetchStoredLines, overlayStoredLines } from "@/lib/storedLines";
 
 interface Game {
   id: number;
@@ -36,6 +37,7 @@ interface Odd {
   total_value: number | null;
   total_over_odds: number | null;
   total_under_odds: number | null;
+  updated_at?: string | null;
 }
 
 // Map game_id to DraftKings odds for card display
@@ -104,15 +106,22 @@ export function NFLSlate() {
 
       if (oddsError) {
         console.error("Error fetching DraftKings odds:", oddsError);
-      } else {
-        // Create map of game_id -> DraftKings odds
-        const oddsMap: GameOddsMap = {};
-        (oddsData || []).forEach((odd) => {
-          oddsMap[odd.game_id] = odd;
-        });
-        setGameOddsMap(oddsMap);
-        console.log("DraftKings odds map:", oddsMap);
       }
+      // One DraftKings number per market across the app: each card takes the
+      // line sync-betting-splits stores for the game (betting_lines, keyed by
+      // our games.id: the sync paired ESPN's event with this game on both
+      // teams and kickoff) unless the daily odds row captured a different
+      // number after it, the same rule as Game Insights > Market Pulse
+      // (lib/marketPulse chooseLine).
+      const byGame = new Map<string, Odd>((oddsError ? [] : oddsData || []).map((odd) => [String(odd.game_id), odd]));
+      const merged = overlayStoredLines(byGame, await fetchStoredLines("NFL", gameIds), (id) => ({
+        id: `betting_lines:${id}`,
+        game_id: Number(id),
+        sportsbook: "draftkings",
+      }) as Odd);
+      const oddsMap: GameOddsMap = {};
+      for (const [id, odd] of merged) oddsMap[Number(id)] = odd;
+      setGameOddsMap(oddsMap);
     }
 
     setLoading(false);
@@ -132,11 +141,14 @@ export function NFLSlate() {
       .eq("game_id", game.id)
       .in("sportsbook", SPORTSBOOKS);
 
+    // DraftKings shows the card's number (odds row with the stored line laid over it)
+    const dk = gameOddsMap[game.id];
     if (error) {
       console.error("Error fetching all odds:", error);
+      if (dk) setAllOdds([dk]);
     } else {
-      console.log("All odds for game:", data);
-      setAllOdds(data || []);
+      const others = (data || []).filter((o) => !o.sportsbook.toLowerCase().includes("draftkings"));
+      setAllOdds(dk ? [...others, dk] : data || []);
     }
     setOddsLoading(false);
   };
@@ -257,7 +269,7 @@ export function NFLSlate() {
         >
           {games.map((game, index) => {
             const dkOdds = gameOddsMap[game.id];
-            const liveGame = live.getGame(game.visitor_team_name, game.home_team_name);
+            const liveGame = live.getGame(game.visitor_team_name, game.home_team_name, { start: game.date });
 
             return (
               <motion.div
@@ -385,6 +397,7 @@ export function NFLSlate() {
                       awayTeam={game.visitor_team_name}
                       gameId={game.id}
                       sport="NFL"
+                      odds={dkOdds}
                     />
 
                     {/* View All Odds Button */}

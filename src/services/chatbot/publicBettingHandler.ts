@@ -1,5 +1,6 @@
 // Public Betting Data Handler for Chatbot
-// Uses web search grounding to find and format public betting percentages
+// Answers from MGP's stored DraftKings splits (NCAAF + NFL) when the question
+// names a stored game; otherwise uses web search grounding.
 
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -129,7 +130,7 @@ I need:
 3. Moneyline: What percentage of bets are on each team
 4. Any sharp money indicators or reverse line movement
 
-Search Action Network, Covers.com, and OddsAssist for this data. 
+Search for the current public betting splits for this game, and name the source of every percentage you report.
 Format the response with specific percentages and indicate where sharp money differs from public betting.
 Include the current lines (spread number, total number) if available.`;
 }
@@ -160,6 +161,17 @@ function formatPublicBettingResponse(
  * Handle a public betting query
  */
 export async function handlePublicBettingQuery(query: string): Promise<string> {
+  // Our own stored DraftKings splits first (NCAAF + NFL, synced every few
+  // hours); web search stays the fallback for everything else. Loaded lazily
+  // so the query router never pulls the splits module in.
+  try {
+    const { answerFromStoredSplits } = await import("./storedSplits");
+    const stored = await answerFromStoredSplits(query);
+    if (stored) return stored;
+  } catch (err) {
+    console.error("Stored betting splits lookup failed, falling back to web search:", err);
+  }
+
   // Check cache first
   const cached = checkCache(query);
   if (cached) {
@@ -189,7 +201,7 @@ export async function handlePublicBettingQuery(query: string): Promise<string> {
     
     if (error) {
       console.error("Error fetching public betting data:", error);
-      return `I couldn't fetch public betting data right now. This feature uses live web search which may be rate-limited. Try again in a moment.\n\nIn the meantime, you can check these sources directly:\n• [Action Network](https://actionnetwork.com/nfl/public-betting)\n• [Covers Consensus](https://contests.covers.com/consensus)`;
+      return `I couldn't fetch public betting data for that game right now. This lookup uses live web search, which may be rate-limited, so try again in a moment.\n\nFor NCAAF and NFL games, MGP's own DraftKings splits are in each game's Game Insights > Market Pulse.`;
     }
     
     const aiContent = data?.content || data?.choices?.[0]?.message?.content || "";

@@ -6,8 +6,12 @@ import { parseISO } from "date-fns";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
+import { useMlbProbables } from "@/hooks/useMlbProbables";
 import { isCalledOff, type LiveGame } from "@/lib/liveScores";
 import { careerVsPitcher } from "@/services/mlb/batterVsPitcher";
+import { resolveMatchup } from "@/services/mlb/streakMatchup";
+import { OppStarterCell, ProjectedTag } from "@/components/mlb/ProbablePitcher";
+import { Button } from "@/components/ui/button";
 
 export interface HitStreakRow {
   playerId: string;
@@ -18,7 +22,12 @@ export interface HitStreakRow {
   headshotUrl?: string;
   streak: number;
   seasonAvg: number;
+  obp?: number | null;
+  slg?: number | null;
+  ops?: number | null;
+  homeRuns?: number | null;
   streakAvg: number;
+  /** Synced next game (mlb_games); MLB's live schedule overrides it when loaded. */
   nextOpponent: string | null;
   nextOpponentAbbr: string | null;
   nextPitcher: string | null;
@@ -39,7 +48,7 @@ const streakColor = (streak: number) => heatText(streakHeat(streak));
 // Sample size shown always - .333 in 3 AB and .320 in 25 AB are different
 // facts, and "never faced him" is itself an angle.
 function VsStarterCell({ batter, pitcher }: { batter: string; pitcher: string | null }) {
-  const { data, isLoading } = useQuery({
+  const { data, isPending } = useQuery({
     queryKey: ["bvp", batter, pitcher],
     queryFn: () => careerVsPitcher(batter, pitcher!),
     enabled: !!pitcher,
@@ -49,7 +58,8 @@ function VsStarterCell({ batter, pitcher }: { batter: string; pitcher: string | 
   });
 
   if (!pitcher) return <span className="text-muted-foreground">-</span>;
-  if (isLoading) return <span className="text-muted-foreground animate-pulse">…</span>;
+  // isPending, not isLoading: a paused lookup is still pending, not "no data"
+  if (isPending) return <span className="text-muted-foreground animate-pulse">…</span>;
   if (!data || data.status === "unavailable") return <span className="text-muted-foreground">-</span>;
   if (data.status === "never-faced") {
     return (
@@ -83,14 +93,48 @@ function VsStarterCell({ batter, pitcher }: { batter: string; pitcher: string | 
 interface HitStreakTableProps {
   rows: HitStreakRow[];
   isLoading?: boolean;
+  /** The first read is paused (offline, or a retry held while the tab is hidden). */
+  isPaused?: boolean;
+  /** The streak query failed: show an error with a retry, never the empty-state copy. */
+  isError?: boolean;
+  onRetry?: () => void;
+  /** Full team name to abbreviation, for opponents that come from MLB's schedule. */
+  teamAbbr?: (teamName: string) => string | null;
+}
+
+// ".304/.347/.438 · 11 HR"
+function slashLine(r: HitStreakRow): string | null {
+  if (r.obp == null || r.slg == null) return null;
+  const hr = r.homeRuns != null ? ` · ${r.homeRuns} HR` : "";
+  return `${fmtAvg(r.seasonAvg)}/${fmtAvg(r.obp)}/${fmtAvg(r.slg)}${hr}`;
 }
 
 // Game-state chip for the matchup cell. Live state comes from the same
 // 60s ESPN scoreboard polling as the slate badges - not the batch-synced
 // status column, which can lag hours. Upcoming games show first pitch so
 // the pick window is visible at a glance.
-function GameStateChip({ liveGame, gameDate }: { liveGame: LiveGame | undefined; gameDate: string | null }) {
+function GameStateChip({
+  liveGame,
+  gameDate,
+  offToday = false,
+}: {
+  liveGame: LiveGame | undefined;
+  gameDate: string | null;
+  offToday?: boolean;
+}) {
   if (liveGame?.state === "in") return <LiveBadge detail={liveGame.detail} />;
+  // No game today: say so plainly rather than showing tomorrow's first pitch
+  // where tonight's would be.
+  if (offToday && liveGame?.state !== "post") {
+    return (
+      <span
+        className="font-mono text-[10px] uppercase tracking-wider border border-border rounded px-1.5 py-0.5 text-muted-foreground whitespace-nowrap"
+        title="No game today"
+      >
+        Off today
+      </span>
+    );
+  }
   if (liveGame?.state === "post") {
     // Postponed/canceled report "post" too - for picks that's the opposite
     // of Final (no game tonight), so say so.
@@ -136,29 +180,138 @@ function fmtPacific(d: Date): string {
   return `${sameDay ? "" : `${PT_DAY.format(d)} `}${PT_TIME.format(d)} PT`;
 }
 
-export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
+export function HitStreakTable({ rows, isLoading, isPaused, isError, onRetry, teamAbbr }: HitStreakTableProps) {
   const live = useLiveScores("MLB");
+  const { data: probables } = useMlbProbables(rows.length > 0);
+
+  const prepared = rows.map((r) => {
+    const m = resolveMatchup(r, probables, teamAbbr);
+    // We don't know home/away here, so try the matchup both ways. The start
+    // time keeps LAST night's game against the same opponent off this row.
+    const when = { start: m.gameDate };
+    const liveGame =
+      r.teamName && m.opponent
+        ? live.getGame(r.teamName, m.opponent, when) ?? live.getGame(m.opponent, r.teamName, when)
+        : undefined;
+    const dimmed = liveGame?.state === "post" && !isCalledOff(liveGame);
+    return { r, m, liveGame, dimmed, slash: slashLine(r) };
+  });
+
   return (
     <Card className="bg-card border-border">
       <CardContent className="p-0">
         <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-          <Flame className="w-4 h-4 text-terminal-amber" />
-          <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-foreground">
+          <Flame className="w-4 h-4 text-terminal-amber shrink-0" />
+          <h2 className="font-mono text-sm font-bold uppercase tracking-wider text-foreground whitespace-nowrap">
             Active Hit Streaks
           </h2>
-          <span className="text-xs text-muted-foreground font-mono">
+          <span className="hidden sm:inline text-xs text-muted-foreground font-mono">
             Hot bats - consecutive games with a hit
           </span>
         </div>
 
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Loading streaks…</div>
+        ) : isPaused ? (
+          <div className="p-8 text-center text-sm space-y-1" role="status">
+            <p className="text-foreground">Waiting for a connection…</p>
+            <p className="text-muted-foreground text-xs">Hit streaks load as soon as you're back online.</p>
+          </div>
+        ) : isError ? (
+          <div className="p-8 text-center text-sm space-y-3" role="alert">
+            <p className="text-foreground">Couldn't load hit streaks.</p>
+            <p className="text-muted-foreground text-xs">Check your connection and try again.</p>
+            {onRetry && (
+              <Button variant="outline" size="sm" onClick={onRetry}>
+                Retry
+              </Button>
+            )}
+          </div>
         ) : rows.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground text-sm">
             No active hit streaks right now. Check back after the next slate of games.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          {/* Phones: one stacked row per hitter, so the streak and the starter
+              he faces next read without scrolling sideways. */}
+          <ul className="sm:hidden divide-y divide-border/50">
+            {prepared.map(({ r, m, liveGame, dimmed, slash }) => {
+              const hand = m.pitcherLine?.hand ? ` ${m.pitcherLine.hand}HP` : "";
+              const s = m.pitcherLine?.season;
+              const l3 = m.pitcherLine?.last3;
+              return (
+                <li key={r.playerId} className={`px-4 py-3 ${dimmed ? "opacity-60" : ""}`}>
+                  <Link to={`/dashboard/mlb/players/${r.playerId}`} className="flex items-center gap-3 group">
+                    <div className="w-8 h-8 rounded-full bg-muted overflow-hidden shrink-0 flex items-center justify-center">
+                      {r.headshotUrl ? (
+                        <img
+                          src={r.headshotUrl}
+                          alt={r.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-2 min-w-0">
+                        <span className="font-medium text-foreground truncate group-hover:text-terminal-green transition-colors">
+                          {r.name}
+                        </span>
+                        <span className="text-[11px] font-mono text-muted-foreground shrink-0">{r.team}</span>
+                      </div>
+                      <div className="text-[11px] font-mono tabular-nums text-muted-foreground truncate">
+                        <span className="text-terminal-green">{fmtAvg(r.streakAvg)}</span> in streak
+                        {r.obp != null && r.slg != null
+                          ? ` · ${fmtAvg(r.seasonAvg)}/${fmtAvg(r.obp)}/${fmtAvg(r.slg)}`
+                          : ""}
+                      </div>
+                    </div>
+                    <div className={`shrink-0 text-right font-mono font-bold tabular-nums leading-none ${streakColor(r.streak)}`}>
+                      <span className="inline-flex items-center gap-1 text-lg">
+                        {r.streak >= 10 && <Flame className="w-3.5 h-3.5" />}
+                        {r.streak}
+                      </span>
+                      <div className="text-[9px] font-normal uppercase tracking-wider text-muted-foreground mt-0.5">games</div>
+                    </div>
+                  </Link>
+                  {m.opponent && (
+                    <div className="mt-2 pl-11 text-[11px] font-mono tabular-nums text-muted-foreground space-y-0.5">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="shrink-0 whitespace-nowrap">
+                          <GameStateChip liveGame={liveGame} gameDate={m.gameDate} offToday={m.offToday} />
+                        </span>
+                        <span className="text-foreground shrink-0">
+                          {m.offToday && m.nextDay ? `Next: ${m.nextDay} vs ` : "vs "}
+                          {m.opponentAbbr || m.opponent}
+                        </span>
+                        <span className="truncate" title={m.pitcherName ?? undefined}>
+                          {m.pitcherName ? `· ${m.pitcherName.replace(/^(\S)\S*\s+/, "$1. ")}${hand}` : "· starter TBD"}
+                        </span>
+                      </div>
+                      {(s || m.pitcherName) && (
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          {m.pitcherLine?.projected && <ProjectedTag />}
+                          {s && (
+                            <span className="truncate">
+                              {s.era?.toFixed(2) ?? "-"} ERA · {s.whip?.toFixed(2) ?? "-"} WHIP
+                              {l3 ? ` · L${l3.starts.length} ${l3.era?.toFixed(2) ?? "-"}` : ""}
+                            </span>
+                          )}
+                          {m.pitcherName && (
+                            <span className="shrink-0 ml-auto">
+                              <VsStarterCell batter={r.name} pitcher={m.pitcherName} />
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground border-b border-border">
@@ -168,8 +321,14 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                   <th className="text-right font-medium px-2 py-2" title="Batting average during the active streak">
                     Streak AVG
                   </th>
-                  <th className="text-right font-medium px-2 py-2" title="Season batting average">
-                    Season AVG
+                  <th className="text-right font-medium px-2 py-2" title="Season on-base plus slugging">
+                    OPS
+                  </th>
+                  <th
+                    className="text-left font-medium px-2 py-2"
+                    title="Opposing probable starter: season ERA and WHIP, then ERA over his last three starts (via MLB)"
+                  >
+                    Opp. Starter
                   </th>
                   <th
                     className="text-right font-medium px-2 py-2"
@@ -181,18 +340,13 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => {
-                  // We don't know home/away here, so try the matchup both ways.
-                  const liveGame =
-                    r.teamName && r.nextOpponent
-                      ? live.getGame(r.teamName, r.nextOpponent) ?? live.getGame(r.nextOpponent, r.teamName)
-                      : undefined;
+                {prepared.map(({ r, m, liveGame, dimmed, slash }, i) => {
                   return (
                   <tr
                     key={r.playerId}
                     className={`border-b border-border/50 hover:bg-muted/30 transition-colors ${
                       i % 2 === 1 ? "bg-muted/10" : ""
-                    } ${liveGame?.state === "post" && !isCalledOff(liveGame) ? "opacity-60" : ""}`}
+                    } ${dimmed ? "opacity-60" : ""}`}
                   >
                     <td className="px-4 py-2.5">
                       <Link
@@ -209,8 +363,18 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                             />
                           ) : null}
                         </div>
-                        <span className="font-medium text-foreground group-hover:text-terminal-green transition-colors whitespace-nowrap">
-                          {r.name}
+                        <span className="min-w-0">
+                          <span className="block font-medium text-foreground group-hover:text-terminal-green transition-colors whitespace-nowrap">
+                            {r.name}
+                          </span>
+                          {slash && (
+                            <span
+                              className="block text-[10px] font-mono tabular-nums text-muted-foreground whitespace-nowrap"
+                              title="Season AVG/OBP/SLG and home runs"
+                            >
+                              {slash}
+                            </span>
+                          )}
                         </span>
                       </Link>
                     </td>
@@ -230,18 +394,29 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
                       {fmtAvg(r.streakAvg)}
                     </td>
                     <td className="px-2 py-2.5 text-right font-mono tabular-nums text-foreground">
-                      {fmtAvg(r.seasonAvg)}
+                      {r.ops != null ? fmtAvg(r.ops) : "-"}
+                    </td>
+                    <td className="px-2 py-2.5 text-xs">
+                      {m.opponent ? (
+                        <OppStarterCell
+                          line={m.pitcherLine}
+                          fallbackName={m.pitcherLine ? null : m.pitcherName}
+                          dayLabel={m.offToday ? m.nextDay : null}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </td>
                     <td className="px-2 py-2.5 text-right font-mono tabular-nums text-xs whitespace-nowrap">
-                      <VsStarterCell batter={r.name} pitcher={r.nextPitcher} />
+                      <VsStarterCell batter={r.name} pitcher={m.pitcherName} />
                     </td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
-                      {r.nextOpponent ? (
+                      {m.opponent ? (
                         <span className="inline-flex items-center gap-2">
-                          <GameStateChip liveGame={liveGame} gameDate={r.nextGameDate} />
-                          <span title={r.nextOpponent}>
-                            <span className="text-foreground font-mono">{r.nextOpponentAbbr || r.nextOpponent}</span>
-                            {r.nextPitcher && <span className="text-muted-foreground"> · {r.nextPitcher}</span>}
+                          <GameStateChip liveGame={liveGame} gameDate={m.gameDate} offToday={m.offToday} />
+                          <span className="text-foreground font-mono" title={m.opponent}>
+                            {m.offToday && m.nextDay ? `Next: ${m.nextDay} vs ` : ""}
+                            {m.opponentAbbr || m.opponent}
                           </span>
                         </span>
                       ) : (
@@ -254,6 +429,7 @@ export function HitStreakTable({ rows, isLoading }: HitStreakTableProps) {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </CardContent>
     </Card>

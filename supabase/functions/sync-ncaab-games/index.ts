@@ -107,7 +107,7 @@ serve(async (req) => {
     // Service client for database operations (used by both auth paths)
     supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    // Cron auth bypass: allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[sync-ncaab-games] Authenticated via cron secret`);
@@ -299,7 +299,7 @@ serve(async (req) => {
       console.log(`No ranked games found, using ${gamesToInsert.length} featured games`);
     }
 
-    // Historical data preserved — no longer deleting old games
+    // Historical data preserved: no longer deleting old games
 
     let insertedCount = 0;
     let oddsInsertedCount = 0;
@@ -319,7 +319,7 @@ serve(async (req) => {
       console.log(`Upserted ${insertedCount} NCAAB games`);
     }
 
-    // Fetch odds from BDL (GOAT tier) — no quota limits, 600 req/min
+    // Fetch odds from BDL (GOAT tier): no quota limits, 600 req/min
     if (BALLDONTLIE_API_KEY) {
       const { data: gamesForOdds } = await supabase
         .from("ncaab_games")

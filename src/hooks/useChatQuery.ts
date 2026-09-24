@@ -12,6 +12,8 @@ import { handleAdvancedStatsQuery, shouldHandleAdvancedStats } from "@/services/
 import { handlePropAnalysisQuery, shouldHandlePropAnalysis } from "@/services/chatbot/propAnalysisHandler";
 import { handleNbaPropsQuery, shouldHandleNbaPropsQuery } from "@/services/chatbot/nbaPropsHandler";
 import { handleNbaQuery, isNbaQuery, shouldExtractSpecificStat, handleSpecificStatQuery } from "@/services/chatbot/nbaQueryHandler";
+import { fmtAmerican, lineAsOf, withStoredLine } from "@/lib/marketPulse";
+import { fetchStoredLines } from "@/lib/storedLines";
 interface Game {
   id: number;
   home_team_name: string;
@@ -205,8 +207,35 @@ function detectPositionQuery(query: string): { position: string; limit: number }
 }
 
 function formatPrice(price: number | null): string {
-  if (price === null) return "N/A";
-  return price >= 0 ? `+${price}` : `${price}`;
+  return fmtAmerican(price, "N/A");
+}
+
+/**
+ * DraftKings' NFL line per game, the number every MGP surface shows: the
+ * odds row with the stored line laid over it (lib/marketPulse chooseLine).
+ * updated_at becomes the oldest capture behind the numbers.
+ */
+async function dkNflOdds(gameIds: number[]): Promise<Odd[]> {
+  const [{ data, error }, stored] = await Promise.all([
+    supabase.from("odds").select("*").in("game_id", gameIds).ilike("sportsbook", "%draftkings%"),
+    fetchStoredLines("NFL", gameIds),
+  ]);
+  if (error) throw error;
+  const out: Odd[] = [];
+  for (const id of gameIds) {
+    const row = ((data ?? []) as Odd[]).find((o) => o.game_id === id) ?? null;
+    const lines = stored.get(String(id)) ?? [];
+    const merged = withStoredLine(row, lines);
+    if (!merged) continue;
+    out.push({
+      ...merged,
+      id: row?.id ?? `betting_lines:${id}`,
+      game_id: id,
+      sportsbook: row?.sportsbook ?? "draftkings",
+      updated_at: lineAsOf(row, lines) ?? row?.updated_at ?? new Date().toISOString(),
+    });
+  }
+  return out;
 }
 
 function formatLine(line: number | null): string {
@@ -700,17 +729,10 @@ export function useChatQuery() {
     const isHome = game.home_team_name.toLowerCase().includes(teamName.toLowerCase().split(" ").pop() || "");
     const opponent = isHome ? game.visitor_team_name : game.home_team_name;
     
-    // Get DraftKings odds
-    const { data: odds, error: oddsError } = await supabase
-      .from("odds")
-      .select("*")
-      .eq("game_id", game.id)
-      .ilike("sportsbook", "%draftkings%")
-      .limit(1);
-    
-    if (oddsError) throw oddsError;
-    
-    if (!odds || odds.length === 0) {
+    // DraftKings' line, the same number the slate and Game Insights show
+    const odds = await dkNflOdds([game.id]);
+
+    if (odds.length === 0) {
       return `📊 ${teamName.split(" ").pop()} vs ${opponent.split(" ").pop()} (${formatGameTime(game.date)})\n\nOdds aren't available yet for this game. Check back closer to game time!`;
     }
     
@@ -743,15 +765,8 @@ export function useChatQuery() {
       return "No upcoming games with odds available right now.";
     }
     
-    const gameIds = games.map(g => g.id);
-    const { data: allOdds, error: oddsError } = await supabase
-      .from("odds")
-      .select("*")
-      .in("game_id", gameIds)
-      .ilike("sportsbook", "%draftkings%");
-    
-    if (oddsError) throw oddsError;
-    
+    const allOdds = await dkNflOdds(games.map(g => g.id));
+
     let response = "📊 Quick odds overview:\n\n";
     
     for (const game of games) {
@@ -809,16 +824,9 @@ export function useChatQuery() {
       return "No upcoming games to analyze right now.";
     }
     
-    const gameIds = games.map(g => g.id);
-    const { data: allOdds, error: oddsError } = await supabase
-      .from("odds")
-      .select("*")
-      .in("game_id", gameIds)
-      .ilike("sportsbook", "%draftkings%");
-    
-    if (oddsError) throw oddsError;
-    
-    if (!allOdds || allOdds.length === 0) {
+    const allOdds = await dkNflOdds(games.map(g => g.id));
+
+    if (allOdds.length === 0) {
       return "No odds data available to analyze right now.";
     }
     
@@ -901,16 +909,9 @@ export function useChatQuery() {
     const isHome = game.home_team_name.toLowerCase().includes(teamName.toLowerCase().split(" ").pop() || "");
     const opponent = isHome ? game.visitor_team_name : game.home_team_name;
     
-    // Get odds
-    const { data: odds, error: oddsError } = await supabase
-      .from("odds")
-      .select("*")
-      .eq("game_id", game.id)
-      .ilike("sportsbook", "%draftkings%")
-      .limit(1);
-    
-    if (oddsError) throw oddsError;
-    
+    // DraftKings' line, the same number the slate and Game Insights show
+    const odds = await dkNflOdds([game.id]);
+
     let response = `🏈 ${teamName.split(" ").pop()} vs ${opponent.split(" ").pop()}\n`;
     response += `📅 ${formatGameTime(game.date)}\n`;
     

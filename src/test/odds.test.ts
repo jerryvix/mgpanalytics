@@ -69,8 +69,16 @@ describe("impliedPair", () => {
 describe("probToAmerican", () => {
   it("round-trips with americanToImpliedProb", () => {
     for (const price of [-110, -200, -550, +100, +150, +200, +1400]) {
-      expect(probToAmerican(americanToImpliedProb(price)!)).toBe(price === +100 ? -100 : price);
+      expect(probToAmerican(americanToImpliedProb(price)!)).toBe(price);
     }
+  });
+
+  it("writes even money as +100, never -100", () => {
+    expect(probToAmerican(0.5)).toBe(100);
+    expect(probToAmerican(americanToImpliedProb(-100)!)).toBe(100);
+    // -105 and +105 average to a coin flip, give or take a float
+    expect(consensusAmerican([-105, +105])).toBe(100);
+    expect(consensusPriceMove([{ open: 100, current: -120 }])!.open).toBe(100);
   });
 
   it("never produces an illegal price inside ±100", () => {

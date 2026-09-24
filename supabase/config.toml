@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.daily-digest]
 verify_jwt = false
+
+[functions.sync-betting-splits]
+verify_jwt = false

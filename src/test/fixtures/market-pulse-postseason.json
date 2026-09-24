@@ -1,0 +1,3391 @@
+{
+ "note": "Market Pulse postseason regression slates (synthetic schedules): the worker's conference championship weekend, bowl week, NFL conference championships with the CFP title game and Super Bowl week; a CFP first-round weekend; and QC round 9's own slates (Dec 3, Dec 29, Jan 1, Jan 21, Feb 9, and Feb 3 with the Pro Bowl). A futures word (playoff, Super Bowl, CFP and its rounds, national championship, bowl, title game) gets a game only when the games tables hold that event in the window. NCAAF rows carry ESPN's venue and ranks, NFL rows BallDontLie's postseason flag and week. Checked by src/test/marketPulsePostseason.test.ts.",
+ "slates": [
+  {
+   "name": "Conference championship weekend (Thu Dec 3 2026)",
+   "now": "2026-12-03T17:00:00Z",
+   "games": [
+    {
+     "sport": "NCAAF",
+     "id": "cc-mac",
+     "start": "2026-12-05T00:00:00Z",
+     "away": "Toledo Rockets",
+     "home": "Miami (OH) RedHawks",
+     "dk": null,
+     "venue": "Ford Field"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "cc-big12",
+     "start": "2026-12-05T17:00:00Z",
+     "away": "Texas Tech Red Raiders",
+     "home": "BYU Cougars",
+     "dk": "Texas Tech @ BYU",
+     "venue": "AT&T Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "cc-sec",
+     "start": "2026-12-05T21:00:00Z",
+     "away": "Alabama Crimson Tide",
+     "home": "Georgia Bulldogs",
+     "dk": "Alabama @ Georgia",
+     "venue": "Mercedes-Benz Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "cc-b1g",
+     "start": "2026-12-06T01:00:00Z",
+     "away": "Oregon Ducks",
+     "home": "Ohio State Buckeyes",
+     "dk": "Oregon @ Ohio State",
+     "venue": "Lucas Oil Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "cc-acc",
+     "start": "2026-12-06T01:00:00Z",
+     "away": "Clemson Tigers",
+     "home": "Miami Hurricanes",
+     "dk": null,
+     "venue": "Bank of America Stadium"
+    },
+    {
+     "sport": "NCAAB",
+     "id": "mbb-1",
+     "start": "2026-12-06T19:00:00Z",
+     "away": "Alabama Crimson Tide",
+     "home": "Purdue Boilermakers",
+     "dk": null
+    },
+    {
+     "sport": "NCAAB",
+     "id": "mbb-2",
+     "start": "2026-12-05T23:00:00Z",
+     "away": "Georgia Tech Yellow Jackets",
+     "home": "Georgia Bulldogs",
+     "dk": null
+    },
+    {
+     "sport": "NFL",
+     "id": "5101",
+     "start": "2026-12-04T01:15:00Z",
+     "away": "Dallas Cowboys",
+     "home": "Detroit Lions",
+     "dk": "DAL Cowboys @ DET Lions",
+     "postseason": false,
+     "week": 14
+    },
+    {
+     "sport": "NFL",
+     "id": "5102",
+     "start": "2026-12-06T18:00:00Z",
+     "away": "Kansas City Chiefs",
+     "home": "Buffalo Bills",
+     "dk": "KC Chiefs @ BUF Bills",
+     "postseason": false,
+     "week": 14
+    },
+    {
+     "sport": "NFL",
+     "id": "5103",
+     "start": "2026-12-07T01:20:00Z",
+     "away": "Philadelphia Eagles",
+     "home": "San Francisco 49ers",
+     "dk": null,
+     "postseason": false,
+     "week": 14
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "SEC championship odds",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "SEC championship game public betting",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "SEC title game spread",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "Alabama Georgia SEC championship odds",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "Georgia SEC championship odds",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "who wins the SEC championship",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "Big Ten championship game sharp money",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Big Ten title game odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Ohio State Big Ten championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "ACC championship odds",
+     "chat": [
+      "Clemson Tigers @ Miami Hurricanes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": "Clemson Tigers @ Miami Hurricanes"
+    },
+    {
+     "q": "Big 12 championship spread",
+     "chat": [
+      "Texas Tech Red Raiders @ BYU Cougars (NCAAF, Sat 12:00 PM ET)"
+     ],
+     "app": "Texas Tech Red Raiders @ BYU Cougars"
+    },
+    {
+     "q": "MAC championship odds",
+     "chat": [
+      "Toledo Rockets @ Miami (OH) RedHawks (NCAAF, Fri 7:00 PM ET)"
+     ],
+     "app": "Toledo Rockets @ Miami (OH) RedHawks"
+    },
+    {
+     "q": "championship game odds",
+     "chat": [
+      "Toledo Rockets @ Miami (OH) RedHawks (NCAAF, Fri 7:00 PM ET)",
+      "Texas Tech Red Raiders @ BYU Cougars (NCAAF, Sat 12:00 PM ET)",
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)",
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)",
+      "Clemson Tigers @ Miami Hurricanes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "conference championship public betting",
+     "chat": [
+      "Toledo Rockets @ Miami (OH) RedHawks (NCAAF, Fri 7:00 PM ET)",
+      "Texas Tech Red Raiders @ BYU Cougars (NCAAF, Sat 12:00 PM ET)",
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)",
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)",
+      "Clemson Tigers @ Miami Hurricanes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Big Ten public betting Ohio State",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "SEC sharp money Alabama",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "Alabama odds",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "Ohio State odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Georgia Alabama spread",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "TNF odds",
+     "chat": [
+      "Dallas Cowboys @ Detroit Lions (NFL, Thu 8:15 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "sharp money Big Ten Ohio State",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Georgia SEC title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State Big Ten title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "SEC champion odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia to win the SEC",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Alabama national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Alabama playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "bowl game odds Alabama",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Chiefs Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Heisman odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia SEC",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Notre Dame championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "public betting on Alabama for the championship",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Chiefs division odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "public betting besides Alabama",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "SEC public betting excluding Alabama",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "Bowl week (Tue Dec 29 2026): a bowl, CFP games at the Cotton, Rose and Sugar Bowls",
+   "now": "2026-12-29T17:00:00Z",
+   "games": [
+    {
+     "sport": "NCAAF",
+     "id": "bowl-pin",
+     "start": "2026-12-29T19:15:00Z",
+     "away": "Syracuse Orange",
+     "home": "Nebraska Cornhuskers",
+     "dk": "Syracuse @ Nebraska",
+     "venue": "Yankee Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "bowl-mc",
+     "start": "2026-12-30T22:30:00Z",
+     "away": "Iowa Hawkeyes",
+     "home": "Missouri Tigers",
+     "dk": null,
+     "venue": "Nissan Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "cfp-cotton",
+     "start": "2027-01-01T00:30:00Z",
+     "away": "Texas Longhorns",
+     "home": "Ohio State Buckeyes",
+     "dk": "Texas @ Ohio State",
+     "venue": "AT&T Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "cfp-rose",
+     "start": "2027-01-01T22:00:00Z",
+     "away": "Georgia Bulldogs",
+     "home": "Oregon Ducks",
+     "dk": "Georgia @ Oregon",
+     "venue": "Rose Bowl"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "cfp-sugar",
+     "start": "2027-01-02T01:45:00Z",
+     "away": "Notre Dame Fighting Irish",
+     "home": "Alabama Crimson Tide",
+     "dk": null,
+     "venue": "Caesars Superdome"
+    },
+    {
+     "sport": "NFL",
+     "id": "5201",
+     "start": "2027-01-02T21:30:00Z",
+     "away": "Baltimore Ravens",
+     "home": "Pittsburgh Steelers",
+     "dk": "BAL Ravens @ PIT Steelers",
+     "postseason": false,
+     "week": 17
+    },
+    {
+     "sport": "NFL",
+     "id": "5202",
+     "start": "2027-01-03T18:00:00Z",
+     "away": "Buffalo Bills",
+     "home": "Miami Dolphins",
+     "dk": "BUF Bills @ MIA Dolphins",
+     "postseason": false,
+     "week": 17
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "Cotton Bowl odds",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)"
+     ],
+     "app": "Texas Longhorns @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Cotton Bowl public betting",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)"
+     ],
+     "app": "Texas Longhorns @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Rose Bowl spread",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)"
+     ],
+     "app": "Georgia Bulldogs @ Oregon Ducks"
+    },
+    {
+     "q": "who wins the Rose Bowl",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)"
+     ],
+     "app": "Georgia Bulldogs @ Oregon Ducks"
+    },
+    {
+     "q": "Sugar Bowl odds",
+     "chat": [
+      "Notre Dame Fighting Irish @ Alabama Crimson Tide (NCAAF, Fri 8:45 PM ET)"
+     ],
+     "app": "Notre Dame Fighting Irish @ Alabama Crimson Tide"
+    },
+    {
+     "q": "Texas Ohio State Cotton Bowl odds",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)"
+     ],
+     "app": "Texas Longhorns @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Ohio State Texas odds",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)"
+     ],
+     "app": "Texas Longhorns @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP semifinal odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff public betting",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)",
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Notre Dame Fighting Irish @ Alabama Crimson Tide (NCAAF, Fri 8:45 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)",
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Notre Dame Fighting Irish @ Alabama Crimson Tide (NCAAF, Fri 8:45 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Ohio State playoff odds",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)"
+     ],
+     "app": "Texas Longhorns @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Georgia playoff spread",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)"
+     ],
+     "app": "Georgia Bulldogs @ Oregon Ducks"
+    },
+    {
+     "q": "Nebraska bowl game spread",
+     "chat": [
+      "Syracuse Orange @ Nebraska Cornhuskers (NCAAF, Tue 2:15 PM ET)"
+     ],
+     "app": "Syracuse Orange @ Nebraska Cornhuskers"
+    },
+    {
+     "q": "Syracuse Pinstripe Bowl odds",
+     "chat": [
+      "Syracuse Orange @ Nebraska Cornhuskers (NCAAF, Tue 2:15 PM ET)"
+     ],
+     "app": "Syracuse Orange @ Nebraska Cornhuskers"
+    },
+    {
+     "q": "bowl games public betting",
+     "chat": [
+      "Syracuse Orange @ Nebraska Cornhuskers (NCAAF, Tue 2:15 PM ET)",
+      "Iowa Hawkeyes @ Missouri Tigers (NCAAF, Wed 5:30 PM ET)",
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)",
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Notre Dame Fighting Irish @ Alabama Crimson Tide (NCAAF, Fri 8:45 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "public betting tonight",
+     "chat": [
+      "Syracuse Orange @ Nebraska Cornhuskers (NCAAF, Tue 2:15 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Bills Dolphins odds",
+     "chat": [
+      "Buffalo Bills @ Miami Dolphins (NFL, Sun 1:00 PM ET)"
+     ],
+     "app": "Buffalo Bills @ Miami Dolphins"
+    },
+    {
+     "q": "Orange Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Pinstripe Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Syracuse playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia Sugar Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Alabama bowl record",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Rose Bowl",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia to make the playoff",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "first round CFP odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP quarterfinal odds",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)",
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Notre Dame Fighting Irish @ Alabama Crimson Tide (NCAAF, Fri 8:45 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "public betting Georgia CFP semifinal",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia Rose Bowl odds",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)"
+     ],
+     "app": "Georgia Bulldogs @ Oregon Ducks"
+    },
+    {
+     "q": "Texas CFP quarterfinal odds",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)"
+     ],
+     "app": "Texas Longhorns @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)",
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Notre Dame Fighting Irish @ Alabama Crimson Tide (NCAAF, Fri 8:45 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)",
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Notre Dame Fighting Irish @ Alabama Crimson Tide (NCAAF, Fri 8:45 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Yankee Stadium odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "AT&T Stadium public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Nebraska bowl odds",
+     "chat": [
+      "Syracuse Orange @ Nebraska Cornhuskers (NCAAF, Tue 2:15 PM ET)"
+     ],
+     "app": "Syracuse Orange @ Nebraska Cornhuskers"
+    },
+    {
+     "q": "Liberty Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State Texas odds besides Georgia and Oregon",
+     "chat": [
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Thu 7:30 PM ET)"
+     ],
+     "app": "Texas Longhorns @ Ohio State Buckeyes"
+    },
+    {
+     "q": "public betting on the Rose Bowl except Georgia",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "sharp money besides Ohio State, Texas and Georgia",
+     "chat": [],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "NFL conference championships and the CFP title game (Thu Jan 21 2027)",
+   "now": "2027-01-21T17:00:00Z",
+   "games": [
+    {
+     "sport": "NFL",
+     "id": "5301",
+     "start": "2027-01-24T20:00:00Z",
+     "away": "Buffalo Bills",
+     "home": "Kansas City Chiefs",
+     "dk": "BUF Bills @ KC Chiefs",
+     "postseason": true,
+     "week": 3
+    },
+    {
+     "sport": "NFL",
+     "id": "5302",
+     "start": "2027-01-24T23:30:00Z",
+     "away": "Detroit Lions",
+     "home": "Philadelphia Eagles",
+     "dk": "DET Lions @ PHI Eagles",
+     "postseason": true,
+     "week": 3
+    },
+    {
+     "sport": "NCAAF",
+     "id": "cfp-final",
+     "start": "2027-01-26T00:30:00Z",
+     "away": "Oregon Ducks",
+     "home": "Ohio State Buckeyes",
+     "dk": "Oregon @ Ohio State",
+     "venue": "Allegiant Stadium"
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "national championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "national title game public betting",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Ohio State national championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP championship spread",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "AFC championship odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)"
+     ],
+     "app": "Buffalo Bills @ Kansas City Chiefs"
+    },
+    {
+     "q": "NFC championship game public betting",
+     "chat": [
+      "Detroit Lions @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Philadelphia Eagles"
+    },
+    {
+     "q": "Chiefs AFC championship odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)"
+     ],
+     "app": "Buffalo Bills @ Kansas City Chiefs"
+    },
+    {
+     "q": "conference championship odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)",
+      "Detroit Lions @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "championship game odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)",
+      "Detroit Lions @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)",
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "NFL playoff odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)",
+      "Detroit Lions @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Ambiguous 'playoffs': ask whether they mean the NFL playoffs or the College Football Playoff. Ignore this line if the question is not about betting on an upcoming game."
+     ],
+     "app": null
+    },
+    {
+     "q": "Bills Chiefs odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)"
+     ],
+     "app": "Buffalo Bills @ Kansas City Chiefs"
+    },
+    {
+     "q": "Oregon Ohio State spread",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Georgia national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Eagles AFC championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Chiefs Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "NFC East odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State national championship game odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP semifinal odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Ambiguous 'playoffs': ask whether they mean the NFL playoffs or the College Football Playoff. Ignore this line if the question is not about betting on an upcoming game."
+     ],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Ambiguous 'playoffs': ask whether they mean the NFL playoffs or the College Football Playoff. Ignore this line if the question is not about betting on an upcoming game."
+     ],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "Super Bowl week (Tue Feb 9 2027)",
+   "now": "2027-02-09T17:00:00Z",
+   "games": [
+    {
+     "sport": "NFL",
+     "id": "5401",
+     "start": "2027-02-14T23:30:00Z",
+     "away": "Kansas City Chiefs",
+     "home": "Philadelphia Eagles",
+     "dk": "KC Chiefs @ PHI Eagles",
+     "postseason": true,
+     "week": 5
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "Super Bowl odds",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "Super Bowl public betting",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "sharp money Super Bowl",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "Super Bowl LXI spread",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "Chiefs Super Bowl odds",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "Eagles Super Bowl spread",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "who wins the Super Bowl",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "Chiefs Eagles odds",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "NFL playoff odds",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "public betting",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Bills Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl MVP odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Patrick Mahomes Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Kansas City Chiefs @ Philadelphia Eagles (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Philadelphia Eagles"
+    }
+   ]
+  },
+  {
+   "name": "CFP first round weekend (Thu Dec 17 2026)",
+   "now": "2026-12-17T17:00:00Z",
+   "games": [
+    {
+     "sport": "NCAAF",
+     "id": "cfp-r1-a",
+     "start": "2026-12-19T01:00:00Z",
+     "away": "Indiana Hoosiers",
+     "home": "Penn State Nittany Lions",
+     "dk": "Indiana @ Penn State",
+     "venue": "Beaver Stadium",
+     "homeRank": 7,
+     "awayRank": 10
+    },
+    {
+     "sport": "NCAAF",
+     "id": "cfp-r1-b",
+     "start": "2026-12-19T20:00:00Z",
+     "away": "SMU Mustangs",
+     "home": "Texas Longhorns",
+     "dk": "SMU @ Texas",
+     "venue": "Darrell K Royal-Texas Memorial Stadium",
+     "homeRank": 5,
+     "awayRank": 12
+    },
+    {
+     "sport": "NCAAF",
+     "id": "bowl-frisco",
+     "start": "2026-12-19T01:00:00Z",
+     "away": "Tulane Green Wave",
+     "home": "Liberty Flames",
+     "dk": "Tulane @ Liberty",
+     "venue": "Toyota Stadium",
+     "homeRank": null,
+     "awayRank": null
+    },
+    {
+     "sport": "NCAAF",
+     "id": "bowl-lv",
+     "start": "2026-12-20T00:30:00Z",
+     "away": "USC Trojans",
+     "home": "Utah Utes",
+     "dk": null,
+     "venue": "Allegiant Stadium",
+     "homeRank": 23,
+     "awayRank": null
+    },
+    {
+     "sport": "NFL",
+     "id": "5501",
+     "start": "2026-12-20T18:00:00Z",
+     "away": "Kansas City Chiefs",
+     "home": "Denver Broncos",
+     "dk": "KC Chiefs @ DEN Broncos",
+     "postseason": false,
+     "week": 16
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "first round CFP odds",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)",
+      "SMU Mustangs @ Texas Longhorns (NCAAF, Sat 3:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "CFP first round public betting",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)",
+      "SMU Mustangs @ Texas Longhorns (NCAAF, Sat 3:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "CFP odds",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)",
+      "SMU Mustangs @ Texas Longhorns (NCAAF, Sat 3:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "college football playoff odds",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)",
+      "SMU Mustangs @ Texas Longhorns (NCAAF, Sat 3:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Penn State playoff odds",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Penn State Nittany Lions"
+    },
+    {
+     "q": "Texas CFP odds",
+     "chat": [
+      "SMU Mustangs @ Texas Longhorns (NCAAF, Sat 3:00 PM ET)"
+     ],
+     "app": "SMU Mustangs @ Texas Longhorns"
+    },
+    {
+     "q": "Indiana Penn State odds",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Penn State Nittany Lions"
+    },
+    {
+     "q": "bowl games public betting",
+     "chat": [
+      "Tulane Green Wave @ Liberty Flames (NCAAF, Fri 8:00 PM ET)",
+      "USC Trojans @ Utah Utes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Tulane bowl odds",
+     "chat": [
+      "Tulane Green Wave @ Liberty Flames (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": "Tulane Green Wave @ Liberty Flames"
+    },
+    {
+     "q": "Utah bowl game spread",
+     "chat": [
+      "USC Trojans @ Utah Utes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": "USC Trojans @ Utah Utes"
+    },
+    {
+     "q": "Utah playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Tulane playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP quarterfinal odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP semifinal odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Rose Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Chiefs Broncos odds",
+     "chat": [
+      "Kansas City Chiefs @ Denver Broncos (NFL, Sun 1:00 PM ET)"
+     ],
+     "app": "Kansas City Chiefs @ Denver Broncos"
+    },
+    {
+     "q": "public betting this weekend",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)",
+      "Tulane Green Wave @ Liberty Flames (NCAAF, Fri 8:00 PM ET)",
+      "SMU Mustangs @ Texas Longhorns (NCAAF, Sat 3:00 PM ET)",
+      "Kansas City Chiefs @ Denver Broncos (NFL, Sun 1:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)",
+      "SMU Mustangs @ Texas Longhorns (NCAAF, Sat 3:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)",
+      "SMU Mustangs @ Texas Longhorns (NCAAF, Sat 3:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Indiana Hoosiers @ Penn State Nittany Lions (NCAAF, Fri 8:00 PM ET)",
+      "SMU Mustangs @ Texas Longhorns (NCAAF, Sat 3:00 PM ET)"
+     ],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "QC r9 conference championship week (Thu Dec 3 2026)",
+   "now": "2026-12-03T17:00:00Z",
+   "games": [
+    {
+     "sport": "NCAAF",
+     "id": "qc-1",
+     "start": "2026-12-05T00:00:00Z",
+     "away": "San Diego State Aztecs",
+     "home": "Boise State Broncos",
+     "dk": null,
+     "venue": "Albertsons Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-2",
+     "start": "2026-12-05T01:00:00Z",
+     "away": "Jacksonville State Gamecocks",
+     "home": "Liberty Flames",
+     "dk": null,
+     "venue": "Williams Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-3",
+     "start": "2026-12-05T17:00:00Z",
+     "away": "Utah Utes",
+     "home": "Texas Tech Red Raiders",
+     "dk": "Utah Utes @ Texas Tech Red Raiders",
+     "venue": "AT&T Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-4",
+     "start": "2026-12-05T17:00:00Z",
+     "away": "Ohio Bobcats",
+     "home": "Toledo Rockets",
+     "dk": null,
+     "venue": "Ford Field"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-5",
+     "start": "2026-12-05T20:30:00Z",
+     "away": "Louisiana Ragin' Cajuns",
+     "home": "James Madison Dukes",
+     "dk": null,
+     "venue": "Bridgeforth Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-6",
+     "start": "2026-12-05T21:00:00Z",
+     "away": "Alabama Crimson Tide",
+     "home": "Georgia Bulldogs",
+     "dk": "Alabama Crimson Tide @ Georgia Bulldogs",
+     "venue": "Mercedes-Benz Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-7",
+     "start": "2026-12-05T21:00:00Z",
+     "away": "Tulane Green Wave",
+     "home": "Army Black Knights",
+     "dk": null,
+     "venue": "Michie Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-8",
+     "start": "2026-12-06T00:00:00Z",
+     "away": "Hawai'i Rainbow Warriors",
+     "home": "UNLV Rebels",
+     "dk": null,
+     "venue": "Allegiant Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-9",
+     "start": "2026-12-06T01:00:00Z",
+     "away": "Oregon Ducks",
+     "home": "Ohio State Buckeyes",
+     "dk": "Oregon Ducks @ Ohio State Buckeyes",
+     "venue": "Lucas Oil Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-10",
+     "start": "2026-12-06T01:00:00Z",
+     "away": "Miami Hurricanes",
+     "home": "Clemson Tigers",
+     "dk": null,
+     "venue": "Bank of America Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-11",
+     "start": "2026-12-05T17:00:00Z",
+     "away": "Stanford Cardinal",
+     "home": "Notre Dame Fighting Irish",
+     "dk": null,
+     "venue": "Notre Dame Stadium"
+    },
+    {
+     "sport": "NFL",
+     "id": "900012",
+     "start": "2026-12-04T01:15:00Z",
+     "away": "Dallas Cowboys",
+     "home": "Detroit Lions",
+     "dk": "Dallas Cowboys @ Detroit Lions",
+     "postseason": false,
+     "week": 14
+    },
+    {
+     "sport": "NFL",
+     "id": "900013",
+     "start": "2026-12-06T18:00:00Z",
+     "away": "Kansas City Chiefs",
+     "home": "Buffalo Bills",
+     "dk": "Kansas City Chiefs @ Buffalo Bills",
+     "postseason": false,
+     "week": 14
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "SEC championship odds",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "SEC title game spread",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "who wins the SEC championship",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "Big Ten championship public betting",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "ACC championship game odds",
+     "chat": [
+      "Miami Hurricanes @ Clemson Tigers (NCAAF, Sat 8:00 PM ET)"
+     ],
+     "app": "Miami Hurricanes @ Clemson Tigers"
+    },
+    {
+     "q": "MAC championship odds",
+     "chat": [
+      "Ohio Bobcats @ Toledo Rockets (NCAAF, Sat 12:00 PM ET)"
+     ],
+     "app": "Ohio Bobcats @ Toledo Rockets"
+    },
+    {
+     "q": "Sun Belt title game spread",
+     "chat": [
+      "Louisiana Ragin' Cajuns @ James Madison Dukes (NCAAF, Sat 3:30 PM ET)"
+     ],
+     "app": "Louisiana Ragin' Cajuns @ James Madison Dukes"
+    },
+    {
+     "q": "Pac-12 championship odds",
+     "chat": [
+      "San Diego State Aztecs @ Boise State Broncos (NCAAF, Fri 7:00 PM ET)"
+     ],
+     "app": "San Diego State Aztecs @ Boise State Broncos"
+    },
+    {
+     "q": "conference championship odds",
+     "chat": [
+      "San Diego State Aztecs @ Boise State Broncos (NCAAF, Fri 7:00 PM ET)",
+      "Jacksonville State Gamecocks @ Liberty Flames (NCAAF, Fri 8:00 PM ET)",
+      "Utah Utes @ Texas Tech Red Raiders (NCAAF, Sat 12:00 PM ET)",
+      "Ohio Bobcats @ Toledo Rockets (NCAAF, Sat 12:00 PM ET)",
+      "Louisiana Ragin' Cajuns @ James Madison Dukes (NCAAF, Sat 3:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "championship game odds",
+     "chat": [
+      "San Diego State Aztecs @ Boise State Broncos (NCAAF, Fri 7:00 PM ET)",
+      "Jacksonville State Gamecocks @ Liberty Flames (NCAAF, Fri 8:00 PM ET)",
+      "Utah Utes @ Texas Tech Red Raiders (NCAAF, Sat 12:00 PM ET)",
+      "Ohio Bobcats @ Toledo Rockets (NCAAF, Sat 12:00 PM ET)",
+      "Louisiana Ragin' Cajuns @ James Madison Dukes (NCAAF, Sat 3:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Georgia SEC championship odds",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "Georgia SEC title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Alabama odds",
+     "chat": [
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Alabama Crimson Tide @ Georgia Bulldogs"
+    },
+    {
+     "q": "Ohio odds",
+     "chat": [
+      "Ohio Bobcats @ Toledo Rockets (NCAAF, Sat 12:00 PM ET)"
+     ],
+     "app": "Ohio Bobcats @ Toledo Rockets"
+    },
+    {
+     "q": "Notre Dame odds",
+     "chat": [
+      "Stanford Cardinal @ Notre Dame Fighting Irish (NCAAF, Sat 12:00 PM ET)"
+     ],
+     "app": "Stanford Cardinal @ Notre Dame Fighting Irish"
+    },
+    {
+     "q": "Notre Dame championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "bowl game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "AFC championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Cowboys Lions odds",
+     "chat": [
+      "Dallas Cowboys @ Detroit Lions (NFL, Thu 8:15 PM ET)"
+     ],
+     "app": "Dallas Cowboys @ Detroit Lions"
+    },
+    {
+     "q": "Army Navy odds",
+     "chat": [
+      "Tulane Green Wave @ Army Black Knights (NCAAF, Sat 4:00 PM ET)"
+     ],
+     "app": "Tulane Green Wave @ Army Black Knights"
+    },
+    {
+     "q": "Rose Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "public betting this weekend",
+     "chat": [
+      "Utah Utes @ Texas Tech Red Raiders (NCAAF, Sat 12:00 PM ET)",
+      "Alabama Crimson Tide @ Georgia Bulldogs (NCAAF, Sat 4:00 PM ET)",
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 8:00 PM ET)",
+      "Kansas City Chiefs @ Buffalo Bills (NFL, Sun 1:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "TNF public betting",
+     "chat": [
+      "Dallas Cowboys @ Detroit Lions (NFL, Thu 8:15 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "QC r9 bowl week (Tue Dec 29 2026)",
+   "now": "2026-12-29T17:00:00Z",
+   "games": [
+    {
+     "sport": "NCAAF",
+     "id": "qc-14",
+     "start": "2026-12-30T02:00:00Z",
+     "away": "Missouri Tigers",
+     "home": "Texas Tech Red Raiders",
+     "dk": null,
+     "venue": "Alamodome"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-15",
+     "start": "2026-12-31T00:30:00Z",
+     "away": "Iowa Hawkeyes",
+     "home": "Kentucky Wildcats",
+     "dk": null,
+     "venue": "Nissan Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-16",
+     "start": "2026-12-31T17:00:00Z",
+     "away": "Miami Hurricanes",
+     "home": "Ohio State Buckeyes",
+     "dk": "Miami Hurricanes @ Ohio State Buckeyes",
+     "venue": "AT&T Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-17",
+     "start": "2027-01-01T00:30:00Z",
+     "away": "Oregon Ducks",
+     "home": "Texas Longhorns",
+     "dk": null,
+     "venue": "Hard Rock Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-18",
+     "start": "2027-01-01T18:00:00Z",
+     "away": "Michigan Wolverines",
+     "home": "Alabama Crimson Tide",
+     "dk": "Michigan Wolverines @ Alabama Crimson Tide",
+     "venue": "Camping World Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-19",
+     "start": "2027-01-01T21:00:00Z",
+     "away": "Indiana Hoosiers",
+     "home": "Georgia Bulldogs",
+     "dk": "Indiana Hoosiers @ Georgia Bulldogs",
+     "venue": "Rose Bowl"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-20",
+     "start": "2027-01-02T01:00:00Z",
+     "away": "Ole Miss Rebels",
+     "home": "Notre Dame Fighting Irish",
+     "dk": "Ole Miss Rebels @ Notre Dame Fighting Irish",
+     "venue": "Caesars Superdome"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-21",
+     "start": "2027-01-02T20:00:00Z",
+     "away": "Penn State Nittany Lions",
+     "home": "Clemson Tigers",
+     "dk": null,
+     "venue": "EverBank Stadium"
+    },
+    {
+     "sport": "NFL",
+     "id": "900022",
+     "start": "2027-01-03T18:00:00Z",
+     "away": "Miami Dolphins",
+     "home": "New England Patriots",
+     "dk": "Miami Dolphins @ New England Patriots",
+     "postseason": false,
+     "week": 17
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "Rose Bowl odds",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Georgia Bulldogs"
+    },
+    {
+     "q": "Sugar Bowl public betting",
+     "chat": [
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": "Ole Miss Rebels @ Notre Dame Fighting Irish"
+    },
+    {
+     "q": "Orange Bowl spread",
+     "chat": [
+      "Oregon Ducks @ Texas Longhorns (NCAAF, Thu 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Texas Longhorns"
+    },
+    {
+     "q": "Cotton Bowl sharp money",
+     "chat": [
+      "Miami Hurricanes @ Ohio State Buckeyes (NCAAF, Thu 12:00 PM ET)"
+     ],
+     "app": "Miami Hurricanes @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Peach Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Fiesta Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Citrus Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Alabama Citrus Bowl odds",
+     "chat": [
+      "Michigan Wolverines @ Alabama Crimson Tide (NCAAF, Fri 1:00 PM ET)"
+     ],
+     "app": "Michigan Wolverines @ Alabama Crimson Tide"
+    },
+    {
+     "q": "Alabama bowl game odds",
+     "chat": [
+      "Michigan Wolverines @ Alabama Crimson Tide (NCAAF, Fri 1:00 PM ET)"
+     ],
+     "app": "Michigan Wolverines @ Alabama Crimson Tide"
+    },
+    {
+     "q": "bowl games public betting",
+     "chat": [
+      "Missouri Tigers @ Texas Tech Red Raiders (NCAAF, Tue 9:00 PM ET)",
+      "Iowa Hawkeyes @ Kentucky Wildcats (NCAAF, Wed 7:30 PM ET)",
+      "Miami Hurricanes @ Ohio State Buckeyes (NCAAF, Thu 12:00 PM ET)",
+      "Oregon Ducks @ Texas Longhorns (NCAAF, Thu 7:30 PM ET)",
+      "Michigan Wolverines @ Alabama Crimson Tide (NCAAF, Fri 1:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "CFP odds",
+     "chat": [
+      "Miami Hurricanes @ Ohio State Buckeyes (NCAAF, Thu 12:00 PM ET)",
+      "Oregon Ducks @ Texas Longhorns (NCAAF, Thu 7:30 PM ET)",
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "college football playoff public betting",
+     "chat": [
+      "Miami Hurricanes @ Ohio State Buckeyes (NCAAF, Thu 12:00 PM ET)",
+      "Oregon Ducks @ Texas Longhorns (NCAAF, Thu 7:30 PM ET)",
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Miami Hurricanes @ Ohio State Buckeyes (NCAAF, Thu 12:00 PM ET)",
+      "Oregon Ducks @ Texas Longhorns (NCAAF, Thu 7:30 PM ET)",
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Georgia playoff odds",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Georgia Bulldogs"
+    },
+    {
+     "q": "Ohio State CFP odds",
+     "chat": [
+      "Miami Hurricanes @ Ohio State Buckeyes (NCAAF, Thu 12:00 PM ET)"
+     ],
+     "app": "Miami Hurricanes @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Kentucky playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Kentucky bowl odds",
+     "chat": [
+      "Iowa Hawkeyes @ Kentucky Wildcats (NCAAF, Wed 7:30 PM ET)"
+     ],
+     "app": "Iowa Hawkeyes @ Kentucky Wildcats"
+    },
+    {
+     "q": "CFP quarterfinal odds",
+     "chat": [
+      "Miami Hurricanes @ Ohio State Buckeyes (NCAAF, Thu 12:00 PM ET)",
+      "Oregon Ducks @ Texas Longhorns (NCAAF, Thu 7:30 PM ET)",
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "CFP semifinal odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "first round CFP odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Syracuse Orange odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia Rose Bowl odds",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Georgia Bulldogs"
+    },
+    {
+     "q": "Indiana Georgia odds",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Georgia Bulldogs"
+    },
+    {
+     "q": "Patriots odds",
+     "chat": [
+      "Miami Dolphins @ New England Patriots (NFL, Sun 1:00 PM ET)"
+     ],
+     "app": "Miami Dolphins @ New England Patriots"
+    },
+    {
+     "q": "NFL playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "public betting Georgia CFP semifinal",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Miami Hurricanes @ Ohio State Buckeyes (NCAAF, Thu 12:00 PM ET)",
+      "Oregon Ducks @ Texas Longhorns (NCAAF, Thu 7:30 PM ET)",
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Miami Hurricanes @ Ohio State Buckeyes (NCAAF, Thu 12:00 PM ET)",
+      "Oregon Ducks @ Texas Longhorns (NCAAF, Thu 7:30 PM ET)",
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "QC r9 CFP quarterfinals and semifinals (Fri Jan 1 2027)",
+   "now": "2027-01-01T12:00:00Z",
+   "games": [
+    {
+     "sport": "NCAAF",
+     "id": "qc-23",
+     "start": "2027-01-01T21:00:00Z",
+     "away": "Indiana Hoosiers",
+     "home": "Georgia Bulldogs",
+     "dk": "Indiana Hoosiers @ Georgia Bulldogs",
+     "venue": "Rose Bowl"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-24",
+     "start": "2027-01-02T01:00:00Z",
+     "away": "Ole Miss Rebels",
+     "home": "Notre Dame Fighting Irish",
+     "dk": "Ole Miss Rebels @ Notre Dame Fighting Irish",
+     "venue": "Caesars Superdome"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-25",
+     "start": "2027-01-09T00:30:00Z",
+     "away": "Ohio State Buckeyes",
+     "home": "Texas Longhorns",
+     "dk": "Ohio State Buckeyes @ Texas Longhorns",
+     "venue": "State Farm Stadium"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-26",
+     "start": "2027-01-10T00:30:00Z",
+     "away": "Oregon Ducks",
+     "home": "Miami Hurricanes",
+     "dk": "Oregon Ducks @ Miami Hurricanes",
+     "venue": "Mercedes-Benz Stadium"
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "CFP semifinal odds",
+     "chat": [
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)",
+      "Oregon Ducks @ Miami Hurricanes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "CFP semifinals public betting",
+     "chat": [
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)",
+      "Oregon Ducks @ Miami Hurricanes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "CFP quarterfinal odds",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Rose Bowl odds",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Georgia Bulldogs"
+    },
+    {
+     "q": "Fiesta Bowl odds",
+     "chat": [
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Texas Longhorns"
+    },
+    {
+     "q": "Peach Bowl public betting",
+     "chat": [
+      "Oregon Ducks @ Miami Hurricanes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Miami Hurricanes"
+    },
+    {
+     "q": "Georgia CFP semifinal odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "public betting Georgia CFP semifinal",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State semifinal odds",
+     "chat": [
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Texas Longhorns"
+    },
+    {
+     "q": "Texas Fiesta Bowl odds",
+     "chat": [
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Texas Longhorns"
+    },
+    {
+     "q": "college football playoff odds",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)",
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)",
+      "Oregon Ducks @ Miami Hurricanes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "bowl games public betting",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)",
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)",
+      "Oregon Ducks @ Miami Hurricanes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "first round CFP odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)",
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)",
+      "Oregon Ducks @ Miami Hurricanes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)",
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)",
+      "Oregon Ducks @ Miami Hurricanes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Indiana Hoosiers @ Georgia Bulldogs (NCAAF, Fri 4:00 PM ET)",
+      "Ole Miss Rebels @ Notre Dame Fighting Irish (NCAAF, Fri 8:00 PM ET)",
+      "Ohio State Buckeyes @ Texas Longhorns (NCAAF, Fri 7:30 PM ET)",
+      "Oregon Ducks @ Miami Hurricanes (NCAAF, Sat 7:30 PM ET)"
+     ],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "QC r9 championship week (Thu Jan 21 2027)",
+   "now": "2027-01-21T17:00:00Z",
+   "games": [
+    {
+     "sport": "NFL",
+     "id": "900027",
+     "start": "2027-01-24T20:00:00Z",
+     "away": "Buffalo Bills",
+     "home": "Kansas City Chiefs",
+     "dk": "Buffalo Bills @ Kansas City Chiefs",
+     "postseason": true,
+     "week": 3
+    },
+    {
+     "sport": "NFL",
+     "id": "900028",
+     "start": "2027-01-24T23:30:00Z",
+     "away": "Philadelphia Eagles",
+     "home": "Detroit Lions",
+     "dk": "Philadelphia Eagles @ Detroit Lions",
+     "postseason": true,
+     "week": 3
+    },
+    {
+     "sport": "NCAAF",
+     "id": "qc-29",
+     "start": "2027-01-26T00:30:00Z",
+     "away": "Ohio State Buckeyes",
+     "home": "Georgia Bulldogs",
+     "dk": "Ohio State Buckeyes @ Georgia Bulldogs",
+     "venue": "Allegiant Stadium"
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "national championship odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "CFP title game public betting",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "natty odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "AFC championship odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)"
+     ],
+     "app": "Buffalo Bills @ Kansas City Chiefs"
+    },
+    {
+     "q": "NFC championship sharp money",
+     "chat": [
+      "Philadelphia Eagles @ Detroit Lions (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Philadelphia Eagles @ Detroit Lions"
+    },
+    {
+     "q": "conference championship public betting",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)",
+      "Philadelphia Eagles @ Detroit Lions (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "championship game odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)",
+      "Philadelphia Eagles @ Detroit Lions (NFL, Sun 6:30 PM ET)",
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Chiefs AFC title game odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)"
+     ],
+     "app": "Buffalo Bills @ Kansas City Chiefs"
+    },
+    {
+     "q": "Chiefs to win the AFC odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Ambiguous 'playoffs': ask whether they mean the NFL playoffs or the College Football Playoff. Ignore this line if the question is not about betting on an upcoming game."
+     ],
+     "app": null
+    },
+    {
+     "q": "NFL playoff public betting",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)",
+      "Philadelphia Eagles @ Detroit Lions (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia national championship odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "Rose Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "divisional round odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "wild card odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Bills Chiefs odds",
+     "chat": [
+      "Buffalo Bills @ Kansas City Chiefs (NFL, Sun 3:00 PM ET)"
+     ],
+     "app": "Buffalo Bills @ Kansas City Chiefs"
+    },
+    {
+     "q": "Eagles Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [
+      "Ohio State Buckeyes @ Georgia Bulldogs (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Ohio State Buckeyes @ Georgia Bulldogs"
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Ambiguous 'playoffs': ask whether they mean the NFL playoffs or the College Football Playoff. Ignore this line if the question is not about betting on an upcoming game."
+     ],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Ambiguous 'playoffs': ask whether they mean the NFL playoffs or the College Football Playoff. Ignore this line if the question is not about betting on an upcoming game."
+     ],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "QC r9 Super Bowl week (Tue Feb 9 2027)",
+   "now": "2027-02-09T17:00:00Z",
+   "games": [
+    {
+     "sport": "NFL",
+     "id": "900030",
+     "start": "2027-02-14T23:30:00Z",
+     "away": "Detroit Lions",
+     "home": "Kansas City Chiefs",
+     "dk": "Detroit Lions @ Kansas City Chiefs",
+     "postseason": true,
+     "week": 5
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "Super Bowl odds",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "Super Bowl public betting",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "Super Bowl LXI spread",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "who wins the Super Bowl",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "Chiefs Super Bowl odds",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "Lions odds",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "Eagles Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl MVP odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl coin toss odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "public betting Super Bowl props",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "Pro Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    }
+   ]
+  },
+  {
+   "name": "QC r9 Pro Bowl only (Wed Feb 3 2027)",
+   "now": "2027-02-03T17:00:00Z",
+   "games": [
+    {
+     "sport": "NFL",
+     "id": "900031",
+     "start": "2027-02-07T20:00:00Z",
+     "away": "AFC",
+     "home": "NFC",
+     "dk": null,
+     "postseason": true,
+     "week": 4
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Super Bowl public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "who wins the Super Bowl",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Pro Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "NFL playoff odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "QC r9 Pro Bowl and Super Bowl (Wed Feb 3 2027)",
+   "now": "2027-02-03T17:00:00Z",
+   "games": [
+    {
+     "sport": "NFL",
+     "id": "900032",
+     "start": "2027-02-07T20:00:00Z",
+     "away": "AFC",
+     "home": "NFC",
+     "dk": null,
+     "postseason": true,
+     "week": 4
+    },
+    {
+     "sport": "NFL",
+     "id": "900033",
+     "start": "2027-02-14T23:30:00Z",
+     "away": "Detroit Lions",
+     "home": "Kansas City Chiefs",
+     "dk": null,
+     "postseason": true,
+     "week": 5
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "Super Bowl odds",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "Super Bowl public betting",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "who wins the Super Bowl",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "Pro Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Detroit Lions @ Kansas City Chiefs (NFL, Sun 6:30 PM ET)"
+     ],
+     "app": "Detroit Lions @ Kansas City Chiefs"
+    }
+   ]
+  },
+  {
+   "name": "Title game at Hard Rock (Thu Jan 15 2026)",
+   "now": "2026-01-15T17:00:00Z",
+   "games": [
+    {
+     "sport": "NCAAF",
+     "id": "cfp-final-hr",
+     "start": "2026-01-20T00:30:00Z",
+     "away": "Indiana Hoosiers",
+     "home": "Miami Hurricanes",
+     "dk": "Indiana @ Miami FL",
+     "venue": "Hard Rock Stadium"
+    },
+    {
+     "sport": "NFL",
+     "id": "6101",
+     "start": "2026-01-17T21:30:00Z",
+     "away": "Buffalo Bills",
+     "home": "Denver Broncos",
+     "dk": "BUF Bills @ DEN Broncos",
+     "postseason": true,
+     "week": 2
+    },
+    {
+     "sport": "NFL",
+     "id": "6102",
+     "start": "2026-01-18T20:00:00Z",
+     "away": "Houston Texans",
+     "home": "New England Patriots",
+     "dk": "HOU Texans @ NE Patriots",
+     "postseason": true,
+     "week": 2
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "national championship odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "Orange Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP semifinal odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP quarterfinal odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "college football playoff odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "Indiana Miami odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "Miami national championship odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "Indiana national title odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "NFL playoff odds",
+     "chat": [
+      "Buffalo Bills @ Denver Broncos (NFL, Sat 4:30 PM ET)",
+      "Houston Texans @ New England Patriots (NFL, Sun 3:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "divisional round odds",
+     "chat": [
+      "Buffalo Bills @ Denver Broncos (NFL, Sat 4:30 PM ET)",
+      "Houston Texans @ New England Patriots (NFL, Sun 3:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Bills Broncos spread",
+     "chat": [
+      "Buffalo Bills @ Denver Broncos (NFL, Sat 4:30 PM ET)"
+     ],
+     "app": "Buffalo Bills @ Denver Broncos"
+    },
+    {
+     "q": "Texans Patriots public betting",
+     "chat": [
+      "Houston Texans @ New England Patriots (NFL, Sun 3:00 PM ET)"
+     ],
+     "app": "Houston Texans @ New England Patriots"
+    },
+    {
+     "q": "Super Bowl odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [
+      "Indiana Hoosiers @ Miami Hurricanes (NCAAF, Mon 7:30 PM ET)"
+     ],
+     "app": "Indiana Hoosiers @ Miami Hurricanes"
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Ambiguous 'playoffs': ask whether they mean the NFL playoffs or the College Football Playoff. Ignore this line if the question is not about betting on an upcoming game."
+     ],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Ambiguous 'playoffs': ask whether they mean the NFL playoffs or the College Football Playoff. Ignore this line if the question is not about betting on an upcoming game."
+     ],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Ambiguous 'playoffs': ask whether they mean the NFL playoffs or the College Football Playoff. Ignore this line if the question is not about betting on an upcoming game."
+     ],
+     "app": null
+    }
+   ]
+  },
+  {
+   "name": "Early title game (Fri Jan 1 2027, a week after the semifinals)",
+   "now": "2027-01-01T20:00:00Z",
+   "games": [
+    {
+     "sport": "NCAAF",
+     "id": "semi-rose",
+     "start": "2027-01-01T22:00:00Z",
+     "away": "Georgia Bulldogs",
+     "home": "Oregon Ducks",
+     "dk": "Georgia @ Oregon",
+     "venue": "Rose Bowl"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "semi-sugar",
+     "start": "2027-01-02T01:45:00Z",
+     "away": "Texas Longhorns",
+     "home": "Ohio State Buckeyes",
+     "dk": "Texas @ Ohio State",
+     "venue": "Caesars Superdome"
+    },
+    {
+     "sport": "NCAAF",
+     "id": "final-early",
+     "start": "2027-01-09T18:00:00Z",
+     "away": "Oregon Ducks",
+     "home": "Ohio State Buckeyes",
+     "dk": null,
+     "venue": "Lucas Oil Stadium"
+    }
+   ],
+   "players": [
+    "Patrick Mahomes",
+    "Jalen Hurts",
+    "Josh Allen",
+    "Jared Goff",
+    "Arch Manning"
+   ],
+   "phrasings": [
+    {
+     "q": "national championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Rose Bowl odds",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)"
+     ],
+     "app": "Georgia Bulldogs @ Oregon Ducks"
+    },
+    {
+     "q": "CFP quarterfinal odds",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Fri 8:45 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "college football playoff odds",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Fri 8:45 PM ET)",
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "Oregon Ohio State odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP national championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "college football playoff title game odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP final public betting",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP title odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "CFP natty odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "Georgia CFP championship odds",
+     "chat": [],
+     "app": null
+    },
+    {
+     "q": "Ohio State CFP championship odds",
+     "chat": [
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": "Oregon Ducks @ Ohio State Buckeyes"
+    },
+    {
+     "q": "playoff odds",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Fri 8:45 PM ET)",
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "playoff public betting",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Fri 8:45 PM ET)",
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": null
+    },
+    {
+     "q": "who is the public on in the playoffs",
+     "chat": [
+      "Georgia Bulldogs @ Oregon Ducks (NCAAF, Fri 5:00 PM ET)",
+      "Texas Longhorns @ Ohio State Buckeyes (NCAAF, Fri 8:45 PM ET)",
+      "Oregon Ducks @ Ohio State Buckeyes (NCAAF, Sat 1:00 PM ET)"
+     ],
+     "app": null
+    }
+   ]
+  }
+ ]
+}

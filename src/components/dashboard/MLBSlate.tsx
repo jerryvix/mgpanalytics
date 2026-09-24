@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,10 @@ import { LiveBadge } from "@/components/ui/LiveBadge";
 import { FollowButton } from "@/components/ui/FollowButton";
 import { GameInsightsSheet } from "@/components/games/GameInsightsSheet";
 import { useLiveScores } from "@/hooks/useLiveScores";
+import { useMlbProbables } from "@/hooks/useMlbProbables";
 import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
+import { findMatchupForGame } from "@/services/mlb/probablePitchers";
+import { ProbablePitcherRow } from "@/components/mlb/ProbablePitcher";
 
 interface Game {
   id: string;
@@ -48,54 +51,92 @@ export function MLBSlate() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
   const live = useLiveScores("MLB");
+  // Official probables with season + last-3-start lines, from MLB directly
+  const { data: probables } = useMlbProbables();
+  // The synced names only stand in while MLB's data is missing (loading or
+  // unreachable); once it loads, an unannounced, unresolvable starter is TBD.
+  const pitcherFallback = !probables;
+
+  // "No upcoming games" is only true after a read that worked: a failed first
+  // read shows an error with Retry, and while offline the slate says it is
+  // waiting. Once a slate has loaded, a failed refresh keeps it on screen with
+  // a small note instead of replacing it.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [refreshFailed, setRefreshFailed] = useState(false);
+  const [oddsFailed, setOddsFailed] = useState(false);
+  const [offline, setOffline] = useState(typeof navigator !== "undefined" && navigator.onLine === false);
+  const hasSlate = useRef(false);
 
   useEffect(() => {
     fetchGames();
+    // Load again the moment the connection comes back
+    const onOnline = () => {
+      setOffline(false);
+      fetchGames();
+    };
+    const onOffline = () => setOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
   }, []);
 
   const fetchGames = async () => {
-    setLoading(true);
+    // Skeleton only before the first good read; a refresh keeps the slate up
+    if (!hasSlate.current) {
+      setLoading(true);
+      setLoadFailed(false);
+    }
     // Reach back 5h so games currently in progress stay on the slate
     const windowStart = new Date(Date.now() - 5 * 60 * 60 * 1000);
     const in48Hours = new Date(Date.now() + 48 * 60 * 60 * 1000);
 
-    const { data: gamesData, error: gamesError } = await supabase
-      .from("mlb_games")
-      .select("*")
-      .gte("date", windowStart.toISOString())
-      .lte("date", in48Hours.toISOString())
-      .order("date", { ascending: true });
-
-    if (gamesError) {
-      console.error("Error fetching MLB games:", gamesError);
-      setLoading(false);
-      return;
-    }
-
-    const upcomingGames = (gamesData || []).filter((game) => !isFinalStatus(game.status));
-    setGames(upcomingGames as unknown as Game[]);
-
-    // DraftKings odds for the slate cards
-    const gameIds = upcomingGames.map((g) => g.id);
-    if (gameIds.length > 0) {
-      const { data: oddsData, error: oddsError } = await supabase
-        .from("mlb_odds")
+    try {
+      const { data: gamesData, error: gamesError } = await supabase
+        .from("mlb_games")
         .select("*")
-        .in("game_id", gameIds)
-        .ilike("sportsbook", "%draftkings%");
+        .gte("date", windowStart.toISOString())
+        .lte("date", in48Hours.toISOString())
+        .order("date", { ascending: true });
 
-      if (oddsError) {
-        console.error("Error fetching DraftKings odds:", oddsError);
-      } else {
-        const oddsMap: GameOddsMap = {};
-        (oddsData || []).forEach((odd) => {
-          oddsMap[odd.game_id] = odd;
-        });
-        setGameOddsMap(oddsMap);
+      if (gamesError) throw new Error(gamesError.message);
+
+      const upcomingGames = (gamesData || []).filter((game) => !isFinalStatus(game.status));
+      setGames(upcomingGames as unknown as Game[]);
+      hasSlate.current = true;
+      setLoadFailed(false);
+      setRefreshFailed(false);
+
+      // DraftKings odds for the slate cards
+      const gameIds = upcomingGames.map((g) => g.id);
+      if (gameIds.length > 0) {
+        const { data: oddsData, error: oddsError } = await supabase
+          .from("mlb_odds")
+          .select("*")
+          .in("game_id", gameIds)
+          .ilike("sportsbook", "%draftkings%");
+
+        if (oddsError) {
+          console.error("Error fetching DraftKings odds:", oddsError);
+          setOddsFailed(true);
+        } else {
+          const oddsMap: GameOddsMap = {};
+          (oddsData || []).forEach((odd) => {
+            oddsMap[odd.game_id] = odd;
+          });
+          setGameOddsMap(oddsMap);
+          setOddsFailed(false);
+        }
       }
+    } catch (err) {
+      console.error("Error fetching MLB games:", err);
+      if (hasSlate.current) setRefreshFailed(true);
+      else setLoadFailed(true);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const handleOpenInsights = (game: Game) => {
@@ -155,6 +196,24 @@ export function MLBSlate() {
         </div>
       </motion.div>
 
+      {/* A failed refresh keeps the last good slate; just say so */}
+      {refreshFailed && !loadFailed && (
+        <div
+          className="flex items-center gap-2 text-[11px] font-mono text-muted-foreground"
+          role="status"
+        >
+          <Signal className="w-3.5 h-3.5 text-terminal-amber shrink-0" />
+          <span>
+            {offline ? "Offline. Showing the last loaded slate." : "Couldn't refresh. Showing the last loaded slate."}
+          </span>
+          {!offline && (
+            <button onClick={() => fetchGames()} className="text-terminal-green hover:underline">
+              Retry
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Loading State - skeleton cards shaped like the real slate */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -172,6 +231,31 @@ export function MLBSlate() {
             </Card>
           ))}
         </div>
+      ) : loadFailed ? (
+        <Card className="bg-card border-terminal-green/30">
+          <CardContent className="py-12 text-center font-mono space-y-3" role={offline ? "status" : "alert"}>
+            <Signal className="w-8 h-8 mx-auto text-terminal-amber" />
+            {offline ? (
+              <>
+                <p className="text-foreground">Waiting for a connection…</p>
+                <p className="text-xs text-muted-foreground">The slate loads as soon as you're back online.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-foreground">Couldn't load today's games.</p>
+                <p className="text-xs text-muted-foreground">Check your connection and try again.</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fetchGames()}
+                  className="font-mono"
+                >
+                  Retry
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
       ) : games.length === 0 ? (
         <Card className="bg-card border-terminal-green/30">
           <CardContent className="py-12 text-center font-mono">
@@ -191,7 +275,10 @@ export function MLBSlate() {
         >
           {games.map((game, index) => {
             const dkOdds = gameOddsMap[game.id];
-            const liveGame = live.getGame(game.visitor_team_name, game.home_team_name);
+            const matchup = findMatchupForGame(probables, game);
+            // Mid-series the live board can still hold last night's game between
+            // the same two teams; the start time ties it to this card's game.
+            const liveGame = live.getGame(game.visitor_team_name, game.home_team_name, { start: game.date });
             const showScore = liveGame && liveGame.state !== "pre" && liveGame.awayScore !== null;
 
             return (
@@ -255,19 +342,24 @@ export function MLBSlate() {
                       </div>
                     </div>
 
-                    {/* Probable starters - the matchup within the matchup */}
-                    {(game.starting_pitcher_away || game.starting_pitcher_home) && (
-                      <div className="rounded-lg bg-muted/20 border border-border px-3 py-2 mb-3">
-                        <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-0.5">
-                          Probable Starters
-                        </div>
-                        <div className="text-xs font-mono text-foreground">
-                          ⚾ {game.starting_pitcher_away || "TBD"}
-                          <span className="text-muted-foreground mx-1.5">vs</span>
-                          {game.starting_pitcher_home || "TBD"}
-                        </div>
+                    {/* Probable starters - the matchup within the matchup. MLB's
+                        announced starter wins; the synced name covers the gap
+                        when MLB has not named one yet. */}
+                    <div className="rounded-lg bg-muted/20 border border-border px-3 py-2 mb-3 space-y-1.5">
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                        Probable Starters
                       </div>
-                    )}
+                      <ProbablePitcherRow
+                        teamName={game.visitor_team_name}
+                        line={matchup?.away}
+                        fallbackName={pitcherFallback ? game.starting_pitcher_away : null}
+                      />
+                      <ProbablePitcherRow
+                        teamName={game.home_team_name}
+                        line={matchup?.home}
+                        fallbackName={pitcherFallback ? game.starting_pitcher_home : null}
+                      />
+                    </div>
 
                     {game.venue && (
                       <p className="text-[10px] text-muted-foreground font-mono mb-3">📍 {game.venue}</p>
@@ -344,7 +436,7 @@ export function MLBSlate() {
                         </div>
                       ) : (
                         <p className="text-[11px] text-muted-foreground font-mono">
-                          Odds post closer to first pitch
+                          {oddsFailed ? "Odds unavailable right now" : "Odds post closer to first pitch"}
                         </p>
                       )}
                     </div>

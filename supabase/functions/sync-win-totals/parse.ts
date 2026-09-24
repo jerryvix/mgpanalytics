@@ -1,13 +1,13 @@
-// Pure parsing for sync-win-totals — no Deno APIs so vitest can cover it
+// Pure parsing for sync-win-totals: no Deno APIs so vitest can cover it
 // against a checked-in fixture (src/test/winTotalsParse.test.ts, fixture
 // src/test/fixtures/covers-win-totals-2024.html).
 //
 // Source page: https://www.covers.com/sportsoddshistory/nfl-win/?y={YEAR}&sa=nfl&t=win
-// (sportsoddshistory.com 301-redirects here — fetch with redirect:"follow").
+// (sportsoddshistory.com 301-redirects here: fetch with redirect:"follow").
 // One <table class='soh1'> with columns: Team | Win Total | Over Odds |
 // Under Odds | Week bet settled | Actual Wins | Result. Above the table:
 // optional "Lines courtesy of {book}" and "As of {Month D, YYYY}".
-// Data © SportsOddsHistory.com — cite when displayed.
+// Data © SportsOddsHistory.com. Cite when displayed.
 
 export interface WinTotalRow {
   teamName: string;

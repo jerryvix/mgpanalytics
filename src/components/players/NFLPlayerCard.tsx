@@ -97,11 +97,11 @@ export function NFLPlayerCard({
                 <Badge variant="outline" className={getPositionColor()}>
                   {positionAbbreviation || position}
                 </Badge>
-                {team && (
-                  <span className="text-sm text-muted-foreground truncate">
-                    {team.abbreviation || team.name}
-                  </span>
-                )}
+                {/* No club on file = released or unsigned (sync-nfl-players
+                    clears the team when BDL drops a player from its active list) */}
+                <span className="text-sm text-muted-foreground truncate">
+                  {team ? team.abbreviation || team.name : "Free Agent"}
+                </span>
               </div>
 
               {/* Additional Info */}

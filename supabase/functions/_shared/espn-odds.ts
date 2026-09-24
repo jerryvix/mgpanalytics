@@ -30,6 +30,12 @@ export interface EspnEventOdds {
   openMoneylineHome: number | null;
   openMoneylineAway: number | null;
   openTotal: number | null;
+  // Opening PRICES on the spread and total (sync-betting-splits uses them to
+  // tell a price-only move from no move when the number itself held)
+  openSpreadHomeOdds: number | null;
+  openSpreadAwayOdds: number | null;
+  openTotalOverOdds: number | null;
+  openTotalUnderOdds: number | null;
 }
 
 // ESPN prices arrive as numbers ("moneyLine": -310) or american strings
@@ -61,10 +67,12 @@ interface EspnSideOdds {
   spreadOdds?: unknown;
   open?: {
     pointSpread?: { american?: unknown };
+    spread?: { american?: unknown };
     moneyLine?: { american?: unknown };
   };
   current?: {
     pointSpread?: { american?: unknown };
+    spread?: { american?: unknown };
     moneyLine?: { american?: unknown };
   };
 }
@@ -75,7 +83,7 @@ interface EspnOddsItem {
   overUnder?: unknown;
   overOdds?: unknown;
   underOdds?: unknown;
-  open?: { total?: { american?: unknown } };
+  open?: { total?: { american?: unknown }; over?: { american?: unknown }; under?: { american?: unknown } };
   homeTeamOdds?: EspnSideOdds;
   awayTeamOdds?: EspnSideOdds;
 }
@@ -92,8 +100,11 @@ function normalizeItem(item: EspnOddsItem): EspnEventOdds {
   return {
     sportsbook: slugifyProvider(item.provider?.name || "unknown"),
     spreadHome,
-    spreadHomeOdds: parseAmerican(home.spreadOdds),
-    spreadAwayOdds: parseAmerican(away.spreadOdds),
+    // Football items carry the spread price as top-level spreadOdds; MLB run
+    // line items omit it (every MLB card read "N/A") and keep the price only at
+    // current.spread.american. The two agree wherever both exist.
+    spreadHomeOdds: parseAmerican(home.spreadOdds) ?? parseAmerican(home.current?.spread?.american),
+    spreadAwayOdds: parseAmerican(away.spreadOdds) ?? parseAmerican(away.current?.spread?.american),
     moneylineHome:
       parseAmerican(home.moneyLine) ??
       parseAmerican(home.current?.moneyLine?.american),
@@ -107,6 +118,10 @@ function normalizeItem(item: EspnOddsItem): EspnEventOdds {
     openMoneylineHome: parseAmerican(home.open?.moneyLine?.american),
     openMoneylineAway: parseAmerican(away.open?.moneyLine?.american),
     openTotal: parsePoint(item.open?.total?.american),
+    openSpreadHomeOdds: parseAmerican(home.open?.spread?.american),
+    openSpreadAwayOdds: parseAmerican(away.open?.spread?.american),
+    openTotalOverOdds: parseAmerican(item.open?.over?.american),
+    openTotalUnderOdds: parseAmerican(item.open?.under?.american),
   };
 }
 

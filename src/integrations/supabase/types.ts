@@ -68,6 +68,222 @@ export type Database = {
         }
         Relationships: []
       }
+      betting_lines: {
+        Row: {
+          captured_at: string
+          created_at: string
+          feed: string
+          feed_event_id: string | null
+          game_id: string
+          id: string
+          line: number | null
+          market: string
+          open_line: number | null
+          open_price: number | null
+          price: number | null
+          side: string
+          source: string
+          sport: string
+          updated_at: string
+        }
+        Insert: {
+          captured_at: string
+          created_at?: string
+          feed?: string
+          feed_event_id?: string | null
+          game_id: string
+          id?: string
+          line?: number | null
+          market: string
+          open_line?: number | null
+          open_price?: number | null
+          price?: number | null
+          side: string
+          source?: string
+          sport: string
+          updated_at?: string
+        }
+        Update: {
+          captured_at?: string
+          created_at?: string
+          feed?: string
+          feed_event_id?: string | null
+          game_id?: string
+          id?: string
+          line?: number | null
+          market?: string
+          open_line?: number | null
+          open_price?: number | null
+          price?: number | null
+          side?: string
+          source?: string
+          sport?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      betting_splits: {
+        Row: {
+          away_team: string
+          bets_pct: number
+          captured_at: string
+          created_at: string
+          event_start: string | null
+          game_id: string
+          handle_pct: number
+          home_team: string
+          id: string
+          line: number | null
+          market: string
+          open_line: number | null
+          open_price: number | null
+          price: number | null
+          side: string
+          source: string
+          source_as_of: string | null
+          source_event_id: string
+          source_matchup: string
+          sport: string
+          updated_at: string
+        }
+        Insert: {
+          away_team: string
+          bets_pct: number
+          captured_at: string
+          created_at?: string
+          event_start?: string | null
+          game_id: string
+          handle_pct: number
+          home_team: string
+          id?: string
+          line?: number | null
+          market: string
+          open_line?: number | null
+          open_price?: number | null
+          price?: number | null
+          side: string
+          source?: string
+          source_as_of?: string | null
+          source_event_id: string
+          source_matchup: string
+          sport: string
+          updated_at?: string
+        }
+        Update: {
+          away_team?: string
+          bets_pct?: number
+          captured_at?: string
+          created_at?: string
+          event_start?: string | null
+          game_id?: string
+          handle_pct?: number
+          home_team?: string
+          id?: string
+          line?: number | null
+          market?: string
+          open_line?: number | null
+          open_price?: number | null
+          price?: number | null
+          side?: string
+          source?: string
+          source_as_of?: string | null
+          source_event_id?: string
+          source_matchup?: string
+          sport?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      betting_splits_history: {
+        Row: {
+          bets_pct: number
+          captured_at: string
+          created_at: string
+          game_id: string
+          handle_pct: number
+          id: string
+          line: number | null
+          market: string
+          price: number | null
+          side: string
+          source: string
+          source_as_of: string | null
+          source_event_id: string
+          sport: string
+        }
+        Insert: {
+          bets_pct: number
+          captured_at: string
+          created_at?: string
+          game_id: string
+          handle_pct: number
+          id?: string
+          line?: number | null
+          market: string
+          price?: number | null
+          side: string
+          source?: string
+          source_as_of?: string | null
+          source_event_id: string
+          sport: string
+        }
+        Update: {
+          bets_pct?: number
+          captured_at?: string
+          created_at?: string
+          game_id?: string
+          handle_pct?: number
+          id?: string
+          line?: number | null
+          market?: string
+          price?: number | null
+          side?: string
+          source?: string
+          source_as_of?: string | null
+          source_event_id?: string
+          sport?: string
+        }
+        Relationships: []
+      }
+      betting_splits_pages: {
+        Row: {
+          age_seconds: number | null
+          content_hash: string
+          events: number
+          fetched_at: string
+          hash_since: string
+          page: number
+          source: string
+          sport: string
+          window_key: string
+          x_cache: string | null
+        }
+        Insert: {
+          age_seconds?: number | null
+          content_hash: string
+          events?: number
+          fetched_at: string
+          hash_since: string
+          page: number
+          source?: string
+          sport: string
+          window_key: string
+          x_cache?: string | null
+        }
+        Update: {
+          age_seconds?: number | null
+          content_hash?: string
+          events?: number
+          fetched_at?: string
+          hash_since?: string
+          page?: number
+          source?: string
+          sport?: string
+          window_key?: string
+          x_cache?: string | null
+        }
+        Relationships: []
+      }
       cappers: {
         Row: {
           added_at: string
@@ -627,6 +843,8 @@ export type Database = {
           position: string | null
           rank: number
           school: string
+          source: string | null
+          source_as_of: string | null
           weight: number | null
         }
         Insert: {
@@ -639,6 +857,8 @@ export type Database = {
           position?: string | null
           rank: number
           school: string
+          source?: string | null
+          source_as_of?: string | null
           weight?: number | null
         }
         Update: {
@@ -651,6 +871,8 @@ export type Database = {
           position?: string | null
           rank?: number
           school?: string
+          source?: string | null
+          source_as_of?: string | null
           weight?: number | null
         }
         Relationships: []
@@ -722,6 +944,7 @@ export type Database = {
           is_final: boolean | null
           season: number | null
           status: string
+          time_tbd: boolean
           updated_at: string | null
           venue: string | null
           visitor_team_conference: string | null
@@ -745,6 +968,7 @@ export type Database = {
           is_final?: boolean | null
           season?: number | null
           status?: string
+          time_tbd?: boolean
           updated_at?: string | null
           venue?: string | null
           visitor_team_conference?: string | null
@@ -768,6 +992,7 @@ export type Database = {
           is_final?: boolean | null
           season?: number | null
           status?: string
+          time_tbd?: boolean
           updated_at?: string | null
           venue?: string | null
           visitor_team_conference?: string | null

@@ -9,8 +9,8 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "NFL:season_stats": "sync-nfl-season-stats",
   "NFL:players_slate": "sync-nfl-players-slate",
   "NFL:game_logs": "sync-nfl-game-logs",
-  // NFL:advanced_stats — no dedicated function yet; skip
-  // NFL:props — handled by ALL:player_props
+  // NFL:advanced_stats - no dedicated function yet; skip
+  // NFL:props - handled by ALL:player_props
   // Projection backtester (annual-cadence preseason captures + crosswalk)
   "NFL:player_ids": "sync-nfl-player-ids",
   "NFL:win_totals": "sync-win-totals",
@@ -22,8 +22,8 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "NBA:stats": "sync-nba-stats",
   "NBA:game_logs": "sync-nba-game-logs",
   "NBA:backfill": "backfill-nba-games",
-  // NBA:season_stats — same as NBA:stats; skip duplicate
-  // NBA:props — handled by ALL:player_props
+  // NBA:season_stats - same as NBA:stats; skip duplicate
+  // NBA:props - handled by ALL:player_props
   "NCAAB:games": "sync-ncaab-games",
   "NCAAB:odds": "sync-ncaab-games",
   "NCAAB:players": "sync-ncaab-players",
@@ -37,6 +37,8 @@ const SYNC_FUNCTION_MAP: Record<string, string> = {
   "ALL:player_props": "sync-player-props",
   "ALL:odds_snapshot": "sync-odds-snapshot",
   "ALL:grade_props": "grade-player-props",
+  // DraftKings public betting splits (NCAAF + NFL in one run) for Market Pulse
+  "ALL:betting_splits": "sync-betting-splits",
 };
 
 // Which external API each function primarily calls.
@@ -62,7 +64,8 @@ const FUNCTION_API_GROUP: Record<string, string> = {
   "sync-ncaab-players": "bdl",
   "sync-cfbd-roster-intel": "cfbd",
   "sync-cfbd-games": "cfbd",
-  "sync-draft-board": "tankathon",
+  "sync-draft-board": "drafttek",
+  "sync-betting-splits": "dk_network",
   "grade-player-props": "none",
   "sync-nfl-player-ids": "nflverse",
   "sync-win-totals": "sportsoddshistory",
@@ -72,6 +75,14 @@ const FUNCTION_API_GROUP: Record<string, string> = {
 
 // Delay in ms between dispatching functions that share an API group
 const STAGGER_DELAY_MS = 3000;
+
+// The external cron ticks every 4h on the hour, but last_sync_at records when
+// the previous run FINISHED, a few seconds after its tick. A strict
+// "elapsed >= interval" check is therefore always a few seconds short at the
+// next tick, so every row ran at double its interval (4h rows every 8h, 24h
+// rows every 28h; found Sep 23 2026 on MLB games and hitting). A small grace
+// lets a row fire on the tick it is actually due.
+const DUE_GRACE_MS = 10 * 60 * 1000;
 
 // Approximate season windows (month ranges, 0-indexed)
 // Returns true if the sport has active games/data worth syncing right now
@@ -178,7 +189,7 @@ Deno.serve(async (req) => {
       const body = await req.json().catch(() => ({}));
       forceSync = body.force || [];
     } catch {
-      // No body or not JSON — that's fine
+      // No body or not JSON: that's fine
     }
 
     // Fetch all enabled schedules
@@ -214,7 +225,7 @@ Deno.serve(async (req) => {
 
       // Skip out-of-season sports (saves API quota, especially Odds API)
       if (!isSportInSeason(s.sport)) {
-        console.log(`[dispatch-syncs] ${key} skipped — ${s.sport} is out of season`);
+        console.log(`[dispatch-syncs] ${key} skipped: ${s.sport} is out of season`);
         return false;
       }
 
@@ -228,7 +239,7 @@ Deno.serve(async (req) => {
       if (!s.last_sync_at) return true; // Never synced
       const lastSync = new Date(s.last_sync_at);
       const interval = intervalToMs(s.cron_interval || "24h");
-      return now.getTime() - lastSync.getTime() >= interval;
+      return now.getTime() - lastSync.getTime() >= interval - DUE_GRACE_MS;
     });
 
     console.log(`[dispatch-syncs] ${dueSchedules.length} syncs due out of ${schedules.length} enabled`);
@@ -284,7 +295,7 @@ Deno.serve(async (req) => {
       const functionUrl = `${SUPABASE_URL}/functions/v1/${functionName}`;
       console.log(`[dispatch-syncs] Firing ${functionName} for ${key} [api: ${apiGroup}]`);
 
-      // Fire the fetch without awaiting — the sync function runs independently
+      // Fire the fetch without awaiting: the sync function runs independently
       fetch(functionUrl, {
         method: "POST",
         headers: {

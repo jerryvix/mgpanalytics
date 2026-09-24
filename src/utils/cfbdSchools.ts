@@ -6,12 +6,20 @@
 // in order - so "Georgia State Panthers" resolves to "Georgia State" before
 // the also-real "Georgia" is ever considered. Schools whose CFBD name isn't
 // a prefix of the ESPN name at all live in the override map.
+//
+// The strip-two candidate is skipped when the strip-one form already ends in
+// a school qualifier ("Alabama State", "Texas Southern", "Florida A&M"):
+// that form IS the full school name with a one-word mascot, so dropping
+// another word would land on a different, real FBS school. Without this,
+// FCS opponents like Texas Southern or Indiana State inherited Texas's or
+// Indiana's roster data and draft prospects.
+const SCHOOL_QUALIFIERS = new Set(["State", "Tech", "A&M", "A&T", "Christian", "Southern", "Central"]);
 
+// CFBD's own spellings ("App State", "UL Monroe") match the ESPN prefix
+// heuristic, so those schools need no override.
 export const CFBD_SCHOOL_OVERRIDES: Record<string, string> = {
-  "App State Mountaineers": "Appalachian State",
   "Miami RedHawks": "Miami (OH)",
   "Miami (OH) RedHawks": "Miami (OH)",
-  "UL Monroe Warhawks": "Louisiana Monroe",
   "USF Bulls": "South Florida",
   "Pitt Panthers": "Pittsburgh",
   "San Jose State Spartans": "San José State", // ESPN sometimes drops the accent
@@ -31,7 +39,9 @@ export function cfbdSchoolCandidates(espnDisplayName: string): string[] {
   const words = name.split(/\s+/);
   const candidates: string[] = [];
   if (words.length >= 2) candidates.push(words.slice(0, -1).join(" "));
-  if (words.length >= 3) candidates.push(words.slice(0, -2).join(" "));
+  if (words.length >= 3 && !SCHOOL_QUALIFIERS.has(words[words.length - 2])) {
+    candidates.push(words.slice(0, -2).join(" "));
+  }
   return candidates.length ? candidates : [name];
 }
 

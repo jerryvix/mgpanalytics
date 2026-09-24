@@ -11,6 +11,9 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { TrendChart, TrendPoint } from "@/components/ui/TrendChart";
 import { CountUp } from "@/components/ui/CountUp";
 import { FollowButton } from "@/components/ui/FollowButton";
+import { Button } from "@/components/ui/button";
+import { queryView } from "@/lib/queryView";
+import { MLB_TEAM_ABBREVS } from "@/utils/teamAbbreviations";
 
 const mlbSeason = () => new Date().getFullYear();
 
@@ -21,11 +24,25 @@ interface GameLog {
   home_runs: number | null;
   rbi: number | null;
   opponent_abbr: string | null;
+  /** What sync-mlb-hitting actually writes (statsapi's full team name). */
+  opponent_name: string | null;
+}
+
+// The OPP column read only opponent_abbr, which the sync never writes, so it
+// always showed "-". Map the full name to MLB's abbreviation, else show it.
+function opponentLabel(g: Pick<GameLog, "opponent_abbr" | "opponent_name">): string | null {
+  if (g.opponent_abbr) return g.opponent_abbr;
+  if (!g.opponent_name) return null;
+  return MLB_TEAM_ABBREVS[g.opponent_name] ?? g.opponent_name;
 }
 
 async function loadPlayer(playerId: string) {
   const season = mlbSeason();
-  const [{ data: player }, { data: stats }, { data: logs }] = await Promise.all([
+  const [
+    { data: player, error: playerError },
+    { data: stats, error: statsError },
+    { data: logs, error: logsError },
+  ] = await Promise.all([
     supabase
       .from("players")
       .select("id, name, team_name, team_abbr, position, headshot_url")
@@ -40,13 +57,16 @@ async function loadPlayer(playerId: string) {
       .maybeSingle(),
     supabase
       .from("player_game_logs")
-      .select("game_date, hits, at_bats, home_runs, rbi, opponent_abbr")
+      .select("game_date, hits, at_bats, home_runs, rbi, opponent_abbr, opponent_name")
       .eq("sport", "MLB")
       .eq("season", season)
       .eq("player_id", playerId)
       .order("game_date", { ascending: false })
       .limit(30),
   ]);
+  // A failed read must surface as an error, not as "Player not found"
+  const readError = playerError || statsError || logsError;
+  if (readError) throw new Error(`MLB player failed to load: ${readError.message}`);
   return { player, stats, logs: ((logs || []) as GameLog[]).reverse() }; // oldest → newest
 }
 
@@ -61,7 +81,7 @@ function rollingAvgPoints(logs: GameLog[]): TrendPoint[] {
     const g = logs[i];
     const when = g.game_date ? format(parseISO(g.game_date), "MMM d") : "";
     points.push({
-      label: `${when}${g.opponent_abbr ? ` vs ${g.opponent_abbr}` : ""} - 10-game AVG ${(hits / ab).toFixed(3).replace(/^0/, "")}`,
+      label: `${when}${opponentLabel(g) ? ` vs ${opponentLabel(g)}` : ""} - 10-game AVG ${(hits / ab).toFixed(3).replace(/^0/, "")}`,
       value: hits / ab,
     });
   }
@@ -73,18 +93,45 @@ const fmtAvg = (v: number | null | undefined) =>
 
 export default function MLBPlayerDetail() {
   const { playerId } = useParams<{ playerId: string }>();
-  const { data, isLoading } = useQuery({
+  const query = useQuery({
     queryKey: ["mlb-player", playerId],
     queryFn: () => loadPlayer(playerId!),
     enabled: !!playerId,
   });
+  const { data, refetch } = query;
+  // "Player not found" only after a read that succeeded (src/lib/queryView.ts)
+  const view = playerId ? queryView(query) : "ready";
 
-  if (isLoading) {
+  if (view === "loading") {
     return (
       <div className="space-y-4 max-w-3xl">
         <Skeleton className="h-8 w-40" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  if (view === "waiting" || view === "error") {
+    return (
+      <div className="space-y-4">
+        <Link to="/dashboard/mlb/players" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-terminal-green font-mono">
+          <ArrowLeft className="w-4 h-4" /> MLB Players
+        </Link>
+        {view === "waiting" ? (
+          <div className="space-y-1" role="status">
+            <p className="text-foreground font-mono">Waiting for a connection…</p>
+            <p className="text-muted-foreground text-xs">This player loads as soon as you're back online.</p>
+          </div>
+        ) : (
+          <div className="space-y-3" role="alert">
+            <p className="text-foreground font-mono">Couldn't load this player.</p>
+            <p className="text-muted-foreground text-xs">Check your connection and try again.</p>
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              Retry
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -225,10 +272,10 @@ export default function MLBPlayerDetail() {
                         </td>
                         <td className="px-2 py-2 font-mono">
                           <span className="inline-flex items-center gap-1.5">
-                            {g.opponent_abbr && (
-                              <TeamLogo sport="MLB" name={g.opponent_abbr} abbr={g.opponent_abbr} size={14} />
+                            {opponentLabel(g) && (
+                              <TeamLogo sport="MLB" name={g.opponent_name ?? opponentLabel(g)!} abbr={opponentLabel(g)!} size={14} />
                             )}
-                            {g.opponent_abbr || "-"}
+                            {opponentLabel(g) || "-"}
                           </span>
                         </td>
                         <td className={`px-2 py-2 text-right font-mono tabular-nums ${(g.hits || 0) > 0 ? "text-terminal-green" : "text-muted-foreground"}`}>

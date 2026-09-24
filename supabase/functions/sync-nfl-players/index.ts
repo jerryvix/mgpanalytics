@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
+import { selectAll } from "../_shared/select-all.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +10,7 @@ const corsHeaders = {
 // Base URL for NFL API
 const NFL_BASE_URL = "https://api.balldontlie.io/nfl/v1";
 
-// Rate limiting delay between calls — generous so trial/lower BDL tiers don't 429
+// Rate limiting delay between calls, generous so trial/lower BDL tiers don't 429
 const RATE_LIMIT_DELAY = 1100;
 let lastCallTime = 0;
 
@@ -41,7 +42,7 @@ async function bdlFetch(
 
   console.log(`[Sync NFL Players] Fetching: ${url.toString()}`);
 
-  // Retry on 429 with backoff — BDL trial tiers have low rate limits
+  // Retry on 429 with backoff: BDL trial tiers have low rate limits
   const MAX_RETRIES = 4;
   let response: Response;
   for (let attempt = 0; ; attempt++) {
@@ -164,10 +165,13 @@ Deno.serve(async (req) => {
     // Service client for database operations (used by both auth paths)
     supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    // Auth: cron secret (dispatch-syncs), service role key, or admin JWT
     const cronSecret = req.headers.get("x-cron-secret");
+    const bearer = req.headers.get("Authorization")?.replace(/^Bearer /, "") ?? null;
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[sync-nfl-players] Authenticated via cron secret`);
+    } else if (bearer && bearer === supabaseServiceKey) {
+      console.log(`[sync-nfl-players] Authenticated via service role key`);
     } else {
       // Authenticate user - require admin role
       const authHeader = req.headers.get("Authorization");
@@ -309,6 +313,50 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Step 4b: players BDL no longer lists as active (released, retired, free
+    // agents) used to keep status "active" and their old team forever, so
+    // slate rosters carried people like a cut veteran on his former club.
+    // Flag them inactive AND clear their club (the player page then reads
+    // "Free Agent" instead of e.g. Nick Chubb on the Texans). Never delete:
+    // their stats and logs stay linked. Also sweeps players flagged inactive
+    // before the team fields were cleared. Only after a clean, full-size pull
+    // so a short response cannot mass-flag.
+    let deactivated = 0;
+    if (errorMessages.length === 0 && playersToUpsert.length >= 500) {
+      const activeIds = new Set(playersToUpsert.map((p) => p.external_id));
+      const current = await selectAll<{
+        id: string; external_id: string | null; status: string | null;
+        team_id: string | null; team_name: string | null; team_abbr: string | null;
+      }>(
+        () => supabase
+          .from("players")
+          .select("id, external_id, status, team_id, team_name, team_abbr")
+          .eq("sport", "NFL")
+          .order("id"),
+        { label: "fetch NFL players" },
+      );
+      const staleIds = current
+        .filter((p) => !activeIds.has(String(p.external_id)))
+        .filter((p) => p.status !== "inactive" || p.team_id !== null || p.team_name !== null || p.team_abbr !== null)
+        .map((p) => p.id);
+      for (let i = 0; i < staleIds.length; i += 200) {
+        const ids = staleIds.slice(i, i + 200);
+        const { error } = await supabase
+          .from("players")
+          .update({
+            status: "inactive",
+            team_id: null,
+            team_name: null,
+            team_abbr: null,
+            updated_at: new Date().toISOString(),
+          })
+          .in("id", ids);
+        if (error) errorMessages.push(`deactivate: ${error.message}`);
+        else deactivated += ids.length;
+      }
+      console.log(`[Sync NFL Players] ${deactivated} players marked inactive with no club (not on BDL's active list)`);
+    }
+
     // Step 4: Update sync_schedule with results
     const duration = Math.round((Date.now() - startTime) / 1000);
     const finalStatus = errorMessages.length === 0 ? "success" : 
@@ -326,11 +374,11 @@ Deno.serve(async (req) => {
 
     console.log(`[Sync NFL Players] Sync completed: ${successCount} players in ${duration}s`);
 
-    // Complete sync log — success
+    // Complete sync log: success
     await completeSyncLog(supabase, syncLogId, startTime, {
       status: finalStatus === "failed" ? "failed" : finalStatus === "partial" ? "partial" : "success",
       records_added: successCount,
-      details: { total_players: playersToUpsert.length, status: finalStatus, errors: errorMessages.length > 0 ? errorMessages : undefined },
+      details: { total_players: playersToUpsert.length, deactivated, status: finalStatus, errors: errorMessages.length > 0 ? errorMessages : undefined },
     });
 
     // Step 5: Return summary
@@ -338,6 +386,8 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: finalStatus !== "failed",
         playersSync: successCount,
+        count: successCount,
+        deactivated,
         duration: `${duration}s`,
         status: finalStatus,
         message: `Synced ${successCount.toLocaleString()} NFL players`,
@@ -352,7 +402,7 @@ Deno.serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("[Sync NFL Players] Error:", errorMessage);
 
-    // Complete sync log — failure
+    // Complete sync log: failure
     await completeSyncLog(supabase, syncLogId, startTime, {
       status: "failed",
       error_message: errorMessage,

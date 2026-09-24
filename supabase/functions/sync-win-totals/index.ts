@@ -1,5 +1,5 @@
 // Ingest one season of NFL preseason win-total lines AND actual wins from
-// SportsOddsHistory (hosted at covers.com — the old sportsoddshistory.com
+// SportsOddsHistory (hosted at covers.com: the old sportsoddshistory.com
 // domain 301s there, hence redirect:"follow"). The archive table includes
 // actual wins + the graded result, so a single scrape fills both
 // nfl_preseason_lines (market='season_wins') and nfl_team_season_results.
@@ -99,7 +99,7 @@ serve(async (req) => {
       const body = await req.json();
       if (body.season) season = Number(body.season);
     } catch {
-      // No body — require an explicit season below
+      // No body: require an explicit season below
     }
 
     if (season === null) {
@@ -125,7 +125,7 @@ serve(async (req) => {
     const page = parseWinTotalsPage(html);
 
     if (page.rows.length === 0) {
-      throw new Error(`No win-total rows parsed for ${season} — page layout may have changed`);
+      throw new Error(`No win-total rows parsed for ${season}: page layout may have changed`);
     }
 
     const unmatched = page.rows.filter((r) => !r.teamAbbr).map((r) => r.teamName);

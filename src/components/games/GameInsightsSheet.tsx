@@ -1,19 +1,25 @@
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, TrendingUp, Flame, Lightbulb, ArrowRightLeft, Signal } from "lucide-react";
+import { Loader2, Flame, Lightbulb, Signal } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { WinProbBar } from "@/components/ui/WinProbBar";
-import { consensusAmerican, consensusPriceMove } from "@/lib/odds";
 import { trendingFor } from "@/data/trendingBets";
 import { MatchupIntelSection } from "@/components/ncaaf/MatchupIntelSection";
+import { MarketPulse } from "@/components/games/MarketPulse";
+import { useMarketPulse } from "@/hooks/useMarketPulse";
+import { ProbablePitcherRow } from "@/components/mlb/ProbablePitcher";
+import { useMlbProbables } from "@/hooks/useMlbProbables";
+import { findMatchupForGame } from "@/services/mlb/probablePitchers";
+import { queryView } from "@/lib/queryView";
 import { format, parseISO } from "date-fns";
+import { tbdKickoffLabel } from "@/lib/kickoff";
 
 // Game Insights - the tap-a-game deep dive. Every number here is real MGP
-// data: synced sportsbook lines, odds_history movement, and player stats we
-// compute ourselves. No simulated or "estimated" figures - if a section has
+// data: DraftKings' line and its move since open (one number per market, in
+// Market Pulse), and player stats we compute ourselves. No simulated or "estimated" figures - if a section has
 // no verified data, it doesn't render. Adding a sport = one config entry
 // plus (optionally) a sport-specific rail.
 
@@ -31,12 +37,6 @@ const SPORT_CONFIG: Record<InsightsSport, SportConfig> = {
 };
 
 const SPORTSBOOKS = ["draftkings", "fanduel", "caesars", "betrivers"];
-const SPORTSBOOK_LABELS: Record<string, string> = {
-  draftkings: "DraftKings",
-  fanduel: "FanDuel",
-  caesars: "Caesars",
-  betrivers: "BetRivers",
-};
 
 export interface InsightsGame {
   id: string | number;
@@ -46,6 +46,10 @@ export interface InsightsGame {
   venue?: string | null;
   starting_pitcher_home?: string | null;
   starting_pitcher_away?: string | null;
+  /** NCAAF: kickoff not set yet, so `date` is a midnight-ET placeholder. */
+  time_tbd?: boolean | null;
+  /** Feed id (espn_mlb_...): MLB's DraftKings open comes from odds_history by it */
+  external_id?: string | null;
 }
 
 interface BookOdds {
@@ -59,13 +63,6 @@ interface BookOdds {
   total_under_odds: number | null;
 }
 
-interface MoveInsight {
-  label: string;
-  from: string;
-  to: string;
-  detail: string;
-}
-
 interface HotBat {
   name: string;
   team: string;
@@ -74,102 +71,41 @@ interface HotBat {
   seasonAvg: number | null;
 }
 
-const fmtPrice = (v: number | null | undefined) =>
-  v === null || v === undefined ? "-" : v > 0 ? `+${v}` : `${v}`;
 const fmtAvg = (v: number | null) => (v == null ? "-" : v.toFixed(3).replace(/^0/, ""));
 const short = (full: string) => full.split(" ").pop() || full;
 
 async function loadInsights(sport: InsightsSport, game: InsightsGame) {
   const cfg = SPORT_CONFIG[sport];
 
-  // 1) Every book's current lines for this game
-  const { data: oddsData } = await supabase
+  // 1) Every book's current lines for this game. Every read here throws on
+  // error: a failed read must show the sheet's error + Retry state, not
+  // quietly drop "Market Read" or "Hot Bats" as if there were no data.
+  const { data: oddsData, error: oddsError } = await supabase
     .from(cfg.oddsTable as "odds")
     .select("*")
     .eq("game_id", game.id as never)
     .in("sportsbook", SPORTSBOOKS);
+  if (oddsError) throw new Error(`Game odds failed to load: ${oddsError.message}`);
   const books = ((oddsData || []) as unknown as BookOdds[]);
 
-  // Consensus moneyline across books → no-vig win probability
-  const consHome = consensusAmerican(books.map((b) => b.moneyline_home));
-  const consAway = consensusAmerican(books.map((b) => b.moneyline_away));
-
-  // 2) Line movement since open. odds_history rows carry their own team
-  // names (their game ids come from the odds feed, not our games table),
-  // so match by team name, then anchor totals through the matched feed id.
-  const since = new Date(Date.now() - 3 * 24 * 3600_000).toISOString();
-  const { data: hist } = await supabase
-    .from("odds_history")
-    .select("game_id, bookmaker, odds_type, opening_line, current_line, team")
-    .eq("sport", sport)
-    .gte("timestamp", since)
-    .not("opening_line", "is", null)
-    .not("current_line", "is", null)
-    .in("team", [game.home_team_name, game.visitor_team_name]);
-
-  // Dominant feed game id for this matchup (doubleheaders: most-covered game)
-  const idCounts = new Map<string, number>();
-  for (const r of hist || []) idCounts.set(r.game_id, (idCounts.get(r.game_id) || 0) + 1);
-  const feedId = [...idCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
-
-  let totalRows: typeof hist = [];
-  if (feedId) {
-    const { data: totals } = await supabase
-      .from("odds_history")
-      .select("game_id, bookmaker, odds_type, opening_line, current_line, team")
-      .eq("sport", sport)
-      .eq("game_id", feedId)
-      .gte("timestamp", since)
-      .in("team", ["Over"])
-      .not("opening_line", "is", null)
-      .not("current_line", "is", null);
-    totalRows = totals || [];
-  }
-
-  const moves: MoveInsight[] = [];
-  for (const teamName of [game.visitor_team_name, game.home_team_name]) {
-    const rows = (hist || []).filter(
-      (r) => r.team === teamName && (!feedId || r.game_id === feedId) && r.odds_type.toLowerCase().includes("moneyline")
-    );
-    const c = consensusPriceMove(rows.map((r) => ({ open: r.opening_line, current: r.current_line })));
-    if (c && Math.abs(c.move) >= 1) {
-      moves.push({
-        label: `${short(teamName)} ML`,
-        from: fmtPrice(c.open),
-        to: fmtPrice(c.current),
-        detail: `${c.move > 0 ? "steamed" : "drifting"} · ${c.move > 0 ? "+" : ""}${c.move} pts implied · ${c.books} book${c.books === 1 ? "" : "s"}`,
-      });
-    }
-  }
-  if (totalRows.length) {
-    const valid = totalRows.filter((r) => r.opening_line != null && r.current_line != null);
-    if (valid.length) {
-      const avg = (a: number[]) => a.reduce((s, x) => s + x, 0) / a.length;
-      const open = Math.round(avg(valid.map((r) => r.opening_line!)) * 10) / 10;
-      const curr = Math.round(avg(valid.map((r) => r.current_line!)) * 10) / 10;
-      if (Math.abs(curr - open) >= 0.5) {
-        moves.push({
-          label: "Total",
-          from: `${open}`,
-          to: `${curr}`,
-          detail: `${curr > open ? "climbing" : "dropping"} · ${valid.length} book${valid.length === 1 ? "" : "s"}`,
-        });
-      }
-    }
-  }
+  // 2) Line movement lives in Market Pulse now: DraftKings' open to its
+  // current line, one number per market. (This block used to average every
+  // odds_history capture, which invented prices and counted captures as
+  // books; Sep 24 2026 QC.)
 
   // 3) Hot bats in this game (MLB) - real streaks from our own game logs
   let hotBats: HotBat[] = [];
   if (sport === "MLB") {
-    const { data: players } = await supabase
+    const { data: players, error: playersError } = await supabase
       .from("players")
       .select("id, name, team_name, team_abbr")
       .eq("sport", "MLB")
       .eq("status", "active")
       .in("team_name", [game.home_team_name, game.visitor_team_name]);
+    if (playersError) throw new Error(`Rosters failed to load: ${playersError.message}`);
     const ids = (players || []).map((p) => p.id);
     if (ids.length) {
-      const { data: stats } = await supabase
+      const { data: stats, error: statsError } = await supabase
         .from("player_season_stats")
         .select("player_id, hit_streak, hit_streak_avg, batting_avg")
         .eq("sport", "MLB")
@@ -178,9 +114,10 @@ async function loadInsights(sport: InsightsSport, game: InsightsGame) {
         .in("player_id", ids)
         .order("hit_streak", { ascending: false })
         .limit(6);
+      if (statsError) throw new Error(`Hit streaks failed to load: ${statsError.message}`);
       const pm = new Map((players || []).map((p) => [p.id, p]));
       hotBats = (stats || []).map((s) => {
-        const p = pm.get(s.player_id);
+        const p = s.player_id ? pm.get(s.player_id) : undefined;
         return {
           name: p?.name || "Unknown",
           team: p?.team_abbr || short(p?.team_name || ""),
@@ -201,24 +138,7 @@ async function loadInsights(sport: InsightsSport, game: InsightsGame) {
     )
     .slice(0, 3);
 
-  return { books, consHome, consAway, moves, hotBats, angles };
-}
-
-// Best price per market side across books - line shopping, the most
-// concrete truthful edge we can hand someone.
-function bestIdx(books: BookOdds[], pick: (b: BookOdds) => number | null): Set<number> {
-  let best: number | null = null;
-  for (const b of books) {
-    const v = pick(b);
-    if (v == null) continue;
-    if (best == null || v > best) best = v;
-  }
-  const out = new Set<number>();
-  if (best == null) return out;
-  books.forEach((b, i) => {
-    if (pick(b) === best) out.add(i);
-  });
-  return out;
+  return { books, hotBats, angles };
 }
 
 export function GameInsightsSheet({
@@ -233,22 +153,37 @@ export function GameInsightsSheet({
   onOpenChange: (v: boolean) => void;
 }) {
   const cfg = SPORT_CONFIG[sport];
-  const { data, isLoading } = useQuery({
+  const insights = useQuery({
     queryKey: ["game-insights", sport, game?.id],
     queryFn: () => loadInsights(sport, game!),
     enabled: open && !!game,
     staleTime: 60_000,
   });
+  const { data } = insights;
+  // A paused or failed first load must not read as "no verified data"
+  const insightsView = queryView(insights);
 
   const isMobile = useIsMobile();
+  // MLB: the announced (or labeled projected) starters with their season and
+  // last-3-start lines. Synced names stand in only while MLB's data is missing.
+  const { data: probables } = useMlbProbables(sport === "MLB" && open && !!game);
+  const mlbMatchup = sport === "MLB" && game ? findMatchupForGame(probables, game) : null;
+  const pitcherFallback = !probables;
 
-  const orderedBooks = SPORTSBOOKS.map((key) => ({
-    key,
-    odds: data?.books.find((b) => b.sportsbook.toLowerCase().includes(key)) || null,
-  }));
-  const present = orderedBooks.filter((b) => b.odds) as Array<{ key: string; odds: BookOdds }>;
-  const bestMlHome = bestIdx(present.map((p) => p.odds), (b) => b.moneyline_home);
-  const bestMlAway = bestIdx(present.map((p) => p.odds), (b) => b.moneyline_away);
+  // One read of the market for the whole sheet: Market Pulse shows it and
+  // Market Read's win probability uses the same DraftKings moneyline
+  const pulse = useMarketPulse({
+    sport,
+    gameId: game?.id,
+    externalId: game?.external_id,
+    homeName: game?.home_team_name,
+    awayName: game?.visitor_team_name,
+    books: data?.books ?? [],
+    enabled: open && !!game,
+  });
+  const ml = pulse.pulse?.moneyline;
+  const mlAway = ml?.sides[0].price ?? null;
+  const mlHome = ml?.sides[1].price ?? null;
 
   const headerBlock = game && (
     <div>
@@ -260,23 +195,50 @@ export function GameInsightsSheet({
         {short(game.home_team_name)}
       </div>
       <p className="text-xs text-muted-foreground font-normal mt-1">
-        {format(parseISO(game.date), "EEE MMM d, h:mm a")}
+        {game.time_tbd ? tbdKickoffLabel(game.date) : format(parseISO(game.date), "EEE MMM d, h:mm a")}
         {game.venue ? ` · ${game.venue}` : ""}
       </p>
-      {(game.starting_pitcher_away || game.starting_pitcher_home) && (
-        <p className="text-xs text-muted-foreground font-normal mt-0.5">
-          ⚾ {game.starting_pitcher_away || "TBD"} vs {game.starting_pitcher_home || "TBD"}
-        </p>
+      {sport === "MLB" ? (
+        <div className="mt-2 space-y-1.5 font-normal">
+          <ProbablePitcherRow
+            teamName={game.visitor_team_name}
+            line={mlbMatchup?.away}
+            fallbackName={pitcherFallback ? game.starting_pitcher_away : null}
+          />
+          <ProbablePitcherRow
+            teamName={game.home_team_name}
+            line={mlbMatchup?.home}
+            fallbackName={pitcherFallback ? game.starting_pitcher_home : null}
+          />
+        </div>
+      ) : (
+        (game.starting_pitcher_away || game.starting_pitcher_home) && (
+          <p className="text-xs text-muted-foreground font-normal mt-0.5">
+            ⚾ {game.starting_pitcher_away || "TBD"} vs {game.starting_pitcher_home || "TBD"}
+          </p>
+        )
       )}
     </div>
   );
 
   const body = (
     <>
-      {isLoading || !game ? (
+      {!game || insightsView === "loading" || insightsView === "waiting" ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-5 h-5 animate-spin text-terminal-green" />
-            <span className="ml-2 font-mono text-sm text-muted-foreground">BUILDING GAME INTEL...</span>
+            <span className="ml-2 font-mono text-sm text-muted-foreground">
+              {insightsView === "waiting" ? "WAITING FOR CONNECTION..." : "BUILDING GAME INTEL..."}
+            </span>
+          </div>
+        ) : insightsView === "error" ? (
+          <div className="py-12 text-center space-y-3" role="alert">
+            <p className="font-mono text-sm text-foreground">Couldn't load game intel.</p>
+            <button
+              onClick={() => void insights.refetch()}
+              className="font-mono text-xs uppercase tracking-wider px-4 py-2 rounded-md border text-terminal-green border-terminal-green/50 bg-terminal-green/10 hover:bg-terminal-green/20 transition-colors"
+            >
+              Retry
+            </button>
           </div>
         ) : (
           <div className="mt-5 space-y-6">
@@ -289,39 +251,21 @@ export function GameInsightsSheet({
               />
             )}
 
-            {/* Market consensus - no-vig win probability */}
-            {data?.consHome != null && data?.consAway != null && (
+            {/* Market consensus - no-vig win probability from the same
+                DraftKings moneyline Market Pulse shows */}
+            {mlHome != null && mlAway != null && (
               <section>
                 <SectionTitle icon={<Signal className="w-3.5 h-3.5" />} text="Market Read" />
                 <div className="border border-border rounded-lg p-3 bg-card/50 space-y-2">
                   <WinProbBar
                     homeName={game.home_team_name}
                     awayName={game.visitor_team_name}
-                    moneylineHome={data.consHome}
-                    moneylineAway={data.consAway}
+                    moneylineHome={mlHome}
+                    moneylineAway={mlAway}
                   />
                   <p className="font-mono text-[10px] text-muted-foreground">
-                    Consensus of {present.length} book{present.length === 1 ? "" : "s"}, vig removed.
-                    The market's own probability, not an MGP pick.
+                    DraftKings moneyline, vig removed. The market's own probability, not an MGP pick.
                   </p>
-                </div>
-              </section>
-            )}
-
-            {/* Line movement since open */}
-            {(data?.moves.length ?? 0) > 0 && (
-              <section>
-                <SectionTitle icon={<ArrowRightLeft className="w-3.5 h-3.5" />} text="Line Movement" />
-                <div className="border border-border rounded-lg p-3 bg-card/50 divide-y divide-dashed divide-border">
-                  {data!.moves.map((m, i) => (
-                    <div key={i} className="py-2 first:pt-0 last:pb-0 text-sm">
-                      {m.label}
-                      <span className="float-right font-mono font-bold text-terminal-green tabular-nums">
-                        {m.from} → {m.to}
-                      </span>
-                      <span className="block font-mono text-[10px] text-muted-foreground mt-0.5">{m.detail}</span>
-                    </div>
-                  ))}
                 </div>
               </section>
             )}
@@ -363,54 +307,15 @@ export function GameInsightsSheet({
               </section>
             )}
 
-            {/* Book-by-book board with best-price highlight */}
-            <section>
-              <SectionTitle icon={<TrendingUp className="w-3.5 h-3.5" />} text="Shop the Line" />
-              {present.length === 0 ? (
-                <p className="text-xs text-muted-foreground font-mono border border-border rounded-lg p-4 bg-card/50">
-                  No lines from tracked books yet. They post through the day.
-                </p>
-              ) : (
-                <div className="border border-border rounded-lg overflow-x-auto">
-                  <div className="min-w-[360px]">
-                  <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 px-3 py-2 border-b border-border font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                    <span>Book</span>
-                    <span className="text-right">{cfg.spreadLabel}</span>
-                    <span className="text-right">ML (A/H)</span>
-                    <span className="text-right">Total</span>
-                  </div>
-                  {present.map(({ key, odds }, i) => (
-                    <div
-                      key={key}
-                      className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 px-3 py-2 border-b border-border/60 last:border-none font-mono text-[11px] tabular-nums items-center bg-card/50"
-                    >
-                      <span className="text-foreground">{SPORTSBOOK_LABELS[key]}</span>
-                      <span className="text-right text-muted-foreground">
-                        {odds.spread_value != null ? `${fmtPrice(odds.spread_value)} (${fmtPrice(odds.spread_odds)})` : "-"}
-                      </span>
-                      <span className="text-right">
-                        <span className={bestMlAway.has(i) ? "text-terminal-green font-bold" : "text-muted-foreground"}>
-                          {fmtPrice(odds.moneyline_away)}
-                        </span>
-                        <span className="text-muted-foreground"> / </span>
-                        <span className={bestMlHome.has(i) ? "text-terminal-green font-bold" : "text-muted-foreground"}>
-                          {fmtPrice(odds.moneyline_home)}
-                        </span>
-                      </span>
-                      <span className="text-right text-muted-foreground">
-                        {odds.total_value != null
-                          ? `${odds.total_value} O${fmtPrice(odds.total_over_odds)}/U${fmtPrice(odds.total_under_odds)}`
-                          : "-"}
-                      </span>
-                    </div>
-                  ))}
-                  <p className="px-3 py-2 font-mono text-[10px] text-muted-foreground bg-card/30">
-                    <b className="text-terminal-green">Green</b> = best moneyline price available. Same bet, better payout.
-                  </p>
-                  </div>
-                </div>
-              )}
-            </section>
+            {/* Market Pulse: DraftKings' line and its move since open, the
+                public split, market markers */}
+            <MarketPulse
+              sport={sport}
+              awayName={game.visitor_team_name}
+              homeName={game.home_team_name}
+              spreadLabel={cfg.spreadLabel}
+              state={pulse}
+            />
 
             <p className="text-[10px] text-muted-foreground leading-relaxed">
               Everything above is synced sportsbook data and MGP-computed stats: market signal,

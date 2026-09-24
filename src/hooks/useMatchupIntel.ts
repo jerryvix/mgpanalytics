@@ -4,6 +4,7 @@
 // Team identity: ESPN display names are resolved to CFBD school names via
 // candidate prefixes matched against rows that actually exist - a miss just
 // leaves that signal on its "insufficient" arm.
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cfbdSchoolCandidates, pickCfbdSchool } from "@/utils/cfbdSchools";
@@ -13,6 +14,7 @@ import {
   classifyH2H,
   classifyTalentEdge,
   compositeVerdict,
+  latestBoardRows,
   type ContinuityInput,
   type ContinuityVerdict,
   type H2HGameRow,
@@ -40,7 +42,12 @@ export interface ProspectRow {
   player_name: string;
   position: string | null;
   school: string;
+  /** Scrape time; one value per capture. */
   captured_at: string;
+  /** Board the row came from ("DraftTek"); absent before the Sep 2026 provenance columns. */
+  source?: string | null;
+  /** That board's own revision date (YYYY-MM-DD). Drives staleness when present. */
+  source_as_of?: string | null;
 }
 
 const toInput = (row: ContinuityRow | null): ContinuityInput => ({
@@ -117,27 +124,34 @@ export function useMatchupIntel(
     staleTime: 5 * 60 * 1000,
   });
 
-  // Signal 1 - draft talent from the consensus board for the upcoming draft.
-  // The whole board is ~100 rows; fetch it once so captured_at is known even
-  // when neither team has a prospect on it.
+  // Signal 1 - draft talent from the big board for the upcoming draft.
+  // The whole board is ~200 rows (well under the 1000-row select cap); fetch
+  // it once so captured_at is known even when neither team has a prospect.
   const draftYear = season + 1;
   const boardQuery = useQuery({
     queryKey: ["matchup-draft-board", draftYear],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ncaaf_draft_prospects")
-        .select("rank, player_name, position, school, captured_at")
+        // "*" rather than a column list so a database without the Sep 2026
+        // provenance columns (source, source_as_of) still returns the board
+        .select("*")
         .eq("draft_year", draftYear)
         .order("rank", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as ProspectRow[];
+      const rows: ProspectRow[] = data ?? [];
+      return rows;
     },
     enabled: ready,
     staleTime: 5 * 60 * 1000,
   });
 
-  const board = boardQuery.data ?? [];
+  // One capture, one row per player: leftovers from an earlier capture can
+  // never double-count a team, even if the sync's prune ever misfires
+  const board = useMemo(() => latestBoardRows(boardQuery.data ?? []), [boardQuery.data]);
   const capturedAt = board[0]?.captured_at ?? null;
+  const boardSource = board[0]?.source ?? null;
+  const boardAsOf = board[0]?.source_as_of ?? null;
   const homeProspects = homeSchool ? board.filter((p) => p.school === homeSchool) : [];
   const awayProspects = awaySchool ? board.filter((p) => p.school === awaySchool) : [];
 
@@ -166,8 +180,9 @@ export function useMatchupIntel(
     homeProspects.map((p) => p.rank),
     awayProspects.map((p) => p.rank),
     // A board that exists for a different matchup's teams still counts;
-    // one with zero rows total means no capture yet → insufficient.
-    board.length > 0 ? capturedAt : null
+    // one with zero rows total means no capture yet → insufficient. Age is
+    // judged by the source's own revision date when we have it.
+    board.length > 0 ? boardAsOf ?? capturedAt : null
   );
 
   const composite: CompositeVerdict = compositeVerdict({
@@ -200,6 +215,12 @@ export function useMatchupIntel(
       homeProspects,
       awayProspects,
       capturedAt,
+      /** Board name for the footer ("DraftTek"), null on pre-provenance rows. */
+      source: boardSource,
+      /** The board's own revision date (YYYY-MM-DD), null when unknown. */
+      asOf: boardAsOf,
+      /** Prospects on the whole board (its depth), for copy like "top-200". */
+      boardSize: board.length,
       result: talent,
     },
     composite,

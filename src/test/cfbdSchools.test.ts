@@ -8,12 +8,22 @@ const CFBD_SCHOOLS = new Set([
   "Georgia",
   "Georgia State",
   "Georgia Southern",
+  "Georgia Tech",
   "Miami",
   "Miami (OH)",
   "Ohio State",
   "Ohio",
-  "Appalachian State",
-  "Louisiana Monroe",
+  "App State", // CFBD's own spelling (all seasons), not "Appalachian State"
+  "UL Monroe", // likewise, not "Louisiana Monroe"
+  "Texas",
+  "Florida",
+  "Indiana",
+  "Houston",
+  "North Carolina",
+  "Utah",
+  "Penn State",
+  "Arizona State",
+  "Delaware",
   "South Florida",
   "Pittsburgh",
   "San José State",
@@ -34,8 +44,14 @@ describe("cfbdSchoolCandidates", () => {
   });
 
   it("returns only the override when one exists", () => {
-    expect(cfbdSchoolCandidates("App State Mountaineers")).toEqual(["Appalachian State"]);
-    expect(cfbdSchoolCandidates("UL Monroe Warhawks")).toEqual(["Louisiana Monroe"]);
+    expect(cfbdSchoolCandidates("USF Bulls")).toEqual(["South Florida"]);
+    expect(cfbdSchoolCandidates("Miami (OH) RedHawks")).toEqual(["Miami (OH)"]);
+  });
+
+  it("never strips past a school qualifier - that prefix is already the full school name", () => {
+    expect(cfbdSchoolCandidates("Texas Southern Tigers")).toEqual(["Texas Southern"]);
+    expect(cfbdSchoolCandidates("Florida A&M Rattlers")).toEqual(["Florida A&M"]);
+    expect(cfbdSchoolCandidates("Indiana State Sycamores")).toEqual(["Indiana State"]);
   });
 });
 
@@ -58,6 +74,32 @@ describe("pickCfbdSchool", () => {
     expect(resolve("Miami Hurricanes")).toBe("Miami");
     expect(resolve("Miami (OH) RedHawks")).toBe("Miami (OH)");
     expect(resolve("Miami RedHawks")).toBe("Miami (OH)");
+  });
+
+  it("resolves CFBD's short spellings without overrides", () => {
+    expect(resolve("App State Mountaineers")).toBe("App State");
+    expect(resolve("UL Monroe Warhawks")).toBe("UL Monroe");
+  });
+
+  it("still strips two-word mascots on FBS schools whose names carry a qualifier", () => {
+    expect(resolve("Penn State Nittany Lions")).toBe("Penn State");
+    expect(resolve("Arizona State Sun Devils")).toBe("Arizona State");
+    expect(resolve("Georgia Tech Yellow Jackets")).toBe("Georgia Tech");
+    expect(resolve("Delaware Blue Hens")).toBe("Delaware");
+  });
+
+  it("does not hand an FCS opponent an FBS school's identity", () => {
+    // Each of these once resolved to the FBS school in parentheses and
+    // showed that school's draft prospects and roster data
+    expect(resolve("Texas Southern Tigers")).toBeNull(); // Texas
+    expect(resolve("Florida A&M Rattlers")).toBeNull(); // Florida
+    expect(resolve("Indiana State Sycamores")).toBeNull(); // Indiana
+    expect(resolve("Houston Christian Huskies")).toBeNull(); // Houston
+    expect(resolve("North Carolina Central Eagles")).toBeNull(); // North Carolina
+    expect(resolve("North Carolina A&T Aggies")).toBeNull(); // North Carolina
+    expect(resolve("Utah Tech Trailblazers")).toBeNull(); // Utah
+    expect(resolve("Alabama State Hornets")).toBeNull(); // Alabama
+    expect(resolve("Delaware State Hornets")).toBeNull(); // Delaware
   });
 
   it("routes non-prefix names through overrides", () => {

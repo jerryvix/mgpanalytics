@@ -1,90 +1,57 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
+import { selectAll } from "../_shared/select-all.ts";
+import { chunk } from "../_shared/nfl-sync.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
-const BDL_BASE_URL = "https://api.balldontlie.io/nfl/v1";
+// Sep 2026 rewrite. The old version issued one UPDATE plus one upsert per
+// player, sequentially, for every team on the 7-day slate (about 2,400 round
+// trips for a full week), and hit the 150s gateway timeout every run. It also
+// had two silent bugs: usage was read with BDL field names (passing_attempts)
+// off our DB rows (pass_attempts) and matched on "QB" while rosters store
+// "Quarterback", so every usage was 0 and "featured" was arbitrary; and the
+// association upsert targeted a PARTIAL unique index that ON CONFLICT cannot
+// infer, so player_game_associations never received a row.
+//
+// Now: one paginated read each for players and season stats, updates grouped
+// by identical payload and run with bounded concurrency, and associations
+// inserted only for pairs that do not exist yet.
 
-interface BDLPlayer {
-  id: number;
-  first_name: string;
-  last_name: string;
-  position: string;
-  position_abbreviation: string;
-  height: string;
-  weight: string;
-  jersey_number: string;
-  college: string;
-  experience: number;
-  age: number;
-  team: {
-    id: number;
-    conference: string;
-    division: string;
-    location: string;
-    name: string;
-    full_name: string;
-    abbreviation: string;
-  };
+const UPDATE_CONCURRENCY = 10;
+
+const POSITION_ABBR: Record<string, string> = {
+  quarterback: "QB",
+  "running back": "RB",
+  fullback: "FB",
+  "wide receiver": "WR",
+  "tight end": "TE",
+};
+
+function positionAbbr(position: string | null): string {
+  if (!position) return "UNKNOWN";
+  return POSITION_ABBR[position.toLowerCase()] ?? position.toUpperCase();
 }
 
-interface SeasonStats {
-  player_id: number;
-  season: number;
-  games_played: number;
-  passing_yards: number;
-  passing_touchdowns: number;
-  passing_interceptions: number;
-  passing_attempts: number;
-  rushing_yards: number;
-  rushing_touchdowns: number;
-  rushing_attempts: number;
-  receiving_yards: number;
-  receiving_touchdowns: number;
-  receptions: number;
-  targets: number;
+interface StatRow {
+  player_id: string;
+  pass_attempts: number | null;
+  rush_attempts: number | null;
+  receptions: number | null;
+  targets: number | null;
 }
 
-async function bdlFetch(apiKey: string, endpoint: string): Promise<any> {
-  const url = `${BDL_BASE_URL}${endpoint}`;
-  console.log(`[sync-nfl-players-slate] Fetching: ${url}`);
-  
-  const response = await fetch(url, {
-    headers: {
-      "Authorization": apiKey,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error(`[sync-nfl-players-slate] API error ${response.status}: ${errorText}`);
-    throw new Error(`API Error ${response.status}: ${errorText}`);
-  }
-
-  return response.json();
-}
-
-function getPositionType(position: string): string {
-  const offense = ["QB", "RB", "WR", "TE", "OL", "OT", "OG", "C", "FB"];
-  const defense = ["DL", "DE", "DT", "LB", "ILB", "OLB", "CB", "S", "FS", "SS", "DB"];
-  if (offense.includes(position)) return "OFFENSE";
-  if (defense.includes(position)) return "DEFENSE";
-  return "SPECIAL";
-}
-
-function calculateUsageMetric(stats: SeasonStats | undefined, position: string): number {
+function usageMetric(stats: StatRow | undefined, pos: string): number {
   if (!stats) return 0;
-  
-  switch (position) {
+  switch (pos) {
     case "QB":
-      return stats.passing_attempts || 0;
+      return stats.pass_attempts || 0;
     case "RB":
     case "FB":
-      return (stats.rushing_attempts || 0) + (stats.receptions || 0);
+      return (stats.rush_attempts || 0) + (stats.receptions || 0);
     case "WR":
     case "TE":
       return stats.targets || 0;
@@ -93,19 +60,30 @@ function calculateUsageMetric(stats: SeasonStats | undefined, position: string):
   }
 }
 
-function isFeaturedByPosition(position: string, rank: number): boolean {
-  switch (position) {
+function isFeaturedByPosition(pos: string, rank: number): boolean {
+  switch (pos) {
     case "QB":
-      return rank <= 1; // Top 1 QB
+      return rank <= 1;
     case "RB":
     case "FB":
-      return rank <= 2; // Top 2 RBs
+      return rank <= 2;
     case "WR":
     case "TE":
-      return rank <= 3; // Top 3 WR/TEs
+      return rank <= 3;
     default:
       return false;
   }
+}
+
+async function runPool<T>(items: T[], limit: number, worker: (item: T) => Promise<void>): Promise<void> {
+  let next = 0;
+  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const item = items[next++];
+      await worker(item);
+    }
+  });
+  await Promise.all(runners);
 }
 
 Deno.serve(async (req) => {
@@ -115,31 +93,28 @@ Deno.serve(async (req) => {
 
   let syncLogId: string | null = null;
   const syncStartTime = Date.now();
+  // deno-lint-ignore no-explicit-any
   let supabase: any;
 
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
-    const BDL_API_KEY = Deno.env.get("BALLDONTLIE_API_KEY");
 
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !SUPABASE_ANON_KEY) {
       throw new Error("Supabase configuration missing");
     }
 
-    if (!BDL_API_KEY) {
-      throw new Error("BALLDONTLIE_API_KEY not configured");
-    }
-
-    // Service client for database operations (used by both auth paths)
     supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    // Auth: cron secret (dispatch-syncs), service role key, or admin JWT
     const cronSecret = req.headers.get("x-cron-secret");
+    const bearer = req.headers.get("Authorization")?.replace(/^Bearer /, "") ?? null;
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[sync-nfl-players-slate] Authenticated via cron secret`);
+    } else if (bearer && bearer === SUPABASE_SERVICE_ROLE_KEY) {
+      console.log(`[sync-nfl-players-slate] Authenticated via service role key`);
     } else {
-      // Authenticate user - require admin role
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
         return new Response(
@@ -160,12 +135,10 @@ Deno.serve(async (req) => {
         );
       }
 
-      const userId = user.id;
-
       const { data: roleData, error: roleError } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId)
+        .eq("user_id", user.id)
         .eq("role", "admin")
         .limit(1)
         .maybeSingle();
@@ -176,11 +149,8 @@ Deno.serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-
-      console.log(`[sync-nfl-players-slate] Admin user ${userId} authenticated, starting NFL players slate sync...`);
     }
 
-    // Start sync log
     const triggerSource = detectTriggerSource(req);
     syncLogId = await startSyncLog(supabase, {
       sport: "NFL",
@@ -190,11 +160,9 @@ Deno.serve(async (req) => {
       api_source: "supabase",
     });
 
-    // Step 1: Get NFL games in slate window (NOW → +7 days)
+    // Step 1: NFL games in the slate window (now -> +7 days)
     const now = new Date();
     const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    console.log(`[sync-nfl-players-slate] Fetching games from ${now.toISOString()} to ${in7Days.toISOString()}`);
 
     const { data: games, error: gamesError } = await supabase
       .from("games")
@@ -209,161 +177,198 @@ Deno.serve(async (req) => {
 
     if (!games || games.length === 0) {
       console.log("[sync-nfl-players-slate] No games in slate window");
+      await completeSyncLog(supabase, syncLogId, syncStartTime, {
+        status: "success",
+        records_added: 0,
+        details: { message: "No games in slate window" },
+      });
       return new Response(
-        JSON.stringify({ success: true, message: "No games in slate window", playersAdded: 0 }),
+        JSON.stringify({ success: true, message: "No games in slate window", playersUpdated: 0, count: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[sync-nfl-players-slate] Found ${games.length} games in slate window`);
+    // team full name -> slate game ids (a team can appear twice in 7 days)
+    const gamesByTeam = new Map<string, number[]>();
+    for (const g of games) {
+      for (const team of [g.home_team_name, g.visitor_team_name]) {
+        gamesByTeam.set(team, [...(gamesByTeam.get(team) ?? []), g.id]);
+      }
+    }
+    console.log(`[sync-nfl-players-slate] ${games.length} games, ${gamesByTeam.size} teams in window`);
 
-    // Step 2: Extract unique team names
-    const teamNames = new Set<string>();
-    for (const game of games) {
-      teamNames.add(game.home_team_name);
-      teamNames.add(game.visitor_team_name);
+    // Step 2: every active NFL player on those teams (one paginated read)
+    const allPlayers = await selectAll<{ id: string; position: string | null; team_name: string | null }>(
+      () => supabase
+        .from("players")
+        .select("id, position, team_name")
+        .eq("sport", "NFL")
+        .eq("status", "active")
+        .order("id"),
+      { label: "fetch NFL players" },
+    );
+    const slatePlayers = allPlayers.filter((p) => p.team_name && gamesByTeam.has(p.team_name));
+
+    // Step 3: current-season stats for usage ranking (one paginated read)
+    const statsSeason = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1;
+    const stats = await selectAll<StatRow>(
+      () => supabase
+        .from("player_season_stats")
+        .select("player_id, pass_attempts, rush_attempts, receptions, targets")
+        .eq("sport", "NFL")
+        .eq("season", statsSeason)
+        .eq("season_type", "regular")
+        .order("id"),
+      { label: "fetch NFL season stats" },
+    );
+    const statsMap = new Map<string, StatRow>(stats.map((s) => [s.player_id, s]));
+
+    // Step 4: rank usage within each team + position
+    interface Ranked { id: string; team: string; pos: string; usage: number; rank: number; featured: boolean }
+    const groups = new Map<string, Ranked[]>();
+    for (const p of slatePlayers) {
+      const pos = positionAbbr(p.position);
+      const key = `${p.team_name}|${pos}`;
+      const entry: Ranked = { id: p.id, team: p.team_name!, pos, usage: usageMetric(statsMap.get(p.id), pos), rank: 0, featured: false };
+      groups.set(key, [...(groups.get(key) ?? []), entry]);
+    }
+    const ranked: Ranked[] = [];
+    for (const members of groups.values()) {
+      members.sort((a, b) => b.usage - a.usage);
+      members.forEach((m, i) => {
+        m.rank = i + 1;
+        m.featured = isFeaturedByPosition(m.pos, m.rank);
+        ranked.push(m);
+      });
     }
 
-    console.log(`[sync-nfl-players-slate] Processing ${teamNames.size} teams`);
+    // Step 5: write. Players sharing (rank, usage, featured) get one UPDATE.
+    const slateStartIso = now.toISOString();
+    const slateEndIso = in7Days.toISOString();
+    const updateGroups = new Map<string, { ids: string[]; rank: number; usage: number; featured: boolean }>();
+    for (const r of ranked) {
+      const k = `${r.rank}|${r.usage}|${r.featured}`;
+      const g = updateGroups.get(k) ?? { ids: [], rank: r.rank, usage: r.usage, featured: r.featured };
+      g.ids.push(r.id);
+      updateGroups.set(k, g);
+    }
+    const updateJobs = [...updateGroups.values()].flatMap((g) =>
+      chunk(g.ids, 200).map((ids) => ({ ...g, ids }))
+    );
 
-    let playersAdded = 0;
-    const teamsProcessed: string[] = [];
-    const slateStart = now;
-    const slateEnd = in7Days;
+    const errors: string[] = [];
+    let playersUpdated = 0;
+    await runPool(updateJobs, UPDATE_CONCURRENCY, async (job) => {
+      const { error } = await supabase
+        .from("players")
+        .update({
+          is_featured: job.featured,
+          featured_reason: job.featured ? "high_usage" : null,
+          slate_window_start: slateStartIso,
+          slate_window_end: slateEndIso,
+          usage_rank: job.rank,
+          usage_metric: job.usage,
+          updated_at: new Date().toISOString(),
+        })
+        .in("id", job.ids);
+      if (error) errors.push(`players update: ${error.message}`);
+      else playersUpdated += job.ids.length;
+    });
 
-    // Step 3: For each team, get players from existing players table
-    // (Using existing players synced by sync-nfl-players)
-    for (const teamName of Array.from(teamNames)) {
-      try {
-        // Find existing players for this team
-        const { data: existingPlayers, error: playersError } = await supabase
-          .from("players")
-          .select("id, external_id, name, position, team_name")
-          .eq("sport", "NFL")
-          .ilike("team_name", `%${teamName.split(" ").pop()}%`);
+    // Step 6: player <-> game associations, inserting only missing pairs
+    const slateGameIds = games.map((g: { id: number }) => g.id);
+    let assocReadError: string | null = null;
+    const existingAssoc = await selectAll<{ player_id: string; nfl_game_id: number }>(
+      () => supabase
+        .from("player_game_associations")
+        .select("player_id, nfl_game_id")
+        .eq("sport", "NFL")
+        .in("nfl_game_id", slateGameIds)
+        .order("id"),
+      { label: "fetch slate associations" },
+    ).catch((err: Error) => {
+      assocReadError = err.message;
+      errors.push(`associations read: ${err.message}`);
+      return [];
+    });
+    const existingPairs = new Set<string>(existingAssoc.map((a) => `${a.player_id}|${a.nfl_game_id}`));
 
-        if (playersError || !existingPlayers || existingPlayers.length === 0) {
-          console.log(`[sync-nfl-players-slate] No existing players for ${teamName}`);
-          continue;
+    const newAssoc: { player_id: string; nfl_game_id: number; sport: string; status: string; is_starter: boolean }[] = [];
+    const starterIdsByGame = new Map<number, { starters: string[]; others: string[] }>();
+    for (const r of ranked) {
+      for (const gameId of gamesByTeam.get(r.team) ?? []) {
+        const bucket = starterIdsByGame.get(gameId) ?? { starters: [], others: [] };
+        (r.featured ? bucket.starters : bucket.others).push(r.id);
+        starterIdsByGame.set(gameId, bucket);
+        if (!existingPairs.has(`${r.id}|${gameId}`)) {
+          newAssoc.push({ player_id: r.id, nfl_game_id: gameId, sport: "NFL", status: "active", is_starter: r.featured });
         }
-
-        teamsProcessed.push(teamName);
-
-        // Get season stats for these players
-        const playerIds = existingPlayers.map(p => p.id);
-        const { data: statsData } = await supabase
-          .from("player_season_stats")
-          .select("*")
-          .in("player_id", playerIds)
-          .eq("sport", "NFL")
-          // Most recent season with stats: current once games begin (Sep+),
-          // else last completed. NFL stats seasons are labeled by start year.
-          .eq("season", new Date().getMonth() >= 8 ? new Date().getFullYear() : new Date().getFullYear() - 1);
-
-        const statsMap = new Map();
-        for (const stat of statsData || []) {
-          statsMap.set(stat.player_id, stat);
-        }
-
-        // Group by position and rank
-        const positionGroups: Record<string, typeof existingPlayers> = {};
-        for (const player of existingPlayers) {
-          const pos = player.position || "UNKNOWN";
-          if (!positionGroups[pos]) positionGroups[pos] = [];
-          positionGroups[pos].push(player);
-        }
-
-        // Sort each position by usage and update featured status
-        for (const [position, posPlayers] of Object.entries(positionGroups)) {
-          const sorted = posPlayers
-            .map(p => ({
-              ...p,
-              stats: statsMap.get(p.id),
-              usage: calculateUsageMetric(statsMap.get(p.id), position)
-            }))
-            .sort((a, b) => b.usage - a.usage);
-
-          for (let i = 0; i < sorted.length; i++) {
-            const player = sorted[i];
-            const isFeatured = isFeaturedByPosition(position, i + 1);
-
-            await supabase
-              .from("players")
-              .update({
-                is_featured: isFeatured,
-                featured_reason: isFeatured ? "high_usage" : null,
-                slate_window_start: slateStart.toISOString(),
-                slate_window_end: slateEnd.toISOString(),
-                usage_rank: i + 1,
-                usage_metric: player.usage,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", player.id);
-
-            // Create game associations
-            for (const game of games) {
-              if (game.home_team_name.includes(teamName.split(" ").pop() || "") ||
-                  game.visitor_team_name.includes(teamName.split(" ").pop() || "")) {
-                await supabase
-                  .from("player_game_associations")
-                  .upsert({
-                    player_id: player.id,
-                    nfl_game_id: game.id,
-                    sport: "NFL",
-                    status: "active",
-                    is_starter: isFeatured,
-                  }, { onConflict: "player_id,nfl_game_id" });
-              }
-            }
-
-            playersAdded++;
-          }
-        }
-
-        console.log(`[sync-nfl-players-slate] Updated ${existingPlayers.length} players for ${teamName}`);
-
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-      } catch (teamError) {
-        console.error(`[sync-nfl-players-slate] Error processing team ${teamName}:`, teamError);
       }
     }
 
-    // Update sync schedule
+    let associationsInserted = 0;
+    if (!assocReadError) {
+      for (const batch of chunk(newAssoc, 500)) {
+        const { error } = await supabase.from("player_game_associations").insert(batch);
+        if (error) errors.push(`associations insert: ${error.message}`);
+        else associationsInserted += batch.length;
+      }
+      // Existing pairs: refresh is_starter with two grouped updates per game
+      for (const [gameId, bucket] of starterIdsByGame) {
+        for (const [flag, ids] of [[true, bucket.starters], [false, bucket.others]] as const) {
+          for (const idChunk of chunk(ids, 200)) {
+            const { error } = await supabase
+              .from("player_game_associations")
+              .update({ is_starter: flag, status: "active" })
+              .eq("nfl_game_id", gameId)
+              .in("player_id", idChunk);
+            if (error) errors.push(`associations update: ${error.message}`);
+          }
+        }
+      }
+    }
+
+    const status = errors.length === 0 ? "success" : playersUpdated > 0 ? "partial" : "failed";
     await supabase
       .from("sync_schedule")
       .upsert({
         sport: "NFL",
         data_type: "players_slate",
         last_sync_at: new Date().toISOString(),
-        last_sync_status: "success",
-        records_synced: playersAdded,
+        last_sync_status: status,
+        records_synced: playersUpdated,
+        error_message: errors.length ? errors.slice(0, 5).join("; ") : null,
       }, { onConflict: "sport,data_type" });
 
+    const teamsProcessed = [...new Set(ranked.map((r) => r.team))];
+    const duration = Math.round((Date.now() - syncStartTime) / 1000);
     const response = {
-      success: true,
-      playersUpdated: playersAdded,
+      success: status !== "failed",
+      playersUpdated,
+      count: playersUpdated,
+      featured: ranked.filter((r) => r.featured).length,
+      associationsInserted,
       teamsProcessed,
-      message: `Updated ${playersAdded} NFL players from ${teamsProcessed.length} teams for slate`,
+      duration: `${duration}s`,
+      errors: errors.length ? errors.slice(0, 5) : undefined,
+      message: `Updated ${playersUpdated} NFL players from ${teamsProcessed.length} teams for slate`,
     };
+    console.log("[sync-nfl-players-slate] Sync completed:", JSON.stringify({ ...response, teamsProcessed: teamsProcessed.length }));
 
-    console.log("[sync-nfl-players-slate] Sync completed:", response);
-
-    // Complete sync log — success
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
-      status: "success",
-      records_added: playersAdded,
-      details: { teams_processed: teamsProcessed },
+      status,
+      records_added: playersUpdated,
+      error_message: errors.length ? errors.slice(0, 5).join("; ") : undefined,
+      details: { teams_processed: teamsProcessed, associations_inserted: associationsInserted },
     });
 
     return new Response(JSON.stringify(response), {
+      status: status === "failed" ? 500 : 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error) {
     console.error("[sync-nfl-players-slate] Error:", error);
 
-    // Complete sync log — failure
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "failed",
       error_message: error instanceof Error ? error.message : "Unknown error",

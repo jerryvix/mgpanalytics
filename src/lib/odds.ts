@@ -3,11 +3,12 @@
 /**
  * Convert an American moneyline price to its implied probability (0..1).
  * Returns null for null/undefined/0/non-finite input - 0 is not a valid price.
+ * One copy, shared with the Market Pulse rules and the chat edge functions
+ * (supabase/functions/_shared/dk-line.ts).
  */
-export function americanToImpliedProb(price: number | null | undefined): number | null {
-  if (price === null || price === undefined || price === 0 || !Number.isFinite(price)) return null;
-  return price > 0 ? 100 / (price + 100) : -price / (-price + 100);
-}
+import { americanToImpliedProb } from "../../supabase/functions/_shared/dk-line";
+
+export { americanToImpliedProb };
 
 /**
  * No-vig win probabilities for a two-way market. Normalizes both sides'
@@ -28,13 +29,19 @@ export function impliedPair(
 
 /**
  * Convert a win probability (0..1 exclusive) back to an American price.
- * Inverse of americanToImpliedProb - p >= 0.5 yields a negative (favorite)
- * price, so the result is always a legal price (never inside ±100).
+ * Inverse of americanToImpliedProb - p above 0.5 yields a negative (favorite)
+ * price, so the result is always a legal price (never inside ±100). Even
+ * money is +100, DraftKings' convention, never -100 (a -100 here once put
+ * Liberty's +100 open on the board as "-100").
  */
 export function probToAmerican(p: number | null | undefined): number | null {
   if (p === null || p === undefined || !Number.isFinite(p) || p <= 0 || p >= 1) return null;
-  return p >= 0.5 ? -Math.round((100 * p) / (1 - p)) : Math.round((100 * (1 - p)) / p);
+  const price = p > 0.5 ? -Math.round((100 * p) / (1 - p)) : Math.round((100 * (1 - p)) / p);
+  return price === -100 ? 100 : price;
 }
+
+/** Even money as +100, and an American price formatted with its sign ("+245", "-305"). */
+export { evenMoney, fmtAmerican } from "../../supabase/functions/_shared/dk-line";
 
 /**
  * Consensus American price across books. American odds are discontinuous -
@@ -93,4 +100,31 @@ export function consensusPriceMove(
     move: Math.round((currentProb - openProb) * 1000) / 10,
     books: opens.length,
   };
+}
+
+/** The identity of one quote in odds_history: a game, a book, a bet type, a side. */
+export interface SnapshotRow {
+  game_id: string;
+  bookmaker: string;
+  odds_type: string;
+  team: string | null;
+  timestamp: string | null;
+}
+
+/**
+ * odds_history is append-only: every sync adds a row per game, book, bet
+ * type and side. Reduce it to the LATEST capture of each before any
+ * consensus or movement math. Feeding every capture to consensusPriceMove
+ * averages a book against its own earlier prices (a price nobody offered)
+ * and counts captures as "books" (Sep 24 2026: NYJ @ DET showed +242, the
+ * mean of the 06:12 and 07:12 DraftKings captures, labeled "2 books").
+ */
+export function latestSnapshots<T extends SnapshotRow>(rows: T[]): T[] {
+  const latest = new Map<string, T>();
+  for (const r of rows) {
+    const key = `${r.game_id}|${r.bookmaker}|${r.odds_type}|${r.team ?? ""}`;
+    const prev = latest.get(key);
+    if (!prev || (r.timestamp ?? "") > (prev.timestamp ?? "")) latest.set(key, r);
+  }
+  return [...latest.values()];
 }

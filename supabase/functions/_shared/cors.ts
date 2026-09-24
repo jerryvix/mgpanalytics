@@ -60,7 +60,7 @@ export function getCorsHeaders(req: Request): Record<string, string> {
 
 /**
  * Legacy CORS headers for functions that haven't migrated yet.
- * Identical to the old wildcard behavior — use getCorsHeaders(req) instead.
+ * Identical to the old wildcard behavior. Use getCorsHeaders(req) instead.
  */
 export const legacyCorsHeaders = {
   "Access-Control-Allow-Origin": "*",

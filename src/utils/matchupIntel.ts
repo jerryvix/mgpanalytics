@@ -129,9 +129,73 @@ export function classifyH2H(
   return { verdict, team1Wins, team2Wins, totalGames, streak };
 }
 
-/** Rank-weighted talent points: top-15 pick territory = 3, first-two-rounds territory = 2, any board spot = 1. */
+// The board runs 200 deep. Ranks past 100 are Day 3 names: they count, but
+// only a little and only up to a cap, so a roster stacked with late-rounders
+// can't outscore real first-round talent.
+const DEPTH_RANK_LIMIT = 200;
+const DEPTH_POINT = 0.5;
+const DEPTH_POINTS_CAP = 2;
+
+/**
+ * Rank-weighted talent points: top-15 pick territory = 3, first-two-rounds
+ * territory (16-50) = 2, rest of the top 100 = 1. Ranks 101-200 add 0.5
+ * each, capped at 2 per team in total: ten #180s score 2, two top-10s
+ * score 6. Ranks past 200 score nothing.
+ */
 export function talentPoints(ranks: number[]): number {
-  return ranks.reduce((sum, r) => sum + (r <= 15 ? 3 : r <= 50 ? 2 : 1), 0);
+  let core = 0;
+  let depth = 0;
+  for (const r of ranks) {
+    if (r <= 15) core += 3;
+    else if (r <= 50) core += 2;
+    else if (r <= 100) core += 1;
+    else if (r <= DEPTH_RANK_LIMIT) depth += DEPTH_POINT;
+  }
+  return core + Math.min(depth, DEPTH_POINTS_CAP);
+}
+
+/** Lowercase, no punctuation or suffixes: "C.J. Carr" and "CJ Carr" compare equal. */
+export function normalizeProspectName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[.'’]/g, "")
+    .replace(/-/g, " ")
+    .replace(/\b(jr|sr|ii|iii|iv|v)\b/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export interface BoardRowLike {
+  rank: number;
+  player_name: string;
+  school: string;
+  captured_at: string;
+}
+
+/**
+ * The board as exactly one capture: rows from the newest captured_at only,
+ * best rank first, one row per player per school. The sync replaces the
+ * board wholesale and fails loudly when it can't prune, but if stale rows
+ * ever slip through (the previous source's "CJ Carr" beside this one's
+ * "C.J. Carr"), they must not double-count a team's talent. Keyed on name
+ * within a school so two different players who share a name both survive.
+ */
+export function latestBoardRows<T extends BoardRowLike>(rows: T[]): T[] {
+  let latest = -Infinity;
+  for (const r of rows) {
+    const t = Date.parse(r.captured_at);
+    if (t > latest) latest = t;
+  }
+  const seen = new Set<string>();
+  return rows
+    .filter((r) => Date.parse(r.captured_at) === latest)
+    .sort((a, b) => a.rank - b.rank)
+    .filter((r) => {
+      const key = `${normalizeProspectName(r.player_name)}|${r.school}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 }
 
 const BOARD_STALE_DAYS = 21;
@@ -144,22 +208,24 @@ export interface TalentEdgeResult {
 
 /**
  * Compare likely-drafted talent between the rosters. A stale or missing
- * board (no capture in 21 days) is "insufficient" - a July board says
- * nothing about November. Fresh board with no prospects on either side is a
- * real "even": most matchups won't feature key draft names, and that's
- * worth knowing too.
+ * board is "insufficient" - a July board says nothing about November.
+ * `boardDate` should be the source's own revision date when known (DraftTek
+ * prints one), not our scrape time: we re-scrape daily, so only the
+ * source's date shows when it has stopped revising. Stale = older than 21
+ * days. Fresh board with no prospects on either side is a real "even": most
+ * matchups won't feature key draft names, and that's worth knowing too.
  */
 export function classifyTalentEdge(
   homeRanks: number[],
   awayRanks: number[],
-  capturedAt: string | Date | null,
+  boardDate: string | Date | null,
   now: Date = new Date()
 ): TalentEdgeResult {
   const homePoints = talentPoints(homeRanks);
   const awayPoints = talentPoints(awayRanks);
 
-  if (!capturedAt) return { lean: "insufficient", homePoints, awayPoints };
-  const captured = typeof capturedAt === "string" ? new Date(capturedAt) : capturedAt;
+  if (!boardDate) return { lean: "insufficient", homePoints, awayPoints };
+  const captured = typeof boardDate === "string" ? new Date(boardDate) : boardDate;
   if (!Number.isFinite(captured.getTime())) return { lean: "insufficient", homePoints, awayPoints };
   const ageDays = (now.getTime() - captured.getTime()) / 86_400_000;
   if (ageDays > BOARD_STALE_DAYS) return { lean: "insufficient", homePoints, awayPoints };

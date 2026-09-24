@@ -98,7 +98,7 @@ serve(async (req) => {
     // Service client for database operations (used by both auth paths)
     supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Cron auth bypass — allows dispatch-syncs to call without user JWT
+    // Cron auth bypass: allows dispatch-syncs to call without user JWT
     const cronSecret = req.headers.get("x-cron-secret");
     if (cronSecret && cronSecret === Deno.env.get("CRON_SECRET")) {
       console.log(`[sync-player-props] Authenticated via cron secret`);
@@ -458,7 +458,7 @@ serve(async (req) => {
 
     console.log(`[sync-player-props] Complete:`, result);
 
-    // Complete sync log — success
+    // Complete sync log: success
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success",
       records_added: totalPropsAdded,
@@ -478,7 +478,7 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error("[sync-player-props] Error:", error);
 
-    // Complete sync log — failure
+    // Complete sync log: failure
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "failed",
       records_added: totalPropsAdded,

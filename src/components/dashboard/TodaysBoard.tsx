@@ -8,15 +8,25 @@ import { TeamLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
 import { isFinalStatus } from "@/lib/gameStatus";
-import { consensusPriceMove } from "@/lib/odds";
+import { fmtAmerican } from "@/lib/odds";
+import { gameMoves, onePerMarket, type BoardMove } from "@/lib/boardMoves";
+import { historyOpens } from "@/hooks/useMarketPulse";
+import { fetchStoredLines, overlayStoredLines } from "@/lib/storedLines";
 import { trendingFor } from "@/data/trendingBets";
+import { useMlbProbables } from "@/hooks/useMlbProbables";
+import { findMatchupForGame } from "@/services/mlb/probablePitchers";
+import { InlineStarters } from "@/components/mlb/ProbablePitcher";
 import { format, parseISO, isSameDay, addDays } from "date-fns";
+import { tbdGameDay, tbdGameDayKey, tbdKickoffLabel } from "@/lib/kickoff";
+import { fetchAllPages } from "@/lib/fetchAllPages";
 
 // Today's Board - the day-to-day companion to the Season Long futures view.
 // Layout approved from the v3 mockup: odds grid on the left, three rails on
 // the right (Sharpest Moves, Market Signal, Streaks & Angles). Odds come from
-// the same synced tables the slates use; movement comes from odds_history;
-// live scores from the same ESPN polling as everywhere else.
+// the same synced tables the slates use, with the stored DraftKings line laid
+// over them (chooseLine); movement reads DraftKings' open against that same
+// number, for the grid's own games (lib/boardMoves.ts); live scores from the
+// same ESPN polling as everywhere else.
 
 type BoardSport = "MLB" | "NFL" | "NCAAF";
 
@@ -34,6 +44,10 @@ interface BoardGame {
   starting_pitcher_away?: string | null;
   home_team_id?: string | null;
   visitor_team_id?: string | null;
+  /** NCAAF: kickoff not set yet, so `date` is a midnight-ET placeholder. */
+  time_tbd?: boolean | null;
+  /** The ESPN feed id odds_history uses (espn_ncaaf_..., espn_mlb_...) */
+  external_id?: string | null;
 }
 
 interface BoardOdds {
@@ -45,50 +59,48 @@ interface BoardOdds {
   total_value: number | null;
   total_over_odds: number | null;
   total_under_odds: number | null;
+  updated_at?: string | null;
+  /** From the stored DraftKings line only; the odds tables keep the home spread price */
+  spread_away_odds?: number | null;
 }
 
-interface MoveRow {
-  gameId: string;
-  market: string; // Spread | Moneyline | Total
-  team: string | null; // team name; "Over"/"Under" for totals
-  /** Moneyline: implied-probability points (+ = market backing this side).
-   *  Spread/Total: line points moved. */
-  move: number;
-  open: number;
-  current: number;
-  books: number;
-  teamsInGame: string[];
-}
+/** Spread | Moneyline | Total; Moneyline moves in implied-probability points, the rest in line points */
+type MoveRow = BoardMove;
 
-const fmtPrice = (v: number | null | undefined) =>
-  v === null || v === undefined ? "-" : v > 0 ? `+${v}` : `${v}`;
-const fmtLine = fmtPrice;
-
-const marketLabel = (t: string) => {
-  const k = t.toLowerCase();
-  if (k.includes("spread")) return "Spread";
-  if (k.includes("total") || k.includes("over") || k.includes("under")) return "Total";
-  return "Moneyline";
-};
+// Even money reads +100, DraftKings' convention
+const fmtPrice = (v: number | null | undefined) => fmtAmerican(v);
+const fmtLine = (v: number | null | undefined) => (v === null || v === undefined ? "-" : v > 0 ? `+${v}` : `${v}`);
 
 // Spread/Total measured in line points; Moneyline in implied-probability
 // points (2 pts ≈ a -110 → -122 shift - a genuine market move).
 const MOVE_THRESHOLD: Record<string, number> = { Spread: 0.5, Total: 0.5, Moneyline: 2 };
 
+// A game with no kickoff time yet belongs to its Eastern calendar day; its
+// placeholder (midnight Eastern) read in Pacific time lands on the day before.
+function onDay(g: BoardGame, day: Date): boolean {
+  return g.time_tbd ? tbdGameDayKey(g.date) === format(day, "yyyy-MM-dd") : isSameDay(parseISO(g.date), day);
+}
+
 async function loadBoard(sport: BoardSport) {
   const windowStart = new Date(Date.now() - 5 * 3600_000).toISOString();
   const windowEnd = new Date(Date.now() + 72 * 3600_000).toISOString();
 
-  let gq = supabase
-    .from(GAME_TABLE[sport] as "games")
-    .select("*")
-    .gte("date", windowStart)
-    .lte("date", windowEnd)
-    .order("date", { ascending: true })
-    .limit(40);
-  if (sport === "NFL") gq = gq.eq("league", "NFL");
-  const { data: games } = await gq;
-  const list = ((games || []) as unknown as BoardGame[]).filter((g) => !isFinalStatus(g.status));
+  // Every game in the window. A .limit(40) here cut NCAAF's 71-game window
+  // off at Saturday 2:00 PM PT (seven ranked matchups missing on Sep 26 2026)
+  // and trimmed MLB's 43-game window on day three.
+  const games = await fetchAllPages((from, to) => {
+    let gq = supabase
+      .from(GAME_TABLE[sport] as "games")
+      .select("*")
+      .gte("date", windowStart)
+      .lte("date", windowEnd)
+      .order("date", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to);
+    if (sport === "NFL") gq = gq.eq("league", "NFL");
+    return gq;
+  });
+  const list = (games as unknown as BoardGame[]).filter((g) => !isFinalStatus(g.status));
 
   // Quiet stretch (preseason, bye weekends): pull the next scheduled slate so
   // the board previews what's coming instead of dead-ending.
@@ -106,76 +118,73 @@ async function loadBoard(sport: BoardSport) {
   }
 
   // DraftKings lines for the grid
+  // (in chunks: a full Saturday's ids in one in.() filter makes a very long URL)
   let oddsMap = new Map<string, BoardOdds>();
-  if (list.length) {
+  // Ids are uuids or ints depending on the table; the builder is typed off the
+  // NFL odds table (int game_id), hence the cast.
+  const gameIds = list.map((g) => g.id) as number[];
+  for (let i = 0; i < gameIds.length; i += 100) {
     const { data: odds } = await supabase
       .from(ODDS_TABLE[sport] as "odds")
       .select("*")
-      .in("game_id", list.map((g) => g.id))
+      .in("game_id", gameIds.slice(i, i + 100))
       .ilike("sportsbook", "%draftkings%");
-    oddsMap = new Map(((odds || []) as unknown as BoardOdds[]).map((o) => [String(o.game_id), o]));
+    for (const o of (odds || []) as unknown as BoardOdds[]) oddsMap.set(String(o.game_id), o);
   }
+  // NCAAF and NFL: the stored DraftKings line, by the same rule as Game
+  // Insights > Market Pulse (lib/marketPulse chooseLine), so a game shows one
+  // number per market here and one tap away. MLB reads nothing extra.
+  const storedLines = await fetchStoredLines(sport, gameIds);
+  oddsMap = overlayStoredLines(oddsMap, storedLines, (id) => ({ game_id: id }) as BoardOdds);
 
-  // Line movement - odds_history rows carry their own team names, so no
-  // fragile id-join with the games table is needed.
+  // Movement: DraftKings' open against the number the grid shows, for the
+  // grid's own games only (lib/boardMoves.ts). The open is the stored line's,
+  // the one Market Pulse reads (NCAAF, NFL); DraftKings' latest odds_history
+  // capture fills any side without one (MLB always).
   const since = new Date(Date.now() - 3 * 24 * 3600_000).toISOString();
-  const { data: hist } = await supabase
-    .from("odds_history")
-    .select("game_id, bookmaker, odds_type, opening_line, current_line, team")
-    .eq("sport", sport)
-    .gte("timestamp", since)
-    .not("opening_line", "is", null)
-    .not("current_line", "is", null);
-
-  const teamsByGame = new Map<string, Set<string>>();
-  for (const r of hist || []) {
-    if (!r.team || r.team === "Over" || r.team === "Under") continue;
-    const s = teamsByGame.get(r.game_id) || new Set<string>();
-    s.add(r.team);
-    teamsByGame.set(r.game_id, s);
-  }
-
-  const groups = new Map<string, { pairs: Array<{ open: number | null; current: number | null }>; team: string | null; gameId: string; market: string }>();
-  for (const r of hist || []) {
-    const market = marketLabel(r.odds_type);
-    const key = `${r.game_id}|${market}|${r.team ?? ""}`;
-    const g = groups.get(key) || { pairs: [], team: r.team, gameId: r.game_id, market };
-    g.pairs.push({ open: r.opening_line, current: r.current_line });
-    groups.set(key, g);
-  }
-  const avg = (a: number[]) => a.reduce((s, x) => s + x, 0) / a.length;
-  const moves: MoveRow[] = [];
-  for (const g of groups.values()) {
-    // Over and Under rows carry the same total line - keep one per game.
-    if (g.market === "Total" && g.team === "Under") continue;
-    let row: Pick<MoveRow, "move" | "open" | "current" | "books"> | null = null;
-    if (g.market === "Moneyline") {
-      // American prices must be averaged in probability space, never
-      // arithmetically - that's what produced impossible board numbers
-      // like "-36.4". Move is in implied-probability points.
-      const c = consensusPriceMove(g.pairs);
-      if (c) row = { move: c.move, open: c.open, current: c.current, books: c.books };
-    } else {
-      // Spread/Total lines are plain points - arithmetic averaging is fine.
-      const valid = g.pairs.filter((p): p is { open: number; current: number } => p.open != null && p.current != null);
-      if (valid.length) {
-        row = {
-          move: Math.round(avg(valid.map((p) => p.current - p.open)) * 10) / 10,
-          open: Math.round(avg(valid.map((p) => p.open)) * 10) / 10,
-          current: Math.round(avg(valid.map((p) => p.current)) * 10) / 10,
-          books: valid.length,
-        };
-      }
+  // Paged: three days of history already runs past PostgREST's 1000-row cap
+  // (1036 NCAAF and 1350 NFL rows on Sep 24 2026), which silently dropped the rest.
+  const hist = await fetchAllPages((from, to) =>
+    supabase
+      .from("odds_history")
+      .select("game_id, bookmaker, odds_type, opening_line, current_line, team, timestamp")
+      .eq("sport", sport)
+      .eq("bookmaker", "draftkings")
+      .gte("timestamp", since)
+      .not("opening_line", "is", null)
+      .not("current_line", "is", null)
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
+  const histByFeed = new Map<string, typeof hist>();
+  for (const r of hist) histByFeed.set(r.game_id, [...(histByFeed.get(r.game_id) ?? []), r]);
+  const historyFor = (g: BoardGame) => {
+    const direct = g.external_id ? histByFeed.get(g.external_id) : undefined;
+    if (direct) return direct;
+    // NFL's games table is BDL-keyed: pair on both team names
+    for (const rows of histByFeed.values()) {
+      const teams = new Set(rows.map((r) => r.team));
+      if (teams.has(g.home_team_name) && teams.has(g.visitor_team_name)) return rows;
     }
-    if (!row || Math.abs(row.move) < (MOVE_THRESHOLD[g.market] ?? 0.5)) continue;
-    moves.push({
-      ...row,
-      gameId: g.gameId,
-      market: g.market,
-      team: g.team,
-      teamsInGame: [...(teamsByGame.get(g.gameId) || [])],
-    });
-  }
+    return [];
+  };
+  const sided: MoveRow[] = list.flatMap((g) => {
+    const id = String(g.id);
+    const stored = (storedLines.get(id) ?? []).filter((l) => l.open_line !== null || l.open_price !== null);
+    const fromHistory = historyOpens(historyFor(g), g.home_team_name, g.visitor_team_name).filter(
+      (h) => !stored.some((l) => l.market === h.market && l.side === h.side),
+    );
+    return gameMoves({ gameId: id, away: g.visitor_team_name, home: g.home_team_name, now: oddsMap.get(id), opens: [...stored, ...fromHistory] });
+  });
+  const significant = (m: MoveRow) => Math.abs(m.move) >= (MOVE_THRESHOLD[m.market] ?? 0.5);
+  // The grid marks both sides of a moneyline move (▲ steamed, ▼ drifting),
+  // keyed by game and team...
+  const mlMoveByKey = new Map<string, number>();
+  for (const m of sided) if (m.market === "Moneyline" && significant(m)) mlMoveByKey.set(`${m.gameId}|${m.team}`, m.move);
+  // ...the rails list a market once: its two sides are one move, mirrored
+  // ("Hurricanes Spread -7 → -17.5" and "Tigers Spread +7 → +17.5"). Keep
+  // the steamed side, the one whose implied probability rose.
+  const moves = onePerMarket(sided).filter(significant);
   // Markets move on different scales - rank by multiples of each market's
   // own significance threshold so a 3-point ML steam can outrank a half-run.
   const strength = (m: MoveRow) => Math.abs(m.move) / (MOVE_THRESHOLD[m.market] ?? 0.5);
@@ -204,7 +213,7 @@ async function loadBoard(sport: BoardSport) {
     }
   }
 
-  return { games: list, nextGames, oddsMap, moves, streaks };
+  return { games: list, nextGames, oddsMap, moves, mlMoveByKey, streaks };
 }
 
 const shortName = (full: string) => full.split(" ").pop() || full;
@@ -223,6 +232,8 @@ const fmtMoveVal = (m: MoveRow, v: number) => (m.market === "Total" ? `${v}` : f
 export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; onShowSeasonLong?: () => void }) {
   const [dayOffset, setDayOffset] = useState(0);
   const live = useLiveScores(sport);
+  // MLB starters: same source and Projected/TBD labels as the slate and sheet
+  const { data: probables } = useMlbProbables(sport === "MLB");
   const { data, isLoading } = useQuery({
     queryKey: ["todays-board", sport],
     queryFn: () => loadBoard(sport),
@@ -233,7 +244,7 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
   const dayGames = useMemo(() => {
     if (!data?.games) return [];
     const day = days[dayOffset];
-    return data.games.filter((g) => isSameDay(parseISO(g.date), day));
+    return data.games.filter((g) => onDay(g, day));
   }, [data, dayOffset, days]);
 
   // What the empty board previews: later games already in the 72h window,
@@ -241,15 +252,12 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
   const upcoming = useMemo(() => {
     if (!data) return [];
     const day = days[dayOffset];
-    const after = data.games.filter((g) => parseISO(g.date) > day && !isSameDay(parseISO(g.date), day));
+    const after = data.games.filter((g) => parseISO(g.date) > day && !onDay(g, day));
     return (after.length ? after : data.nextGames || []).slice(0, 4);
   }, [data, dayOffset, days]);
 
-  // moneyline movement direction per team (matched by name against history rows)
-  const mlMoveFor = (team: string): number | null => {
-    const m = data?.moves.find((x) => x.market === "Moneyline" && x.team === team);
-    return m ? m.move : null;
-  };
+  // moneyline movement direction for one side of one grid game
+  const mlMoveFor = (gameId: string | number, team: string): number | null => data?.mlMoveByKey.get(`${gameId}|${team}`) ?? null;
 
   const sharpest = (data?.moves || []).slice(0, 3);
   const signal = (data?.moves || []).filter((m) => m.market === "Moneyline" || m.market === "Total").slice(0, 2);
@@ -285,8 +293,10 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
         {/* Odds grid */}
         <Card className="bg-gradient-to-b from-card to-card/70 border-border overflow-hidden">
           <CardContent className="p-0">
-            <div className="grid grid-cols-[1fr_88px_88px_88px] gap-2 px-4 py-2.5 border-b border-border font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              <span>Matchup</span>
+            {/* Phone: the matchup takes the full width and the three price
+                columns sit under it, so these labels head those columns. */}
+            <div className="grid grid-cols-3 sm:grid-cols-[1fr_88px_88px_88px] gap-2 px-4 py-2.5 border-b border-border font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+              <span className="hidden sm:block">Matchup</span>
               <span className="text-center">{spreadLabel}</span>
               <span className="text-center">Money</span>
               <span className="text-center">Total</span>
@@ -301,7 +311,7 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
                 {upcoming.length > 0 && (
                   <div className="max-w-md mx-auto">
                     <div className="font-mono text-[10px] uppercase tracking-widest text-terminal-amber mb-1.5">
-                      Next slate · {format(parseISO(upcoming[0].date), "EEE MMM d")}
+                      Next slate · {upcoming[0].time_tbd ? tbdGameDay(upcoming[0].date) : format(parseISO(upcoming[0].date), "EEE MMM d")}
                     </div>
                     {upcoming.map((g) => (
                       <div
@@ -314,13 +324,14 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
                         <TeamLogo sport={sport} name={g.home_team_name} espnId={g.home_team_id} size={16} />
                         <span className="truncate">{shortName(g.home_team_name)}</span>
                         <span className="ml-auto font-mono text-[10px] text-muted-foreground shrink-0">
-                          {format(parseISO(g.date), "EEE h:mm a")}
+                          {g.time_tbd ? tbdKickoffLabel(g.date) : format(parseISO(g.date), "EEE h:mm a")}
                         </span>
                       </div>
                     ))}
                   </div>
                 )}
-                {onShowSeasonLong && (
+                {/* Only when current season-long angles exist: expired ones are hidden */}
+                {onShowSeasonLong && trendingFor(sport).length > 0 && (
                   <div className="text-center">
                     <button
                       onClick={onShowSeasonLong}
@@ -334,22 +345,26 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
             ) : (
               dayGames.map((g, gi) => {
                 const o = data!.oddsMap.get(String(g.id));
-                const liveGame = live.getGame(g.visitor_team_name, g.home_team_name);
+                // Spread prices only as a pair: the odds tables keep the home
+                // price alone, so each side shows its own price only when the
+                // stored DraftKings line supplies the away one too.
+                const spreadPriced = o?.spread_odds != null && o?.spread_away_odds != null;
+                const liveGame = live.getGame(g.visitor_team_name, g.home_team_name, { start: g.date, timeTbd: g.time_tbd });
                 const hot = data!.streaks.find(
                   (s) => s.team && (g.home_team_name.includes(s.team) || g.visitor_team_name.includes(s.team) ||
                     getTeamLast(g.home_team_name) === s.team || getTeamLast(g.visitor_team_name) === s.team)
                 );
-                const awayMlMove = mlMoveFor(g.visitor_team_name);
-                const homeMlMove = mlMoveFor(g.home_team_name);
+                const awayMlMove = mlMoveFor(g.id, g.visitor_team_name);
+                const homeMlMove = mlMoveFor(g.id, g.home_team_name);
                 return (
                   <motion.div
                     key={String(g.id)}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(gi * 0.04, 0.3) }}
-                    className="grid grid-cols-[1fr_88px_88px_88px] gap-2 px-4 py-3 border-b border-border/60 items-center"
+                    className="grid grid-cols-3 sm:grid-cols-[1fr_88px_88px_88px] gap-x-2 gap-y-3 sm:gap-y-2 px-4 py-3 border-b border-border/60 items-center"
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 col-span-3 sm:col-span-1">
                       <div className="flex items-center gap-2 font-semibold text-sm">
                         <TeamLogo sport={sport} name={g.visitor_team_name} espnId={g.visitor_team_id} size={18} />
                         <span className="truncate">{shortName(g.visitor_team_name)}</span>
@@ -368,18 +383,35 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
                         {liveGame?.state === "in" ? (
                           <span className="inline-flex items-center gap-1.5"><LiveBadge detail={liveGame.detail} /></span>
                         ) : (
-                          format(parseISO(g.date), "h:mm a")
+                          g.time_tbd ? "Time TBD" : format(parseISO(g.date), "h:mm a")
                         )}
                         {g.venue ? ` · ${g.venue}` : ""}
-                        {sport === "MLB" && g.starting_pitcher_away && g.starting_pitcher_home
-                          ? ` · ${lastWord(g.starting_pitcher_away)} vs ${lastWord(g.starting_pitcher_home)}`
-                          : ""}
+                        {sport === "MLB" && (
+                          <span className="hidden sm:inline">
+                            <InlineStarters
+                              matchup={findMatchupForGame(probables, g)}
+                              fallbackAway={probables ? null : g.starting_pitcher_away}
+                              fallbackHome={probables ? null : g.starting_pitcher_home}
+                            />
+                          </span>
+                        )}
                         {hot ? ` · ${hot.name} ${hot.streak}-game hit streak 🔥` : ""}
                       </div>
+                      {/* Phones: starters on their own line so neither name loses its tag to the truncation above */}
+                      {sport === "MLB" && (
+                        <div className="sm:hidden font-mono text-[10px] text-muted-foreground mt-0.5">
+                          <InlineStarters
+                            matchup={findMatchupForGame(probables, g)}
+                            fallbackAway={probables ? null : g.starting_pitcher_away}
+                            fallbackHome={probables ? null : g.starting_pitcher_home}
+                            separator={false}
+                          />
+                        </div>
+                      )}
                     </div>
                     <PillCol
-                      top={o?.spread_value != null ? `${fmtLine(-o.spread_value)} ${fmtPrice(o.spread_odds)}` : "-"}
-                      bottom={o?.spread_value != null ? `${fmtLine(o.spread_value)} ${fmtPrice(o.spread_odds)}` : "-"}
+                      top={o?.spread_value != null ? `${fmtLine(-o.spread_value)}${spreadPriced ? ` ${fmtPrice(o.spread_away_odds)}` : ""}` : "-"}
+                      bottom={o?.spread_value != null ? `${fmtLine(o.spread_value)}${spreadPriced ? ` ${fmtPrice(o.spread_odds)}` : ""}` : "-"}
                     />
                     <PillCol
                       top={fmtPrice(o?.moneyline_away)}
@@ -412,7 +444,7 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
                     {fmtMoveVal(m, m.open)} → {fmtMoveVal(m, m.current)}
                   </span>
                   <span className="block font-mono text-[10px] text-muted-foreground mt-0.5">
-                    across {m.books} book{m.books === 1 ? "" : "s"}
+                    DraftKings, open to now
                     {m.market === "Moneyline" ? ` · ${m.move > 0 ? "+" : ""}${m.move} pts implied` : ""}
                   </span>
                 </div>
@@ -438,7 +470,7 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
               ))
             )}
             <p className="font-mono text-[10px] text-muted-foreground pt-2">
-              "Most-backed" here means market signal - biggest line moves across books.
+              "Most-backed" here means market signal - the biggest DraftKings moves since the open.
             </p>
           </Rail>
 
@@ -459,7 +491,7 @@ export function TodaysBoard({ sport, onShowSeasonLong }: { sport: BoardSport; on
               </div>
             ))}
             {(data?.streaks.length ?? 0) === 0 && angles.length === 0 && (
-              <RailQuiet text="Angles land here on game days." />
+              <RailQuiet text="No current angles. Curated angles show here when they're verified against today's lines." />
             )}
           </Rail>
         </div>

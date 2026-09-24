@@ -1,6 +1,6 @@
 // Backfill NFL weekly fantasy scoring from nflverse (free, no API key).
 // One season per invocation (edge-function timeout pattern, same as
-// backfill-nba-games). Body: { season: 2021 }. Idempotent — upserts on
+// backfill-nba-games). Body: { season: 2021 }. Idempotent: upserts on
 // (gsis_id, season, week, season_type).
 //
 // Source asset: stats_player release on nflverse-data. Note the old
@@ -21,7 +21,7 @@ const NFLVERSE_URL = (season: number) =>
 
 const FANTASY_POS_GROUPS = new Set(["QB", "RB", "WR", "TE"]);
 
-// Minimal RFC-4180 field splitter — handles quoted fields with embedded
+// Minimal RFC-4180 field splitter: handles quoted fields with embedded
 // commas/quotes without materializing 190-column row objects for a ~15MB file.
 function splitCsvLine(line: string): string[] {
   const fields: string[] = [];
@@ -134,7 +134,7 @@ serve(async (req) => {
       const body = await req.json();
       if (body.season) season = Number(body.season);
     } catch {
-      // No body — require an explicit season below
+      // No body: require an explicit season below
     }
 
     if (!season || !Number.isInteger(season) || season < 1999 || season > 2100) {

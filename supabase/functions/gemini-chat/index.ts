@@ -1,6 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { fmtAmerican, withDkLines } from "../_shared/dk-line.ts";
+import { isPulseQuestion, marketPulseBlock } from "../_shared/pulse-chat.ts";
+import { resolveLeague } from "../_shared/league-detect.ts";
+import {
+  addDays,
+  etDate,
+  fetchProbableMatchups,
+  formatPitcherLast3,
+  formatPitcherSeason,
+  nextMatchupForTeam,
+  type PitcherLine,
+  type ProbableMatchup,
+  type ProjectionRow,
+} from "../_shared/mlb-statsapi.ts";
 
 // Rate limit: max requests per user per window
 const RATE_LIMIT_MAX = 10;
@@ -95,7 +109,7 @@ function extractTeamNames(
 }
 
 // ============================================================
-// SYSTEM PROMPT — BASE + QUESTION-TYPE-SPECIFIC RULES
+// SYSTEM PROMPT: BASE + QUESTION-TYPE-SPECIFIC RULES
 // ============================================================
 const SYSTEM_INSTRUCTION_BASE = `You are the MGP Analyst, a sports analytics assistant designed to help users explore and understand sports data. You operate as a teacher-student model: your job is to surface information, ask clarifying questions, and empower the user to draw their own conclusions.
 
@@ -116,54 +130,54 @@ RESPONSE STYLE (applies to EVERY response)
    then at most one short clause of context. Never restate the question, never
    repeat context already shown in a table, no filler ("after a fantastic
    season", "it's worth noting").
-2. YEARS: always use apostrophe shorthand — '24, '25, ('20-'21) — never
+2. YEARS: always use apostrophe shorthand, '24, '25, ('20-'21), never
    four-digit years like 2024, except where ambiguity demands it (e.g. 1941).
 3. TABLES: use GFM markdown tables (| Header | ... | with a |---| separator row)
    whenever ranking or comparing 3+ rows. Keep tables to the essential columns.
-   NEVER include a column you cannot fill for EVERY row — no "—" cells. If one
+   NEVER include a column you cannot fill for EVERY row: no placeholder "-" cells. If one
    row's value is missing, first try web search to fill it; if it still can't
    be confirmed, drop the column entirely and put the stats you do have in the
    bullets instead. A complete 3-column table beats a gappy 4-column one.
-4. STAT NAMES: use standard sportsbook terms — "INTs" (or interceptions), pass
+4. STAT NAMES: use standard sportsbook terms: "INTs" (or interceptions), pass
    yds, rush yds, rec yds, TDs. Never "turnovers" unless the point is
    specifically combined fumbles+INTs, in which case say so explicitly.
 5. STRUCTURE: short lead line → table (if ranking/comparing) → tight bullets
    only for what the table can't show → ONE closing trend/insight line (e.g.
    "The last 13 MVPs have all been QBs"). The closing insight is required when
-   a real pattern exists — one sentence, no lead-in phrase.
+   a real pattern exists: one sentence, no lead-in phrase.
 6. LENGTH: prefer the shortest complete answer. A typical response is a lead
    line, one table OR 3-4 bullets, and a closing insight.
 
 ═══════════════════════════════════════════════════════════
-SOURCE OF TRUTH — TWO MODES (READ FIRST)
+SOURCE OF TRUTH: TWO MODES (READ FIRST)
 ═══════════════════════════════════════════════════════════
 
 Every answer runs in one of two modes. Decide which BEFORE you write:
 
-MODE A — MGP DATA IS PROVIDED. A [MGP DATA] section below contains numbers
+MODE A: MGP DATA IS PROVIDED. A [MGP DATA] section below contains numbers
 relevant to the question (odds, stat leaders, hit streaks, player stats,
 schedules, scores).
   • Use ONLY those numbers. They are exactly what the user sees elsewhere in the
-    app, so your answer MUST match them — same names, same order, same values.
+    app, so your answer MUST match them: same names, same order, same values.
   • Do NOT "correct", round, re-rank, or supplement them with figures from web
     search or memory, even if you believe you know a newer number. The app's
     data is the source of truth here.
   • A block marked AUTHORITATIVE overrides everything else, including search.
 
-MODE B — NO MGP DATA covers the question (the app doesn't track it).
+MODE B: NO MGP DATA covers the question (the app doesn't track it).
   • Use the web search tool to find current, real information. Never answer a
     factual question from memory alone when you could search.
   • Present it cleanly: one short lead sentence, then tight bullet points. Use a
     markdown table whenever you rank or compare (leaderboards, head-to-heads,
     multi-row stats).
   • NEVER fabricate a specific number, price, date, or record. If search can't
-    confirm it, briefly say what you couldn't confirm — don't guess.
+    confirm it, briefly say what you couldn't confirm. Don't guess.
 
 If a question is part Mode A and part Mode B, answer each part in its own mode
 and keep them clearly separated.
 
 ═══════════════════════════════════════════════════════════
-CRITICAL RULES — ZERO HALLUCINATION
+CRITICAL RULES: ZERO HALLUCINATION
 ═══════════════════════════════════════════════════════════
 
 1. NEVER state a specific stat, number, price, streak, or record unless it comes
@@ -173,7 +187,7 @@ CRITICAL RULES — ZERO HALLUCINATION
 3. NON-PRESCRIPTIVE: never predict outcomes, recommend bets, or tell the user
    what to do. Present data descriptively.
 4. WHEN UNSURE, SAY SO in one short clause ("I couldn't confirm a current figure
-   for that") — an honest one-line gap beats a confident wrong answer. Then pivot
+   for that"): an honest one-line gap beats a confident wrong answer. Then pivot
    to what IS available; never end on the limitation alone.
 
 ═══════════════════════════════════════════════════════════
@@ -238,7 +252,7 @@ This question is about odds, lines, props, or market data.
 
   CONTEXTUAL: `
 ═══════════════════════════════════════════════════════════
-QUESTION TYPE: CONTEXTUAL (Hybrid — Data Preferred)
+QUESTION TYPE: CONTEXTUAL (Hybrid, Data Preferred)
 ═══════════════════════════════════════════════════════════
 
 This question is about trends, matchup analysis, or situational factors.
@@ -249,12 +263,12 @@ This question is about trends, matchup analysis, or situational factors.
 
   FACTUAL: `
 ═══════════════════════════════════════════════════════════
-QUESTION TYPE: FACTUAL (Open — General Knowledge Allowed)
+QUESTION TYPE: FACTUAL (Open, General Knowledge Allowed)
 ═══════════════════════════════════════════════════════════
 
 This question is about factual sports information (stats, history, biographical info).
 - You MUST use the google_search tool to answer this question. Search for current, real-time information.
-- [MGP DATA] may contain supplementary context (odds, upcoming games) — use it alongside search results.
+- [MGP DATA] may contain supplementary context (odds, upcoming games). Use it alongside search results.
 - NEVER say "I don't have", "I'm unable to find", or "that data isn't available". Search for it instead.
 - NEVER fabricate odds, lines, or market data even in factual mode.
 - Still follow teacher-student framing: present facts descriptively, end with exploration prompts.`,
@@ -287,11 +301,73 @@ interface FetchedData {
   head_to_head?: unknown;
   head_to_head_games?: unknown[];
   hit_streaks?: unknown[];
+  mlb_probables?: ProbableMatchup[];
   stat_leaders?: { sport: string; label: string; season: number; isRate: boolean; rows: unknown[] };
 }
 
 // ============================================================
-// STAT-LEADER DETECTION — grounds "who leads/most/top in <stat>" questions
+// MLB PROBABLE STARTERS - MLB's own announced starters with season and
+// last-three-start lines (statsapi.mlb.com, keyless). Same rule as the slate
+// cards, game sheet and hit streak table: unannounced starters use the ESPN
+// projection on our mlb_games rows, marked projected, or TBD if unresolvable.
+// ============================================================
+async function fetchMlbProbables(supabase: any, now: Date): Promise<ProbableMatchup[]> {
+  const today = etDate(now);
+  const tomorrow = addDays(today, 1);
+  let projections: ProjectionRow[] = [];
+  try {
+    const { data, error } = await supabase
+      .from("mlb_games")
+      .select("date, home_team_name, visitor_team_name, starting_pitcher_home, starting_pitcher_away")
+      .gte("date", `${today}T04:00:00Z`)
+      .lt("date", `${addDays(tomorrow, 1)}T12:00:00Z`)
+      .order("date", { ascending: true });
+    if (error) console.error("Projected starters unavailable:", error.message);
+    else projections = data ?? [];
+  } catch (e) {
+    console.error("Projected starters unavailable:", e);
+  }
+  const all = await fetchProbableMatchups(today, tomorrow, Number(today.slice(0, 4)), projections);
+  return all
+    .filter((m) => !m.game.isPlaceholder && !m.game.isFinal)
+    .sort((a, b) => Date.parse(a.game.gameDate) - Date.parse(b.game.gameDate));
+}
+
+// Baseball-only vocabulary ("probable" alone is also an NFL injury tag).
+const PITCH_QUESTION = /\b(pitch(er|ers|ing)|probable\s+(starters?|pitchers?)|starting\s+pitchers?|on\s+the\s+mound|whip|strikeouts?)\b/i;
+
+function pitcherBrief(line: PitcherLine | null | undefined): string {
+  if (!line) return "TBD";
+  const projected = line.projected ? " (projected, not yet announced by MLB)" : "";
+  const hand = line.hand ? `, ${line.hand}HP` : "";
+  const season = formatPitcherSeason(line);
+  const last3 = formatPitcherLast3(line);
+  return `${line.name}${projected}${hand}${season ? `: ${season}` : ""}${last3 ? `; ${last3}` : ""}`;
+}
+
+function etGameTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/New_York",
+  });
+}
+
+// Kickoff for an upcoming-games line. NCAAF rows whose time the networks have
+// not set carry time_tbd, and their date is a midnight-ET placeholder: print
+// the Eastern calendar day and "kickoff time TBD", never "12:00 AM".
+function upcomingKickoff(g: { date: string; time_tbd?: boolean | null }): string {
+  if (g.time_tbd) {
+    const day = new Date(g.date).toLocaleDateString("en-US", {
+      weekday: "short", month: "short", day: "numeric", timeZone: "America/New_York",
+    });
+    return `${day}, kickoff time TBD`;
+  }
+  return `${new Date(g.date).toLocaleString("en-US", {
+    weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York",
+  })} ET`;
+}
+
+// ============================================================
+// STAT-LEADER DETECTION: grounds "who leads/most/top in <stat>" questions
 // in our own player_season_stats (the exact data the Players pages show), so
 // chat can never invent a leaderboard that contradicts the dashboard.
 // ============================================================
@@ -354,7 +430,7 @@ function detectStatLeader(message: string, league: string): StatLeaderReq | null
   else if (league === "NBA" || /\bnba\b|basketball/.test(m)) { sport = "NBA"; hit = pick(NBA); }
   else if (league === "NFL" || /\bnfl\b|football/.test(m)) { sport = "NFL"; hit = pick(NFL); }
   else {
-    // No explicit league — infer from the stat keyword, MLB first (in-season)
+    // No explicit league: infer from the stat keyword, MLB first (in-season)
     hit = pick(MLB); if (hit) sport = "MLB";
     if (!hit) { hit = pick(NBA); if (hit) sport = "NBA"; }
     if (!hit) { hit = pick(NFL); if (hit) sport = "NFL"; }
@@ -375,6 +451,25 @@ const ODDS_TABLE: Record<string, string> = {
   NCAAF: "ncaaf_odds", MLB: "mlb_odds",
 };
 
+/**
+ * DraftKings' line as the app shows it. For NCAAF and NFL the odds tables are
+ * written once a day, while sync-betting-splits stores DraftKings' line
+ * (betting_lines) every run; the app shows whichever is the fresher capture
+ * (_shared/dk-line.ts chooseLine), so the chat quotes that same number:
+ * each game's DraftKings row takes the stored line where it is fresher, a
+ * game with only a stored line gets a DraftKings row, and updated_at becomes
+ * the oldest capture behind the numbers (withDkLines). Other sports and books
+ * pass through, and a failed betting_lines read leaves the odds table's rows.
+ */
+async function dkOdds(supabase: any, league: string, odds: any[], gameIds: Array<string | number>): Promise<any[]> {
+  try {
+    return await withDkLines(supabase, league, odds, gameIds);
+  } catch (e) {
+    console.error("Error fetching betting_lines:", e);
+    return odds;
+  }
+}
+
 function getInSeasonSports(): string[] {
   const month = new Date().getMonth(); // 0-indexed
   const sports: string[] = [];
@@ -387,15 +482,9 @@ function getInSeasonSports(): string[] {
 // ============================================================
 // INTENT CLASSIFICATION
 // ============================================================
-function detectLeague(message: string): string | null {
-  const m = message.toLowerCase();
-  if (/\b(nfl|football|super\s*bowl|superbowl|chiefs|eagles|bills|ravens|cowboys|niners|packers|lions|texans|commanders|dolphins|broncos|raiders|jets|giants|bears|vikings|colts|jaguars|titans|bengals|browns|steelers|saints|buccaneers|panthers|falcons|cardinals|seahawks|rams|chargers)\b/.test(m)) return "NFL";
-  if (/\b(nba|lakers|celtics|warriors|bucks|heat|nuggets|suns|clippers|sixers|knicks|nets|bulls|mavericks|grizzlies|kings|pelicans|timberwolves|thunder|rockets|spurs|magic|hawks|hornets|pistons|pacers|wizards|blazers|jazz|raptors|cavaliers)\b/.test(m)) return "NBA";
-  if (/\b(ncaab|ncaamb|college basketball|march madness|duke|kentucky|kansas|gonzaga|purdue|uconn|houston|tennessee|auburn|alabama|arizona|baylor|creighton|marquette|illinois|illini|michigan state|michigan|ohio state|iowa state|iowa|wisconsin|badgers|minnesota|indiana|hoosiers|penn state|maryland|terps|rutgers|nebraska|northwestern|oregon|washington|ucla|usc|florida|gators|georgia|lsu|ole miss|mississippi state|arkansas|razorbacks|missouri|texas a&m|a&m|south carolina|vanderbilt|oklahoma|texas|iowa state|cyclones|texas tech|tcu|cincinnati|bearcats|ucf|byu|west virginia|oklahoma state|colorado|arizona state|utah|kansas state|north carolina|unc|tar heels|virginia tech|virginia|wake forest|clemson|louisville|pitt|pittsburgh|syracuse|notre dame|boston college|georgia tech|stanford|smu|villanova|seton hall|xavier|butler|depaul|georgetown|hoyas|providence|st johns|dayton|memphis|san diego state|wichita state)\b/.test(m)) return "NCAAB";
-  if (/\b(ncaaf|college football|cfb|playoff|buckeyes|crimson tide|bulldogs|wolverines|longhorns|gators|seminoles|tigers|sooners)\b/.test(m)) return "NCAAF";
-  if (/\b(mlb|baseball|yankees|dodgers|braves|astros|phillies|padres|mets|orioles|guardians|rangers|mariners|twins|rays|diamondbacks|cubs|cardinals|red sox|giants|angels|athletics|royals|brewers|pirates|reds|tigers|nationals|rockies|marlins|white sox)\b/.test(m)) return "MLB";
-  return null; // No sport keyword detected — will query user's active sports
-}
+// detectLeague (the keyword detection) lives in _shared/league-detect.ts,
+// word lists unchanged; resolveLeague there also settles college football vs
+// college basketball for college team names (see the call in serve()).
 
 function detectIntent(message: string): string {
   const m = message.toLowerCase();
@@ -430,8 +519,31 @@ function classifyQuestionType(message: string): QuestionType {
     return "CONTEXTUAL";
   }
 
-  // Default: FACTUAL — pure sports facts, stats, history, biographical
+  // Default: FACTUAL, pure sports facts, stats, history, biographical
   return "FACTUAL";
+}
+
+// A player's embedded player_season_stats come back as every season and
+// season type in no particular order, so [0] was an arbitrary row (a Packers
+// answer gave Christian Watson a 2024 postseason 620 rec yds instead of his
+// 2026 line of 188). NFL: the current season's regular-season row; other
+// sports, or no current row: the newest regular-season row. Never arbitrary.
+function pickSeasonRow(rows: any[] | undefined, sport: string, now: Date): any | null {
+  if (!rows?.length) return null;
+  const regular = rows.filter((r) => (r.season_type ?? "regular") === "regular");
+  const pool = regular.length ? regular : rows;
+  if (sport === "NFL") {
+    const currentSeason = now.getMonth() <= 1 ? now.getFullYear() - 1 : now.getFullYear();
+    const current = pool.find((r) => r.season === currentSeason);
+    if (current) return current;
+  }
+  return [...pool].sort((a, b) => (b.season ?? 0) - (a.season ?? 0))[0] ?? null;
+}
+
+// Label for the row pickSeasonRow chose. With no regular-season row at all it
+// falls back to a postseason row, which must never read as the regular season.
+function seasonLabel(row: any): string {
+  return `${row.season} ${row.season_type === "postseason" ? "postseason" : "regular season"}`;
 }
 
 // ============================================================
@@ -536,6 +648,9 @@ async function fetchRelevantData(
           odds = data;
         }
 
+        // NCAAF/NFL: the same DraftKings number the app shows
+        odds = await dkOdds(supabase, league, odds ?? [], gameIds);
+
         if (odds?.length) {
           fetchedData.odds = odds;
           sources.push({
@@ -551,7 +666,25 @@ async function fetchRelevantData(
     }
   }
 
-  // Hit-streak questions MUST be answered from our own database — it's the
+  // MLB probable starters for today and tomorrow, straight from MLB: grounds
+  // pitcher questions and gives each streak hitter his next opposing starter.
+  if (league === "MLB") {
+    try {
+      fetchedData.mlb_probables = await fetchMlbProbables(supabase, now);
+      if (fetchedData.mlb_probables.length) {
+        sources.push({
+          provider: "mlb_statsapi",
+          endpoint: "MLB/probable_pitchers",
+          fetched_at: now.toISOString(),
+          ids: {},
+        });
+      }
+    } catch (e) {
+      console.error("Error fetching MLB probables:", e);
+    }
+  }
+
+  // Hit-streak questions MUST be answered from our own database: it's the
   // exact data the dashboard shows, so chat and UI can never contradict each
   // other. Runs for ANY question type (web results routinely serve stale
   // prior-season numbers for "active streak" questions).
@@ -560,7 +693,7 @@ async function fetchRelevantData(
       const season = now.getFullYear();
       const { data: streaks } = await supabase
         .from("player_season_stats")
-        .select("player_id, hit_streak, hit_streak_avg, batting_avg")
+        .select("player_id, hit_streak, hit_streak_avg, batting_avg, on_base_pct, slugging_pct, ops, home_runs")
         .eq("sport", "MLB")
         .eq("season", season)
         .gte("hit_streak", 3)
@@ -571,19 +704,28 @@ async function fetchRelevantData(
         const ids = streaks.map((s: any) => s.player_id);
         const { data: streakPlayers } = await supabase
           .from("players")
-          .select("id, name, team_abbr")
+          .select("id, name, team_abbr, team_name")
           .in("id", ids);
-        const pmap = new Map((streakPlayers || []).map((p: any) => [p.id, p]));
+        const pmap = new Map<string, any>((streakPlayers || []).map((p: any) => [p.id, p]));
+        const probables = fetchedData.mlb_probables ?? [];
         fetchedData.hit_streaks = streaks
           .map((s: any) => {
             const p = pmap.get(s.player_id);
             if (!p) return null;
+            const next = p.team_name ? nextMatchupForTeam(probables, p.team_name) : null;
+            const starter = next ? (next.isHome ? next.matchup.away : next.matchup.home) : null;
             return {
               name: p.name,
               team: p.team_abbr,
               streak: s.hit_streak,
               streak_avg: s.hit_streak_avg,
               season_avg: s.batting_avg,
+              obp: s.on_base_pct,
+              slg: s.slugging_pct,
+              home_runs: s.home_runs,
+              next_opponent: next ? (next.isHome ? next.matchup.game.away.name : next.matchup.game.home.name) : null,
+              next_game_time: next ? next.matchup.game.gameDate : null,
+              next_starter: next ? pitcherBrief(starter) : null,
             };
           })
           .filter(Boolean);
@@ -599,7 +741,7 @@ async function fetchRelevantData(
     }
   }
 
-  // Stat-leaderboard questions MUST be answered from our database — these are
+  // Stat-leaderboard questions MUST be answered from our database: these are
   // the exact leaderboards shown on the Players pages, so chat can never invent
   // a different top-N. Runs for ANY question type.
   {
@@ -617,17 +759,27 @@ async function fetchRelevantData(
           .maybeSingle();
         const season = seasonRow?.season ?? now.getFullYear();
 
-        let q = supabase
-          .from("player_season_stats")
-          .select(`player_id, ${leaderReq.column}, games_played, at_bats`)
-          .eq("sport", leaderReq.sport)
-          .eq("season", season)
-          .not(leaderReq.column, "is", null)
-          .order(leaderReq.column, { ascending: false })
-          .limit(10);
-        // Rate stats need a minimum sample or a scrub leads the board
-        if (leaderReq.isRate && leaderReq.sport === "MLB") q = q.gte("at_bats", 40);
-        const { data: leaders } = await q;
+        const leaderQuery = (qualifiedOnly: boolean) => {
+          let q = supabase
+            .from("player_season_stats")
+            .select(`player_id, ${leaderReq.column}, games_played, at_bats`)
+            .eq("sport", leaderReq.sport)
+            .eq("season", season)
+            .not(leaderReq.column, "is", null)
+            .order(leaderReq.column, { ascending: false })
+            .limit(10);
+          // Rate stats need a minimum sample or a scrub leads the board.
+          if (leaderReq.isRate && leaderReq.sport === "MLB") q = q.gte("at_bats", 40);
+          // Every MLB hitter has a season row now, so rank rate stats by MLB's
+          // batting-title rule (sync-mlb-hitting stamps raw_data.qualified),
+          // the same pool as the Players grid.
+          if (qualifiedOnly) q = q.eq("raw_data->>qualified", "true");
+          return q;
+        };
+        const mlbRate = leaderReq.isRate && leaderReq.sport === "MLB";
+        let { data: leaders } = await leaderQuery(mlbRate);
+        // Rows written before the flag existed: fall back to the 40 AB floor.
+        if (mlbRate && !leaders?.length) ({ data: leaders } = await leaderQuery(false));
 
         if (leaders?.length) {
           const ids = leaders.map((r: any) => r.player_id);
@@ -635,7 +787,7 @@ async function fetchRelevantData(
             .from("players")
             .select("id, name, team_abbr")
             .in("id", ids);
-          const pmap = new Map((lp || []).map((p: any) => [p.id, p]));
+          const pmap = new Map<string, any>((lp || []).map((p: any) => [p.id, p]));
           const rows = leaders
             .map((r: any) => {
               const p = pmap.get(r.player_id);
@@ -665,7 +817,7 @@ async function fetchRelevantData(
     }
   }
 
-  // Fetch player stats if relevant — skip for FACTUAL questions where
+  // Fetch player stats if relevant. Skip for FACTUAL questions where
   // Gemini + Google Search is more accurate than our partial roster data
   if ((intent === "player_stats" || intent === "general") && questionType !== "FACTUAL") {
     try {
@@ -676,6 +828,11 @@ async function fetchRelevantData(
         .from("players")
         .select("*, player_season_stats(*)")
         .eq("sport", sport);
+
+      // NFL rosters: rostered players only. Released players keep their row
+      // (stats stay linked) but are flagged inactive by sync-nfl-players; a
+      // Green Bay answer once listed four cut players as current Packers.
+      if (sport === "NFL") query = query.eq("status", "active");
 
       if (team1) {
         // Team-specific: all players for this team (no is_featured filter)
@@ -690,8 +847,8 @@ async function fetchRelevantData(
       if (players?.length) {
         // Sort by PPG descending so leading scorers come first
         players.sort((a: any, b: any) => {
-          const aPPG = a.player_season_stats?.[0]?.points_per_game || 0;
-          const bPPG = b.player_season_stats?.[0]?.points_per_game || 0;
+          const aPPG = pickSeasonRow(a.player_season_stats, sport, now)?.points_per_game || 0;
+          const bPPG = pickSeasonRow(b.player_season_stats, sport, now)?.points_per_game || 0;
           return bPPG - aPPG;
         });
         fetchedData.players = players;
@@ -977,12 +1134,14 @@ async function fetchMultiSportData(
         // Fetch odds scoped to these games
         if (oddsTable && (intent === "odds" || intent === "general" || intent === "games" || intent === "favored")) {
           const gameIds = games.map((g: any) => g.id);
-          const { data: odds } = await supabase
+          const { data: rawOdds } = await supabase
             .from(oddsTable)
             .select("*")
             .in("game_id", gameIds)
             .order("updated_at", { ascending: false })
             .limit(40);
+          // NCAAF/NFL: the same DraftKings number the app shows
+          const odds = await dkOdds(supabase, sport, rawOdds ?? [], gameIds);
 
           if (odds?.length) {
             oddsBySport[sport] = odds;
@@ -1022,11 +1181,11 @@ async function fetchMultiSportData(
   }));
 
   // Format the multi-sport data for the prompt
-  let prompt = "\n[MGP DATA — MULTI-SPORT]\n";
+  let prompt = "\n[MGP DATA: MULTI-SPORT]\n";
   const totalGames = Object.values(gamesBySport).reduce((sum, g) => sum + g.filter(() => true).length, 0);
 
   if (totalGames === 0) {
-    prompt += `No upcoming games found for ${sportsToQuery.join(", ")} in the next 48 hours.\nYou are in FACTUAL mode with Google Search enabled — answer using your knowledge and search results.\n`;
+    prompt += `No upcoming games found for ${sportsToQuery.join(", ")} in the next 48 hours.\nYou are in FACTUAL mode with Google Search enabled: answer using your knowledge and search results.\n`;
     return { data: { gamesBySport, oddsBySport }, formattedPrompt: prompt, sources };
   }
 
@@ -1038,11 +1197,10 @@ async function fetchMultiSportData(
 
     prompt += `\n📅 UPCOMING ${sport} GAMES:\n`;
     (games as any[]).slice(0, 8).forEach((g: any) => {
-      const date = new Date(g.date).toLocaleString("en-US", {
-        weekday: "short", month: "short", day: "numeric",
-        hour: "numeric", minute: "2-digit", timeZone: "America/New_York",
-      });
-      prompt += `• ${g.visitor_team_name} @ ${g.home_team_name} — ${date} ET\n`;
+      const date = upcomingKickoff(g);
+      // No MLB starters here: this path has no way to tell MLB's announced
+      // starters from projections. Pitcher questions route to the MLB path.
+      prompt += `• ${g.visitor_team_name} @ ${g.home_team_name} - ${date}\n`;
     });
 
     const odds = oddsBySport[sport];
@@ -1062,7 +1220,7 @@ async function fetchMultiSportData(
         const age = getAgeString(freshest.updated_at);
         prompt += `\n${matchup} (updated ${age}):\n`;
         for (const o of gameOdds.slice(0, 2)) {
-          prompt += `  • ${o.sportsbook}: Spread ${formatSpread(o.spread_value)}, ML Home ${o.moneyline_home || "—"} / Away ${o.moneyline_away || "—"}, Total O/U ${o.total_value || "—"}\n`;
+          prompt += `  • ${o.sportsbook}: Spread ${formatSpread(o.spread_value)}, ML Home ${fmtAmerican(o.moneyline_home, "n/a")} / Away ${fmtAmerican(o.moneyline_away, "n/a")}, Total O/U ${o.total_value ?? "n/a"}\n`;
         }
       }
     }
@@ -1092,13 +1250,13 @@ function getAgeString(updatedAt: string): string {
 }
 
 function formatSpread(value: number | null): string {
-  if (value == null) return "—";
+  if (value == null) return "n/a";
   return value > 0 ? `+${value}` : `${value}`;
 }
 
 function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: string, league?: string): string {
   if (Object.keys(data).length === 0 || Object.values(data).every(v => !v || (Array.isArray(v) ? v.length === 0 : false))) {
-    return `\n[MGP DATA]\nNo matching data found in the database for this ${intent || "general"} query about ${league || "sports"}.\nYou are in FACTUAL mode with Google Search enabled — answer using your knowledge and search results.\nDo NOT say "I don't have that data." Instead, provide what you know and note if live DB data would add precision.\n`;
+    return `\n[MGP DATA]\nNo matching data found in the database for this ${intent || "general"} query about ${league || "sports"}.\nYou are in FACTUAL mode with Google Search enabled: answer using your knowledge and search results.\nDo NOT say "I don't have that data." Instead, provide what you know and note if live DB data would add precision.\n`;
   }
 
   let prompt = "\n[MGP DATA]\n";
@@ -1106,11 +1264,22 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
   if (data.games?.length) {
     prompt += "\n📅 UPCOMING GAMES:\n";
     data.games.slice(0, 5).forEach((g: any) => {
-      const date = new Date(g.date).toLocaleString("en-US", { 
-        weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York"
-      });
-      prompt += `• ${g.visitor_team_name} @ ${g.home_team_name} - ${date} ET\n`;
+      const date = upcomingKickoff(g);
+      // Starters come from the MLB block below. Only if MLB was unreachable
+      // fall back to our listed names, flagged as unconfirmed.
+      const starters = league === "MLB" && !data.mlb_probables?.length
+        ? ` (listed starters, unconfirmed: ${g.starting_pitcher_away || "TBD"} vs ${g.starting_pitcher_home || "TBD"})`
+        : "";
+      prompt += `• ${g.visitor_team_name} @ ${g.home_team_name} - ${date}${starters}\n`;
     });
+  }
+
+  if (data.mlb_probables?.length) {
+    prompt += "\n⚾ MLB STARTING PITCHERS (season W-L, ERA, WHIP, K, IP; then the last three starts):\n";
+    prompt += "(The same starters and numbers the MGP slate and hit streak table show. A plain name is MLB's announced probable starter. A name marked projected is not yet announced by MLB: always call it projected. TBD means no starter is known yet. Use these for any pitcher or matchup question.)\n";
+    for (const m of data.mlb_probables.slice(0, 30)) {
+      prompt += `• ${etGameTime(m.game.gameDate)} ET: ${m.game.away.name} (${pitcherBrief(m.away)}) @ ${m.game.home.name} (${pitcherBrief(m.home)})\n`;
+    }
   }
 
   if (data.results?.length) {
@@ -1146,7 +1315,7 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
         const winner = (g.home_score ?? 0) > (g.away_score ?? 0)
           ? g.home_team_name
           : g.visitor_team_name;
-        prompt += `  • ${date}: ${g.visitor_team_name} ${awayScore} @ ${g.home_team_name} ${homeScore} — ${winner} win\n`;
+        prompt += `  • ${date}: ${g.visitor_team_name} ${awayScore} @ ${g.home_team_name} ${homeScore}, ${winner} win\n`;
       });
     }
   }
@@ -1178,7 +1347,7 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
 
       prompt += `\n${matchup} (updated ${age}):\n`;
       for (const o of gameOdds.slice(0, 4)) { // Max 4 books per game
-        prompt += `  • ${o.sportsbook}: Spread ${formatSpread(o.spread_value)}, ML Home ${o.moneyline_home || "—"} / Away ${o.moneyline_away || "—"}, Total O/U ${o.total_value || "—"}\n`;
+        prompt += `  • ${o.sportsbook}: Spread ${formatSpread(o.spread_value)}, ML Home ${fmtAmerican(o.moneyline_home, "n/a")} / Away ${fmtAmerican(o.moneyline_away, "n/a")}, Total O/U ${o.total_value ?? "n/a"}\n`;
       }
     }
 
@@ -1192,14 +1361,14 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
   }
 
   if (data.players?.length) {
-    prompt += "\n👤 PLAYER STATS (partial roster — not all team players included):\n";
+    prompt += "\n👤 PLAYER STATS (partial roster, not all team players included):\n";
     data.players.slice(0, 5).forEach((p: any) => {
-      const stats = p.player_season_stats?.[0];
+      const stats = pickSeasonRow(p.player_season_stats, p.sport, new Date());
       if (stats) {
         if (p.sport === "NBA" || p.sport === "NCAAB") {
           prompt += `• ${p.name} (${p.team_abbr}): ${stats.points_per_game?.toFixed(1) || 0} PPG, ${stats.rebounds_per_game?.toFixed(1) || 0} RPG, ${stats.assists_per_game?.toFixed(1) || 0} APG\n`;
         } else if (p.sport === "NFL") {
-          prompt += `• ${p.name} (${p.team_abbr}, ${p.position}): ${stats.pass_yards || 0} pass yds, ${stats.rush_yards || 0} rush yds, ${stats.rec_yards || 0} rec yds\n`;
+          prompt += `• ${p.name} (${p.team_abbr}, ${p.position}): ${stats.pass_yards || 0} pass yds, ${stats.rush_yards || 0} rush yds, ${stats.rec_yards || 0} rec yds (${seasonLabel(stats)}, ${stats.games_played ?? 0} GP)\n`;
         }
       } else {
         prompt += `• ${p.name} (${p.team_abbr}, ${p.position})\n`;
@@ -1214,20 +1383,26 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
       if (!Number.isFinite(n)) return String(v);
       return sl.isRate ? n.toFixed(3).replace(/^0/, "") : String(n);
     };
-    prompt += `\n🏆 ${sl.sport} ${sl.label.toUpperCase()} LEADERS (${sl.season}) — AUTHORITATIVE, FROM THE MGP DATABASE:\n`;
-    prompt += `(This is the exact leaderboard shown on the MGP ${sl.sport} Players page. Answer this leaderboard question using ONLY these names and numbers — do NOT use web search or memory, which return figures that won't match our dashboard. Rank in the order listed.)\n`;
+    prompt += `\n🏆 ${sl.sport} ${sl.label.toUpperCase()} LEADERS (${sl.season}) - AUTHORITATIVE, FROM THE MGP DATABASE:\n`;
+    prompt += `(This is the exact leaderboard shown on the MGP ${sl.sport} Players page. Answer this leaderboard question using ONLY these names and numbers. Do NOT use web search or memory, which return figures that won't match our dashboard. Rank in the order listed.)\n`;
     (sl.rows as any[]).forEach((r, i) => {
-      prompt += `${i + 1}. ${r.name}${r.team ? ` (${r.team})` : ""} — ${fmt(r.value)} ${sl.label}\n`;
+      prompt += `${i + 1}. ${r.name}${r.team ? ` (${r.team})` : ""}: ${fmt(r.value)} ${sl.label}\n`;
     });
   }
 
   if (data.hit_streaks?.length) {
-    prompt += "\n🔥 ACTIVE MLB HIT STREAKS — AUTHORITATIVE, LIVE FROM THE MGP DATABASE:\n";
-    prompt += "(This is the exact data shown on the MGP dashboard. For any question about current/active hit streaks, use ONLY these numbers — do NOT use web search results or memory, which routinely return stale prior-season figures.)\n";
+    prompt += "\n🔥 ACTIVE MLB HIT STREAKS: AUTHORITATIVE, LIVE FROM THE MGP DATABASE:\n";
+    prompt += "(This is the exact data shown on the MGP dashboard, checked against MLB's game logs every sync. For any question about current/active hit streaks, use ONLY these numbers. Do NOT use web search results or memory, which routinely return stale prior-season figures. Each hitter's next opposing starter is MLB's announced probable, or marked projected when MLB has not announced one yet (always say projected), or TBD.)\n";
+    const f3 = (v: unknown) => Number(v).toFixed(3).replace(/^0/, "");
     (data.hit_streaks as any[]).forEach((s) => {
-      const sAvg = s.streak_avg != null ? `, batting ${Number(s.streak_avg).toFixed(3).replace(/^0/, "")} during it` : "";
-      const seasonAvg = s.season_avg != null ? ` (season ${Number(s.season_avg).toFixed(3).replace(/^0/, "")})` : "";
-      prompt += `• ${s.name}${s.team ? ` (${s.team})` : ""} — ${s.streak}-game hit streak${sAvg}${seasonAvg}\n`;
+      const sAvg = s.streak_avg != null ? `, batting ${f3(s.streak_avg)} during it` : "";
+      const season = s.obp != null && s.slg != null && s.season_avg != null
+        ? ` (season ${f3(s.season_avg)}/${f3(s.obp)}/${f3(s.slg)}, ${s.home_runs ?? 0} HR)`
+        : s.season_avg != null ? ` (season ${f3(s.season_avg)})` : "";
+      const next = s.next_opponent
+        ? `; next: vs ${s.next_opponent}, ${etGameTime(s.next_game_time)} ET, facing ${s.next_starter}`
+        : "";
+      prompt += `• ${s.name}${s.team ? ` (${s.team})` : ""}: ${s.streak}-game hit streak${sAvg}${season}${next}\n`;
     });
   }
 
@@ -1250,9 +1425,9 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
       const team = (playerProps[0] as any).players?.team_name || "";
       prompt += `\n${name} (${team}):\n`;
       for (const prop of playerProps.slice(0, 6)) {
-        const overOdds = prop.over_odds ? (prop.over_odds > 0 ? `+${prop.over_odds}` : prop.over_odds) : "—";
-        const underOdds = prop.under_odds ? (prop.under_odds > 0 ? `+${prop.under_odds}` : prop.under_odds) : "—";
-        prompt += `  • ${prop.prop_type}: O/U ${prop.line} (Over ${overOdds} / Under ${underOdds}) — ${prop.sportsbook}\n`;
+        const overOdds = prop.over_odds ? (prop.over_odds > 0 ? `+${prop.over_odds}` : prop.over_odds) : "n/a";
+        const underOdds = prop.under_odds ? (prop.under_odds > 0 ? `+${prop.under_odds}` : prop.under_odds) : "n/a";
+        prompt += `  • ${prop.prop_type}: O/U ${prop.line} (Over ${overOdds} / Under ${underOdds}), ${prop.sportsbook}\n`;
       }
     }
   }
@@ -1270,7 +1445,7 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
       const gameDate = new Date(playerProps[0].game_date).toLocaleDateString("en-US", {
         month: "short", day: "numeric", timeZone: "America/New_York"
       });
-      prompt += `\n${name} (${team}) — ${gameDate}:\n`;
+      prompt += `\n${name} (${team}), ${gameDate}:\n`;
       for (const prop of playerProps.slice(0, 6)) {
         const resultLabel = prop.result === "over" ? "OVER ✓" : prop.result === "under" ? "UNDER" : prop.result === "push" ? "PUSH" : "VOID";
         prompt += `  • ${prop.prop_type}: Line ${prop.line}, Actual ${prop.actual_value} → ${resultLabel}\n`;
@@ -1346,7 +1521,11 @@ serve(async (req) => {
     console.log("Processing chat request with", messages.length, "messages");
 
     // Detect league, intent, and question type from conversation
-    const league = detectLeague(lastUserMessage);
+    // Keyword detection, with college team names settled between NCAAF and
+    // NCAAB by explicit words, then the sport with a game for those teams,
+    // then the calendar ("Arizona Washington State odds" in September is
+    // football). Pro teams keep the keyword answer.
+    const league = await resolveLeague(supabase, lastUserMessage, new Date());
     const intent = detectIntent(lastUserMessage);
     const questionType = classifyQuestionType(lastUserMessage);
 
@@ -1362,15 +1541,18 @@ serve(async (req) => {
     let sources: SourceRef[];
 
     // Force the grounded single-sport path when a stat-leader or hit-streak
-    // question is detected even without an explicit league keyword — otherwise
+    // question is detected even without an explicit league keyword. Otherwise
     // the multi-sport path (no DB grounding) would answer leaderboards from web
     // search and could contradict the dashboard.
     const inferredLeader = detectStatLeader(lastUserMessage, league || "");
     const isHitStreakQ = /hit(ting)?[ -]?streaks?|hot(test)?\s+(hitter|bat)|longest\s+(active\s+)?streak/i.test(lastUserMessage);
-    const groundingLeague = league || inferredLeader?.sport || (isHitStreakQ ? "MLB" : "");
+    // Pitching is baseball-only, and "Giants"/"Cardinals"/"Tigers" otherwise
+    // resolve to football, so a pitcher question always grounds in MLB.
+    const isPitcherQ = PITCH_QUESTION.test(lastUserMessage);
+    const groundingLeague = (isPitcherQ ? "MLB" : "") || league || inferredLeader?.sport || (isHitStreakQ ? "MLB" : "");
 
     if (groundingLeague) {
-      // Single-sport path — includes stat-leader + hit-streak DB grounding
+      // Single-sport path: includes stat-leader + hit-streak DB grounding
       const result = await fetchRelevantData(supabase, groundingLeague, intent, lastUserMessage, questionType);
       dataPrompt = formatDataForPrompt(result.data, result.sources, intent, groundingLeague);
       sources = result.sources;
@@ -1380,6 +1562,22 @@ serve(async (req) => {
       dataPrompt = result.formattedPrompt;
       sources = result.sources;
     }
+
+    // DraftKings' public split and line for the NCAAF/NFL game(s) asked about:
+    // both sides' % of bets and money, the markers, the split's page time and
+    // the app's line with Open → Now, by the Market Pulse rules the app renders
+    // (_shared/pulse-chat.ts marketPulseBlock). A game DraftKings posted no
+    // split for gets its line and a plain "no split".
+    let pulsePrompt = "";
+    try {
+      pulsePrompt = await marketPulseBlock(supabase, lastUserMessage, intent, league, new Date());
+    } catch (e) {
+      console.error("Error building the DraftKings market pulse:", e);
+    }
+    if (pulsePrompt) dataPrompt += `\n\n${pulsePrompt}\n`;
+    // A public/sharp/splits question with that block is a market question:
+    // answer from DraftKings' stored numbers, not a web search
+    const answerType: QuestionType = pulsePrompt && isPulseQuestion(lastUserMessage) ? "MARKET_SPECIFIC" : questionType;
 
     // Get current date/time for context
     const now = new Date();
@@ -1392,7 +1590,7 @@ serve(async (req) => {
 
     // Build complete system prompt with data + question-type rules
     const fullSystemInstruction = `${SYSTEM_INSTRUCTION_BASE}
-${QUESTION_TYPE_RULES[questionType]}
+${QUESTION_TYPE_RULES[answerType]}
 
 ═══════════════════════════════════════════════════════════
 CURRENT CONTEXT
@@ -1400,7 +1598,7 @@ CURRENT CONTEXT
 
 TODAY: ${currentDate}
 TIME: ${currentTime} ET
-DETECTED LEAGUE: ${league || `AUTO — querying: ${sportsToQuery.join(", ")}`}
+DETECTED LEAGUE: ${league || `AUTO - querying: ${sportsToQuery.join(", ")}`}
 
 CURRENT SPORTS SEASONS:
 ${(() => {
@@ -1420,7 +1618,7 @@ ${dataPrompt}
 
 REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is missing but related data exists, share that and note the gap. End with an exploration prompt to keep the conversation going.`;
 
-    // Build conversation for Claude — trim to last 20 messages to balance context vs cost
+    // Build conversation for Claude: trim to last 20 messages to balance context vs cost
     const recentMessages = messages.length > 20 ? messages.slice(-20) : messages;
     const anthropicMessages = recentMessages.map((msg) => ({
       role: msg.role === "assistant" ? "assistant" : "user",
@@ -1429,7 +1627,7 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
 
     // Auto-enable web search for FACTUAL and CONTEXTUAL questions so Claude can fetch
     // current stats, weather, real-time matchup data, and other live information
-    const useSearch = webSearchEnabled || questionType === "FACTUAL" || questionType === "CONTEXTUAL";
+    const useSearch = webSearchEnabled || answerType === "FACTUAL" || answerType === "CONTEXTUAL";
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -1509,7 +1707,7 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
       JSON.stringify({
         content: responseText,
         sources: responseSources,
-        questionType,
+        questionType: answerType,
         routerMode: "EDGE_PRIMARY",
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }

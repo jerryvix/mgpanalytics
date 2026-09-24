@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
 
       const statColumns = PROP_STAT_MAP[prop.prop_type];
       if (!statColumns) {
-        // Unknown prop type — void
+        // Unknown prop type: void
         updates.push({
           id: prop.id,
           actual_value: null,

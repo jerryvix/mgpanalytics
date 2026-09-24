@@ -1,4 +1,4 @@
-// Deno twin of src/utils/nflSeason.ts — keep the two in lockstep.
+// Deno twin of src/utils/nflSeason.ts: keep the two in lockstep.
 // src/test/nflSeason.test.ts imports both and asserts identical output.
 
 /**

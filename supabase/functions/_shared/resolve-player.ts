@@ -6,12 +6,12 @@
 //   1. manual override (nfl_name_overrides row for this source)
 //   2. unique normalized-name + position match
 //   3. normalized-name + position narrowed by team
-// Anything still ambiguous or unknown resolves to null — the raw name is
+// Anything still ambiguous or unknown resolves to null: the raw name is
 // always stored, and misses surface in sync_log.details.unmatched plus the
 // nfl_backtest_unmatched view. Never guess: a wrong join silently corrupts
 // every accuracy number downstream.
 
-/** Same algorithm as normalizePlayerName in src/utils/fantasyTrends.ts —
+/** Same algorithm as normalizePlayerName in src/utils/fantasyTrends.ts:
  * keep in lockstep (asserted by src/test/resolvePlayer.test.ts). */
 export function normalizePlayerName(name: string): string {
   return name
@@ -30,7 +30,7 @@ export interface CrosswalkRow {
 }
 
 export interface PlayerResolver {
-  /** position/team are hints, not hard filters — pass what the source has.
+  /** position/team are hints, not hard filters: pass what the source has.
    * position accepts a single abbreviation or a set (e.g. the offensive
    * positions a prop market implies: pass_yards -> ["QB"]). */
   resolve(name: string, position?: string | string[] | null, team?: string | null): string | null;
@@ -71,7 +71,7 @@ export function buildPlayerResolver(
       let pool = posSet && posSet.size > 0
         ? candidates.filter((c) => posSet.has((c.position ?? "").toUpperCase()))
         : candidates;
-      if (pool.length === 0) pool = candidates; // bad position hint — fall back
+      if (pool.length === 0) pool = candidates; // bad position hint: fall back
 
       if (pool.length === 1) return pool[0].gsis_id;
 
@@ -82,7 +82,7 @@ export function buildPlayerResolver(
         if (byTeam.length === 1) return byTeam[0].gsis_id;
       }
 
-      return null; // ambiguous — surface, don't guess
+      return null; // ambiguous: surface, don't guess
     },
   };
 }

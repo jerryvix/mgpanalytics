@@ -15,7 +15,11 @@ import { PropFuturesBoard } from "@/components/players/PropFuturesBoard";
 import { GameInsightsSheet } from "@/components/games/GameInsightsSheet";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
+import { useApPoll } from "@/hooks/useApPoll";
 import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
+import { isTop25, slateRank } from "@/lib/apPoll";
+import { tbdKickoffLabel } from "@/lib/kickoff";
+import { fetchStoredLines, overlayStoredLines } from "@/lib/storedLines";
 
 interface Game {
   id: string;
@@ -29,7 +33,13 @@ interface Game {
   home_team_rank: number | null;
   visitor_team_rank: number | null;
   is_featured: boolean;
+  season: number | null;
+  updated_at: string | null;
+  /** Kickoff not set by the networks yet: `date` is a midnight-ET placeholder. */
+  time_tbd?: boolean | null;
 }
+
+const HOUR_MS = 60 * 60 * 1000;
 
 interface Odd {
   id: string;
@@ -42,6 +52,7 @@ interface Odd {
   total_value: number | null;
   total_over_odds: number | null;
   total_under_odds: number | null;
+  updated_at?: string | null;
 }
 
 type GameOddsMap = Record<string, Odd | null>;
@@ -54,6 +65,7 @@ export function NCAAFSlate() {
   const [gameOddsMap, setGameOddsMap] = useState<GameOddsMap>({});
   const [pageView, setPageView] = useState<"games" | "futures">("games");
   const live = useLiveScores("NCAAF");
+  const { poll } = useApPoll();
 
   useEffect(() => {
     fetchGames();
@@ -62,16 +74,30 @@ export function NCAAFSlate() {
   const fetchGames = async () => {
     setLoading(true);
     // Reach back 5h so games currently in progress stay on the slate
-    const windowStart = new Date(Date.now() - 5 * 60 * 60 * 1000);
+    const windowStart = new Date(Date.now() - 5 * HOUR_MS);
 
-    // NCAAF is weekly - show the next up-to-30 upcoming matchups regardless of
-    // how far out, so the slate is never falsely empty on a non-gameday.
-    const { data: gamesData, error: gamesError } = await supabase
+    // The whole coming week, not the first 30 kickoffs: an FBS Saturday runs
+    // 70 games deep, and a 30-game cap cut the slate off mid-afternoon, so the
+    // night games (and the ranked teams in them) never appeared.
+    const weekEnd = new Date(Date.now() + 7 * 24 * HOUR_MS);
+    let { data: gamesData, error: gamesError } = await supabase
       .from("ncaaf_games")
       .select("*")
       .gte("date", windowStart.toISOString())
+      .lt("date", weekEnd.toISOString())
       .order("date", { ascending: true })
-      .limit(30);
+      .limit(200);
+
+    // Off weeks and the offseason: show the next 30 matchups however far out,
+    // so the slate is never falsely empty on a non-gameday.
+    if (!gamesError && !(gamesData || []).some((game) => !isFinalStatus(game.status))) {
+      ({ data: gamesData, error: gamesError } = await supabase
+        .from("ncaaf_games")
+        .select("*")
+        .gte("date", windowStart.toISOString())
+        .order("date", { ascending: true })
+        .limit(30));
+    }
 
     if (gamesError) {
       console.error("Error fetching NCAAF games:", gamesError);
@@ -89,9 +115,17 @@ export function NCAAFSlate() {
         .select("*")
         .in("game_id", gameIds)
         .ilike("sportsbook", "%draftkings%");
-      const oddsMap: GameOddsMap = {};
-      (oddsData || []).forEach((odd) => (oddsMap[odd.game_id] = odd));
-      setGameOddsMap(oddsMap);
+      // One DraftKings number per market across the app: each card takes the
+      // line sync-betting-splits stores (betting_lines) unless the daily
+      // ncaaf_odds row captured a different number after it, the same rule
+      // as Game Insights > Market Pulse (lib/marketPulse chooseLine).
+      const byGame = new Map<string, Odd>((oddsData || []).map((odd) => [odd.game_id, odd as Odd]));
+      const merged = overlayStoredLines(byGame, await fetchStoredLines("NCAAF", gameIds), (id) => ({
+        id: `betting_lines:${id}`,
+        game_id: id,
+        sportsbook: "draftkings",
+      }) as Odd);
+      setGameOddsMap(Object.fromEntries(merged));
     }
 
     setLoading(false);
@@ -102,7 +136,10 @@ export function NCAAFSlate() {
     setSheetOpen(true);
   };
 
-  const formatGameDate = (dateString: string) => {
+  const formatGameDate = (dateString: string, timeTbd?: boolean | null) => {
+    // No kickoff time yet: show ESPN's calendar day (set in Eastern time)
+    // instead of printing the midnight placeholder as a real time.
+    if (timeTbd) return tbdKickoffLabel(dateString);
     try {
       const date = parseISO(dateString);
       const days = differenceInCalendarDays(date, new Date());
@@ -150,13 +187,29 @@ export function NCAAFSlate() {
     if (line === null) return "N/A";
     return line >= 0 ? `+${line}` : `${line}`;
   };
-  const formatRank = (rank: number | null) => {
-    if (!rank || rank > 25) return null;
-    return `#${rank}`;
-  };
-  const rankedGamesCount = games.filter(
-    (g) => g.home_team_rank !== null || g.visitor_team_rank !== null
-  ).length;
+  const formatRank = (rank: number | null) => (isTop25(rank) ? `#${rank}` : null);
+  // Every game on the slate is upcoming or live, so each team carries its
+  // CURRENT AP rank: the live poll, else the synced rank while it is fresh.
+  const ranksFor = (game: Game) => ({
+    away: slateRank({
+      teamId: game.visitor_team_id,
+      storedRank: game.visitor_team_rank,
+      storedAt: game.updated_at,
+      gameSeason: game.season,
+      poll,
+    }),
+    home: slateRank({
+      teamId: game.home_team_id,
+      storedRank: game.home_team_rank,
+      storedAt: game.updated_at,
+      gameSeason: game.season,
+      poll,
+    }),
+  });
+  const rankedGamesCount = games.filter((g) => {
+    const r = ranksFor(g);
+    return r.home !== null || r.away !== null;
+  }).length;
 
   return (
     <div className="space-y-6">
@@ -230,15 +283,16 @@ export function NCAAFSlate() {
         >
           {games.map((game, index) => {
             const dkOdds = gameOddsMap[game.id];
-            const isRanked = game.home_team_rank !== null || game.visitor_team_rank !== null;
-            const liveGame = live.getGame(game.visitor_team_name, game.home_team_name);
+            const ranks = ranksFor(game);
+            const isRanked = ranks.home !== null || ranks.away !== null;
+            const liveGame = live.getGame(game.visitor_team_name, game.home_team_name, { start: game.date, timeTbd: game.time_tbd });
             const showScore = liveGame && liveGame.state !== "pre" && liveGame.awayScore !== null;
             return (
               <motion.div
                 key={game.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
+                transition={{ delay: Math.min(index, 12) * 0.03 }}
               >
                 <Card
                   onClick={() => handleOpenInsights(game)}
@@ -249,12 +303,15 @@ export function NCAAFSlate() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">
-                        {formatGameDate(game.date)}
+                        {formatGameDate(game.date, game.time_tbd)}
                       </span>
                       {liveGame?.state === "in" ? (
                         <LiveBadge detail={liveGame.detail} />
                       ) : (
-                        getStatusBadge(liveGame?.state === "post" ? "Final" : game.status, isRanked, game.is_featured)
+                        // No FEATURED fallback: for NCAAF is_featured only ever
+                        // meant "had a ranked team when synced", so on a stale
+                        // row it flagged teams that have since dropped out.
+                        getStatusBadge(liveGame?.state === "post" ? "Final" : game.status, isRanked, false)
                       )}
                     </div>
 
@@ -262,9 +319,12 @@ export function NCAAFSlate() {
                     <div className="font-mono text-base text-foreground mb-4">
                       <div className="flex items-center gap-2">
                         <TeamLogo sport="NCAAF" name={game.visitor_team_name} espnId={game.visitor_team_id} size={22} />
-                        {formatRank(game.visitor_team_rank) && (
-                          <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
-                            {formatRank(game.visitor_team_rank)}
+                        {formatRank(ranks.away) && (
+                          <Badge
+                            className="bg-terminal-amber text-background text-[10px] px-1.5 py-0"
+                            title="AP Top 25 rank"
+                          >
+                            {formatRank(ranks.away)}
                           </Badge>
                         )}
                         <span className="font-bold">{game.visitor_team_name}</span>
@@ -283,9 +343,12 @@ export function NCAAFSlate() {
                       <span className="text-terminal-amber mx-2 text-sm">@</span>
                       <div className="flex items-center gap-2">
                         <TeamLogo sport="NCAAF" name={game.home_team_name} espnId={game.home_team_id} size={22} />
-                        {formatRank(game.home_team_rank) && (
-                          <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
-                            {formatRank(game.home_team_rank)}
+                        {formatRank(ranks.home) && (
+                          <Badge
+                            className="bg-terminal-amber text-background text-[10px] px-1.5 py-0"
+                            title="AP Top 25 rank"
+                          >
+                            {formatRank(ranks.home)}
                           </Badge>
                         )}
                         <span className="font-bold">{game.home_team_name}</span>
@@ -363,6 +426,7 @@ export function NCAAFSlate() {
                       awayTeam={game.visitor_team_name}
                       gameId={game.id}
                       sport="NCAAF"
+                      odds={dkOdds}
                     />
 
                     {/* Game Insights Button - same target as tapping the card */}

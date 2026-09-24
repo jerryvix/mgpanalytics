@@ -7,6 +7,8 @@ import {
   talentPoints,
   classifyTalentEdge,
   compositeVerdict,
+  latestBoardRows,
+  normalizeProspectName,
   type H2HGameRow,
 } from "@/utils/matchupIntel";
 
@@ -126,9 +128,41 @@ describe("talentPoints / classifyTalentEdge", () => {
   const capturedFresh = "2026-10-25T00:00:00Z"; // 7 days old
   const capturedStale = "2026-10-01T00:00:00Z"; // 31 days old
 
-  it("weights board tiers 3/2/1", () => {
-    expect(talentPoints([1, 15, 16, 50, 51, 101])).toBe(3 + 3 + 2 + 2 + 1 + 1);
+  it("weights top-100 tiers 3/2/1", () => {
+    expect(talentPoints([1, 15, 16, 50, 51, 100])).toBe(3 + 3 + 2 + 2 + 1 + 1);
     expect(talentPoints([])).toBe(0);
+  });
+
+  it("counts ranks 101-200 at half a point, capped at 2 per team, and ignores anything deeper", () => {
+    expect(talentPoints([101, 200])).toBe(1);
+    expect(talentPoints([120, 140, 160, 180])).toBe(2);
+    expect(talentPoints(Array(10).fill(180))).toBe(2); // the cap, not 10 (or 5)
+    expect(talentPoints([201, 250, 300])).toBe(0);
+    expect(talentPoints([5, ...Array(8).fill(150)])).toBe(3 + 2);
+  });
+
+  it("never lets a pile of Day 3 names outscore real first-round talent", () => {
+    const tenLateRounders = Array(10).fill(180);
+    const twoTopTen = [3, 9];
+    // 6 vs 2: the top-10 side gets the edge (the old 1-per-spot rule gave 6 vs 10 the other way)
+    expect(classifyTalentEdge(twoTopTen, tenLateRounders, capturedFresh, fresh).lean).toBe("home");
+    expect(classifyTalentEdge(tenLateRounders, twoTopTen, capturedFresh, fresh).lean).toBe("away");
+    // Depth alone (max 2) can never open the 3-point gap an edge needs
+    expect(classifyTalentEdge(Array(20).fill(150), [], capturedFresh, fresh).lean).toBe("even");
+  });
+
+  it("keeps real-board matchups honest: Day 3 depth doesn't erase or invent a top-100 edge", () => {
+    // Week 4 matchups on DraftTek's Sep 17 2026 top 200
+    const georgia = [11, 12, 43, 81, 131, 144, 162];
+    const oklahoma = [9, 78, 104, 132, 136, 141, 152, 165, 183, 198];
+    expect(talentPoints(georgia)).toBe(10.5);
+    expect(talentPoints(oklahoma)).toBe(6); // 1-per-spot scoring had these two tied 12-12
+    expect(classifyTalentEdge(georgia, oklahoma, capturedFresh, fresh).lean).toBe("home");
+
+    const michigan = [65, 110, 116, 142, 160, 174, 185];
+    const iowa = [41, 67, 89];
+    // 1-per-spot scoring handed Michigan a 7-4 edge built on six Day 3 names
+    expect(classifyTalentEdge(michigan, iowa, capturedFresh, fresh).lean).toBe("even"); // 3-4
   });
 
   it("is insufficient on a missing or stale board, even with prospects", () => {
@@ -146,6 +180,58 @@ describe("talentPoints / classifyTalentEdge", () => {
     const result = classifyTalentEdge([], [], capturedFresh, fresh);
     expect(result.lean).toBe("even");
     expect(result.homePoints).toBe(0);
+  });
+
+  it("judges age by the source's own revision date, which a daily re-scrape can't refresh", () => {
+    // Scraped this morning, but DraftTek last revised 25 days ago: dormant
+    const now = new Date("2026-10-12T12:00:00Z");
+    expect(classifyTalentEdge([10], [], "2026-09-17", now).lean).toBe("insufficient");
+    expect(classifyTalentEdge([10], [], "2026-10-08", now).lean).toBe("home");
+  });
+});
+
+describe("latestBoardRows (client guard against a mixed board)", () => {
+  const oldCapture = "2026-09-19T05:00:14.19+00:00"; // Tankathon rows left behind by a failed prune
+  const newCapture = "2026-09-26T05:00:02.5+00:00"; // DraftTek capture
+  const r = (rank: number, player_name: string, school: string, captured_at: string) => ({
+    rank,
+    player_name,
+    school,
+    captured_at,
+  });
+
+  it("keeps only the newest capture, so a previous source's leftovers never count", () => {
+    const rows = [
+      r(11, "CJ Carr", "Notre Dame", oldCapture),
+      r(22, "Tae Johnson", "Notre Dame", oldCapture),
+      r(16, "Tae Johnson", "Notre Dame", newCapture),
+      r(26, "C.J. Carr", "Notre Dame", newCapture),
+    ];
+    const board = latestBoardRows(rows);
+    expect(board.map((p) => `${p.rank} ${p.player_name}`)).toEqual(["16 Tae Johnson", "26 C.J. Carr"]);
+    expect(board.filter((p) => p.school === "Notre Dame")).toHaveLength(2); // not 4
+  });
+
+  it("de-duplicates a player listed twice under different punctuation, keeping the best rank", () => {
+    const rows = [
+      r(40, "C.J. Carr", "Notre Dame", newCapture),
+      r(26, "CJ Carr", "Notre Dame", newCapture),
+      r(90, "Kenyatta Jackson Jr.", "Ohio State", newCapture),
+      r(25, "Kenyatta Jackson", "Ohio State", newCapture),
+    ];
+    expect(latestBoardRows(rows).map((p) => p.rank)).toEqual([25, 26]);
+  });
+
+  it("keeps two different players who share a name at different schools", () => {
+    const rows = [r(150, "Daniel Harris", "California", newCapture), r(180, "Daniel Harris", "Duke", newCapture)];
+    expect(latestBoardRows(rows)).toHaveLength(2);
+  });
+
+  it("normalizes names the way the dedupe needs", () => {
+    expect(normalizeProspectName("C.J. Carr")).toBe(normalizeProspectName("CJ Carr"));
+    expect(normalizeProspectName("A'Mauri Washington")).toBe("amauri washington");
+    expect(normalizeProspectName("Ellis Robinson IV")).toBe("ellis robinson");
+    expect(latestBoardRows([])).toEqual([]);
   });
 });
 

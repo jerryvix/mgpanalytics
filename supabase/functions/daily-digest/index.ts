@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
 
-// Daily Edge digest — re-engagement email. Composes a personalized brief
+// Daily Edge digest: re-engagement email. Composes a personalized brief
 // (streak status, followed teams' next games, an edge nugget) for each opted-in
 // user and sends via Resend.
 //
@@ -19,7 +19,7 @@ const corsHeaders = {
 const DIGEST_FROM = "MGP Analytics <edge@mgp-analytics.com>"; // must be a Resend-verified domain
 
 const EDGE_LINES = [
-  "Only one player has ever won the Heisman twice — Archie Griffin, back-to-back in '74-'75.",
+  "Only one player has ever won the Heisman twice: Archie Griffin, back-to-back in '74-'75.",
   "The last 13 NFL MVPs have all been quarterbacks.",
   "Joe DiMaggio's 56-game hit streak (1941) still stands 80+ years later.",
   "Buffalo won five straight AFC East titles before New England took it in '25.",
@@ -143,14 +143,14 @@ Deno.serve(async (req) => {
       }
 
       // Only email users who have something personal to say to, or keep the
-      // streak nudge — skip totally-empty profiles to avoid low-value sends.
+      // streak nudge. Skip totally-empty profiles to avoid low-value sends.
       if (streak === 0 && nextGames.length === 0) continue;
 
       const gamesHtml = nextGames.length
         ? `<ul>${nextGames
             .map(
               (g) =>
-                `<li><b>${g.team}</b> ${g.isHome ? "vs" : "@"} ${g.opponent} — ${new Date(
+                `<li><b>${g.team}</b> ${g.isHome ? "vs" : "@"} ${g.opponent} - ${new Date(
                   g.date
                 ).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</li>`
             )
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
       const html = `
         <div style="font-family:system-ui,sans-serif;max-width:520px">
           <h2>📈 Your Daily Edge</h2>
-          ${streak > 0 ? `<p>🔥 <b>${streak}-day streak</b> — open MGP today to keep it alive.</p>` : ""}
+          ${streak > 0 ? `<p>🔥 <b>${streak}-day streak</b>: open MGP today to keep it alive.</p>` : ""}
           <p><b>Did you know:</b> ${edge}</p>
           ${nextGames.length ? `<h3>Your teams' next games</h3>${gamesHtml}` : ""}
           <p><a href="https://www.mgp-analytics.com/dashboard">Open MGP Analytics →</a></p>
@@ -170,7 +170,7 @@ Deno.serve(async (req) => {
         const res = await fetch("https://api.resend.com/emails", {
           method: "POST",
           headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ from: DIGEST_FROM, to: [p.email], subject: "📈 Your Daily Edge — MGP", html }),
+          body: JSON.stringify({ from: DIGEST_FROM, to: [p.email], subject: "📈 Your Daily Edge - MGP", html }),
         });
         if (res.ok) sent++;
         else console.error(`Resend failed for ${p.email}: ${res.status} ${await res.text()}`);
@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
       composed,
       sent,
       message: dryRun
-        ? `Dry run — composed ${composed} digests (set RESEND_API_KEY to send)`
+        ? `Dry run: composed ${composed} digests (set RESEND_API_KEY to send)`
         : `Sent ${sent}/${composed} digests`,
     };
     await completeSyncLog(supabase, syncLogId, start, { status: "success", records_added: sent, details: response });
