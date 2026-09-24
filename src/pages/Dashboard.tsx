@@ -142,7 +142,10 @@ const Dashboard = () => {
       {/* h-dvh (not h-screen): iOS Safari's collapsing toolbar makes 100vh
           taller than the visible area, which pushed the bottom nav half
           off-screen until the user scrolled */}
-      <div className="h-dvh flex w-full bg-background overflow-hidden">
+      {/* Phone layout in landscape: inset the content by the notch sides
+          (0 in portrait and on desktop) so nothing sits under the sensor
+          housing; the page background fills the bands */}
+      <div className="h-dvh flex w-full bg-background overflow-hidden phone:pl-[var(--safe-left)] phone:pr-[var(--safe-right)]">
         {/* Always mounted: fixed rail on desktop, off-canvas sheet on mobile
             (opened from MobileTopBar's menu button or BottomNav's Menu tab).
             Do not gate this on isMobile - that leaves phones with no full
@@ -158,7 +161,7 @@ const Dashboard = () => {
             let a swipe drag the pinned bars off screen), and scroll padding
             equal to the pinned header (plus the sport tabs when present) so
             anything scrolled into view lands below it, not underneath */}
-        <main className="flex-1 overflow-auto overscroll-contain max-md:overflow-x-clip max-md:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)] max-md:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))]">
+        <main className="flex-1 overflow-auto overscroll-contain phone:overflow-x-clip phone:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)] phone:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))]">
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
         {/* ChatPanel: docked on desktop, full-screen overlay on mobile */}

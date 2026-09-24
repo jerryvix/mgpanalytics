@@ -273,7 +273,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
             <Link
               to="/dashboard"
               onClick={closeMobileSheet}
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity max-md:min-h-11 max-md:pl-1"
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity phone:min-h-11 phone:pl-1"
             >
               <div className="w-7 h-7 rounded bg-primary/20 flex items-center justify-center">
                 <Activity className="w-3.5 h-3.5 text-terminal-green" />
@@ -366,7 +366,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <button
-                      className="p-1 text-sidebar-foreground/40 hover:text-destructive transition-colors max-md:-mr-2 max-md:flex max-md:h-11 max-md:w-11 max-md:items-center max-md:justify-center max-md:p-0"
+                      className="p-1 text-sidebar-foreground/40 hover:text-destructive transition-colors phone:-mr-2 phone:flex phone:h-11 phone:w-11 phone:items-center phone:justify-center phone:p-0"
                       title="Clear all conversations"
                       aria-label="Clear all conversations"
                     >
@@ -486,11 +486,11 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <SidebarMenuButton asChild>
-                          <div className="flex items-center gap-1 max-md:p-0 [@media(hover:none)]:hover:bg-transparent">
+                          <div className="flex items-center gap-1 phone:p-0 [@media(hover:none)]:hover:bg-transparent">
                             <NavLink
                               to={item.url}
                               onClick={closeMobileSheet}
-                              className="flex-1 flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors max-md:self-stretch"
+                              className="flex-1 flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors phone:self-stretch"
                               activeClassName="bg-sidebar-accent text-terminal-blue"
                             >
                               <img src={item.logo} alt={item.title} className="w-4 h-4 object-contain shrink-0" />
@@ -499,7 +499,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                             {!collapsed && item.subItems && (
                               <button
                                 onClick={() => toggleSportExpanded(item.title)}
-                                className="p-1 mr-1 text-sidebar-foreground/50 hover:text-sidebar-foreground shrink-0 max-md:mr-0 max-md:flex max-md:h-11 max-md:w-11 max-md:items-center max-md:justify-center max-md:p-0 [@media(hover:none)]:hover:text-sidebar-foreground/50"
+                                className="p-1 mr-1 text-sidebar-foreground/50 hover:text-sidebar-foreground shrink-0 phone:mr-0 phone:flex phone:h-11 phone:w-11 phone:items-center phone:justify-center phone:p-0 [@media(hover:none)]:hover:text-sidebar-foreground/50"
                                 aria-label={isExpanded ? `Collapse ${item.title}` : `Expand ${item.title}`}
                                 aria-expanded={isExpanded}
                               >
@@ -599,7 +599,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                       <Link
                         to="/dashboard/admin"
                         onClick={closeMobileSheet}
-                        className={`flex items-center gap-3 px-3 py-1.5 rounded transition-colors w-full cursor-pointer relative z-10 max-md:min-h-11 ${
+                        className={`flex items-center gap-3 px-3 py-1.5 rounded transition-colors w-full cursor-pointer relative z-10 phone:min-h-11 ${
                           location.pathname === "/dashboard/admin"
                             ? "bg-sidebar-accent text-terminal-blue"
                             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -683,7 +683,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
               variant="ghost"
               size={collapsed ? "icon" : "sm"}
               onClick={handleLogout}
-              className="w-full text-sidebar-foreground hover:text-destructive hover:bg-destructive/10 justify-start max-md:h-11"
+              className="w-full text-sidebar-foreground hover:text-destructive hover:bg-destructive/10 justify-start phone:h-11"
             >
               <LogOut className="w-4 h-4 shrink-0" />
               {!collapsed && <span className="ml-2">Logout</span>}

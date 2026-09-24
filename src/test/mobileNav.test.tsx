@@ -170,9 +170,9 @@ describe("sport tabs on phones", () => {
   it("the dashboard scroller pads scroll-into-view by the pinned header heights and never scrolls sideways", () => {
     const src = readFileSync(path.resolve(__dirname, "../pages/Dashboard.tsx"), "utf8");
     const main = src.match(/<main className="([^"]+)"/)![1];
-    expect(main).toContain("max-md:overflow-x-clip");
-    expect(main).toContain("max-md:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)]");
-    expect(main).toContain("max-md:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))]");
+    expect(main).toContain("phone:overflow-x-clip");
+    expect(main).toContain("phone:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)]");
+    expect(main).toContain("phone:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))]");
   });
 
   it("extends each segmented-control tab to 44px without changing its look", () => {

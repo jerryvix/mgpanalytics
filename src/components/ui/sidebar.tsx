@@ -176,7 +176,8 @@ const Sidebar = React.forwardRef<
   // on mobile - see mobileNav test.
   // The sheet pads itself clear of the status bar and home indicator, and
   // every menu row is a 44px tap target (Apple's minimum); the desktop rail
-  // keeps its compact 32px rows.
+  // keeps its compact 32px rows. In landscape it also pads away the notch
+  // side and grows by the same inset, so its rows keep their full width.
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
@@ -185,8 +186,8 @@ const Sidebar = React.forwardRef<
           data-mobile="true"
           aria-describedby={undefined}
           side={side}
-          className="w-[--sidebar-width] bg-sidebar p-0 pb-[var(--safe-bottom)] pt-[var(--safe-top)] text-sidebar-foreground [&>button]:hidden [&_[data-sidebar=menu-button]]:min-h-11"
-          style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
+          style={{ "--sidebar-width": `calc(${SIDEBAR_WIDTH_MOBILE} + var(--safe-left))` } as React.CSSProperties}
+          className="w-[--sidebar-width] bg-sidebar p-0 pb-[var(--safe-bottom)] pl-[var(--safe-left)] pt-[var(--safe-top)] text-sidebar-foreground [&>button]:hidden [&_[data-sidebar=menu-button]]:min-h-11"
         >
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           {/* One scrolling list, like an iOS menu: with 44px rows the desktop

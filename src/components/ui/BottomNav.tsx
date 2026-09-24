@@ -129,7 +129,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-[var(--safe-bottom)]"
+      className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 desk:hidden px-4 pb-[var(--safe-bottom)]"
     >
       <div className="pointer-events-auto mx-auto max-w-md mb-2 h-14 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-lg shadow-black/30">
         <div className="flex items-center justify-around h-full">

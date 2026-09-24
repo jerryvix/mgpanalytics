@@ -65,7 +65,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
   // drag the pinned bars off screen (clip, unlike hidden, is not a scroll
   // container, so the sticky bars still pin to <main>). Desktop is unchanged.
   return (
-    <div ref={rootRef} className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] max-md:overflow-x-clip md:p-6 md:pb-6 md:pt-6">
+    <div ref={rootRef} className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] phone:overflow-x-clip desk:p-6 desk:pb-6 desk:pt-6">
       <MobileTopBar subnav={isSportsPage} onRevealSubnav={pillsCollapsed ? revealPills : undefined} />
       <BackButton />
       {isSportsPage && <MobileSportNav collapsed={pillsCollapsed} />}

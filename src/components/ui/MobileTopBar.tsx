@@ -35,7 +35,7 @@ export function MobileTopBar({ subnav = false, onRevealSubnav }: MobileTopBarPro
     <header
       data-mobile-topbar
       className={cn(
-        "sticky top-0 z-30 -mx-4 bg-background/85 pt-[var(--safe-top)] backdrop-blur-xl md:hidden",
+        "sticky top-0 z-30 -mx-4 bg-background/85 pt-[var(--safe-top)] backdrop-blur-xl desk:hidden",
         !subnav && "mb-3 border-b border-border/60"
       )}
     >

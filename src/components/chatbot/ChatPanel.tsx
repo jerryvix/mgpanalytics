@@ -451,7 +451,7 @@ export function ChatPanel() {
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted max-md:relative max-md:after:absolute max-md:after:-inset-1.5"
+          className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted phone:relative phone:after:absolute phone:after:-inset-1.5"
           title="Clear chat"
         >
           <Trash2 className="w-4 h-4" />
@@ -576,7 +576,7 @@ export function ChatPanel() {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="fixed inset-0 z-40 bg-card flex flex-col"
+            className="fixed inset-0 z-40 bg-card flex flex-col pl-[var(--safe-left)] pr-[var(--safe-right)]"
             style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           >
             {/* Mobile header */}

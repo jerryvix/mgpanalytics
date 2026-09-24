@@ -18,7 +18,7 @@ export default function DashboardNotFound() {
       <h1 className="text-lg font-semibold text-foreground">Page not found</h1>
       <p className="mt-1 text-sm text-muted-foreground">This link may be out of date.</p>
       <p className="mt-2 max-w-full truncate font-mono text-xs text-muted-foreground/70">{pathname}</p>
-      <Button variant="outline" onClick={() => navigate("/dashboard")} className="mt-6 h-11 md:h-10">
+      <Button variant="outline" onClick={() => navigate("/dashboard")} className="mt-6 h-11 desk:h-10">
         <Home />
         Home
       </Button>

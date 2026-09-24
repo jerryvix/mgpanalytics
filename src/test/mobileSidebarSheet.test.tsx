@@ -113,8 +113,8 @@ describe("sidebar sheet on phones", () => {
     await openSheet();
 
     const expand = await inSheet("button", /expand mlb/i);
-    expect(expand.className).toMatch(/\bmax-md:h-11\b/);
-    expect(expand.className).toMatch(/\bmax-md:w-11\b/);
+    expect(expand.className).toMatch(/\bphone:h-11\b/);
+    expect(expand.className).toMatch(/\bphone:w-11\b/);
 
     fireEvent.click(expand);
     expect(screen.getByRole("dialog")).toBeInTheDocument();

@@ -1,19 +1,24 @@
 import * as React from "react";
+import { PHONE_MEDIA } from "@/lib/layoutMedia";
 
-const MOBILE_BREAKPOINT = 768;
-
+/**
+ * True when the dashboard should use its phone chrome: narrow screens, and
+ * touch screens too short for the desktop layout (phones in landscape).
+ * Mirrors the phone: Tailwind variant; see src/lib/layoutMedia.ts.
+ */
 export function useIsMobile() {
-  // Read the width on the first render: starting from "not mobile" made
-  // phones paint one frame of the desktop sidebar rail before the effect ran.
+  // Read the media query on the first render: starting from "not mobile"
+  // made phones paint one frame of the desktop sidebar rail before the
+  // effect ran.
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(() =>
-    typeof window === "undefined" ? undefined : window.innerWidth < MOBILE_BREAKPOINT,
+    typeof window === "undefined" ? undefined : window.matchMedia(PHONE_MEDIA).matches,
   );
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    const onChange = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    const mql = window.matchMedia(PHONE_MEDIA);
+    const onChange = () => setIsMobile(mql.matches);
     mql.addEventListener("change", onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    setIsMobile(mql.matches);
     return () => mql.removeEventListener("change", onChange);
   }, []);
 

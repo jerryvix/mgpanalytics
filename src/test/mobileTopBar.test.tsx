@@ -54,7 +54,7 @@ describe("MobileTopBar", () => {
     expect(bar.className).toMatch(/\btop-0\b/);
     expect(bar.className).toContain("pt-[var(--safe-top)]");
     // Phones only; desktop keeps its inline BackButton and sidebar rail
-    expect(bar.className).toMatch(/\bmd:hidden\b/);
+    expect(bar.className).toMatch(/\bdesk:hidden\b/);
   });
 
   it("shows the brand instead of Back on home, and keeps the menu toggle", () => {

@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import plugin from "tailwindcss/plugin";
+import { PHONE_MEDIA, DESK_MEDIA } from "./src/lib/layoutMedia";
 
 export default {
   darkMode: ["class"],
@@ -113,5 +115,13 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // phone: / desk: pick the navigation chrome (see src/lib/layoutMedia.ts).
+    // Unlike max-md: / md:, a phone in landscape counts as a phone.
+    plugin(({ addVariant }) => {
+      addVariant("phone", `@media ${PHONE_MEDIA}`);
+      addVariant("desk", `@media ${DESK_MEDIA}`);
+    }),
+  ],
 } satisfies Config;
