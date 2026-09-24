@@ -24,43 +24,58 @@ export function highestRole(rows: { role: string | null }[] | null): AppRole {
 }
 
 export function useUserRole(user: User | null): UseUserRoleResult {
-  const [role, setRole] = useState<AppRole | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Keyed by user id, not the User object: auth events (initial session, token
+  // refresh) hand over a new object for the same user, and refetching on each
+  // one let a slower, older response land last and overwrite the right role.
+  const userId = user?.id ?? null;
+  const [resolved, setResolved] = useState<{ userId: string; role: AppRole } | null>(null);
 
   useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!user) {
-        setRole(null);
-        setLoading(false);
-        return;
-      }
+    // No session yet: stay "loading" rather than reporting a non-admin, which
+    // made the admin route bounce before the role query had even run.
+    // Logged-out visitors are sent away by the page itself.
+    if (!userId) return;
+    let cancelled = false;
 
+    const load = async (attempt: number): Promise<void> => {
+      let rows: { role: string | null }[] | null = null;
+      let failed = false;
       try {
         const { data, error } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", user.id);
-
+          .eq("user_id", userId);
         if (error) {
+          failed = true;
           console.error("Error fetching user role:", error);
-          setRole("user"); // Default to user role on error
         } else {
-          setRole(highestRole(data));
+          rows = data;
         }
       } catch (err) {
+        failed = true;
         console.error("Error fetching user role:", err);
-        setRole("user");
-      } finally {
-        setLoading(false);
       }
+      if (cancelled) return;
+      // One retry covers a request that raced a token refresh.
+      if (failed && attempt === 0) {
+        setTimeout(() => {
+          if (!cancelled) void load(1);
+        }, 1000);
+        return;
+      }
+      setResolved({ userId, role: failed ? "user" : highestRole(rows) });
     };
 
-    fetchUserRole();
-  }, [user]);
+    void load(0);
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
+  const role = userId !== null && resolved?.userId === userId ? resolved.role : null;
   return {
     role,
     isAdmin: role === "admin",
-    loading,
+    loading: role === null,
   };
 }
