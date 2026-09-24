@@ -90,8 +90,8 @@ export default function NFLPlayers() {
   const dbPlayers = searchResults || [];
 
   const headerTitle =
-    activeTab === "slate" && slateData?.isSuperBowl
-      ? "Super Bowl LX: Patriots @ Seahawks - Feb 8, 2026"
+    activeTab === "slate" && slateData?.isSuperBowl && slateData.game
+      ? `Super Bowl: ${slateData.game.visitor_team.name} @ ${slateData.game.home_team.name}`
       : "NFL Players";
 
   return (

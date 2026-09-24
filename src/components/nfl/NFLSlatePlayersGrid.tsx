@@ -88,6 +88,9 @@ export function NFLSlatePlayersGrid() {
   }
 
   const { game, leaders, isSuperBowl, isPlayoffs, statsSource } = data;
+  // "2026 Regular Season" -> "2026 Season" for the card badges (was hardcoded 2025)
+  const statsYear = statsSource?.match(/\b20\d{2}\b/)?.[0];
+  const seasonLabel = statsYear ? `${statsYear} Season` : undefined;
   const allLeaders = [
     ...leaders.passing.map(p => ({ ...p, category: "passing" as const })),
     ...leaders.rushing.map(p => ({ ...p, category: "rushing" as const })),
@@ -129,7 +132,7 @@ export function NFLSlatePlayersGrid() {
               {isSuperBowl ? (
                 <Badge className="bg-gradient-to-r from-amber-500/40 to-yellow-500/30 text-amber-300 border-amber-500/50 gap-1.5 px-3 py-1.5 text-sm font-bold">
                   <Trophy className="w-4 h-4" />
-                  Super Bowl LX
+                  Super Bowl
                 </Badge>
               ) : isPlayoffs ? (
                 <Badge className="bg-gradient-to-r from-purple-500/40 to-indigo-500/30 text-purple-300 border-purple-500/50 gap-1.5 px-3 py-1.5">
@@ -147,7 +150,7 @@ export function NFLSlatePlayersGrid() {
             <div className="flex items-center gap-3">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight">
                 {isSuperBowl
-                  ? "Super Bowl LX: Patriots @ Seahawks - Feb 8, 2026"
+                  ? `Super Bowl: ${game.visitor_team.full_name} @ ${game.home_team.full_name}`
                   : (
                       <>
                         {game.visitor_team.full_name}
@@ -219,6 +222,7 @@ export function NFLSlatePlayersGrid() {
                   statType={player.stat_type}
                   rank={player.rank}
                   category="passing"
+                  seasonLabel={seasonLabel}
                   detailedStats={player.detailed_stats}
                   headshotUrl={player.headshot_url ?? null}
                 />
@@ -249,6 +253,7 @@ export function NFLSlatePlayersGrid() {
                   statType={player.stat_type}
                   rank={player.rank}
                   category="rushing"
+                  seasonLabel={seasonLabel}
                   detailedStats={player.detailed_stats}
                 />
               ))}
@@ -278,19 +283,13 @@ export function NFLSlatePlayersGrid() {
                   statType={player.stat_type}
                   rank={player.rank}
                   category="receiving"
+                  seasonLabel={seasonLabel}
                   detailedStats={player.detailed_stats}
                 />
               ))}
             </div>
           </section>
         )}
-      </div>
-
-      {/* Performance Delta Disclaimer */}
-      <div className="mt-8 pt-4 border-t border-border/50">
-        <p className="text-[10px] text-muted-foreground/70 leading-relaxed text-left">
-          Performance Delta: Percentage variance between current Postseason form and 2025 Season baseline averages.
-        </p>
       </div>
     </div>
   );

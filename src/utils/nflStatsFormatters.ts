@@ -103,7 +103,10 @@ export function getPositionGroup(position: string): "QB" | "RB" | "WR_TE" | "DEF
  */
 export function formatGameDate(dateString: string): string {
   try {
-    const date = new Date(dateString);
+    // "2026-09-13" is a calendar date (the game's Eastern date). new Date()
+    // would read it as UTC midnight and show Sep 12 anywhere in the US.
+    const ymd = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateString);
+    const date = ymd ? new Date(+ymd[1], +ymd[2] - 1, +ymd[3]) : new Date(dateString);
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   } catch {
     return dateString;

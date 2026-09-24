@@ -42,6 +42,8 @@ interface NFLSlateLeaderCardProps {
   detailedStats?: DetailedStats;
   performanceDelta?: DeltaResult | null;
   headshotUrl?: string | null;
+  /** e.g. "2026 Season", from the slate response's statsSource */
+  seasonLabel?: string;
 }
 
 export function NFLSlateLeaderCard({
@@ -59,6 +61,7 @@ export function NFLSlateLeaderCard({
   detailedStats,
   performanceDelta,
   headshotUrl,
+  seasonLabel,
 }: NFLSlateLeaderCardProps) {
   const fullName = `${firstName} ${lastName}`;
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`;
@@ -288,7 +291,7 @@ export function NFLSlateLeaderCard({
                 </span>
               </div>
               <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
-                2025 Season
+                {seasonLabel ?? "Season"}
               </Badge>
             </div>
 

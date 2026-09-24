@@ -138,12 +138,10 @@ export default function NFLPlayerDetail() {
         .order("game_date", { ascending: false })
         .limit(20);
 
-      // Filter by week if the column is available
-      if (seasonType === "postseason") {
-        query = query.gt("week", 18);
-      } else {
-        query = query.lte("week", 18);
-      }
+      // BDL numbers playoff weeks 1-5 (not 19+), so the week column cannot
+      // tell a Wild Card game from Week 1. The stored box score carries the
+      // game's own postseason flag; filter on that instead.
+      query = query.eq("raw_data->game->>postseason", seasonType === "postseason" ? "true" : "false");
 
       const { data, error } = await query;
       if (error) throw error;
