@@ -33,8 +33,16 @@ function upcomingDraftYear(now = new Date()): number {
   return season + 1;
 }
 
-const boardPageUrl = (year: number, page: number) =>
+// drafttek.com only negotiates an AES-CBC TLS cipher that Deno (rustls) cannot
+// speak, so a direct fetch from this edge function is reset in the handshake.
+// Fetch the pages through the site's own Node relay (api/drafttek-board.js),
+// which can only return these board pages.
+const RELAY_BASE = Deno.env.get("DRAFTTEK_RELAY_URL") ?? "https://www.mgp-analytics.com/api/drafttek-board";
+/** DraftTek's own page address, recorded as the board's provenance. */
+const drafttekPageUrl = (year: number, page: number) =>
   `https://www.drafttek.com/${year}-NFL-Draft-Big-Board/Top-NFL-Draft-Prospects-${year}-Page-${page}.asp`;
+const boardPageUrl = (year: number, page: number) =>
+  `${RELAY_BASE}?year=${year}&page=${page}`;
 
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
@@ -124,7 +132,7 @@ serve(async (req) => {
         },
       });
       if (!res.ok) {
-        throw new Error(`DraftTek page ${page} fetch failed: ${res.status} ${res.statusText}`);
+        throw new Error(`DraftTek page ${page} fetch failed (via relay): ${res.status} ${(await res.text()).slice(0, 200)}`);
       }
       const parsed = parseDrafttekPage(await res.text());
       if (parsed.draftYear !== draftYear) {
@@ -197,7 +205,7 @@ serve(async (req) => {
         draft_year: draftYear,
         pruned,
         source: "DraftTek NFL Draft Big Board",
-        source_url: boardPageUrl(draftYear, 1),
+        source_url: drafttekPageUrl(draftYear, 1),
         as_of: asOfDate,
         revision,
         depth: BOARD_DEPTH,
