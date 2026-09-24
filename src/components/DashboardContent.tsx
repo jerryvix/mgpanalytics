@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
@@ -36,6 +37,7 @@ import DashboardNotFound from "@/pages/DashboardNotFound";
 import { MobileSportNav } from "@/components/ui/MobileSportNav";
 import { BackButton } from "@/components/ui/BackButton";
 import { MobileTopBar } from "@/components/ui/MobileTopBar";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 
 interface DashboardContentProps {
   isAdmin: boolean;
@@ -45,6 +47,12 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
   const location = useLocation();
   const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab|ncaaf|mlb)/.test(location.pathname);
 
+  // <main> (the dashboard's scroll container) is this component's parent
+  const rootRef = useRef<HTMLDivElement>(null);
+  const getScroller = useCallback(() => rootRef.current?.parentElement ?? null, []);
+  // New screens open at the top; Back/Forward return to where you were
+  useScrollRestoration(getScroller);
+
   // Phones: the pinned top bar owns the status-bar inset, and the bottom
   // padding clears the floating tab bar plus the home indicator so the last
   // row of every page can scroll fully into view. overflow-x: clip keeps any
@@ -52,7 +60,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
   // drag the pinned bars off screen (clip, unlike hidden, is not a scroll
   // container, so the sticky bars still pin to <main>). Desktop is unchanged.
   return (
-    <div className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] max-md:overflow-x-clip md:p-6 md:pb-6 md:pt-6">
+    <div ref={rootRef} className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] max-md:overflow-x-clip md:p-6 md:pb-6 md:pt-6">
       <MobileTopBar subnav={isSportsPage} />
       <BackButton />
       {isSportsPage && <MobileSportNav />}
