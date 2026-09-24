@@ -32,6 +32,7 @@ import {
 } from "@/pages/cappers";
 import { FeedPage } from "@/pages/community";
 import Profile from "@/pages/Profile";
+import DashboardNotFound from "@/pages/DashboardNotFound";
 import { MobileSportNav } from "@/components/ui/MobileSportNav";
 import { BackButton } from "@/components/ui/BackButton";
 import { MobileTopBar } from "@/components/ui/MobileTopBar";
@@ -99,6 +100,9 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
           path="admin"
           element={isAdmin ? <AdminPanel /> : <Navigate to="/dashboard" replace />}
         />
+        {/* Unknown /dashboard/* paths: a Page not found view with Back and
+            Home, never a blank screen */}
+        <Route path="*" element={<DashboardNotFound />} />
       </Routes>
     </div>
   );
