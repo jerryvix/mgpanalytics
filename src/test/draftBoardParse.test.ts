@@ -10,7 +10,11 @@ import {
 // Fixtures are trimmed captures of DraftTek's real 2027 board (Sep 17 2026,
 // "In-Season Rankings Week 3"): page 1 = ranks 1-150, page 2 = 151-300. Row
 // markup is unchanged; logos, bio links, nav and scripts were stripped.
-const fixture = (name: string) => readFileSync(resolve(__dirname, "fixtures", name), "utf-8");
+// Normalized to LF: a Windows checkout (core.autocrlf) hands the fixtures back
+// with CRLF, and the tests below break rows by editing LF-delimited markup.
+// The parser itself reads either.
+const fixture = (name: string) =>
+  readFileSync(resolve(__dirname, "fixtures", name), "utf-8").replace(/\r\n/g, "\n");
 const html1 = fixture("drafttek-big-board-p1.html");
 const html2 = fixture("drafttek-big-board-p2.html");
 const page1 = parseDrafttekPage(html1);
