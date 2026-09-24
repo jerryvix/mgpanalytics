@@ -116,6 +116,9 @@
        0.375rem gap, 2.5rem tabs, 0.5rem padding, 1px hairline */
     --mobile-topbar-h: 2.75rem;
     --mobile-sportnav-h: calc(6.125rem + 1px);
+    /* How far the tabs block slides up when the sport pills collapse on
+       scroll: the pills row plus the gap under it */
+    --mobile-pills-h: 3.125rem;
   }
 
   * {

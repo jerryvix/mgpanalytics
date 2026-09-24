@@ -37,7 +37,9 @@ import DashboardNotFound from "@/pages/DashboardNotFound";
 import { MobileSportNav } from "@/components/ui/MobileSportNav";
 import { BackButton } from "@/components/ui/BackButton";
 import { MobileTopBar } from "@/components/ui/MobileTopBar";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { useCollapseOnScroll } from "@/hooks/useCollapseOnScroll";
 
 interface DashboardContentProps {
   isAdmin: boolean;
@@ -45,6 +47,7 @@ interface DashboardContentProps {
 
 export function DashboardContent({ isAdmin }: DashboardContentProps) {
   const location = useLocation();
+  const isMobile = useIsMobile();
   const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab|ncaaf|mlb)/.test(location.pathname);
 
   // <main> (the dashboard's scroll container) is this component's parent
@@ -52,6 +55,8 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
   const getScroller = useCallback(() => rootRef.current?.parentElement ?? null, []);
   // New screens open at the top; Back/Forward return to where you were
   useScrollRestoration(getScroller);
+  // Phones: the sport pills tuck away while scrolling down, back on scroll up
+  const [pillsCollapsed, revealPills] = useCollapseOnScroll(getScroller, isMobile && isSportsPage);
 
   // Phones: the pinned top bar owns the status-bar inset, and the bottom
   // padding clears the floating tab bar plus the home indicator so the last
@@ -61,9 +66,9 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
   // container, so the sticky bars still pin to <main>). Desktop is unchanged.
   return (
     <div ref={rootRef} className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] max-md:overflow-x-clip md:p-6 md:pb-6 md:pt-6">
-      <MobileTopBar subnav={isSportsPage} />
+      <MobileTopBar subnav={isSportsPage} onRevealSubnav={pillsCollapsed ? revealPills : undefined} />
       <BackButton />
-      {isSportsPage && <MobileSportNav />}
+      {isSportsPage && <MobileSportNav collapsed={pillsCollapsed} />}
       <Routes>
         <Route index element={<DashboardHome />} />
         <Route path="analyst" element={<Analyst />} />

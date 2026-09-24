@@ -1,5 +1,5 @@
 import { useLocation } from "react-router-dom";
-import { Activity, ChevronLeft, Menu } from "lucide-react";
+import { Activity, ChevronDown, ChevronLeft, Menu } from "lucide-react";
 import { useOptionalSidebar } from "@/components/ui/sidebar";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { mobileTitleFor } from "@/lib/dashboardNav";
@@ -20,9 +20,12 @@ interface MobileTopBarProps {
   /** A pinned section nav (MobileSportNav) sits directly below: drop this
    *  bar's margin and hairline so the two read as one header. */
   subnav?: boolean;
+  /** Set while the sport pills are collapsed: the title turns into a tap
+   *  target (with a small chevron hint) that brings them back. */
+  onRevealSubnav?: () => void;
 }
 
-export function MobileTopBar({ subnav = false }: MobileTopBarProps) {
+export function MobileTopBar({ subnav = false, onRevealSubnav }: MobileTopBarProps) {
   const { pathname } = useLocation();
   const { isHome, goBack } = useBackNavigation();
   const sidebar = useOptionalSidebar();
@@ -51,11 +54,22 @@ export function MobileTopBar({ subnav = false }: MobileTopBarProps) {
           </button>
         )}
 
-        {title && (
-          <span className="pointer-events-none absolute inset-x-24 truncate text-center text-[15px] font-semibold text-foreground">
-            {title}
-          </span>
-        )}
+        {title &&
+          (onRevealSubnav ? (
+            <button
+              type="button"
+              onClick={onRevealSubnav}
+              aria-label={`${title}: show sports`}
+              className="absolute inset-x-24 flex h-11 min-w-0 items-center justify-center gap-1 rounded-full text-[15px] font-semibold text-foreground select-none touch-manipulation transition-colors active:bg-foreground/10"
+            >
+              <span className="truncate">{title}</span>
+              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+            </button>
+          ) : (
+            <span className="pointer-events-none absolute inset-x-24 truncate text-center text-[15px] font-semibold text-foreground">
+              {title}
+            </span>
+          ))}
 
         {sidebar && (
           <button

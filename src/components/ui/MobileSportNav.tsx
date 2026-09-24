@@ -58,7 +58,13 @@ const sports: SportTab[] = [
   },
 ];
 
-export function MobileSportNav() {
+interface MobileSportNavProps {
+  /** Scrolled down: the sport pills tuck away and the section tabs ride up
+   *  under the top bar (see useCollapseOnScroll in DashboardContent) */
+  collapsed?: boolean;
+}
+
+export function MobileSportNav({ collapsed = false }: MobileSportNavProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -91,16 +97,35 @@ export function MobileSportNav() {
   // anywhere on a long page. Its height is --mobile-sportnav-h, which the
   // dashboard scroller adds to its scroll padding so nothing scrolls into
   // view hidden underneath it.
+  //
+  // Scrolling down collapses the sport pills like Safari's toolbar: the block
+  // slides up by the pills' height (a transform, so nothing below reflows or
+  // jumps) and tucks the pills behind the top bar, leaving the section tabs
+  // pinned right under it. Scrolling up or tapping the bar title brings them
+  // back. Instant, not animated, with reduced motion.
   return (
     <div
       data-sport-nav
-      className="sticky top-[calc(var(--safe-top)+var(--mobile-topbar-h))] z-20 -mx-4 mb-4 space-y-1.5 border-b border-border/60 bg-background/85 px-4 pb-2 backdrop-blur-xl"
+      data-collapsed={collapsed || undefined}
+      className={cn(
+        "sticky top-[calc(var(--safe-top)+var(--mobile-topbar-h))] z-20 -mx-4 mb-4 space-y-1.5 border-b border-border/60 bg-background/85 px-4 pb-2 backdrop-blur-xl",
+        "transition-transform duration-200 ease-out motion-reduce:transition-none",
+        collapsed && "-translate-y-[var(--mobile-pills-h)]"
+      )}
     >
       {/* Sport tabs - five sports don't fit a phone width, so the row scrolls.
           Hidden scrollbar + contained overscroll keeps it feeling native.
           Each button is a 44px-tall tap target around a 40px pill, so the
-          target meets Apple's minimum while the pill looks the same. */}
-      <div ref={rowRef} className="flex gap-1.5 overflow-x-auto scrollbar-hide overscroll-x-contain -mx-4 px-4">
+          target meets Apple's minimum while the pill looks the same.
+          Collapsed, the row is invisible: no taps, no VoiceOver focus. */}
+      <div
+        ref={rowRef}
+        className={cn(
+          "flex gap-1.5 overflow-x-auto scrollbar-hide overscroll-x-contain -mx-4 px-4",
+          "transition-[opacity,visibility] duration-200 motion-reduce:transition-none",
+          collapsed && "invisible opacity-0"
+        )}
+      >
         {sports.map((sport) => {
           const isActive = activeSport?.label === sport.label;
           return (

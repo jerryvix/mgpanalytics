@@ -132,6 +132,41 @@ describe("sport tabs on phones", () => {
     expect(within(nav as HTMLElement).getByRole("button", { name: "Players" })).toBeInTheDocument();
   });
 
+  it("tucks the sport pills away when collapsed, keeping the section tabs pinned", () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={["/dashboard/mlb/players"]}>
+        <MobileSportNav collapsed />
+      </MemoryRouter>
+    );
+    const nav = container.querySelector("[data-sport-nav]") as HTMLElement;
+    // the whole block slides up by the pills' height (a transform: nothing
+    // below reflows), animated unless the user asked for reduced motion
+    expect(nav).toHaveAttribute("data-collapsed");
+    expect(nav.className).toContain("-translate-y-[var(--mobile-pills-h)]");
+    expect(nav.className).toContain("motion-reduce:transition-none");
+    // the pills can't be tapped or focused while tucked away
+    const pillRow = within(nav).getByRole("button", { name: "MLB", hidden: true }).parentElement!;
+    expect(pillRow.className).toMatch(/\binvisible\b/);
+    // the section tabs stay put and tappable
+    expect(within(nav).getByRole("button", { name: "Players" })).toBeVisible();
+  });
+
+  it("shows the sport pills when expanded", () => {
+    const { container } = renderSportNav("/dashboard/mlb/players");
+    const nav = container.querySelector("[data-sport-nav]") as HTMLElement;
+    expect(nav).not.toHaveAttribute("data-collapsed");
+    expect(nav.className).not.toContain("-translate-y-");
+    expect(within(nav).getByRole("button", { name: "MLB" }).parentElement!.className).not.toMatch(/\binvisible\b/);
+  });
+
+  it("DashboardContent wires scroll restoration and the collapsing pills to the dashboard scroller", () => {
+    const src = readFileSync(path.resolve(__dirname, "../components/DashboardContent.tsx"), "utf8");
+    expect(src).toMatch(/useScrollRestoration\(getScroller\)/);
+    expect(src).toMatch(/useCollapseOnScroll\(getScroller, isMobile && isSportsPage\)/);
+    expect(src).toMatch(/<MobileSportNav collapsed=\{pillsCollapsed\} \/>/);
+    expect(src).toMatch(/onRevealSubnav=\{pillsCollapsed \? revealPills : undefined\}/);
+  });
+
   it("the dashboard scroller pads scroll-into-view by the pinned header heights and never scrolls sideways", () => {
     const src = readFileSync(path.resolve(__dirname, "../pages/Dashboard.tsx"), "utf8");
     const main = src.match(/<main className="([^"]+)"/)![1];

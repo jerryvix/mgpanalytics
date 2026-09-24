@@ -94,6 +94,28 @@ describe("MobileTopBar", () => {
     expect(plain.className).toMatch(/\bmb-3\b/);
   });
 
+  it("while the sport pills are collapsed, tapping the title brings them back", () => {
+    const reveal = vi.fn();
+    window.history.replaceState({ idx: 0 }, "");
+    render(
+      <MemoryRouter initialEntries={["/dashboard/mlb"]}>
+        <SidebarProvider>
+          <MobileTopBar subnav onRevealSubnav={reveal} />
+        </SidebarProvider>
+      </MemoryRouter>
+    );
+    const title = screen.getByRole("button", { name: /MLB: show sports/i });
+    expect(title.className).toMatch(/\bh-11\b/);
+    fireEvent.click(title);
+    expect(reveal).toHaveBeenCalledTimes(1);
+  });
+
+  it("the title is plain text when there is nothing to reveal", () => {
+    renderBar("/dashboard/mlb", 0, true);
+    expect(screen.queryByRole("button", { name: /show sports/i })).not.toBeInTheDocument();
+    expect(screen.getByText("MLB")).toBeInTheDocument();
+  });
+
   it("names the current section", () => {
     renderBar("/dashboard/nfl/players/bdl-19");
     expect(screen.getByText("NFL")).toBeInTheDocument();
