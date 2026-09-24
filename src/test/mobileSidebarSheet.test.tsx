@@ -42,8 +42,10 @@ function renderShell(path: string) {
   );
 }
 
-// Generous timeouts: the sheet mounts through a portal and a Radix presence
-// cycle, which can take a while when the suite runs in parallel workers.
+// Generous timeouts: these tests mount the full AppSidebar (icons, Radix
+// portal + presence cycle), and the first one also pays the cold module load.
+// Under a busy machine that ran past Vitest's default 5s per test.
+vi.setConfig({ testTimeout: 20_000 });
 const SLOW = { timeout: 5000 };
 
 async function openSheet() {
