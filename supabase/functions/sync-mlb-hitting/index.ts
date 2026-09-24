@@ -9,6 +9,11 @@ import {
   computeHitStreak,
   rosterUrl,
   parseRoster,
+  addDays,
+  etDate,
+  gameStatusUrl,
+  parseSchedule,
+  unfinishedGamePks,
 } from "../_shared/mlb-statsapi.ts";
 
 const corsHeaders = {
@@ -18,6 +23,10 @@ const corsHeaders = {
 
 // Days without a game before a hit streak stops counting as live (injury, demotion).
 const STREAK_STALE_DAYS = 7;
+// Game logs list a game from its first pitch. Games this many days back (a
+// late game past midnight, a suspended one) whose final isn't in yet are left
+// out of the streak until they end.
+const UNFINISHED_LOOKBACK_DAYS = 3;
 // Anyone with this many plate appearances gets a streak check. The season
 // endpoint defaults to QUALIFIED hitters only (about 130 in late September),
 // which silently skipped every part-timer and September call-up on a streak.
@@ -156,11 +165,16 @@ serve(async (req) => {
     // pool so rate-stat boards can keep MLB's batting-title rule (3.1 PA per
     // team game) instead of letting a 40-AB call-up lead the OPS grid.
     const seasonBase = `${MLB_STATSAPI}/stats?stats=season&group=hitting&season=${season}&sportId=1&gameType=R&limit=2000`;
-    const [allJson, qualifiedJson, activeIds] = await Promise.all([
+    const today = etDate(new Date());
+    const [allJson, qualifiedJson, activeIds, statusJson] = await Promise.all([
       statsapiJson<any>(`${seasonBase}&playerPool=ALL`),
       statsapiJson<any>(`${seasonBase}&playerPool=QUALIFIED`),
       loadActiveRosterIds(season),
+      // Which recent games are still being played. No fail-open here: without
+      // it a live game ends streaks again, and the last run's numbers are better.
+      statsapiJson<any>(gameStatusUrl(addDays(today, -UNFINISHED_LOOKBACK_DAYS), today)),
     ]);
+    const unfinished = unfinishedGamePks(parseSchedule(statusJson));
     const allSplits: any[] = allJson?.stats?.[0]?.splits || [];
     const qualifiedIds = new Set<string>((qualifiedJson?.stats?.[0]?.splits || []).map((sp: any) => String(sp.player?.id)));
     if (allSplits.length === 0) throw new Error("statsapi returned no season hitting splits");
@@ -185,6 +199,7 @@ serve(async (req) => {
     const logRowsByPlayer = new Map<string, any[]>();
     const failures: string[] = [];
     let staleHidden = 0;
+    let withUnfinishedGame = 0;
     const offRosterHidden: string[] = [];
 
     await mapPool(candidates, CONCURRENCY, async (cand, rank) => {
@@ -200,8 +215,10 @@ serve(async (req) => {
         return;
       }
 
-      const result = computeHitStreak(hittingGamesFromSplits(splits), { staleDays: STREAK_STALE_DAYS });
+      const games = hittingGamesFromSplits(splits);
+      const result = computeHitStreak(games, { staleDays: STREAK_STALE_DAYS, unfinished });
       if (result.stale) staleHidden++;
+      if (games.some((g) => g.gamePk != null && unfinished.has(g.gamePk))) withUnfinishedGame++;
       // Optioned, injured or otherwise off every active roster: not a live angle tonight.
       const offRoster = result.streak > 0 && activeIds !== null && !activeIds.has(cand.extId);
       if (offRoster) offRosterHidden.push(cand.extId);
@@ -300,6 +317,8 @@ serve(async (req) => {
       streakChecked: streakByPlayer.size,
       streakFetchFailures: failures.length,
       staleStreaksHidden: staleHidden,
+      // Hitters whose log holds a game not final yet, left out of the streak until it ends
+      hittersWithUnfinishedGame: withUnfinishedGame,
       activeRosterFilter: activeIds !== null ? `${activeIds.size} active players` : "unavailable (not filtering)",
       offRosterStreaksHidden: offRosterHidden.length,
       leftoverStreaksZeroed: leftovers.length,

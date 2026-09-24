@@ -195,6 +195,28 @@ export function matchupKey(day: string, away: string, home: string): string {
   return `${day}|${teamKey(away)}|${teamKey(home)}`;
 }
 
+// Only what unfinishedGamePks reads
+const STATUS_FIELDS = [
+  "dates", "date", "games", "gamePk", "gameDate", "officialDate", "gameNumber", "status", "abstractGameState", "detailedState",
+].join(",");
+
+/** Every game's state over a date range, trimmed to what unfinishedGamePks needs. */
+export function gameStatusUrl(startDate: string, endDate: string): string {
+  return `${MLB_STATSAPI}/schedule?sportId=1&startDate=${startDate}&endDate=${endDate}&fields=${STATUS_FIELDS}`;
+}
+
+/**
+ * gamePks of games that are not final yet: in progress, delayed, suspended (or
+ * not started). statsapi's game logs carry a game from its first pitch, so hit
+ * streaks skip these until they end (computeHitStreak `unfinished`). A gamePk
+ * with a final listing is finished: a postponed placeholder shares its gamePk
+ * with the makeup, and a suspended game is listed again when completed.
+ */
+export function unfinishedGamePks(games: MlbScheduleGame[]): Set<number> {
+  const finished = new Set(games.filter((g) => g.isFinal).map((g) => g.gamePk));
+  return new Set(games.filter((g) => !g.isPlaceholder && !finished.has(g.gamePk)).map((g) => g.gamePk));
+}
+
 // ---------------------------------------------------------------------------
 // Pitcher lines (season + last three starts)
 // ---------------------------------------------------------------------------
@@ -456,6 +478,42 @@ export interface ProjectionRow {
   starting_pitcher_away: string | null;
 }
 
+/** No starter goes twice in this many days: a projection naming one who is announced that close is dropped. */
+export const STARTER_CLEARANCE_DAYS = 4;
+
+// Only what announcedNearby reads (about a fifth of the full schedule payload)
+const ANNOUNCED_FIELDS = [
+  "dates", "date", "games", "gamePk", "gameDate", "officialDate", "gameNumber", "status", "abstractGameState",
+  "detailedState", "teams", "away", "home", "team", "id", "name", "probablePitcher", "fullName",
+].join(",");
+
+/** Whole calendar days from `a` to `b` (YYYY-MM-DD). */
+function dayGap(a: string, b: string): number {
+  return Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000);
+}
+
+/**
+ * Is this pitcher MLB's announced starter for the same team in another game
+ * within `clearanceDays` of `day`? ESPN projected Jacob deGrom for Saturday's
+ * TEX @ MIN (Sep 26 2026) while MLB had announced him for Friday's, so the
+ * Saturday card read "deGrom PROJECTED" a day after his start. Such a
+ * projection is dropped (TBD).
+ */
+export function announcedNearby(
+  games: MlbScheduleGame[],
+  teamId: number,
+  pitcherId: number,
+  gamePk: number,
+  day: string,
+  clearanceDays = STARTER_CLEARANCE_DAYS,
+): boolean {
+  return games.some((g) => {
+    if (g.gamePk === gamePk || g.isPlaceholder) return false;
+    const side = g.away.id === teamId ? g.away : g.home.id === teamId ? g.home : null;
+    return side?.probable?.id === pitcherId && Math.abs(dayGap(g.scheduleDay, day)) <= clearanceDays;
+  });
+}
+
 /** Pair each statsapi game with its mlb_games row: same Eastern day and matchup, closest first pitch. */
 export function matchProjectionRows(
   games: MlbScheduleGame[],
@@ -497,6 +555,8 @@ export function matchProjectionRows(
  * ESPN projection stored on the mlb_games row (pass `projections`) is looked
  * up on that team's 40-man roster and shown with `projected: true` and the
  * same stats; if that lookup fails the side is TBD (null), never a bare name.
+ * So is a projection naming a pitcher MLB already announced for the same team
+ * within STARTER_CLEARANCE_DAYS (announcedNearby).
  */
 export async function fetchProbableMatchups(
   startDate: string,
@@ -507,7 +567,7 @@ export async function fetchProbableMatchups(
   const games = parseSchedule(await statsapiJson(scheduleUrl(startDate, endDate)));
 
   // Projected names for sides MLB has not announced
-  type Want = { gamePk: number; side: "away" | "home"; teamId: number; name: string };
+  type Want = { gamePk: number; day: string; side: "away" | "home"; teamId: number; name: string };
   const wants: Want[] = [];
   if (projections.length) {
     const rowFor = matchProjectionRows(games, projections);
@@ -517,27 +577,38 @@ export async function fetchProbableMatchups(
       for (const s of ["away", "home"] as const) {
         const name = s === "away" ? row.starting_pitcher_away : row.starting_pitcher_home;
         const teamId = g[s].id;
-        if (!g[s].probable && name && teamId) wants.push({ gamePk: g.gamePk, side: s, teamId, name });
+        if (!g[s].probable && name && teamId) wants.push({ gamePk: g.gamePk, day: g.scheduleDay, side: s, teamId, name });
       }
     }
   }
 
-  // Resolve projections on each team's 40-man roster (one call per team involved)
+  // Resolve projections on each team's 40-man roster (one call per team
+  // involved), alongside MLB's announced starters from STARTER_CLEARANCE_DAYS
+  // either side of the window, which can rule a projection out.
   const projectedId = new Map<string, number>(); // `${gamePk}:${side}` -> person id
   if (wants.length) {
     const rosters = new Map<number, RosterEntry[]>();
-    await Promise.all(
-      [...new Set(wants.map((w) => w.teamId))].map(async (teamId) => {
+    let announced = games;
+    const d = STARTER_CLEARANCE_DAYS;
+    await Promise.all([
+      ...[...new Set(wants.map((w) => w.teamId))].map(async (teamId) => {
         try {
           rosters.set(teamId, parseRoster(await statsapiJson(rosterUrl(teamId, "40Man", season))));
         } catch {
           // Unresolvable projections show TBD.
         }
       }),
-    );
+      statsapiJson(`${scheduleUrl(addDays(startDate, -d), addDays(endDate, d))}&fields=${ANNOUNCED_FIELDS}`)
+        .then((json) => {
+          announced = games.concat(parseSchedule(json));
+        })
+        .catch(() => {
+          // The window's own announcements still apply.
+        }),
+    ]);
     for (const w of wants) {
       const hit = resolveRosterName(rosters.get(w.teamId) ?? [], w.name);
-      if (hit) projectedId.set(`${w.gamePk}:${w.side}`, hit.id);
+      if (hit && !announcedNearby(announced, w.teamId, hit.id, w.gamePk, w.day)) projectedId.set(`${w.gamePk}:${w.side}`, hit.id);
     }
   }
 
@@ -643,16 +714,26 @@ export function hittingGamesFromSplits(splits: unknown[]): HittingGame[] {
  * a game with no plate appearance at all, e.g. a pinch-runner), but a sacrifice
  * fly without a hit ends it.
  *
+ * Games not final yet (`unfinished`, from unfinishedGamePks) are skipped
+ * entirely until they end: hitless, a game in progress does not end the
+ * streak, and with a hit it does not extend it either (only completed games
+ * are credited). statsapi's game log already lists a game in progress, so a
+ * streak hitter 0-for-2 in the fifth inning read as a hitless game and
+ * dropped to 0 until the next sync (Hunter Goodman, live ARI @ COL, Sep 24
+ * 2026).
+ *
  * Staleness guard: a hitter whose last game is more than `staleDays` old
  * (injured list, demotion) shows 0. Officially his streak is intact, but it is
- * not a live angle for tonight, and a frozen number reads as current.
+ * not a live angle for tonight, and a frozen number reads as current. A game
+ * in progress counts here: he is playing.
  */
 export function computeHitStreak(
   games: HittingGame[],
-  opts: { now?: number; staleDays?: number } = {},
+  opts: { now?: number; staleDays?: number; unfinished?: ReadonlySet<number> } = {},
 ): HitStreak {
   const now = opts.now ?? Date.now();
   const staleDays = opts.staleDays ?? 7;
+  const unfinished = opts.unfinished;
   const chron = [...games].sort((a, b) => {
     if (a.date !== b.date) return a.date < b.date ? -1 : 1;
     const gn = (a.gameNumber ?? 1) - (b.gameNumber ?? 1);
@@ -665,6 +746,7 @@ export function computeHitStreak(
   let atBats = 0;
   for (let i = chron.length - 1; i >= 0; i--) {
     const g = chron[i];
+    if (g.gamePk != null && unfinished?.has(g.gamePk)) continue; // still being played
     if (g.hits > 0) {
       streak++;
       hits += g.hits;

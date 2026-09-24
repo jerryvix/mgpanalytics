@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { latestSnapshots } from "@/lib/odds";
+import { isRunLineNumber } from "@/lib/mlbRunLine";
 import {
   buildMarketPulse,
   SPLITS_SPORTS,
@@ -34,14 +35,17 @@ interface HistoryRow {
 /**
  * DraftKings' open for a sport without stored lines (MLB): the LATEST
  * odds_history capture of each bet type and side. One book, never an average
- * across captures.
+ * across captures. An MLB run-line open other than +/-1.5 is a capture from
+ * before DraftKings posted the line (recorded as 0 and carried forward), so it
+ * is no open at all: it would read "Open PK → Now -1.5".
  */
-export function historyOpens(rows: HistoryRow[], homeName?: string, awayName?: string): OpenQuoteLike[] {
+export function historyOpens(rows: HistoryRow[], homeName?: string, awayName?: string, sport?: string): OpenQuoteLike[] {
   const out: OpenQuoteLike[] = [];
   for (const r of latestSnapshots(rows)) {
     const type = r.odds_type.toLowerCase();
     const market = type.includes("moneyline") ? "moneyline" : type.includes("total") ? "total" : type.includes("spread") ? "spread" : null;
     if (!market) continue;
+    if (sport === "MLB" && market === "spread" && !isRunLineNumber(r.opening_line)) continue;
     const side =
       market === "total"
         ? r.team === "Over" ? "over" : r.team === "Under" ? "under" : null
@@ -126,9 +130,9 @@ export function useMarketPulse(args: {
       splits: query.data.splits,
       lines: query.data.lines,
       odds: dk,
-      opens: historyOpens(query.data.history, homeName, awayName),
+      opens: historyOpens(query.data.history, homeName, awayName, sport),
     });
-  }, [query.data, dk, homeName, awayName]);
+  }, [query.data, dk, homeName, awayName, sport]);
 
   return {
     pulse,

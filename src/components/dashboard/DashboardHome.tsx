@@ -30,6 +30,7 @@ import { TodaysTopGames, type TopGame } from "@/components/dashboard/TodaysTopGa
 import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { withStoredLine } from "@/lib/marketPulse";
 import { fetchStoredLines } from "@/lib/storedLines";
+import { postedMlbOdds } from "@/lib/mlbRunLine";
 
 interface Game {
   id: number | string;
@@ -398,7 +399,9 @@ export function DashboardHome() {
       });
 
       mlbGames?.forEach(game => {
-        const odds = mlbOdds?.find(o => o.game_id === game.id);
+        // A run line DraftKings hasn't posted (stored as 0, no price) shows no number
+        const row = mlbOdds?.find(o => o.game_id === game.id);
+        const odds = row ? postedMlbOdds(row) : undefined;
         gamesWithOdds.push({
           id: game.id,
           home_team_name: game.home_team_name,

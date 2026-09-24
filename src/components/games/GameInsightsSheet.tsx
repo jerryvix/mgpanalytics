@@ -17,6 +17,7 @@ import { queryView } from "@/lib/queryView";
 import { format, parseISO } from "date-fns";
 import { tbdKickoffLabel } from "@/lib/kickoff";
 import { nickname, titleTeamName } from "@/lib/teamNames";
+import { postedMlbOdds } from "@/lib/mlbRunLine";
 import { NCAAF_TEAM_IDS } from "@/data/ncaafTeamIds";
 
 // Game Insights - the tap-a-game deep dive. Every number here is real MGP
@@ -87,7 +88,9 @@ async function loadInsights(sport: InsightsSport, game: InsightsGame) {
     .eq("game_id", game.id as never)
     .in("sportsbook", SPORTSBOOKS);
   if (oddsError) throw new Error(`Game odds failed to load: ${oddsError.message}`);
-  const books = ((oddsData || []) as unknown as BookOdds[]);
+  // MLB: a run line DraftKings hasn't posted (stored as 0, no price) is no run
+  // line, so Market Pulse shows none rather than "PK"
+  const books = ((oddsData || []) as unknown as BookOdds[]).map((b) => (sport === "MLB" ? postedMlbOdds(b) : b));
 
   // 2) Line movement lives in Market Pulse now: DraftKings' open to its
   // current line, one number per market. (This block used to average every

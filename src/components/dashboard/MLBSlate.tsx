@@ -18,6 +18,7 @@ import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
 import { findMatchupForGame } from "@/services/mlb/probablePitchers";
 import { ProbablePitcherRow } from "@/components/mlb/ProbablePitcher";
 import { nickname } from "@/lib/teamNames";
+import { postedMlbOdds } from "@/lib/mlbRunLine";
 
 interface Game {
   id: string;
@@ -125,7 +126,8 @@ export function MLBSlate() {
         } else {
           const oddsMap: GameOddsMap = {};
           (oddsData || []).forEach((odd) => {
-            oddsMap[odd.game_id] = odd;
+            // A run line DraftKings hasn't posted (stored as 0, no price) reads N/A
+            oddsMap[odd.game_id] = postedMlbOdds(odd);
           });
           setGameOddsMap(oddsMap);
           setOddsFailed(false);

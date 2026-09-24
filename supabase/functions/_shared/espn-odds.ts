@@ -1,4 +1,5 @@
 import { espnFetch } from "./espn-fetch.ts";
+import { isAmericanPrice, isPostedRunLine, isPostedTotal, isRunLineNumber } from "./mlb-run-line.ts";
 // Shared ESPN odds fetcher. ESPN's core API exposes per-event sportsbook
 // lines (DraftKings) with BOTH opening and current values, free and keyless.
 // This replaced The Odds API (paid, key died Jul 2026) as MGP's game-odds
@@ -125,6 +126,41 @@ function normalizeItem(item: EspnOddsItem): EspnEventOdds {
   };
 }
 
+/**
+ * MLB keeps only what DraftKings has actually posted (mlb-run-line.ts): a run
+ * line is +/-1.5 with a price or null, a 0 total is null, and a price that is
+ * not a real American price is null. ESPN fills unposted markets with zeros
+ * (Rockies @ White Sox, Sep 24 2026: spread 0 and no price, stored as a run
+ * line and shown as "Sox +0 (N/A)"). Football never comes through here: a 0
+ * spread there is a real pick'em.
+ */
+export function mlbPostedOnly(o: EspnEventOdds): EspnEventOdds {
+  const price = (p: number | null) => (isAmericanPrice(p) ? p : null);
+  const runLine = isPostedRunLine(o.spreadHome, o.spreadHomeOdds);
+  const openRunLine = isRunLineNumber(o.openSpreadHome);
+  const total = isPostedTotal(o.totalValue);
+  const openTotal = isPostedTotal(o.openTotal);
+  return {
+    ...o,
+    spreadHome: runLine ? o.spreadHome : null,
+    spreadHomeOdds: runLine ? o.spreadHomeOdds : null,
+    spreadAwayOdds: runLine ? price(o.spreadAwayOdds) : null,
+    moneylineHome: price(o.moneylineHome),
+    moneylineAway: price(o.moneylineAway),
+    totalValue: total ? o.totalValue : null,
+    totalOverOdds: total ? price(o.totalOverOdds) : null,
+    totalUnderOdds: total ? price(o.totalUnderOdds) : null,
+    openSpreadHome: openRunLine ? o.openSpreadHome : null,
+    openSpreadHomeOdds: openRunLine ? price(o.openSpreadHomeOdds) : null,
+    openSpreadAwayOdds: openRunLine ? price(o.openSpreadAwayOdds) : null,
+    openMoneylineHome: price(o.openMoneylineHome),
+    openMoneylineAway: price(o.openMoneylineAway),
+    openTotal: openTotal ? o.openTotal : null,
+    openTotalOverOdds: openTotal ? price(o.openTotalOverOdds) : null,
+    openTotalUnderOdds: openTotal ? price(o.openTotalUnderOdds) : null,
+  };
+}
+
 // Fetch odds for one ESPN event. Returns the DraftKings item when present,
 // otherwise the highest-priority provider, or null when no lines are posted
 // yet (normal for FCS mismatches and far-out games).
@@ -145,7 +181,7 @@ export async function fetchEspnEventOdds(
     items.find((i) => i.provider?.priority === 1) ||
     items[0];
 
-  const normalized = normalizeItem(pick);
+  const normalized = league === "mlb" ? mlbPostedOnly(normalizeItem(pick)) : normalizeItem(pick);
   // An item with no usable numbers is as good as no odds
   const hasAny =
     normalized.spreadHome !== null ||

@@ -4,17 +4,16 @@ import { getCorsHeaders } from "../_shared/cors.ts";
 import { fmtAmerican, withDkLines } from "../_shared/dk-line.ts";
 import { isPulseQuestion, marketPulseBlock } from "../_shared/pulse-chat.ts";
 import { resolveLeague } from "../_shared/league-detect.ts";
+import { postedMlbOdds } from "../_shared/mlb-run-line.ts";
 import {
   addDays,
   etDate,
   fetchProbableMatchups,
-  formatPitcherLast3,
-  formatPitcherSeason,
   nextMatchupForTeam,
-  type PitcherLine,
   type ProbableMatchup,
   type ProjectionRow,
 } from "../_shared/mlb-statsapi.ts";
+import { chatStarterGames, etGameTime, pitcherBrief, starterLine } from "./mlb-starters.ts";
 
 // Rate limit: max requests per user per window
 const RATE_LIMIT_MAX = 10;
@@ -310,6 +309,8 @@ interface FetchedData {
 // last-three-start lines (statsapi.mlb.com, keyless). Same rule as the slate
 // cards, game sheet and hit streak table: unannounced starters use the ESPN
 // projection on our mlb_games rows, marked projected, or TBD if unresolvable.
+// Today's games stay in every state, labeled final or in progress with the
+// score (mlb-starters.ts), so "who pitched today" still has an answer.
 // ============================================================
 async function fetchMlbProbables(supabase: any, now: Date): Promise<ProbableMatchup[]> {
   const today = etDate(now);
@@ -328,28 +329,11 @@ async function fetchMlbProbables(supabase: any, now: Date): Promise<ProbableMatc
     console.error("Projected starters unavailable:", e);
   }
   const all = await fetchProbableMatchups(today, tomorrow, Number(today.slice(0, 4)), projections);
-  return all
-    .filter((m) => !m.game.isPlaceholder && !m.game.isFinal)
-    .sort((a, b) => Date.parse(a.game.gameDate) - Date.parse(b.game.gameDate));
+  return chatStarterGames(all);
 }
 
 // Baseball-only vocabulary ("probable" alone is also an NFL injury tag).
 const PITCH_QUESTION = /\b(pitch(er|ers|ing)|probable\s+(starters?|pitchers?)|starting\s+pitchers?|on\s+the\s+mound|whip|strikeouts?)\b/i;
-
-function pitcherBrief(line: PitcherLine | null | undefined): string {
-  if (!line) return "TBD";
-  const projected = line.projected ? " (projected, not yet announced by MLB)" : "";
-  const hand = line.hand ? `, ${line.hand}HP` : "";
-  const season = formatPitcherSeason(line);
-  const last3 = formatPitcherLast3(line);
-  return `${line.name}${projected}${hand}${season ? `: ${season}` : ""}${last3 ? `; ${last3}` : ""}`;
-}
-
-function etGameTime(iso: string): string {
-  return new Date(iso).toLocaleString("en-US", {
-    weekday: "short", hour: "numeric", minute: "2-digit", timeZone: "America/New_York",
-  });
-}
 
 // Kickoff for an upcoming-games line. NCAAF rows whose time the networks have
 // not set carry time_tbd, and their date is a midnight-ET placeholder: print
@@ -460,8 +444,11 @@ const ODDS_TABLE: Record<string, string> = {
  * game with only a stored line gets a DraftKings row, and updated_at becomes
  * the oldest capture behind the numbers (withDkLines). Other sports and books
  * pass through, and a failed betting_lines read leaves the odds table's rows.
+ * MLB: a run line DraftKings hasn't posted (stored as 0, no price) reads n/a,
+ * as on the slate (_shared/mlb-run-line.ts).
  */
 async function dkOdds(supabase: any, league: string, odds: any[], gameIds: Array<string | number>): Promise<any[]> {
+  if (league === "MLB") return odds.map((o) => postedMlbOdds(o));
   try {
     return await withDkLines(supabase, league, odds, gameIds);
   } catch (e) {
@@ -1276,9 +1263,10 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
 
   if (data.mlb_probables?.length) {
     prompt += "\n⚾ MLB STARTING PITCHERS (season W-L, ERA, WHIP, K, IP; then the last three starts):\n";
-    prompt += "(The same starters and numbers the MGP slate and hit streak table show. A plain name is MLB's announced probable starter. A name marked projected is not yet announced by MLB: always call it projected. TBD means no starter is known yet. Use these for any pitcher or matchup question.)\n";
-    for (const m of data.mlb_probables.slice(0, 30)) {
-      prompt += `• ${etGameTime(m.game.gameDate)} ET: ${m.game.away.name} (${pitcherBrief(m.away)}) @ ${m.game.home.name} (${pitcherBrief(m.home)})\n`;
+    prompt += "(The same starters and numbers the MGP slate and hit streak table show. Games marked FINAL or IN PROGRESS have already started, with the score so far: the pitchers named there are the ones MLB listed to start them, so use them for who started or pitched today. For every other game, a plain name is MLB's announced probable starter. A name marked projected is not yet announced by MLB: always call it projected. TBD means no starter is known yet. Use these for any pitcher or matchup question.)\n";
+    // Today (every state) and tomorrow: two full slates
+    for (const m of data.mlb_probables.slice(0, 40)) {
+      prompt += `${starterLine(m)}\n`;
     }
   }
 

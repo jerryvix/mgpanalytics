@@ -20,6 +20,7 @@ import { format, parseISO, isSameDay, addDays } from "date-fns";
 import { tbdGameDay, tbdGameDayKey, tbdKickoffLabel } from "@/lib/kickoff";
 import { fetchAllPages } from "@/lib/fetchAllPages";
 import { nickname, shortTeamName, titleTeamName } from "@/lib/teamNames";
+import { postedMlbOdds } from "@/lib/mlbRunLine";
 
 // Today's Board - the day-to-day companion to the Season Long futures view.
 // Layout approved from the v3 mockup: odds grid on the left, three rails on
@@ -130,7 +131,8 @@ async function loadBoard(sport: BoardSport) {
       .select("*")
       .in("game_id", gameIds.slice(i, i + 100))
       .ilike("sportsbook", "%draftkings%");
-    for (const o of (odds || []) as unknown as BoardOdds[]) oddsMap.set(String(o.game_id), o);
+    // MLB: a run line DraftKings hasn't posted (stored as 0, no price) shows "-"
+    for (const o of (odds || []) as unknown as BoardOdds[]) oddsMap.set(String(o.game_id), sport === "MLB" ? postedMlbOdds(o) : o);
   }
   // NCAAF and NFL: the stored DraftKings line, by the same rule as Game
   // Insights > Market Pulse (lib/marketPulse chooseLine), so a game shows one
@@ -172,7 +174,7 @@ async function loadBoard(sport: BoardSport) {
   const sided: MoveRow[] = list.flatMap((g) => {
     const id = String(g.id);
     const stored = (storedLines.get(id) ?? []).filter((l) => l.open_line !== null || l.open_price !== null);
-    const fromHistory = historyOpens(historyFor(g), g.home_team_name, g.visitor_team_name).filter(
+    const fromHistory = historyOpens(historyFor(g), g.home_team_name, g.visitor_team_name, sport).filter(
       (h) => !stored.some((l) => l.market === h.market && l.side === h.side),
     );
     return gameMoves({ gameId: id, away: g.visitor_team_name, home: g.home_team_name, now: oddsMap.get(id), opens: [...stored, ...fromHistory] });
