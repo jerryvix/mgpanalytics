@@ -72,7 +72,9 @@ export function MobileSportNav() {
   return (
     <div className="mb-4 space-y-2.5">
       {/* Sport tabs - five sports don't fit a phone width, so the row scrolls.
-          Hidden scrollbar + contained overscroll keeps it feeling native. */}
+          Hidden scrollbar + contained overscroll keeps it feeling native.
+          Each button is a 44px-tall tap target around a 40px pill, so the
+          target meets Apple's minimum while the pill looks the same. */}
       <div className="flex gap-1.5 overflow-x-auto scrollbar-hide overscroll-x-contain -mx-4 px-4">
         {sports.map((sport) => {
           const isActive = activeSport?.label === sport.label;
@@ -80,22 +82,29 @@ export function MobileSportNav() {
             <button
               key={sport.label}
               onClick={() => navigate(sport.path)}
-              className={cn(
-                "flex items-center gap-1.5 px-3.5 min-h-[40px] rounded-full text-[13px] font-medium shrink-0 select-none",
-                "transition-[color,background-color,transform] duration-150 active:scale-[0.96]",
-                isActive
-                  ? "bg-terminal-green/15 text-terminal-green border border-terminal-green/40"
-                  : "bg-card/50 text-muted-foreground border border-border active:text-foreground"
-              )}
+              aria-current={isActive ? "page" : undefined}
+              className="group flex h-11 shrink-0 items-center select-none touch-manipulation"
             >
-              <img src={sport.logo} alt="" className="w-4 h-4 object-contain pointer-events-none" />
-              {sport.label}
+              <span
+                className={cn(
+                  "flex h-10 items-center gap-1.5 px-3.5 rounded-full text-[13px] font-medium",
+                  "transition-[color,background-color,transform] duration-150 group-active:scale-[0.96]",
+                  isActive
+                    ? "bg-terminal-green/15 text-terminal-green border border-terminal-green/40"
+                    : "bg-card/50 text-muted-foreground border border-border group-active:text-foreground"
+                )}
+              >
+                <img src={sport.logo} alt="" className="w-4 h-4 object-contain pointer-events-none" />
+                {sport.label}
+              </span>
             </button>
           );
         })}
       </div>
 
-      {/* Sub-tabs (Games / Players / Trending) as an iOS-style segmented control */}
+      {/* Sub-tabs (Games / Players / Trending) as an iOS-style segmented control.
+          Segments stay 34px tall; an invisible ::after extends each tap
+          target to 44px above and below without overlapping its neighbors. */}
       {activeSport?.subTabs && (
         <div className="inline-flex rounded-lg bg-card/70 border border-border p-0.5 gap-0.5">
           {activeSport.subTabs.map((sub) => {
@@ -104,8 +113,10 @@ export function MobileSportNav() {
               <button
                 key={sub.path}
                 onClick={() => navigate(sub.path)}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "px-3.5 min-h-[34px] rounded-md text-xs font-medium select-none",
+                  "relative px-3.5 min-h-[34px] rounded-md text-xs font-medium select-none touch-manipulation",
+                  "after:absolute after:inset-x-0 after:-top-[5px] after:-bottom-[5px]",
                   "transition-[color,background-color] duration-150",
                   isActive
                     ? "bg-foreground/10 text-foreground shadow-sm"

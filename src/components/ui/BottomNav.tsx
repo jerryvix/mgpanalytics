@@ -77,15 +77,22 @@ export function BottomNav() {
     lastSportPath.current = currentSportPath;
   }
 
-  const isActive = (item: NavItem) => {
-    if (item.action === "chat") return isOpen;
-    if (item.action === "menu") return !!sidebar?.openMobile;
+  // Whether the tab's own screen is the current route
+  const isRouteActive = (item: NavItem) => {
     if (!item.matchPaths) return false;
     return item.matchPaths.some((p) =>
       p === "/dashboard"
         ? location.pathname === "/dashboard" || location.pathname === "/dashboard/"
         : location.pathname.startsWith(p)
     );
+  };
+
+  // Which tab lights up. One at a time, like an iOS tab bar: while the chat
+  // covers the screen, Chat is the selected tab, not the route underneath.
+  const isActive = (item: NavItem) => {
+    if (item.action === "chat") return isOpen;
+    if (item.action === "menu") return !!sidebar?.openMobile;
+    return !isOpen && isRouteActive(item);
   };
 
   const handleTap = (item: NavItem) => {
@@ -101,7 +108,8 @@ export function BottomNav() {
         toggleChat();
       }
       // iOS convention: re-tapping the active tab scrolls its view to the top
-      if (isActive(item)) {
+      // (and never pushes a duplicate history entry for the same screen)
+      if (isRouteActive(item)) {
         document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
@@ -114,13 +122,17 @@ export function BottomNav() {
     }
   };
 
+  // The bar floats above the home indicator. Its total height (3.5rem incl.
+  // border) plus the 0.5rem lift is --bottom-nav-h, which page content and
+  // the mobile chat input pad by. The transparent gutters around the pill let
+  // taps through to the page instead of swallowing them.
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 md:hidden px-4"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      aria-label="Primary"
+      className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 md:hidden px-4 pb-[var(--safe-bottom)]"
     >
-      <div className="mx-auto max-w-md mb-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-lg shadow-black/30">
-        <div className="flex items-center justify-around h-14">
+      <div className="pointer-events-auto mx-auto max-w-md mb-2 h-14 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-lg shadow-black/30">
+        <div className="flex items-center justify-around h-full">
           {items.map((item) => {
             const active = isActive(item);
             return (
@@ -128,8 +140,9 @@ export function BottomNav() {
                 key={item.label}
                 data-coach={item.label === "Sports" ? "sports-nav" : undefined}
                 onClick={() => handleTap(item)}
+                aria-current={active && item.action === "navigate" ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full select-none",
+                  "flex flex-col items-center justify-center gap-0.5 flex-1 h-full select-none touch-manipulation",
                   "transition-[color,transform] duration-150 active:scale-90",
                   active
                     ? "text-terminal-green"
