@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -18,6 +18,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
+import { scrollDashboardToTop, useNavigateOrScrollTop } from "@/hooks/useNavigateOrScrollTop";
 import {
   Activity,
   Settings,
@@ -38,6 +39,7 @@ import {
   Star,
   ChevronDown,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -150,10 +152,29 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Close the mobile sheet once a nav link lands somewhere
+  // Close the mobile sheet once a nav link lands somewhere (covers browser
+  // back/forward while the sheet is open)
   useEffect(() => {
     setOpenMobile(false);
   }, [location.pathname, setOpenMobile]);
+
+  // Every nav tap in the sheet also closes it directly. The route effect above
+  // misses taps on the screen you are already on (pathname never changes),
+  // which used to leave the sheet stuck open. No-op on desktop.
+  const closeMobileSheet = useCallback(() => setOpenMobile(false), [setOpenMobile]);
+
+  // An item for the screen already showing must not navigate again: a
+  // duplicate history entry made the next Back seem to do nothing. It
+  // scrolls back to the top instead, like re-tapping a tab. goTo is for the
+  // buttons; navClick for the links (it cancels the link navigation).
+  const goTo = useNavigateOrScrollTop();
+  const navClick = (to: string) => (e: MouseEvent) => {
+    if (to === location.pathname) {
+      e.preventDefault();
+      scrollDashboardToTop();
+    }
+    closeMobileSheet();
+  };
   const {
     conversations,
     conversationsLoading,
@@ -242,7 +263,12 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
     >
       <SidebarHeader className="border-b border-sidebar-border p-2">
         <div className={collapsed ? "flex flex-col items-center gap-2" : "flex items-center gap-3"}>
-          <SidebarTrigger className="text-sidebar-foreground hover:text-terminal-green hover:bg-sidebar-accent" />
+          {/* Desktop collapse toggle. The phone sheet swaps it for a plain
+              close button on the right: "Collapse sidebar" means nothing in a
+              sheet, and its focus tooltip popped over the logo on open. */}
+          {!isMobile && (
+            <SidebarTrigger className="text-sidebar-foreground hover:text-terminal-green hover:bg-sidebar-accent" />
+          )}
           {collapsed ? (
             /* The rail keeps a tappable logo so home is always one click away,
                not hidden behind expanding the sidebar first */
@@ -258,7 +284,11 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
               <TooltipContent side="right">Home</TooltipContent>
             </Tooltip>
           ) : (
-            <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <Link
+              to="/dashboard"
+              onClick={navClick("/dashboard")}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity phone:min-h-11 phone:pl-1"
+            >
               <div className="w-7 h-7 rounded bg-primary/20 flex items-center justify-center">
                 <Activity className="w-3.5 h-3.5 text-terminal-green" />
               </div>
@@ -271,6 +301,16 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                 </p>
               </div>
             </Link>
+          )}
+          {isMobile && (
+            <button
+              type="button"
+              onClick={closeMobileSheet}
+              aria-label="Close menu"
+              className="-mr-1 ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sidebar-foreground select-none touch-manipulation transition-colors active:bg-sidebar-accent"
+            >
+              <X className="h-5 w-5" />
+            </button>
           )}
         </div>
       </SidebarHeader>
@@ -285,7 +325,10 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                   <TooltipTrigger asChild>
                     <SidebarMenuButton asChild>
                       <button
-                        onClick={() => navigate("/dashboard")}
+                        onClick={() => {
+                          goTo("/dashboard");
+                          closeMobileSheet();
+                        }}
                         className={`w-full flex items-center gap-3 px-3 py-1.5 rounded transition-colors font-medium ${
                           location.pathname === "/dashboard"
                             ? "bg-terminal-blue/15 text-terminal-blue"
@@ -306,8 +349,9 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                     <SidebarMenuButton asChild>
                       <button 
                         onClick={() => {
-                          navigate("/dashboard");
+                          if (location.pathname !== "/dashboard") navigate("/dashboard");
                           startNewConversation();
+                          closeMobileSheet();
                         }}
                         className="w-full flex items-center gap-3 px-3 py-1.5 rounded text-terminal-green hover:bg-terminal-green/10 transition-colors font-medium"
                       >
@@ -336,8 +380,9 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <button
-                      className="p-1 text-sidebar-foreground/40 hover:text-destructive transition-colors"
+                      className="p-1 text-sidebar-foreground/40 hover:text-destructive transition-colors phone:-mr-2 phone:flex phone:h-11 phone:w-11 phone:items-center phone:justify-center phone:p-0"
                       title="Clear all conversations"
+                      aria-label="Clear all conversations"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -374,8 +419,9 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                         <SidebarMenuButton asChild>
                           <button
                             onClick={() => {
-                              navigate("/dashboard");
+                              if (location.pathname !== "/dashboard") navigate("/dashboard");
                               loadConversation(conv.id);
+                              closeMobileSheet();
                             }}
                             className={`w-full flex items-center gap-2 px-3 py-2 rounded text-sidebar-foreground hover:bg-sidebar-accent transition-colors text-left ${
                               activeConversationId === conv.id ? "bg-sidebar-accent text-terminal-blue" : ""
@@ -412,6 +458,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                       <SidebarMenuButton asChild>
                         <NavLink
                           to={item.url}
+                          onClick={navClick(item.url)}
                           className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                           activeClassName="bg-sidebar-accent text-terminal-blue"
                         >
@@ -444,13 +491,20 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                 return (
                 <div key={item.title}>
                   <SidebarMenuItem>
+                    {/* Phones: the link fills the whole 44px row (no dead
+                        padding around it) and the chevron is its own 44px
+                        target. Touch screens skip the row/chevron hover
+                        styles: iOS keeps :hover on the last tapped element,
+                        so expanding a sport left its row looking selected.
+                        Desktop layout and hover are unchanged. */}
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <SidebarMenuButton asChild>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 phone:p-0 [@media(hover:none)]:hover:bg-transparent">
                             <NavLink
                               to={item.url}
-                              className="flex-1 flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+                              onClick={navClick(item.url)}
+                              className="flex-1 flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors phone:self-stretch"
                               activeClassName="bg-sidebar-accent text-terminal-blue"
                             >
                               <img src={item.logo} alt={item.title} className="w-4 h-4 object-contain shrink-0" />
@@ -459,8 +513,9 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                             {!collapsed && item.subItems && (
                               <button
                                 onClick={() => toggleSportExpanded(item.title)}
-                                className="p-1 mr-1 text-sidebar-foreground/50 hover:text-sidebar-foreground shrink-0"
+                                className="p-1 mr-1 text-sidebar-foreground/50 hover:text-sidebar-foreground shrink-0 phone:mr-0 phone:flex phone:h-11 phone:w-11 phone:items-center phone:justify-center phone:p-0 [@media(hover:none)]:hover:text-sidebar-foreground/50"
                                 aria-label={isExpanded ? `Collapse ${item.title}` : `Expand ${item.title}`}
+                                aria-expanded={isExpanded}
                               >
                                 {isExpanded ? (
                                   <ChevronDown className="w-3.5 h-3.5" />
@@ -485,6 +540,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                           <SidebarMenuButton asChild>
                             <NavLink
                               to={sub.url}
+                              onClick={navClick(sub.url)}
                               className="flex items-center gap-2 px-3 py-1.5 rounded text-xs text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                               activeClassName="bg-sidebar-accent/50 text-terminal-blue"
                             >
@@ -521,6 +577,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                         <SidebarMenuButton asChild>
                           <NavLink
                             to={item.url}
+                            onClick={navClick(item.url)}
                             className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                             activeClassName="bg-sidebar-accent text-terminal-blue"
                           >
@@ -553,9 +610,10 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                 <SidebarMenuItem>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Link 
+                      <Link
                         to="/dashboard/admin"
-                        className={`flex items-center gap-3 px-3 py-1.5 rounded transition-colors w-full cursor-pointer relative z-10 ${
+                        onClick={navClick("/dashboard/admin")}
+                        className={`flex items-center gap-3 px-3 py-1.5 rounded transition-colors w-full cursor-pointer relative z-10 phone:min-h-11 ${
                           location.pathname === "/dashboard/admin"
                             ? "bg-sidebar-accent text-terminal-blue"
                             : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -590,6 +648,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
                   <SidebarMenuButton asChild>
                     <NavLink
                       to={item.url}
+                      onClick={navClick(item.url)}
                       className="flex items-center gap-3 px-3 py-1.5 rounded text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                       activeClassName="bg-sidebar-accent text-terminal-blue"
                     >
@@ -638,7 +697,7 @@ export function AppSidebar({ user, isAdmin, isPreviewingAsUser, onTogglePreview 
               variant="ghost"
               size={collapsed ? "icon" : "sm"}
               onClick={handleLogout}
-              className="w-full text-sidebar-foreground hover:text-destructive hover:bg-destructive/10 justify-start"
+              className="w-full text-sidebar-foreground hover:text-destructive hover:bg-destructive/10 justify-start phone:h-11"
             >
               <LogOut className="w-4 h-4 shrink-0" />
               {!collapsed && <span className="ml-2">Logout</span>}

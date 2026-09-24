@@ -15,6 +15,7 @@ vi.mock("react-router-dom", async () => {
 });
 
 import { BackButton } from "@/components/ui/BackButton";
+import { parentPath } from "@/lib/dashboardNav";
 
 function renderAt(pathname: string, historyIdx: number | null) {
   mockPathname = pathname;
@@ -55,18 +56,40 @@ describe("BackButton", () => {
   it("falls back to the parent route on a cold deep link instead of leaving the site", () => {
     renderAt("/dashboard/nfl/players/bdl-123", 0);
     fireEvent.click(screen.getByRole("button", { name: /go back/i }));
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/nfl/players");
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/nfl/players", { replace: true });
   });
 
   it("floors the cold-start fallback at dashboard home", () => {
     renderAt("/dashboard/ncaaf", null);
     fireEvent.click(screen.getByRole("button", { name: /go back/i }));
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard");
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard", { replace: true });
   });
 
   it("walks admin sub-pages up one level", () => {
     renderAt("/dashboard/admin/observatory", 0);
     fireEvent.click(screen.getByRole("button", { name: /go back/i }));
-    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/admin");
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard/admin", { replace: true });
+  });
+
+  // /dashboard/market has no screen: landing there showed a blank page with
+  // nothing but a Back button, the dead end the owner flagged.
+  it("skips screenless parents on a cold deep link to a market tool", () => {
+    renderAt("/dashboard/market/live-edges", 0);
+    fireEvent.click(screen.getByRole("button", { name: /go back/i }));
+    expect(mockNavigate).toHaveBeenCalledWith("/dashboard", { replace: true });
+  });
+});
+
+describe("parentPath", () => {
+  it.each([
+    ["/dashboard/nfl/players/bdl-123", "/dashboard/nfl/players"],
+    ["/dashboard/nfl/players/", "/dashboard/nfl"],
+    ["/dashboard/mlb", "/dashboard"],
+    ["/dashboard/market/props", "/dashboard"],
+    ["/dashboard/community/feed", "/dashboard"],
+    ["/dashboard/community/cappers/sharps", "/dashboard/community/cappers"],
+    ["/dashboard", "/dashboard"],
+  ])("%s -> %s", (from, to) => {
+    expect(parentPath(from)).toBe(to);
   });
 });

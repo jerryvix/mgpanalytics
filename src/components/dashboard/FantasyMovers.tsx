@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { FormBar } from "@/components/ui/FormBar";
 import { hoverLift } from "@/lib/heat";
 import { TeamLogo } from "@/components/ui/TeamLogo";
+import { initialLastName } from "@/lib/names";
 
 interface Mover {
   playerId: string;
@@ -108,6 +109,11 @@ export function FantasyMovers() {
             Hitters running hot vs. their season line
           </span>
         </div>
+        {/* Phones (portrait or landscape: the phone:/desk: layout variants)
+            get two aligned lines per row: "B. Buxton" plus team, then
+            "Season .255 → L8 .419", beside a fixed-width stat column (form
+            bars over the delta). The single desktop row left names ~30px and
+            cut them to 2-3 letters. Desktop is unchanged. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
           {movers.map((m) => (
             <Link
@@ -124,21 +130,23 @@ export function FantasyMovers() {
                   onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
                 />
               )}
-              <div className="min-w-0">
+              <div className="min-w-0 phone:flex-1">
                 <div className="flex items-center gap-1.5 font-semibold text-foreground text-sm truncate group-hover:text-terminal-green transition-colors">
-                  <span className="truncate">{m.name}</span>
+                  <span className="truncate desk:hidden">{initialLastName(m.name)}</span>
+                  <span className="truncate phone:hidden">{m.name}</span>
                   {m.team ? (
                     <span className="inline-flex items-center gap-1 text-muted-foreground font-normal shrink-0">
-                      · <TeamLogo sport="MLB" name={m.team} abbr={m.team} size={14} /> {m.team}
+                      <span className="phone:hidden">·</span> <TeamLogo sport="MLB" name={m.team} abbr={m.team} size={14} /> {m.team}
                     </span>
                   ) : null}
                 </div>
-                <div className="text-[11px] text-muted-foreground font-mono">
-                  Season {fmtAvg(m.seasonAvg)} → Last {m.streak}:{" "}
+                <div className="text-[11px] text-muted-foreground font-mono phone:truncate">
+                  Season {fmtAvg(m.seasonAvg)} → <span className="phone:hidden">Last {m.streak}:</span>
+                  <span className="desk:hidden">L{m.streak}</span>{" "}
                   <span className="text-terminal-green">{fmtAvg(m.formAvg)}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 phone:w-[78px] phone:flex-col phone:items-end phone:gap-1">
                 {m.form.length > 0 && <FormBar games={m.form} />}
                 {/* Positive form delta is always green (green = good, everywhere in
                     the app); a flame marks the truly scorching (+.200 or more). */}

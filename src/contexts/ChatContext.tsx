@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { PHONE_MEDIA } from "@/lib/layoutMedia";
 
 interface Conversation {
   id: string;
@@ -111,7 +112,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     if (!mounted) {
       const stored = localStorage.getItem(CHAT_OPEN_KEY);
       if (stored === null) {
-        const isMobileWidth = window.innerWidth < 768;
+        // Phone layout (incl. phones in landscape) opens the chat full screen,
+        // so it must start closed there; same test as useIsMobile
+        const isMobileWidth = window.matchMedia(PHONE_MEDIA).matches;
         setIsOpen(!isMobileWidth);
       }
       setMounted(true);

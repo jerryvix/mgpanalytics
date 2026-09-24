@@ -1,3 +1,4 @@
+import { useCallback, useRef } from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { DashboardHome } from "@/components/dashboard/DashboardHome";
 import { ComingSoon } from "@/components/dashboard/ComingSoon";
@@ -32,8 +33,13 @@ import {
 } from "@/pages/cappers";
 import { FeedPage } from "@/pages/community";
 import Profile from "@/pages/Profile";
+import DashboardNotFound from "@/pages/DashboardNotFound";
 import { MobileSportNav } from "@/components/ui/MobileSportNav";
 import { BackButton } from "@/components/ui/BackButton";
+import { MobileTopBar } from "@/components/ui/MobileTopBar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+import { useCollapseOnScroll } from "@/hooks/useCollapseOnScroll";
 
 interface DashboardContentProps {
   isAdmin: boolean;
@@ -41,12 +47,28 @@ interface DashboardContentProps {
 
 export function DashboardContent({ isAdmin }: DashboardContentProps) {
   const location = useLocation();
+  const isMobile = useIsMobile();
   const isSportsPage = /^\/dashboard\/(nfl|nba|ncaab|ncaaf|mlb)/.test(location.pathname);
 
+  // <main> (the dashboard's scroll container) is this component's parent
+  const rootRef = useRef<HTMLDivElement>(null);
+  const getScroller = useCallback(() => rootRef.current?.parentElement ?? null, []);
+  // New screens open at the top; Back/Forward return to where you were
+  useScrollRestoration(getScroller);
+  // Phones: the sport pills tuck away while scrolling down, back on scroll up
+  const [pillsCollapsed, revealPills] = useCollapseOnScroll(getScroller, isMobile && isSportsPage);
+
+  // Phones: the pinned top bar owns the status-bar inset, and the bottom
+  // padding clears the floating tab bar plus the home indicator so the last
+  // row of every page can scroll fully into view. overflow-x: clip keeps any
+  // over-wide child from widening the scroller: a sideways swipe can never
+  // drag the pinned bars off screen (clip, unlike hidden, is not a scroll
+  // container, so the sticky bars still pin to <main>). Desktop is unchanged.
   return (
-    <div className="p-4 pt-[max(1rem,env(safe-area-inset-top,0px))] pb-20 md:p-6 md:pb-6 md:pt-6">
+    <div ref={rootRef} className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] phone:overflow-x-clip desk:p-6 desk:pb-6 desk:pt-6">
+      <MobileTopBar subnav={isSportsPage} onRevealSubnav={pillsCollapsed ? revealPills : undefined} />
       <BackButton />
-      {isSportsPage && <MobileSportNav />}
+      {isSportsPage && <MobileSportNav collapsed={pillsCollapsed} />}
       <Routes>
         <Route index element={<DashboardHome />} />
         <Route path="analyst" element={<Analyst />} />
@@ -94,6 +116,9 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
           path="admin"
           element={isAdmin ? <AdminPanel /> : <Navigate to="/dashboard" replace />}
         />
+        {/* Unknown /dashboard/* paths: a Page not found view with Back and
+            Home, never a blank screen */}
+        <Route path="*" element={<DashboardNotFound />} />
       </Routes>
     </div>
   );

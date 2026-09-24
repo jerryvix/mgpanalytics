@@ -171,8 +171,13 @@ const Sidebar = React.forwardRef<
   }
 
   // On phones the sidebar lives in an off-canvas sheet, opened via
-  // toggleSidebar/setOpenMobile (BottomNav's Menu tab). Removing this branch
-  // silently strips all full-navigation access on mobile - see mobileNav test.
+  // toggleSidebar/setOpenMobile (MobileTopBar's menu button or BottomNav's
+  // Menu tab). Removing this branch silently strips all full-navigation access
+  // on mobile - see mobileNav test.
+  // The sheet pads itself clear of the status bar and home indicator, and
+  // every menu row is a 44px tap target (Apple's minimum); the desktop rail
+  // keeps its compact 32px rows. In landscape it also pads away the notch
+  // side and grows by the same inset, so its rows keep their full width.
   if (isMobile) {
     return (
       <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
@@ -181,11 +186,17 @@ const Sidebar = React.forwardRef<
           data-mobile="true"
           aria-describedby={undefined}
           side={side}
-          className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-          style={{ "--sidebar-width": SIDEBAR_WIDTH_MOBILE } as React.CSSProperties}
+          style={{ "--sidebar-width": `calc(${SIDEBAR_WIDTH_MOBILE} + var(--safe-left))` } as React.CSSProperties}
+          className="w-[--sidebar-width] bg-sidebar p-0 pb-[var(--safe-bottom)] pl-[var(--safe-left)] pt-[var(--safe-top)] text-sidebar-foreground [&>button]:hidden [&_[data-sidebar=menu-button]]:min-h-11"
         >
           <SheetTitle className="sr-only">Navigation</SheetTitle>
-          <div className="flex h-full w-full flex-col">{children}</div>
+          {/* One scrolling list, like an iOS menu: with 44px rows the desktop
+              layout (pinned footer, separately scrolling middle) left room for
+              only a handful of nav rows. The header, with its close button,
+              stays pinned while the rest scrolls. */}
+          <div className="flex h-full w-full flex-col overflow-y-auto overscroll-contain [&>[data-sidebar=content]]:flex-none [&>[data-sidebar=content]]:overflow-visible [&>[data-sidebar=header]]:sticky [&>[data-sidebar=header]]:top-0 [&>[data-sidebar=header]]:z-10 [&>[data-sidebar=header]]:bg-sidebar">
+            {children}
+          </div>
         </SheetContent>
       </Sheet>
     );

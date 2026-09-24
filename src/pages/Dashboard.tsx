@@ -16,8 +16,16 @@ import { toast } from "sonner";
 
 // TEMPORARY DEV-ONLY BYPASS: lets the dashboard render without a real Supabase
 // session when VITE_DEV_BYPASS_AUTH=true. Revert before shipping real auth work.
-const DEV_BYPASS_AUTH = import.meta.env.VITE_DEV_BYPASS_AUTH === "true";
+// import.meta.env.DEV is statically false in `vite build`, so the bypass is
+// compiled out of production bundles even if the variable leaks into a
+// deploy environment.
+const DEV_BYPASS_AUTH = import.meta.env.DEV && import.meta.env.VITE_DEV_BYPASS_AUTH === "true";
 const DEV_FAKE_USER = { id: "dev-preview-user", email: "preview@local.dev" } as User;
+
+// /dashboard/admin and its sub-pages (e.g. /dashboard/admin/observatory) all
+// render admin-only routes, so they all wait for the role before deciding.
+const isAdminPath = (path: string) =>
+  path === "/dashboard/admin" || path.startsWith("/dashboard/admin/");
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -37,7 +45,7 @@ const Dashboard = () => {
       if (newValue) {
         toast.info("Preview Mode ON", { description: "Viewing as regular user" });
         // If on admin page, redirect away
-        if (location.pathname === "/dashboard/admin") {
+        if (isAdminPath(location.pathname)) {
           navigate("/dashboard");
         }
       } else {
@@ -109,19 +117,19 @@ const Dashboard = () => {
     setTimeout(() => setWalkthroughReady(true), 500);
   };
 
-  // Redirect non-admins trying to access /dashboard/admin
+  // Redirect non-admins trying to access /dashboard/admin (and its sub-pages)
   useEffect(() => {
-    if (!roleLoading && location.pathname === "/dashboard/admin" && !isAdmin) {
+    if (!roleLoading && isAdminPath(location.pathname) && !isAdmin) {
       toast.error("You don't have access to the Admin Panel");
       navigate("/dashboard");
     }
   }, [location.pathname, isAdmin, roleLoading, navigate]);
 
-  // Only the admin route has to wait for the role; every other page renders
+  // Only admin routes have to wait for the role; every other page renders
   // as soon as auth resolves and picks up admin chrome when the role lands.
-  if (loading || (roleLoading && location.pathname === "/dashboard/admin")) {
+  if (loading || (roleLoading && isAdminPath(location.pathname))) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <div className="text-terminal-green glow-green animate-pulse-glow font-mono">
           LOADING TERMINAL...
         </div>
@@ -141,10 +149,14 @@ const Dashboard = () => {
       {/* h-dvh (not h-screen): iOS Safari's collapsing toolbar makes 100vh
           taller than the visible area, which pushed the bottom nav half
           off-screen until the user scrolled */}
-      <div className="h-dvh flex w-full bg-background overflow-hidden">
+      {/* Phone layout in landscape: inset the content by the notch sides
+          (0 in portrait and on desktop) so nothing sits under the sensor
+          housing; the page background fills the bands */}
+      <div className="h-dvh flex w-full bg-background overflow-hidden phone:pl-[var(--safe-left)] phone:pr-[var(--safe-right)]">
         {/* Always mounted: fixed rail on desktop, off-canvas sheet on mobile
-            (opened from BottomNav's Menu tab). Do not gate this on isMobile -
-            that leaves phones with no full navigation (see mobileNav test). */}
+            (opened from MobileTopBar's menu button or BottomNav's Menu tab).
+            Do not gate this on isMobile - that leaves phones with no full
+            navigation (see mobileNav test). */}
         <AppSidebar
           user={user}
           isAdmin={isAdmin}
@@ -152,7 +164,14 @@ const Dashboard = () => {
           onTogglePreview={handleTogglePreview}
         />
 
-        <main className="flex-1 overflow-auto overscroll-contain">
+        {/* Phones: no sideways scrolling at all (a stray wide child used to
+            let a swipe drag the pinned bars off screen), and scroll padding
+            equal to the pinned header (plus the sport tabs when present) on
+            top and the floating tab bar below, so anything scrolled or
+            focused into view lands between them, not underneath. The top
+            padding keeps the sport pills' full height even while they are
+            tucked away: scrolling up to a target brings them back */}
+        <main className="flex-1 overflow-auto overscroll-contain phone:overflow-x-clip phone:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)] phone:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))] phone:scroll-pb-[calc(var(--bottom-nav-h)+var(--safe-bottom))]">
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
         {/* ChatPanel: docked on desktop, full-screen overlay on mobile */}
