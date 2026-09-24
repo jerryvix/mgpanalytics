@@ -53,12 +53,14 @@ describe("phone vs desktop chrome", () => {
     expect(phone ? "phone" : "desk").toBe(expected);
   });
 
-  it("the Tailwind phone:/desk: variants and the 16px input rule use the same media", () => {
+  it("the Tailwind phone:/desk: variants, the 16px input rule and the phone theme color use the same media", () => {
     const tw = readFileSync(path.resolve(__dirname, "../../tailwind.config.ts"), "utf8");
     expect(tw).toMatch(/addVariant\("phone", `@media \$\{PHONE_MEDIA\}`\)/);
     expect(tw).toMatch(/addVariant\("desk", `@media \$\{DESK_MEDIA\}`\)/);
     const css = readFileSync(path.resolve(__dirname, "../index.css"), "utf8");
     expect(css).toContain(`@media ${PHONE_MEDIA} {`);
+    const html = readFileSync(path.resolve(__dirname, "../../index.html"), "utf8");
+    expect(html).toContain(`<meta name="theme-color" media="${PHONE_MEDIA}"`);
   });
 });
 
