@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -61,26 +62,51 @@ export function MobileSportNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-
-  if (!isMobile) return null;
+  const rowRef = useRef<HTMLDivElement>(null);
+  const activePillRef = useRef<HTMLButtonElement>(null);
 
   // Find active sport based on current path
   const activeSport = sports.find((s) =>
     location.pathname.startsWith(s.path)
   );
 
+  // The row scrolls sideways, so a sport near the end (NCAAB) would start
+  // out of view: bring the active pill into the row when the sport changes.
+  // Scrolls only the row itself, never the page.
+  useEffect(() => {
+    const row = rowRef.current;
+    const pill = activePillRef.current;
+    if (!row || !pill) return;
+    const r = row.getBoundingClientRect();
+    const p = pill.getBoundingClientRect();
+    if (p.left < r.left || p.right > r.right) {
+      row.scrollLeft += p.left - r.left - 16;
+    }
+  }, [activeSport?.label, isMobile]);
+
+  if (!isMobile) return null;
+
+  // Pinned directly under MobileTopBar (same translucent background, one
+  // hairline under both), so switching sport or section is one tap from
+  // anywhere on a long page. Its height is --mobile-sportnav-h, which the
+  // dashboard scroller adds to its scroll padding so nothing scrolls into
+  // view hidden underneath it.
   return (
-    <div className="mb-4 space-y-2.5">
+    <div
+      data-sport-nav
+      className="sticky top-[calc(var(--safe-top)+var(--mobile-topbar-h))] z-20 -mx-4 mb-4 space-y-1.5 border-b border-border/60 bg-background/85 px-4 pb-2 backdrop-blur-xl"
+    >
       {/* Sport tabs - five sports don't fit a phone width, so the row scrolls.
           Hidden scrollbar + contained overscroll keeps it feeling native.
           Each button is a 44px-tall tap target around a 40px pill, so the
           target meets Apple's minimum while the pill looks the same. */}
-      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide overscroll-x-contain -mx-4 px-4">
+      <div ref={rowRef} className="flex gap-1.5 overflow-x-auto scrollbar-hide overscroll-x-contain -mx-4 px-4">
         {sports.map((sport) => {
           const isActive = activeSport?.label === sport.label;
           return (
             <button
               key={sport.label}
+              ref={isActive ? activePillRef : undefined}
               onClick={() => navigate(sport.path)}
               aria-current={isActive ? "page" : undefined}
               className="group flex h-11 shrink-0 items-center select-none touch-manipulation"
@@ -104,9 +130,10 @@ export function MobileSportNav() {
 
       {/* Sub-tabs (Games / Players / Trending) as an iOS-style segmented control.
           Segments stay 34px tall; an invisible ::after extends each tap
-          target to 44px above and below without overlapping its neighbors. */}
+          target to 44px above and below without overlapping its neighbors.
+          Block-level (flex w-fit) so no inline line box pads its height. */}
       {activeSport?.subTabs && (
-        <div className="inline-flex rounded-lg bg-card/70 border border-border p-0.5 gap-0.5">
+        <div className="flex w-fit rounded-lg bg-card/70 border border-border p-0.5 gap-0.5">
           {activeSport.subTabs.map((sub) => {
             const isActive = location.pathname === sub.path;
             return (

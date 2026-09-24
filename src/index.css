@@ -111,6 +111,11 @@
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     /* Tab bar footprint above the home indicator: 3.5rem bar + 0.5rem lift */
     --bottom-nav-h: 4rem;
+    /* Pinned top bar row (below the status-bar inset), and the sport pills +
+       section tabs block pinned under it on sports pages: 2.75rem pills,
+       0.375rem gap, 2.5rem tabs, 0.5rem padding, 1px hairline */
+    --mobile-topbar-h: 2.75rem;
+    --mobile-sportnav-h: calc(6.125rem + 1px);
   }
 
   * {

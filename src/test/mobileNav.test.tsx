@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -118,6 +118,26 @@ describe("sport tabs on phones", () => {
       expect(screen.getByRole("button", { name: label }).className).toMatch(/\bh-11\b/);
     }
     expect(screen.getByRole("button", { name: "NFL" })).toHaveAttribute("aria-current", "page");
+  });
+
+  // The tabs must stay one tap away deep in a long page: pinned right under
+  // the top bar (safe area + bar height), above page content
+  it("pins the sport and section tabs directly under the top bar", () => {
+    const { container } = renderSportNav("/dashboard/mlb/players");
+    const nav = container.querySelector("[data-sport-nav]")!;
+    expect(nav.className).toMatch(/\bsticky\b/);
+    expect(nav.className).toContain("top-[calc(var(--safe-top)+var(--mobile-topbar-h))]");
+    expect(nav.className).toMatch(/\bz-20\b/);
+    expect(within(nav as HTMLElement).getByRole("button", { name: "MLB" })).toBeInTheDocument();
+    expect(within(nav as HTMLElement).getByRole("button", { name: "Players" })).toBeInTheDocument();
+  });
+
+  it("the dashboard scroller pads scroll-into-view by the pinned header heights and never scrolls sideways", () => {
+    const src = readFileSync(path.resolve(__dirname, "../pages/Dashboard.tsx"), "utf8");
+    const main = src.match(/<main className="([^"]+)"/)![1];
+    expect(main).toContain("max-md:overflow-x-clip");
+    expect(main).toContain("max-md:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)]");
+    expect(main).toContain("max-md:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))]");
   });
 
   it("extends each segmented-control tab to 44px without changing its look", () => {

@@ -3,6 +3,7 @@ import { Activity, ChevronLeft, Menu } from "lucide-react";
 import { useOptionalSidebar } from "@/components/ui/sidebar";
 import { useBackNavigation } from "@/hooks/useBackNavigation";
 import { mobileTitleFor } from "@/lib/dashboardNav";
+import { cn } from "@/lib/utils";
 
 // Phone navigation bar, iOS style: Back on the left, the section name in the
 // middle, the sidebar toggle on the right. It is sticky inside the dashboard's
@@ -15,7 +16,13 @@ import { mobileTitleFor } from "@/lib/dashboardNav";
 const barButton =
   "flex h-11 min-w-11 shrink-0 items-center justify-center rounded-full text-foreground/90 select-none touch-manipulation transition-colors active:bg-foreground/10";
 
-export function MobileTopBar() {
+interface MobileTopBarProps {
+  /** A pinned section nav (MobileSportNav) sits directly below: drop this
+   *  bar's margin and hairline so the two read as one header. */
+  subnav?: boolean;
+}
+
+export function MobileTopBar({ subnav = false }: MobileTopBarProps) {
   const { pathname } = useLocation();
   const { isHome, goBack } = useBackNavigation();
   const sidebar = useOptionalSidebar();
@@ -24,9 +31,12 @@ export function MobileTopBar() {
   return (
     <header
       data-mobile-topbar
-      className="sticky top-0 z-30 -mx-4 mb-3 border-b border-border/60 bg-background/85 pt-[var(--safe-top)] backdrop-blur-xl md:hidden"
+      className={cn(
+        "sticky top-0 z-30 -mx-4 bg-background/85 pt-[var(--safe-top)] backdrop-blur-xl md:hidden",
+        !subnav && "mb-3 border-b border-border/60"
+      )}
     >
-      <div className="relative flex h-11 items-center justify-between px-1">
+      <div className="relative flex h-[var(--mobile-topbar-h)] items-center justify-between px-1">
         {isHome ? (
           <div className="flex h-11 items-center gap-2 pl-3">
             <span className="flex h-7 w-7 items-center justify-center rounded bg-primary/20">

@@ -155,8 +155,10 @@ const Dashboard = () => {
         />
 
         {/* Phones: no sideways scrolling at all (a stray wide child used to
-            let a swipe drag the pinned bars off screen) */}
-        <main className="flex-1 overflow-auto overscroll-contain max-md:overflow-x-clip">
+            let a swipe drag the pinned bars off screen), and scroll padding
+            equal to the pinned header (plus the sport tabs when present) so
+            anything scrolled into view lands below it, not underneath */}
+        <main className="flex-1 overflow-auto overscroll-contain max-md:overflow-x-clip max-md:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+1px)] max-md:has-[[data-sport-nav]]:scroll-pt-[calc(var(--safe-top)+var(--mobile-topbar-h)+var(--mobile-sportnav-h))]">
           <DashboardContent isAdmin={effectiveIsAdmin} />
         </main>
         {/* ChatPanel: docked on desktop, full-screen overlay on mobile */}

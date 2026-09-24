@@ -13,7 +13,7 @@ function PathProbe() {
   return <div data-testid="path">{useLocation().pathname}</div>;
 }
 
-function renderBar(path: string, historyIdx: number | null = 0) {
+function renderBar(path: string, historyIdx: number | null = 0, subnav = false) {
   // React Router stamps { idx } onto history state; 0/null models a screen
   // opened cold (deep link, refresh) with nothing in-app to pop back to.
   window.history.replaceState(historyIdx === null ? null : { idx: historyIdx }, "");
@@ -23,7 +23,7 @@ function renderBar(path: string, historyIdx: number | null = 0) {
         <Sidebar>
           <nav>Full navigation content</nav>
         </Sidebar>
-        <MobileTopBar />
+        <MobileTopBar subnav={subnav} />
         <PathProbe />
       </SidebarProvider>
     </MemoryRouter>
@@ -80,6 +80,18 @@ describe("MobileTopBar", () => {
     renderBar("/dashboard/nfl/players/bdl-19", 0);
     fireEvent.click(screen.getByRole("button", { name: /go back/i }));
     expect(screen.getByTestId("path")).toHaveTextContent("/dashboard/nfl/players");
+  });
+
+  it("keeps one hairline under the whole header when sport tabs are pinned below it", () => {
+    renderBar("/dashboard/mlb", 0, true);
+    const bar = screen.getByRole("button", { name: /go back/i }).closest("header")!;
+    expect(bar.className).not.toMatch(/\bborder-b\b/);
+    expect(bar.className).not.toMatch(/\bmb-3\b/);
+    // without tabs below, the bar carries its own hairline and spacing
+    const { container } = renderBar("/dashboard/chats");
+    const plain = container.querySelector("header")!;
+    expect(plain.className).toMatch(/\bborder-b\b/);
+    expect(plain.className).toMatch(/\bmb-3\b/);
   });
 
   it("names the current section", () => {

@@ -53,7 +53,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
   // container, so the sticky bars still pin to <main>). Desktop is unchanged.
   return (
     <div className="px-4 pb-[calc(var(--bottom-nav-h)+var(--safe-bottom)+1rem)] max-md:overflow-x-clip md:p-6 md:pb-6 md:pt-6">
-      <MobileTopBar />
+      <MobileTopBar subnav={isSportsPage} />
       <BackButton />
       {isSportsPage && <MobileSportNav />}
       <Routes>
