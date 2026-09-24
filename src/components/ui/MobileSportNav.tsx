@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useNavigateOrScrollTop } from "@/hooks/useNavigateOrScrollTop";
 
 interface SportTab {
   label: string;
@@ -66,7 +67,9 @@ interface MobileSportNavProps {
 
 export function MobileSportNav({ collapsed = false }: MobileSportNavProps) {
   const location = useLocation();
-  const navigate = useNavigate();
+  // The pill or tab for the screen already showing scrolls it to the top
+  // instead of pushing a duplicate history entry (Back would seem stuck)
+  const goTo = useNavigateOrScrollTop();
   const isMobile = useIsMobile();
   const rowRef = useRef<HTMLDivElement>(null);
   const activePillRef = useRef<HTMLButtonElement>(null);
@@ -132,7 +135,7 @@ export function MobileSportNav({ collapsed = false }: MobileSportNavProps) {
             <button
               key={sport.label}
               ref={isActive ? activePillRef : undefined}
-              onClick={() => navigate(sport.path)}
+              onClick={() => goTo(sport.path)}
               aria-current={isActive ? "page" : undefined}
               className="group flex h-11 shrink-0 items-center select-none touch-manipulation"
             >
@@ -167,7 +170,7 @@ export function MobileSportNav({ collapsed = false }: MobileSportNavProps) {
             return (
               <button
                 key={sub.path}
-                onClick={() => navigate(sub.path)}
+                onClick={() => goTo(sub.path)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "relative px-3.5 min-h-[34px] rounded-md text-xs font-medium select-none touch-manipulation",

@@ -4,6 +4,7 @@ import { Home, Trophy, MessageCircle, UserCircle, Menu } from "lucide-react";
 import { useChat } from "@/contexts/ChatContext";
 import { useOptionalSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { scrollDashboardToTop } from "@/hooks/useNavigateOrScrollTop";
 
 interface NavItem {
   label: string;
@@ -110,7 +111,7 @@ export function BottomNav() {
       // iOS convention: re-tapping the active tab scrolls its view to the top
       // (and never pushes a duplicate history entry for the same screen)
       if (isRouteActive(item)) {
-        document.querySelector("main")?.scrollTo({ top: 0, behavior: "smooth" });
+        scrollDashboardToTop();
         return;
       }
       // For Sports tab, navigate to last visited sport

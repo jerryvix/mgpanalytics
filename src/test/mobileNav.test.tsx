@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -207,5 +207,57 @@ describe("sport tabs on phones", () => {
       expect(seg.className).not.toContain("after:-top-[5px]");
       expect(seg.className).toContain("min-h-[34px]"); // 3 + 34 + 7 = 44
     }
+  });
+});
+
+// Owner's complaint: on /dashboard/mlb, tapping MLB then Games pushed two
+// copies of the same screen, so the next two Back taps seemed to do nothing
+describe("tapping the pill or tab for the screen already showing", () => {
+  function Probe() {
+    const location = useLocation();
+    const navigate = useNavigate();
+    return (
+      <>
+        <div data-testid="where">{`${location.pathname} ${location.key}`}</div>
+        <button onClick={() => navigate(-1)}>History back</button>
+        <main data-testid="main" />
+      </>
+    );
+  }
+
+  function setup(entries: string[]) {
+    const view = render(
+      <MemoryRouter initialEntries={entries} initialIndex={entries.length - 1}>
+        <MobileSportNav />
+        <Probe />
+      </MemoryRouter>
+    );
+    const main = screen.getByTestId("main");
+    const scrollTo = vi.fn();
+    main.scrollTo = scrollTo as unknown as typeof main.scrollTo;
+    const where = () => screen.getByTestId("where").textContent;
+    return { ...view, scrollTo, where };
+  }
+
+  it("scrolls to the top instead of pushing a duplicate entry", () => {
+    const { scrollTo, where } = setup(["/dashboard/nfl", "/dashboard/mlb"]);
+    const start = where();
+    fireEvent.click(screen.getByRole("button", { name: "MLB" }));
+    fireEvent.click(screen.getByRole("button", { name: "Games" }));
+    expect(where()).toBe(start); // same entry: nothing pushed
+    expect(scrollTo).toHaveBeenCalledTimes(2);
+    expect(scrollTo).toHaveBeenLastCalledWith(expect.objectContaining({ top: 0 }));
+    // so one Back leaves MLB
+    fireEvent.click(screen.getByRole("button", { name: "History back" }));
+    expect(where()).toMatch(/^\/dashboard\/nfl /);
+  });
+
+  it("still navigates to a different screen", () => {
+    const { scrollTo, where } = setup(["/dashboard/mlb"]);
+    fireEvent.click(screen.getByRole("button", { name: "Players" }));
+    expect(where()).toMatch(/^\/dashboard\/mlb\/players /);
+    fireEvent.click(screen.getByRole("button", { name: "NFL" }));
+    expect(where()).toMatch(/^\/dashboard\/nfl /);
+    expect(scrollTo).not.toHaveBeenCalled();
   });
 });

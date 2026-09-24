@@ -26,20 +26,34 @@ import { MobileTopBar } from "@/components/ui/MobileTopBar";
 
 const user = { id: "u1", email: "fan@example.com" } as User;
 
+// Path, plus the history entry key: a new key means a navigation happened
 function PathProbe() {
-  return <div data-testid="path">{useLocation().pathname}</div>;
+  const { pathname, key } = useLocation();
+  return (
+    <>
+      <div data-testid="path">{pathname}</div>
+      <div data-testid="entry">{key}</div>
+    </>
+  );
 }
 
+let mainScrollTo: ReturnType<typeof vi.fn>;
+
 function renderShell(path: string) {
-  return render(
+  const view = render(
     <MemoryRouter initialEntries={[path]}>
       <SidebarProvider>
         <AppSidebar user={user} isAdmin={false} />
         <MobileTopBar />
         <PathProbe />
+        <main data-testid="main" />
       </SidebarProvider>
     </MemoryRouter>
   );
+  const main = screen.getByTestId("main");
+  mainScrollTo = vi.fn();
+  main.scrollTo = mainScrollTo as unknown as typeof main.scrollTo;
+  return view;
 }
 
 // Generous timeouts: these tests mount the full AppSidebar (icons, Radix
@@ -84,18 +98,36 @@ describe("sidebar sheet on phones", () => {
 
     await expectClosed();
     expect(screen.getByTestId("path")).toHaveTextContent("/dashboard/ncaaf");
+    expect(mainScrollTo).not.toHaveBeenCalled();
   });
 
   // The route-change effect alone never fired here, so the sheet stayed open
   // and the tap looked broken
+  // It also must not navigate again (no new history entry: the next Back
+  // would seem to do nothing); it scrolls back to the top like the tab bar
   it("closes when the tapped item is the screen already showing", async () => {
     renderShell("/dashboard/nfl");
+    const entry = screen.getByTestId("entry").textContent;
     await openSheet();
 
     fireEvent.click(await inSheet("link", "Games"));
 
     await expectClosed();
     expect(screen.getByTestId("path")).toHaveTextContent("/dashboard/nfl");
+    expect(screen.getByTestId("entry").textContent).toBe(entry);
+    expect(mainScrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
+  });
+
+  it("Home on the home screen scrolls to the top instead of navigating again", async () => {
+    renderShell("/dashboard");
+    const entry = screen.getByTestId("entry").textContent;
+    await openSheet();
+
+    fireEvent.click(await inSheet("button", "Home"));
+
+    await expectClosed();
+    expect(screen.getByTestId("entry").textContent).toBe(entry);
+    expect(mainScrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 0 }));
   });
 
   it("closes from the footer items too", async () => {
