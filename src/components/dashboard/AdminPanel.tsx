@@ -363,130 +363,37 @@ export function AdminPanel() {
   const handleSyncNFLSeasonStats = async (): Promise<boolean> => {
     setIsSyncingNFLSeasonStats(true);
     stopSeasonStatsSyncRef.current = false;
-    const seasons = [2025, 2024, 2023, 2022, 2021, 2020];
-    
+    // Season totals are rebuilt server-side by sync-nfl-season-stats from our
+    // stored game logs, which sync-nfl-game-logs checks against ESPN's box
+    // scores (BDL's /season_stats drifts on targets, its postseason endpoint
+    // echoes regular-season lines, and its box scores carry phantom lines).
+    // Current season only: past seasons are final and were verified line by
+    // line, and seasons before 2025 have no logs to rebuild from, so a past
+    // season only ever changes through a reviewed repair.
+    const now = new Date();
+    const currentSeason = now.getMonth() <= 1 ? now.getFullYear() - 1 : now.getFullYear();
+    const seasons = [currentSeason];
+
     try {
-      // Fetch all NFL players
-      let allPlayers: { id: string; external_id: string }[] = [];
-      let offset = 0;
-      const pageSize = 1000;
-      
-      const { count: playerCount } = await supabase
-        .from("players")
-        .select("*", { count: "exact", head: true })
-        .eq("sport", "NFL");
-      
-      if (!playerCount || playerCount === 0) {
-        throw new Error("No NFL players - sync players first");
-      }
-
-      while (offset < playerCount) {
-        const { data: batch } = await supabase
-          .from("players")
-          .select("id, external_id")
-          .eq("sport", "NFL")
-          .range(offset, offset + pageSize - 1);
-        
-        if (batch) allPlayers = [...allPlayers, ...batch];
-        offset += pageSize;
-      }
-
-      const playerMap = new Map(allPlayers.map(p => [String(p.external_id), p.id]));
       let totalSynced = 0;
-
-      // Helper to transform stats for upsert
-      const transformStats = (stats: Record<string, unknown>[], seasonType: "regular" | "postseason", fallbackSeason: number) => {
-        const result: Record<string, unknown>[] = [];
-        for (const stat of stats) {
-          const playerId = playerMap.get(String((stat.player as Record<string, unknown>)?.id));
-          if (!playerId) continue;
-
-          const passYards = (stat.passing_yards || stat.pass_yards || 0) as number;
-          const passTd = (stat.passing_touchdowns || stat.pass_touchdowns || 0) as number;
-          const passInt = (stat.passing_interceptions || stat.pass_interceptions || 0) as number;
-          const rushYards = (stat.rushing_yards || stat.rush_yards || 0) as number;
-          const rushTd = (stat.rushing_touchdowns || stat.rush_touchdowns || 0) as number;
-          const recYards = (stat.receiving_yards || stat.rec_yards || 0) as number;
-          const recTd = (stat.receiving_touchdowns || stat.rec_touchdowns || 0) as number;
-          const receptions = (stat.receptions || 0) as number;
-
-          const fantasyPoints = (passYards * 0.04) + (passTd * 4) - (passInt * 2) +
-            (rushYards * 0.1) + (rushTd * 6) + (recYards * 0.1) + (recTd * 6);
-
-          result.push({
-            player_id: playerId,
-            sport: "NFL",
-            season: (stat.season as number) || fallbackSeason,
-            season_type: seasonType,
-            games_played: (stat.games_played as number) || 0,
-            pass_attempts: (stat.passing_attempts || stat.pass_attempts || 0) as number,
-            pass_completions: (stat.passing_completions || stat.pass_completions || 0) as number,
-            pass_yards: passYards,
-            pass_td: passTd,
-            pass_int: passInt,
-            passer_rating: (stat.qbr || stat.passer_rating || null) as number | null,
-            rush_attempts: (stat.rushing_attempts || stat.rush_attempts || 0) as number,
-            rush_yards: rushYards,
-            rush_td: rushTd,
-            receptions: receptions,
-            rec_yards: recYards,
-            rec_td: recTd,
-            targets: (stat.receiving_targets || stat.targets || 0) as number,
-            fantasy_points: Math.round(fantasyPoints * 100) / 100,
-            fantasy_points_ppr: Math.round((fantasyPoints + receptions) * 100) / 100,
-            raw_data: stat,
-            updated_at: new Date().toISOString(),
-          });
-        }
-        return result;
-      };
-
-      // Helper to fetch all pages for a season/postseason combo
-      const fetchAllStats = async (season: number, postseason: string): Promise<Record<string, unknown>[]> => {
-        const result = await bdlFetch("nfl", "/season_stats", { season, per_page: 100, postseason });
-        let stats = result.data as Record<string, unknown>[] || [];
-        let nextCursor = result.meta?.next_cursor;
-
-        while (nextCursor && !stopSyncRef.current && !stopSeasonStatsSyncRef.current) {
-          const nextResult = await bdlFetch("nfl", "/season_stats", { season, per_page: 100, cursor: nextCursor, postseason });
-          stats = [...stats, ...((nextResult.data as Record<string, unknown>[]) || [])];
-          nextCursor = nextResult.meta?.next_cursor;
-          await new Promise(r => setTimeout(r, 150));
-        }
-        return stats;
-      };
+      const failedSeasons: number[] = [];
 
       for (const season of seasons) {
         if (stopSyncRef.current || stopSeasonStatsSyncRef.current) break;
 
-        try {
-          // Fetch BOTH regular season AND postseason stats
-          const regularStats = await fetchAllStats(season, "false");
-          if (stopSeasonStatsSyncRef.current) break;
-
-          const postseasonStats = await fetchAllStats(season, "true");
-          if (stopSeasonStatsSyncRef.current) break;
-
-          // Transform and combine
-          const statsToUpsert = [
-            ...transformStats(regularStats, "regular", season),
-            ...transformStats(postseasonStats, "postseason", season),
-          ];
-
-          if (statsToUpsert.length > 0) {
-            for (let i = 0; i < statsToUpsert.length; i += 50) {
-              const batch = statsToUpsert.slice(i, i + 50);
-              await supabase.from("player_season_stats").upsert(batch as never, {
-                onConflict: "player_id,sport,season,season_type",
-              });
-              totalSynced += batch.length;
-            }
-          }
-        } catch (seasonError) {
-          console.warn(`[Admin] Error fetching season ${season}:`, seasonError);
+        const { data, error } = await supabase.functions.invoke("sync-nfl-season-stats", {
+          body: { season },
+        });
+        if (error || data?.success === false) {
+          console.warn(`[Admin] Season stats sync failed for ${season}:`, error ?? data?.errors);
+          failedSeasons.push(season);
           continue;
         }
-        await new Promise(r => setTimeout(r, 300));
+        totalSynced += Number(data?.statsSync ?? 0);
+      }
+
+      if (failedSeasons.length > 0 && totalSynced === 0) {
+        throw new Error(`Season stats sync failed for ${failedSeasons.join(", ")}`);
       }
 
       // Check if we were stopped
@@ -500,12 +407,14 @@ export function AdminPanel() {
       }
 
       await fetchNFLSeasonStatsCount();
-      await updateSyncTimestamp("NFL", "season_stats", "success");
+      await updateSyncTimestamp("NFL", "season_stats", failedSeasons.length ? "partial" : "success");
 
       if (!isFullSyncing && totalSynced > 0) {
         toast({
           title: "✓ Season Stats Synced",
-          description: `${totalSynced.toLocaleString()} stats across ${seasons.length} seasons`,
+          description: failedSeasons.length
+            ? `${totalSynced.toLocaleString()} stats; failed for ${failedSeasons.join(", ")}`
+            : `${totalSynced.toLocaleString()} stats across ${seasons.join(", ")}`,
         });
       }
       return totalSynced > 0;
@@ -530,8 +439,10 @@ export function AdminPanel() {
     try {
       toast({ title: "Syncing NFL Game Logs...", description: "Running via edge function" });
 
+      // No season pin: the function defaults to the current season and
+      // refreshes the most recent weeks (the old body hardcoded 2024).
       const { data, error } = await supabase.functions.invoke("sync-nfl-game-logs", {
-        body: { season: 2024 },
+        body: {},
       });
 
       if (error) {
@@ -540,7 +451,9 @@ export function AdminPanel() {
       }
 
       await fetchNFLGameLogsCount();
-      await updateSyncTimestamp("NFL", "game_logs", "success");
+      // Keep the function's partial status visible (e.g. a final game skipped
+      // because ESPN's box score could not be read)
+      await updateSyncTimestamp("NFL", "game_logs", data?.errors?.length ? "partial" : "success");
 
       if (!isFullSyncing) {
         toast({
