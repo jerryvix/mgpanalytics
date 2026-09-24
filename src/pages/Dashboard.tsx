@@ -14,6 +14,11 @@ import { GuidedWalkthrough } from "@/components/onboarding/GuidedWalkthrough";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
+// TEMPORARY DEV-ONLY BYPASS: lets the dashboard render without a real Supabase
+// session when VITE_DEV_BYPASS_AUTH=true. Revert before shipping real auth work.
+const DEV_BYPASS_AUTH = import.meta.env.VITE_DEV_BYPASS_AUTH === "true";
+const DEV_FAKE_USER = { id: "dev-preview-user", email: "preview@local.dev" } as User;
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -52,6 +57,12 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
+    if (DEV_BYPASS_AUTH) {
+      setUser(DEV_FAKE_USER);
+      setLoading(false);
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user ?? null);

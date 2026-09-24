@@ -15,6 +15,14 @@ export interface Edge {
   // The wager this edge informs - lines from the curated Trending Bets board
   // (same verification rules). Ties the insight to an action.
   market?: { label: string; line: string; book: string };
+  // Optional confidence badge - only set when the underlying fact is a clean,
+  // well-sourced record (not a probabilistic call).
+  confidence?: "high";
+  // Optional supporting comparison, e.g. a record vs. the closest runner-up.
+  stat?: {
+    label: string;
+    rows: { label: string; value: string; highlight?: boolean }[];
+  };
 }
 
 export const EDGE_POOL: Edge[] = [
@@ -106,6 +114,14 @@ export const EDGE_POOL: Edge[] = [
     detail:
       "Joe DiMaggio's 56-game hitting streak (1941) is the longest in MLB history - no one has come within 12 games of it in over 80 years.",
     source: "MLB record book",
+    confidence: "high",
+    stat: {
+      label: "Longest Hitting Streaks",
+      rows: [
+        { label: "Joe DiMaggio ('41)", value: "56", highlight: true },
+        { label: "Pete Rose ('78)", value: "44" },
+      ],
+    },
   },
 ];
 
