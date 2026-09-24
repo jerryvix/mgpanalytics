@@ -28,10 +28,13 @@ const DrawerContent = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
   <DrawerPortal>
     <DrawerOverlay />
+    {/* The surface runs edge to edge; its content stays clear of the notch
+        sides on a phone in landscape (the insets are 0 in portrait and on
+        desktop, so nothing moves there) */}
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        "fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background pl-[var(--safe-left)] pr-[var(--safe-right)]",
         className,
       )}
       {...props}
