@@ -62,6 +62,26 @@ describe("phone vs desktop chrome", () => {
     const html = readFileSync(path.resolve(__dirname, "../../index.html"), "utf8");
     expect(html).toContain(`<meta name="theme-color" media="${PHONE_MEDIA}"`);
   });
+
+  // Width alone no longer decides the chrome: a phone in landscape is 844px+
+  // wide. Whatever switches between the phone and desktop presentation uses
+  // phone:/desk: (or useIsMobile), never md:/max-md:, or landscape phones get
+  // the desktop variant inside the phone layout (Hot Bats rows did).
+  it.each([
+    "components/AppSidebar.tsx",
+    "components/DashboardContent.tsx",
+    "components/dashboard/FantasyMovers.tsx",
+    "components/ui/BackButton.tsx",
+    "components/ui/BottomNav.tsx",
+    "components/ui/MobileSportNav.tsx",
+    "components/ui/MobileTopBar.tsx",
+    "pages/Dashboard.tsx",
+    "pages/DashboardNotFound.tsx",
+    "pages/Profile.tsx",
+  ])("%s switches on the phone layout, not on width", (file) => {
+    const src = readFileSync(path.resolve(__dirname, "..", file), "utf8");
+    expect(src).not.toMatch(/(^|[\s"'`])(max-)?md:/m);
+  });
 });
 
 describe("useIsMobile", () => {

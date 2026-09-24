@@ -66,13 +66,14 @@ const Profile = () => {
     ? Math.max(0, Math.min(100, (daysRemaining / 14) * 100))
     : 0;
 
-  // Phones: this page renders inside the dashboard's own scroll container and
-  // padding, so a 100vh floor only added dead scroll below the last card (100vh
-  // is even taller than the visible area on iOS Safari), and the extra px-4
-  // doubled the side margins to 32px. Desktop keeps its original spacing.
+  // Phones (portrait or landscape): this page renders inside the dashboard's
+  // own scroll container and padding, so a 100vh floor only added dead scroll
+  // below the last card (100vh is even taller than the visible area on iOS
+  // Safari), and the extra px-4 doubled the side margins to 32px. Desktop
+  // keeps its original spacing.
   return (
-    <div className="bg-background md:min-h-screen">
-      <div className="container mx-auto max-w-2xl px-0 py-1 md:px-4 md:py-8">
+    <div className="bg-background desk:min-h-screen">
+      <div className="container mx-auto max-w-2xl px-0 py-1 desk:px-4 desk:py-8">
         <h1 className="text-2xl font-bold font-mono text-terminal-green glow-green tracking-wider mb-6">
           PROFILE
         </h1>
