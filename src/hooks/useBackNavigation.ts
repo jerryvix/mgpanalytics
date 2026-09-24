@@ -15,12 +15,15 @@ export function useBackNavigation() {
     // React Router stamps its own index onto history state. Anything above 0
     // means we arrived from another in-app screen, so popping returns the
     // user where they actually came from instead of a guessed parent. At 0
-    // (opened directly) popping would leave the app, so walk up instead.
+    // (opened directly) popping would leave the app, so walk up instead, and
+    // REPLACE the entry: pushing the parent made the next Back pop straight
+    // down to the deep link again (players, detail, players...), while
+    // replacing keeps the index at 0 so each Back climbs one more level.
     const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
     if (idx > 0) {
       navigate(-1);
     } else {
-      navigate(parentPath(location.pathname));
+      navigate(parentPath(location.pathname), { replace: true });
     }
   }, [location.pathname, navigate]);
 
