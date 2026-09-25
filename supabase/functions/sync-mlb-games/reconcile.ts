@@ -92,6 +92,17 @@ export function mlbLists(mlb: MlbDayIndex, day: string, away: string, home: stri
   return mlb.days.has(day) ? mlb.keys.has(matchupKey(day, away, home)) : null;
 }
 
+/**
+ * May the statsapi fallback add a row on this day ESPN could not serve? Not
+ * on a day an explicit backfill asked for outside the self-heal window
+ * (`explicitOnly`) that already has rows: there it finalizes the rows it
+ * pairs with, but a time or name mismatch must never add an mlbapi_ copy of
+ * a game that has its espn_mlb_ row. Elsewhere, as before.
+ */
+export function fallbackMayInsert(day: string, explicitOnly: ReadonlySet<string>, daysWithRows: { has(day: string): boolean }): boolean {
+  return !(explicitOnly.has(day) && daysWithRows.has(day));
+}
+
 /** The fields of an mlb_games row these rules read. */
 export interface SyncRow {
   id: string;

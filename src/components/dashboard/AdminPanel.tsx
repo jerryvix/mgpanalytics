@@ -39,6 +39,7 @@ import {
   PlayerSyncCard,
   PropsSyncCard,
   NBASyncCard,
+  MLBSyncCard,
   SyncScheduleDashboard,
   BacktestSyncCard
 } from "./admin";
@@ -802,6 +803,11 @@ export function AdminPanel() {
         {/* Props Sync */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.115 }}>
           <PropsSyncCard />
+        </motion.div>
+
+        {/* MLB games: sync and date backfill */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.116 }}>
+          <MLBSyncCard />
         </motion.div>
 
         {/* NBA Stats Sync - Comprehensive */}

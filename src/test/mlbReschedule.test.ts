@@ -3,6 +3,7 @@ import {
   coreEventDate,
   coreLookupIds,
   espnEventId,
+  fallbackMayInsert,
   freshCoreUrl,
   hasPlaceholderTeam,
   indexMlbSchedule,
@@ -475,5 +476,30 @@ describe("isCalledOffStatus", () => {
     expect(isCalledOffStatus("STATUS_SUSPENDED")).toBe(false);
     expect(isCalledOffStatus("STATUS_FINAL")).toBe(false);
     expect(isCalledOffStatus(null)).toBe(false);
+  });
+});
+
+// QC, Sep 25 2026: March-July 2026 was never finalized, and the lead backfills
+// it with explicit { startDate, endDate } runs of up to 60 days.
+describe("explicit backfill of old days", () => {
+  const explicitOnly = new Set(["2026-04-05", "2026-04-25"]); // asked for, outside the self-heal window
+  const daysWithRows = new Set(["2026-04-05", "2026-09-24"]); // Apr 25 2026 has no rows at all
+
+  it("never lets the statsapi fallback add a row beside an old day's existing rows", () => {
+    expect(fallbackMayInsert("2026-04-05", explicitOnly, daysWithRows)).toBe(false);
+  });
+
+  it("still fills an old day with no rows at all, and regular days as before", () => {
+    expect(fallbackMayInsert("2026-04-25", explicitOnly, daysWithRows)).toBe(true);
+    expect(fallbackMayInsert("2026-09-24", explicitOnly, daysWithRows)).toBe(true);
+  });
+
+  it("never re-dates or hides an old game: the reschedule checks stay in today's window", () => {
+    // Served by the mirror without it, and MLB lists games that day: still out of scope
+    const oldRow = row("espn_mlb_401814813", "2026-04-05T17:10:00+00:00");
+    const aprilMlb = indexMlbSchedule([mlbGame(824460, "2026-04-05T17:10:00Z", 1, { away: side(112, "Chicago Cubs"), home: side(114, "Cleveland Guardians") })]);
+    expect(strandedRows([oldRow], { fromDay: "2026-09-24", toDay: "2026-09-28", servedDays: new Set(["2026-04-05"]), listedIds: new Set(), mlb: aprilMlb })).toEqual([]);
+    const oldListing = regular("401814813", "2026-04-05T17:10Z");
+    expect(unconfirmedListings([oldListing], { fromDay: "2026-09-24", toDay: "2026-09-28", hasTwin: () => false, mlb: aprilMlb })).toEqual([]);
   });
 });

@@ -21,6 +21,7 @@ import {
   coreEventDate,
   coreLookupIds,
   espnEventId,
+  fallbackMayInsert,
   freshCoreUrl,
   groupByMatchup,
   indexMlbSchedule,
@@ -257,15 +258,30 @@ serve(async (req) => {
     // close to the 1,000-row cap and would silently truncate).
     const windowStart = addDays(today, -BACKFILL_LOOKBACK_DAYS - 1);
     const windowEnd = addDays(today, DAYS_AHEAD + 2);
-    const existing = await selectAll<ExistingRow>(
-      () => supabase.from("mlb_games")
-        .select("id, external_id, date, status, is_final, home_team_name, visitor_team_name, home_team_id, visitor_team_id")
-        .gte("date", `${windowStart}T00:00:00Z`)
-        .lt("date", `${windowEnd}T00:00:00Z`)
-        .order("date", { ascending: true })
-        .order("id", { ascending: true }),
-      { label: "load recent mlb_games" },
-    );
+    const loadRows = (from: string, to: string, label: string) =>
+      selectAll<ExistingRow>(
+        () => supabase.from("mlb_games")
+          .select("id, external_id, date, status, is_final, home_team_name, visitor_team_name, home_team_id, visitor_team_id")
+          .gte("date", `${from}T00:00:00Z`)
+          .lt("date", `${to}T00:00:00Z`)
+          .order("date", { ascending: true })
+          .order("id", { ascending: true }),
+        { label },
+      );
+    const existing = await loadRows(windowStart, windowEnd, "load recent mlb_games");
+    // An explicit backfill can reach months back (March-July 2026 was never
+    // finalized: the self-heal looks back 45 days). Its rows are loaded too, so
+    // the statsapi fallback pairs with them instead of adding copies.
+    if (explicitDays.length) {
+      const from = addDays(explicitDays[0], -1);
+      const to = addDays(explicitDays[explicitDays.length - 1], 2);
+      if (from < windowStart || to > windowEnd) {
+        const loaded = new Set(existing.map((r) => r.id));
+        for (const r of await loadRows(from, to, "load backfill mlb_games")) {
+          if (!loaded.has(r.id)) existing.push(r);
+        }
+      }
+    }
     const existingByDay = new Map<string, ExistingRow[]>();
     for (const row of existing) {
       const d = etDate(row.date);
@@ -562,6 +578,9 @@ serve(async (req) => {
         if (c.team?.id && c.team?.displayName) espnTeamId.set(c.team.displayName, c.team.id);
       }
     }
+    // Days an explicit backfill asked for outside the self-heal window
+    // (fallbackMayInsert: no inserts beside rows already there)
+    const explicitOnly = new Set(explicitDays.filter((d) => d < lookbackStart || d > forwardEnd));
     let fallbackUpdated = 0;
     const fallbackInserts: Record<string, unknown>[] = [];
     for (const [key, games] of groupByMatchup(fallbackGames, mlbKeyOf, mlbTimeOf)) {
@@ -573,6 +592,7 @@ serve(async (req) => {
         if (g.isPlaceholder && !row) continue;
         // Nor is a postseason slot whose teams are not set ("AL Wild Card #2")
         if (!row && !isStorableMlbGame(g)) continue;
+        if (!row && !fallbackMayInsert(g.scheduleDay, explicitOnly, existingByDay)) continue;
         const patch = {
           status: g.status,
           is_final: g.isFinal,
@@ -678,11 +698,19 @@ serve(async (req) => {
       }
     }
 
+    // The explicit range's own rows, for the admin's backfill control
+    const explicitSet = new Set(explicitDays);
+    const explicitRows = insertedData.filter((r) => explicitSet.has(etDate(r.date)));
+    const explicitRange = explicitDays.length ? `${explicitDays[0]}..${explicitDays[explicitDays.length - 1]}` : null;
+
     const details = {
       days_requested: allDays.length,
       espn_days_ok: okDays.length,
       espn_days_failed: failedDays,
       backfill_days: backfillDays,
+      explicit_range: explicitRange,
+      explicit_games_written: explicitRows.length,
+      explicit_games_final: explicitRows.filter((r) => r.is_final).length,
       espn_games: gamesToUpsert.length,
       espn_placeholders_skipped: placeholdersSkipped,
       statsapi_games_inserted: fallbackInserts.length,
@@ -703,7 +731,10 @@ serve(async (req) => {
       success: true,
       gamesCount: insertedCount,
       ...details,
-      message: `Synced ${insertedCount} MLB games across ${allDays.length} days (${backfillDays.length} backfilled)`,
+      message: explicitRange
+        ? `Backfilled ${explicitRange}: ${explicitRows.length} games written, ${details.explicit_games_final} final` +
+          ` (${insertedCount} synced across ${allDays.length} days, ${failedDays.length} ESPN days failed)`
+        : `Synced ${insertedCount} MLB games across ${allDays.length} days (${backfillDays.length} backfilled)`,
     };
 
     console.log("MLB sync completed:", response);

@@ -2,10 +2,24 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Clock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, RefreshCw, Clock, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+
+// sync-mlb-games takes { startDate, endDate } and re-pulls at most this many
+// days per run (MAX_EXPLICIT_DAYS). Its self-heal only looks back 45 days, so
+// March-July 2026 stayed "scheduled" with 0-0 scores until backfilled.
+const MAX_BACKFILL_DAYS = 60;
+
+/** Why a backfill range cannot run, or null. Dates are YYYY-MM-DD (date inputs). */
+function backfillRangeProblem(start: string, end: string): string | null {
+  if (!start || !end) return "Pick a start and an end date.";
+  if (end < start) return "The end date is before the start date.";
+  const days = Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / 86_400_000) + 1;
+  return days > MAX_BACKFILL_DAYS ? `That is ${days} days; backfill at most ${MAX_BACKFILL_DAYS} per run.` : null;
+}
 
 // Baseball icon component
 function BaseballIcon({ className }: { className?: string }) {
@@ -45,6 +59,48 @@ export function MLBSyncCard() {
   useEffect(() => {
     fetchCounts();
   }, []);
+
+  const [backfillStart, setBackfillStart] = useState("");
+  const [backfillEnd, setBackfillEnd] = useState("");
+  const [isBackfilling, setIsBackfilling] = useState(false);
+  const [backfillResult, setBackfillResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const rangeProblem = backfillRangeProblem(backfillStart, backfillEnd);
+
+  // Reports what the function actually returned, including its error body
+  // (supabase-js hides it on a non-2xx response).
+  const handleBackfill = async () => {
+    if (rangeProblem) return;
+    setIsBackfilling(true);
+    setBackfillResult(null);
+    let result = { ok: false, text: "Backfill failed. Check the sync log and try again." };
+    try {
+      const { data, error } = await supabase.functions.invoke("sync-mlb-games", {
+        body: { startDate: backfillStart, endDate: backfillEnd },
+      });
+      if (error) {
+        let detail = error.message;
+        const ctx = (error as { context?: Response }).context;
+        if (ctx && typeof ctx.json === "function") {
+          try {
+            const body = await ctx.json();
+            if (body?.error) detail = body.error;
+          } catch { /* not JSON */ }
+        }
+        result = { ok: false, text: `Backfill failed: ${detail || "no response"}` };
+      } else if (!data || data.success === false) {
+        result = { ok: false, text: `Backfill failed: ${data?.error || "no result"}` };
+      } else {
+        result = { ok: true, text: data.message || `Synced ${data.gamesCount ?? 0} games` };
+        await fetchCounts();
+      }
+    } catch (err) {
+      console.error("MLB backfill error:", err);
+      if (err instanceof Error && err.message) result = { ok: false, text: `Backfill failed: ${err.message}` };
+    } finally {
+      setIsBackfilling(false);
+    }
+    setBackfillResult(result);
+  };
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -122,6 +178,62 @@ export function MLBSyncCard() {
         
         <div className="text-[9px] text-muted-foreground font-mono text-center italic">
           Note: MLB season starts March 2026
+        </div>
+
+        {/* Re-pull finals and scores for past dates the 45-day self-heal no longer reaches */}
+        <div className="pt-2 border-t border-red-500/20 space-y-2">
+          <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
+            Backfill dates
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="space-y-1">
+              <span className="block text-[10px] text-muted-foreground font-mono">Start</span>
+              <Input
+                type="date"
+                aria-label="Backfill start date"
+                className="h-11 font-mono text-xs"
+                value={backfillStart}
+                onChange={(e) => setBackfillStart(e.target.value)}
+                disabled={isBackfilling}
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="block text-[10px] text-muted-foreground font-mono">End</span>
+              <Input
+                type="date"
+                aria-label="Backfill end date"
+                className="h-11 font-mono text-xs"
+                value={backfillEnd}
+                onChange={(e) => setBackfillEnd(e.target.value)}
+                disabled={isBackfilling}
+              />
+            </label>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-11 justify-start font-mono text-xs border-red-500/50 hover:bg-red-500/10"
+            onClick={handleBackfill}
+            disabled={isBackfilling || rangeProblem !== null}
+          >
+            {isBackfilling ? <Loader2 className="w-3 h-3 mr-2 animate-spin" /> : <History className="w-3 h-3 mr-2" />}
+            {isBackfilling ? "Backfilling..." : "Backfill Dates"}
+          </Button>
+          {backfillStart && backfillEnd && rangeProblem ? (
+            <p className="text-[10px] font-mono text-red-500" role="alert">{rangeProblem}</p>
+          ) : (
+            <p className="text-[10px] text-muted-foreground font-mono leading-snug">
+              Re-pulls finals and scores for up to {MAX_BACKFILL_DAYS} days a run.
+            </p>
+          )}
+          {backfillResult && (
+            <p
+              className={`text-[10px] font-mono leading-snug ${backfillResult.ok ? "text-foreground" : "text-red-500"}`}
+              role={backfillResult.ok ? "status" : "alert"}
+            >
+              {backfillResult.text}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
