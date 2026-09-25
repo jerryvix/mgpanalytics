@@ -149,17 +149,45 @@ export interface Listing {
 }
 
 /**
- * ESPN's stand-in for a game not set yet: a postseason slot with a TBD side
- * ("TBD at New York Yankees", team id -1 or -2) or no first pitch
- * (timeValid false, listed at midnight Eastern). MLB names these slots its own
- * way ("AL Wild Card #2 @ New York Yankees"), so they never pair, and checking
- * them would spend a core lookup per slot per run (12, the cap, from Sep 27).
+ * A postseason slot whose teams ESPN has not set: a side that is "TBD" (team
+ * id -1 or -2, or none at all), as in "TBD at TBD" or "TBD at New York
+ * Yankees". Only the teams decide this, never the time.
+ */
+export function hasPlaceholderTeam(e: Listing): boolean {
+  const sides = e.competitions?.[0]?.competitors ?? [];
+  return sides.length < 2 || sides.some((s) => !/^[1-9]\d*$/.test(s.team?.id ?? "") || s.team?.displayName === "TBD");
+}
+
+/**
+ * ESPN's stand-in for a game not set yet: a slot with a TBD side
+ * (hasPlaceholderTeam) or no first pitch (timeValid false, listed at
+ * midnight Eastern). MLB names these slots its own way ("AL Wild Card #2 @
+ * New York Yankees"), so they never pair, and checking them would spend a
+ * core lookup per slot per run (12, the cap, from Sep 27).
  */
 export function isPlaceholderListing(e: Listing): boolean {
-  const c = e.competitions?.[0];
-  if (c?.timeValid === false) return true;
-  const sides = c?.competitors ?? [];
-  return sides.length < 2 || sides.some((s) => !/^[1-9]\d*$/.test(s.team?.id ?? "") || s.team?.displayName === "TBD");
+  return e.competitions?.[0]?.timeValid === false || hasPlaceholderTeam(e);
+}
+
+/**
+ * The listings to store in mlb_games: all but slots with a TBD side, which
+ * are not games (the lead's call, Sep 25 2026: no "TBD @ TBD" cards). A real
+ * game with no first pitch yet (timeValid false, as doubleheader game 2 can
+ * be) is stored, and a slot is stored under its event id once ESPN names
+ * both teams.
+ */
+export function listingsToStore<E extends Listing>(events: E[]): E[] {
+  return events.filter((e) => !hasPlaceholderTeam(e));
+}
+
+/**
+ * May the statsapi fallback store this game on a day ESPN could not serve?
+ * Only between clubs ESPN knows by name: MLB's postseason slots ("AL Wild
+ * Card #2", "NL 4/5 Winner", team ids 4613 and up) are its version of ESPN's
+ * TBD sides, and ESPN's own listing takes over once the teams are set.
+ */
+export function isStorableMlbGame(g: Pick<MlbScheduleGame, "away" | "home">, espnTeams: ReadonlySet<string>): boolean {
+  return espnTeams.has(g.away.name) && espnTeams.has(g.home.name);
 }
 
 /**

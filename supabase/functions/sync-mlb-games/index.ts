@@ -24,6 +24,8 @@ import {
   freshCoreUrl,
   groupByMatchup,
   indexMlbSchedule,
+  isStorableMlbGame,
+  listingsToStore,
   mlbLists,
   pairGames,
   planListing,
@@ -360,7 +362,13 @@ serve(async (req) => {
     // ---- ESPN events -> rows ----
     const espnEvents = okDays.flatMap((d) => espnByDay.get(d) || []);
     const seenEspn = new Set<string>();
-    const uniqueEvents = espnEvents.filter((e) => (seenEspn.has(e.id) ? false : (seenEspn.add(e.id), true)));
+    const listed = espnEvents.filter((e) => (seenEspn.has(e.id) ? false : (seenEspn.add(e.id), true)));
+    // ESPN lists postseason slots before their teams are set ("TBD at TBD",
+    // "TBD at New York Yankees"). They are not games: not stored, paired,
+    // checked or priced, and the same event id is written once ESPN names both
+    // teams. seenEspn keeps their ids (ESPN does list them).
+    const uniqueEvents = listingsToStore(listed);
+    const placeholdersSkipped = listed.length - uniqueEvents.length;
     const sideOf = (e: ESPNGame, homeAway: "home" | "away") =>
       e.competitions?.[0]?.competitors?.find((c) => c.homeAway === homeAway);
     const espnKey = (e: ESPNGame) =>
@@ -554,6 +562,7 @@ serve(async (req) => {
         if (c.team?.id && c.team?.displayName) espnTeamId.set(c.team.displayName, c.team.id);
       }
     }
+    const espnTeams = new Set(espnTeamId.keys());
     let fallbackUpdated = 0;
     const fallbackInserts: Record<string, unknown>[] = [];
     for (const [key, games] of groupByMatchup(fallbackGames, mlbKeyOf, mlbTimeOf)) {
@@ -563,6 +572,8 @@ serve(async (req) => {
         // A postponed placeholder can mark an existing row, but is never a new
         // game (its gamePk belongs to the makeup, which gets its own row).
         if (g.isPlaceholder && !row) continue;
+        // Nor is a postseason slot whose teams are not set ("AL Wild Card #2")
+        if (!row && !isStorableMlbGame(g, espnTeams)) continue;
         const patch = {
           status: g.status,
           is_final: g.isFinal,
@@ -674,6 +685,7 @@ serve(async (req) => {
       espn_days_failed: failedDays,
       backfill_days: backfillDays,
       espn_games: gamesToUpsert.length,
+      espn_placeholders_skipped: placeholdersSkipped,
       statsapi_games_inserted: fallbackInserts.length,
       statsapi_games_updated: fallbackUpdated,
       mlbapi_rows_adopted: adopted,

@@ -4,8 +4,11 @@ import {
   coreLookupIds,
   espnEventId,
   freshCoreUrl,
+  hasPlaceholderTeam,
   indexMlbSchedule,
   isPlaceholderListing,
+  isStorableMlbGame,
+  listingsToStore,
   mlbLists,
   pairGames,
   planListing,
@@ -259,6 +262,47 @@ describe("ESPN's postseason placeholders (QC round 2)", () => {
   it("skips listings MLB has nothing to say about (no counted games that day)", () => {
     const offDay = regular("401817111", "2026-09-28T23:05Z");
     expect(unconfirmedListings([offDay], { ...window, hasTwin: () => false, mlb })).toEqual([]);
+  });
+});
+
+// The lead's call (Sep 25 2026): ESPN's slots with a TBD side are not stored,
+// so no "TBD @ TBD" card or chat line. They enter the sync window at 04:00Z
+// Sep 25. Only the teams decide it: a real game with no time yet is stored.
+describe("storing ESPN's postseason placeholders", () => {
+  it("does not store a TBD @ TBD listing, or one with a single team set", () => {
+    const tbdAtTbd = wildCard.find((e) => e.id === "401907896")!; // ALWC Game 1
+    const tbdAtNyy = wildCard.find((e) => e.id === "401907964")!; // ALWC Game 3, TBD at New York Yankees
+    expect(listingsToStore([tbdAtTbd])).toEqual([]);
+    expect(listingsToStore([tbdAtNyy])).toEqual([]);
+    expect(listingsToStore(wildCard)).toEqual([]);
+  });
+
+  it("stores a real doubleheader game 2 whose first pitch is not set (timeValid false)", () => {
+    const game2Listing = regular("401817073", "2026-09-25T20:10Z");
+    game2Listing.competitions![0].timeValid = false;
+    expect(listingsToStore([game2Listing])).toEqual([game2Listing]);
+    expect(hasPlaceholderTeam(game2Listing)).toBe(false);
+    expect(isPlaceholderListing(game2Listing)).toBe(true); // stored, but still costs no core lookup
+  });
+
+  it("stores the slot under the same event id once ESPN names both teams", () => {
+    const before = wildCard.find((e) => e.id === "401907964")!;
+    const after: Listing = {
+      ...before,
+      competitions: [{
+        timeValid: false,
+        competitors: [{ team: { id: "10", displayName: NYY } }, { team: { id: "6", displayName: "Detroit Tigers" } }],
+      }],
+    };
+    expect(listingsToStore([before])).toEqual([]);
+    expect(listingsToStore([after]).map((e) => e.id)).toEqual(["401907964"]);
+  });
+
+  it("keeps the statsapi fallback from storing MLB's own slots on a day the mirror fails", () => {
+    const espnTeams = new Set([NYY, BAL, "Detroit Tigers"]);
+    const slot = mlbGame(849847, "2026-10-01T07:33:00Z", 1, { gameType: "F", startTimeTBD: true, away: side(4944, "AL Wild Card #2") });
+    expect(isStorableMlbGame(slot, espnTeams)).toBe(false);
+    expect(isStorableMlbGame(game1, espnTeams)).toBe(true);
   });
 });
 
