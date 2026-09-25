@@ -299,10 +299,23 @@ describe("storing ESPN's postseason placeholders", () => {
   });
 
   it("keeps the statsapi fallback from storing MLB's own slots on a day the mirror fails", () => {
-    const espnTeams = new Set([NYY, BAL, "Detroit Tigers"]);
-    const slot = mlbGame(849847, "2026-10-01T07:33:00Z", 1, { gameType: "F", startTimeTBD: true, away: side(4944, "AL Wild Card #2") });
-    expect(isStorableMlbGame(slot, espnTeams)).toBe(false);
-    expect(isStorableMlbGame(game1, espnTeams)).toBe(true);
+    const awaySlot = mlbGame(849847, "2026-10-01T07:33:00Z", 1, { gameType: "F", startTimeTBD: true, away: side(4944, "AL Wild Card #2") });
+    const bothSlots = mlbGame(849840, "2026-10-01T07:33:00Z", 1, {
+      gameType: "F",
+      away: side(4945, "NL Wild Card #2"),
+      home: side(4619, "NL Wild Card #1"),
+    });
+    expect(isStorableMlbGame(awaySlot)).toBe(false);
+    expect(isStorableMlbGame(bothSlots)).toBe(false);
+  });
+
+  // QC round 3: judged by names from stored rows, a run with ESPN down and no
+  // rows stored refused every real game (all 614 in its replay)
+  it("stores real clubs' games with no rows stored and no ESPN listing to learn names from", () => {
+    const clubs: Array<[number, string]> = [[110, BAL], [147, NYY], [116, "Detroit Tigers"], [139, "Tampa Bay Rays"], [158, "Milwaukee Brewers"], [108, "Los Angeles Angels"]];
+    const games = clubs.slice(1).map(([id, name], i) => mlbGame(900100 + i, "2026-09-26T23:05:00Z", 1, { away: side(clubs[i][0], clubs[i][1]), home: side(id, name) }));
+    expect(games.every((g) => isStorableMlbGame(g))).toBe(true);
+    expect(isStorableMlbGame(game1)).toBe(true);
   });
 });
 
@@ -399,19 +412,31 @@ describe("planStranded: what to write", () => {
 });
 
 describe("planListing: a mirror listing MLB does not confirm", () => {
+  // 23:36 UTC Sep 24: the mirror still listed the game on Saturday; core had Friday
+  const staleListing = { date: "2026-09-26T23:15Z", status: "STATUS_SCHEDULED" };
+  const coreFriday = { date: "2026-09-25T20:05Z", status: "STATUS_SCHEDULED" };
+  // What the upsert writes for the listing this run
+  const written = (listing: { date: string; status: string }, core: Parameters<typeof planListing>[1]) =>
+    planListing(listing, core)?.date ?? listing.date;
+
   it("moves a listing still on its old day to ESPN's new date, and never hides one", () => {
-    const listing = { date: "2026-09-26T23:15Z", status: "STATUS_SCHEDULED" };
-    expect(planListing(listing, { date: "2026-09-25T20:05Z", status: "STATUS_SCHEDULED" }, sat.date)).toEqual({ date: "2026-09-25T20:05Z" });
-    expect(planListing(listing, "missing", sat.date)).toBeNull();
-    expect(planListing(listing, null, sat.date)).toBeNull();
+    expect(planListing(staleListing, coreFriday)).toEqual({ date: "2026-09-25T20:05Z" });
+    expect(planListing(staleListing, "missing")).toBeNull();
+    expect(planListing(staleListing, null)).toBeNull();
   });
 
-  it("ignores a stale cached core date that would undo a fresher move (QC round 2)", () => {
-    // The mirror already moved the game to Friday; core still has the date the row had
-    const fresh = { date: "2026-09-25T20:05Z", status: "STATUS_SCHEDULED" };
-    expect(planListing(fresh, { date: "2026-09-26T23:15Z", status: "STATUS_SCHEDULED" }, sat.date)).toBeNull();
-    // A new event we have no row for has nothing to undo
-    expect(planListing(fresh, { date: "2026-09-26T23:15Z", status: "STATUS_SCHEDULED" }, null)).toEqual({ date: "2026-09-26T23:15Z" });
+  // QC round 3: a stored-date guard read run 1's own write as a stale core copy,
+  // so the runs wrote Friday, Saturday, Friday, Saturday...
+  it("keeps Friday on three consecutive runs while the mirror still shows Saturday", () => {
+    expect([1, 2, 3].map(() => written(staleListing, coreFriday))).toEqual(["2026-09-25T20:05Z", "2026-09-25T20:05Z", "2026-09-25T20:05Z"]);
+  });
+
+  it("keeps a game moved later on its new day while the mirror lists both days", () => {
+    // Moved Tuesday to Wednesday and already stored Wednesday by a stranded fix; the
+    // mirror lists it on both days and de-duplication keeps the stale Tuesday copy
+    const tuesday = { date: "2026-09-29T23:05Z", status: "STATUS_SCHEDULED" };
+    const coreWednesday = { date: "2026-09-30T17:05Z", status: "STATUS_SCHEDULED" };
+    expect([1, 2, 3].map(() => written(tuesday, coreWednesday))).toEqual(["2026-09-30T17:05Z", "2026-09-30T17:05Z", "2026-09-30T17:05Z"]);
   });
 });
 

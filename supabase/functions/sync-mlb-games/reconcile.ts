@@ -180,14 +180,19 @@ export function listingsToStore<E extends Listing>(events: E[]): E[] {
   return events.filter((e) => !hasPlaceholderTeam(e));
 }
 
+// MLB's 30 clubs have team ids 108 to 158; its postseason slot "teams" ("AL
+// Wild Card #2", "NL 4/5 Winner") were 4613 and up in 2025-26.
+const isClubId = (id: number | null) => id !== null && id > 0 && id < 1000;
+
 /**
  * May the statsapi fallback store this game on a day ESPN could not serve?
- * Only between clubs ESPN knows by name: MLB's postseason slots ("AL Wild
- * Card #2", "NL 4/5 Winner", team ids 4613 and up) are its version of ESPN's
- * TBD sides, and ESPN's own listing takes over once the teams are set.
+ * Only between clubs, told apart from MLB's postseason slots (its version of
+ * ESPN's TBD sides) by team id. By id, not by names seen in stored rows or
+ * ESPN listings: with no rows stored and ESPN down, that refused every real
+ * game (QC round 3).
  */
-export function isStorableMlbGame(g: Pick<MlbScheduleGame, "away" | "home">, espnTeams: ReadonlySet<string>): boolean {
-  return espnTeams.has(g.away.name) && espnTeams.has(g.home.name);
+export function isStorableMlbGame(g: { away: { id: number | null }; home: { id: number | null } }): boolean {
+  return isClubId(g.away.id) && isClubId(g.home.id);
 }
 
 /**
@@ -278,18 +283,12 @@ export function planStranded(
 
 /**
  * planStranded for a listing MLB does not confirm, which is never hidden (the
- * mirror lists it). `storedDate` is the date the row has now. A core answer
- * repeating that stored date while the mirror has moved the game is a stale
- * cached copy, not a correction: it is ignored, so it can never undo the
- * fresher move.
+ * mirror lists it): core's date wins, every run. Core staleness is handled by
+ * freshCoreUrl's per-minute cache buster, not by comparing with the stored
+ * date: once a run writes core's date the stored date equals it, so such a
+ * guard handed the next run back to the mirror's stale day (Friday, Saturday,
+ * Friday... in QC round 3's replay of the 23:36 UTC state).
  */
-export function planListing(
-  listing: Pick<SyncRow, "date" | "status">,
-  core: CoreEvent | "missing" | null,
-  storedDate: string | null,
-): RowFix | null {
-  const fix = planStranded(listing, core, true);
-  const same = (a: string, b: string) => Date.parse(a) === Date.parse(b);
-  if (fix?.date && readable(storedDate) && same(fix.date, storedDate) && !same(listing.date, storedDate)) return null;
-  return fix;
+export function planListing(listing: Pick<SyncRow, "date" | "status">, core: CoreEvent | "missing" | null): RowFix | null {
+  return planStranded(listing, core, true);
 }

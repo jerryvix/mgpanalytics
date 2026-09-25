@@ -439,7 +439,7 @@ serve(async (req) => {
         const core = coreEvents.get(e.id);
         if (core === undefined) continue;
         const row = existing.find((r) => r.external_id === `espn_mlb_${e.id}`);
-        const fix = planListing({ date: e.date, status: e.status?.type?.name ?? null }, core, row?.date ?? null);
+        const fix = planListing({ date: e.date, status: e.status?.type?.name ?? null }, core);
         if (!fix) continue;
         mirrorFixes.set(e.id, fix);
         if (fix.date && row) row.date = fix.date;
@@ -562,7 +562,6 @@ serve(async (req) => {
         if (c.team?.id && c.team?.displayName) espnTeamId.set(c.team.displayName, c.team.id);
       }
     }
-    const espnTeams = new Set(espnTeamId.keys());
     let fallbackUpdated = 0;
     const fallbackInserts: Record<string, unknown>[] = [];
     for (const [key, games] of groupByMatchup(fallbackGames, mlbKeyOf, mlbTimeOf)) {
@@ -573,7 +572,7 @@ serve(async (req) => {
         // game (its gamePk belongs to the makeup, which gets its own row).
         if (g.isPlaceholder && !row) continue;
         // Nor is a postseason slot whose teams are not set ("AL Wild Card #2")
-        if (!row && !isStorableMlbGame(g, espnTeams)) continue;
+        if (!row && !isStorableMlbGame(g)) continue;
         const patch = {
           status: g.status,
           is_final: g.isFinal,
