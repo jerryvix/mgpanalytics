@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { chatStarterGames, gameStateLabel, starterLine } from "../../supabase/functions/gemini-chat/mlb-starters";
+import { chatStarterGames, gameStateLabel, gameTimeLabel, starterLine } from "../../supabase/functions/gemini-chat/mlb-starters";
 import { nextMatchupForTeam, type MlbScheduleGame, type PitcherLine, type ProbableMatchup } from "../../supabase/functions/_shared/mlb-statsapi";
 
 // Final review, Sep 24 2026: "Who is pitching for the Pirates today?" after
@@ -82,5 +82,43 @@ describe("chat MLB starters context", () => {
     const next = nextMatchupForTeam(chatStarterGames([stlPit, pitDet]), "Pittsburgh Pirates", now);
     expect(next?.matchup.game.gamePk).toBe(824220);
     expect(next?.isHome).toBe(false);
+  });
+});
+
+// Final review, Sep 25 2026: doubleheader game 2 read "Fri 4:10 PM ET", MLB's
+// placeholder five minutes after game 1, though MLB lists its time as TBD
+// (ESPN and the slate had 7:05 PM ET).
+describe("chat MLB starters: a first pitch MLB has not set", () => {
+  const TBD = { startTimeTBD: true, gameNumber: 2, scheduleDay: "2026-09-25", officialDate: "2026-09-25" };
+  const game1: ProbableMatchup = {
+    game: mk(823489, "2026-09-25T20:05:00Z", [110, "Baltimore Orioles"], [147, "New York Yankees"]),
+    away: { ...pitcher(6, "Trevor Rogers"), hand: "L" },
+    home: null,
+  };
+  const game2: ProbableMatchup = {
+    game: mk(823491, "2026-09-25T20:10:00Z", [110, "Baltimore Orioles"], [147, "New York Yankees"], TBD),
+    away: pitcher(7, "Brandon Young"),
+    home: null,
+  };
+
+  it("prints 'time TBD', never the placeholder, for doubleheader game 2", () => {
+    expect(starterLine(game2)).toBe("• Fri, time TBD: Baltimore Orioles (Brandon Young, RHP) @ New York Yankees (TBD)");
+    expect(starterLine(game2)).not.toMatch(/4:10/);
+  });
+
+  it("keeps game 1's real first pitch", () => {
+    expect(starterLine(game1)).toMatch(/^• Fri 4:05\sPM ET: Baltimore Orioles \(Trevor Rogers, LHP\) @ New York Yankees \(TBD\)$/);
+  });
+
+  it("drops the time once game 2 is under way or over (MLB keeps the TBD flag)", () => {
+    const live = { ...game2, game: { ...game2.game, ...LIVE, away: { ...game2.game.away, score: 2 }, home: { ...game2.game.home, score: 1 } } };
+    expect(gameTimeLabel(live.game)).toBe("Fri");
+    expect(starterLine(live)).toBe("• Fri [IN PROGRESS: Baltimore Orioles 2, New York Yankees 1]: Baltimore Orioles (Brandon Young, RHP) @ New York Yankees (starter not listed)");
+    expect(gameTimeLabel({ ...game2.game, ...FINAL })).toBe("Fri");
+  });
+
+  it("labels hit-streak next games the same way", () => {
+    expect(gameTimeLabel(game2.game)).toBe("Fri, time TBD");
+    expect(gameTimeLabel(game1.game)).toMatch(/^Fri 4:05\sPM ET$/);
   });
 });

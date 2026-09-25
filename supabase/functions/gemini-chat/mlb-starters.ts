@@ -36,6 +36,19 @@ export function etGameTime(iso: string): string {
   });
 }
 
+/**
+ * "Fri 7:05 PM ET". MLB sets no first pitch for a traditional doubleheader's
+ * game 2 (startTimeTBD, still set after it is played) and its gameDate is a
+ * placeholder: Orioles @ Yankees game 2 read "Fri 4:10 PM ET", five minutes
+ * after game 1 (Sep 25 2026). Such a game reads "Fri, time TBD", or just "Fri"
+ * once under way (its state label follows).
+ */
+export function gameTimeLabel(game: MlbScheduleGame): string {
+  if (!game.startTimeTBD) return `${etGameTime(game.gameDate)} ET`;
+  const day = new Date(`${game.scheduleDay}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
+  return game.state === "pre" ? `${day}, time TBD` : day;
+}
+
 /** "FINAL: St. Louis Cardinals 1, Pittsburgh Pirates 2", "IN PROGRESS: ...", "SUSPENDED: ..."; null before first pitch. */
 export function gameStateLabel(game: MlbScheduleGame): string | null {
   const label = game.isFinal
@@ -55,5 +68,5 @@ export function starterLine(m: ProbableMatchup): string {
   const state = gameStateLabel(m.game);
   // A game under way with no listed starter: "TBD" would read as not yet decided
   const who = (line: PitcherLine | null) => (line || !state ? pitcherBrief(line) : "starter not listed");
-  return `• ${etGameTime(m.game.gameDate)} ET${state ? ` [${state}]` : ""}: ${m.game.away.name} (${who(m.away)}) @ ${m.game.home.name} (${who(m.home)})`;
+  return `• ${gameTimeLabel(m.game)}${state ? ` [${state}]` : ""}: ${m.game.away.name} (${who(m.away)}) @ ${m.game.home.name} (${who(m.home)})`;
 }

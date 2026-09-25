@@ -14,7 +14,7 @@ import { FollowButton } from "@/components/ui/FollowButton";
 import { GameInsightsSheet } from "@/components/games/GameInsightsSheet";
 import { useLiveScores } from "@/hooks/useLiveScores";
 import { useMlbProbables } from "@/hooks/useMlbProbables";
-import { isLiveStatus, isFinalStatus } from "@/lib/gameStatus";
+import { isLiveStatus, isFinalStatus, isCalledOffStatus } from "@/lib/gameStatus";
 import { findMatchupForGame } from "@/services/mlb/probablePitchers";
 import { ProbablePitcherRow } from "@/components/mlb/ProbablePitcher";
 import { nickname } from "@/lib/teamNames";
@@ -105,7 +105,8 @@ export function MLBSlate() {
 
       if (gamesError) throw new Error(gamesError.message);
 
-      const upcomingGames = (gamesData || []).filter((game) => !isFinalStatus(game.status));
+      // Postponed and canceled games (and ones that left their date) are not upcoming
+      const upcomingGames = (gamesData || []).filter((game) => !isFinalStatus(game.status) && !isCalledOffStatus(game.status));
       setGames(upcomingGames as unknown as Game[]);
       hasSlate.current = true;
       setLoadFailed(false);

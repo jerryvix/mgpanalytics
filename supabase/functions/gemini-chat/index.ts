@@ -13,7 +13,7 @@ import {
   type ProbableMatchup,
   type ProjectionRow,
 } from "../_shared/mlb-statsapi.ts";
-import { chatStarterGames, etGameTime, pitcherBrief, starterLine } from "./mlb-starters.ts";
+import { chatStarterGames, gameTimeLabel, pitcherBrief, starterLine } from "./mlb-starters.ts";
 
 // Rate limit: max requests per user per window
 const RATE_LIMIT_MAX = 10;
@@ -350,6 +350,13 @@ function upcomingKickoff(g: { date: string; time_tbd?: boolean | null }): string
   })} ET`;
 }
 
+// Postponed and canceled games are not upcoming games. ESPN keeps a rainout
+// on its original date, and sync-mlb-games marks a game that left its date
+// the same way (the app hides them too: src/lib/gameStatus.ts isCalledOffStatus).
+function calledOff(status: string | null | undefined): boolean {
+  return /postpone|cancel/i.test(status ?? "");
+}
+
 // ============================================================
 // STAT-LEADER DETECTION: grounds "who leads/most/top in <stat>" questions
 // in our own player_season_stats (the exact data the Players pages show), so
@@ -564,8 +571,9 @@ async function fetchRelevantData(
       .order("date", { ascending: true })
       .limit(10);
 
-    if (games?.length) {
-      fetchedData.games = games;
+    const upcoming = (games ?? []).filter((g: { status?: string | null }) => !calledOff(g.status));
+    if (upcoming.length) {
+      fetchedData.games = upcoming;
       sources.push({
         provider: "mgp_database",
         endpoint: `${league}/games`,
@@ -711,7 +719,7 @@ async function fetchRelevantData(
               slg: s.slugging_pct,
               home_runs: s.home_runs,
               next_opponent: next ? (next.isHome ? next.matchup.game.away.name : next.matchup.game.home.name) : null,
-              next_game_time: next ? next.matchup.game.gameDate : null,
+              next_game_time: next ? gameTimeLabel(next.matchup.game) : null,
               next_starter: next ? pitcherBrief(starter) : null,
             };
           })
@@ -1109,8 +1117,9 @@ async function fetchMultiSportData(
         .order("date", { ascending: true })
         .limit(10);
 
-      if (games?.length) {
-        gamesBySport[sport] = games;
+      const upcoming = (games ?? []).filter((g: { status?: string | null }) => !calledOff(g.status));
+      if (upcoming.length) {
+        gamesBySport[sport] = upcoming;
         sources.push({
           provider: "mgp_database",
           endpoint: `${sport}/games`,
@@ -1120,7 +1129,7 @@ async function fetchMultiSportData(
 
         // Fetch odds scoped to these games
         if (oddsTable && (intent === "odds" || intent === "general" || intent === "games" || intent === "favored")) {
-          const gameIds = games.map((g: any) => g.id);
+          const gameIds = upcoming.map((g: any) => g.id);
           const { data: rawOdds } = await supabase
             .from(oddsTable)
             .select("*")
@@ -1388,7 +1397,7 @@ function formatDataForPrompt(data: FetchedData, sources: SourceRef[], intent?: s
         ? ` (season ${f3(s.season_avg)}/${f3(s.obp)}/${f3(s.slg)}, ${s.home_runs ?? 0} HR)`
         : s.season_avg != null ? ` (season ${f3(s.season_avg)})` : "";
       const next = s.next_opponent
-        ? `; next: vs ${s.next_opponent}, ${etGameTime(s.next_game_time)} ET, facing ${s.next_starter}`
+        ? `; next: vs ${s.next_opponent}, ${s.next_game_time}, facing ${s.next_starter}`
         : "";
       prompt += `• ${s.name}${s.team ? ` (${s.team})` : ""}: ${s.streak}-game hit streak${sAvg}${season}${next}\n`;
     });

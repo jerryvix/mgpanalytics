@@ -15,6 +15,15 @@ import {
   statsapiJson,
   type MlbScheduleGame,
 } from "../_shared/mlb-statsapi.ts";
+import {
+  espnEventId,
+  groupByMatchup,
+  pairGames,
+  planStranded,
+  strandedRows,
+  type CoreEvent,
+  type RowFix,
+} from "./reconcile.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,6 +45,11 @@ const DATE_CONCURRENCY = 4;
 // statsapi games we write carry this prefix until ESPN serves the same game,
 // at which point the row is adopted (renamed) instead of duplicated.
 const MLBAPI_PREFIX = "mlbapi_";
+// ESPN's core API has an event's current date and status. It is asked only
+// about games the scoreboard mirror and MLB disagree on (normally none), and
+// at most this many per run (reconcile.ts).
+const CORE_EVENTS = "https://sports.core.api.espn.com/v2/sports/baseball/leagues/mlb/events";
+const MAX_CORE_LOOKUPS = 12;
 
 interface ESPNGame {
   id: string;
@@ -116,47 +130,28 @@ async function mapPool<T, R>(items: T[], limit: number, fn: (item: T) => Promise
 }
 
 /**
- * Pair two lists of the same matchup on the same day. Equal counts pair in
- * start order (doubleheader game 1 with game 1). If the sources disagree on the
- * count (one has not posted game 2 yet), pair by closest first pitch within 3h
- * and leave the rest unpaired: never give one game's result to both.
+ * An event's current date and status from ESPN's core API: "missing" when
+ * ESPN has no such event, null when it could not be read.
  */
-function pairGames<A, B>(as: A[], bs: B[], timeA: (a: A) => number, timeB: (b: B) => number): Map<A, B> {
-  const out = new Map<A, B>();
-  if (as.length === bs.length) {
-    as.forEach((a, i) => out.set(a, bs[i]));
-    return out;
-  }
-  const used = new Set<B>();
-  for (const a of as) {
-    let best: B | null = null;
-    let gap = Infinity;
-    for (const b of bs) {
-      if (used.has(b)) continue;
-      const d = Math.abs(timeA(a) - timeB(b));
-      if (d < gap) {
-        gap = d;
-        best = b;
-      }
+async function fetchCoreEvent(id: string): Promise<CoreEvent | "missing" | null> {
+  try {
+    const res = await espnFetch(`${CORE_EVENTS}/${id}`);
+    if (res.status === 404) return "missing";
+    if (!res.ok) return null;
+    const event = await res.json();
+    if (typeof event?.date !== "string") return null;
+    let status: string | null = null;
+    const ref = event.competitions?.[0]?.status?.$ref;
+    if (typeof ref === "string") {
+      // Unread, the status stays null: the date alone still places the game
+      const st = await espnFetch(ref.replace(/^http:/, "https:")).catch(() => null);
+      if (st?.ok) status = (await st.json().catch(() => null))?.type?.name ?? null;
     }
-    if (best !== null && gap <= 3 * 3600_000) {
-      out.set(a, best);
-      used.add(best);
-    }
+    return { date: event.date, status };
+  } catch (err) {
+    console.error(`ESPN core event ${id} failed:`, err);
+    return null;
   }
-  return out;
-}
-
-/** Group games by scoreboard day + matchup, each group in start order. */
-function groupByMatchup<T>(items: T[], keyOf: (t: T) => string, timeOf: (t: T) => number): Map<string, T[]> {
-  const map = new Map<string, T[]>();
-  for (const it of items) {
-    const k = keyOf(it);
-    if (!map.has(k)) map.set(k, []);
-    map.get(k)!.push(it);
-  }
-  for (const list of map.values()) list.sort((a, b) => timeOf(a) - timeOf(b));
-  return map;
 }
 
 serve(async (req) => {
@@ -369,6 +364,67 @@ serve(async (req) => {
     }
     const mlbTwin = (e: ESPNGame): MlbScheduleGame | null => twinOf.get(e) ?? null;
 
+    // ---- Games that left their date (reconcile.ts) ----
+    // A row the scoreboard stopped listing where we have it, or a pre-game
+    // listing MLB has no game for that day, may have been rescheduled while
+    // the mirror lags: ask ESPN's core API where the event is now.
+    const forwardEnd = forwardDays[forwardDays.length - 1];
+    const mlbKeys = mlbGames.length ? new Set(mlbByKey.keys()) : null;
+    const stranded = strandedRows(existing, {
+      fromDay: today,
+      toDay: forwardEnd,
+      servedDays: new Set(okDays),
+      listedIds: seenEspn,
+      mlbKeys,
+    });
+    const unconfirmed = mlbKeys
+      ? uniqueEvents.filter((e) => {
+        const day = etDate(e.date);
+        return day >= today && day <= forwardEnd && e.status?.type?.state === "pre" && !twinOf.has(e);
+      })
+      : [];
+    const coreIds = [...new Set([...stranded.map((r) => espnEventId(r.external_id)!), ...unconfirmed.map((e) => e.id)])]
+      .slice(0, MAX_CORE_LOOKUPS);
+    const coreEvents = new Map(await mapPool(coreIds, DATE_CONCURRENCY, async (id) => [id, await fetchCoreEvent(id)] as const));
+
+    let rescheduled = 0;
+    let calledOff = 0;
+    const movedRows: ExistingRow[] = [];
+    for (const row of stranded) {
+      const core = coreEvents.get(espnEventId(row.external_id)!);
+      if (core === undefined) continue; // over the lookup cap: next run
+      const mlbHasGame = mlbKeys ? mlbKeys.has(matchupKey(etDate(row.date), row.visitor_team_name, row.home_team_name)) : null;
+      const fix = planStranded(row, core, mlbHasGame);
+      if (!fix) continue;
+      const { error } = await supabase.from("mlb_games").update({ ...fix, updated_at: new Date().toISOString() }).eq("id", row.id);
+      if (error) {
+        console.error(`Rescheduling ${row.external_id} failed:`, error);
+        continue;
+      }
+      console.log(`${row.external_id} (${row.visitor_team_name} @ ${row.home_team_name}, ${row.date}) left its date: ${JSON.stringify(fix)}`);
+      Object.assign(row, fix); // the statsapi fallback below pairs on the corrected row
+      if (fix.date) {
+        rescheduled++;
+        movedRows.push(row);
+      } else {
+        calledOff++;
+      }
+    }
+    // The mirror can also still list a moved game on its old day. The upsert
+    // writes the corrected date; the statsapi fallback pairs on it as well, or
+    // a failed new day would get a duplicate statsapi row for the same game.
+    const mirrorFixes = new Map<string, RowFix>();
+    for (const e of unconfirmed) {
+      const core = coreEvents.get(e.id);
+      const fix = core === undefined ? null : planStranded({ date: e.date, status: e.status?.type?.name ?? null }, core, true);
+      if (!fix) continue;
+      mirrorFixes.set(e.id, fix);
+      if (fix.date) {
+        const row = existing.find((r) => r.external_id === `espn_mlb_${e.id}`);
+        if (row) row.date = fix.date;
+      }
+    }
+
     let probablesFromMlb = 0;
     let finalsFromMlb = 0;
     let scoreCorrections = 0;
@@ -402,8 +458,10 @@ serve(async (req) => {
           startTimesFromMlb++;
         }
       }
+      const mirrorFix = mirrorFixes.get(game.id);
+      if (mirrorFix?.date) date = mirrorFix.date;
 
-      let status = game.status?.type?.name || "scheduled";
+      let status = mirrorFix?.status || game.status?.type?.name || "scheduled";
       let isCompleted = game.status?.type?.completed === true;
       let homeScore = homeTeam?.score ? parseInt(homeTeam.score) : null;
       let awayScore = awayTeam?.score ? parseInt(awayTeam.score) : null;
@@ -538,14 +596,19 @@ serve(async (req) => {
       insertedData.push(...(data || []));
     }
     const insertedCount = insertedData.length;
-    console.log(`Upserted ${insertedCount} MLB games (${gamesToUpsert.length} ESPN, ${fallbackInserts.length} statsapi), updated ${fallbackUpdated} via statsapi, adopted ${adopted}`);
+    console.log(`Upserted ${insertedCount} MLB games (${gamesToUpsert.length} ESPN, ${fallbackInserts.length} statsapi), updated ${fallbackUpdated} via statsapi, adopted ${adopted}, rescheduled ${rescheduled}, called off ${calledOff}`);
 
     // Fetch DraftKings lines from ESPN (free, keyless). ESPN event ids come
     // straight from external_id, so doubleheaders and the score-update
-    // lookback can't steal odds from the wrong game.
-    if (insertedData.length > 0) {
+    // lookback can't steal odds from the wrong game. Rescheduled rows are not
+    // in the upsert, so they join here: their stored lines predate the move.
+    const oddsPool = [
+      ...insertedData,
+      ...movedRows.map((r) => ({ id: r.id, external_id: r.external_id ?? "", date: r.date, is_final: r.is_final })),
+    ];
+    if (oddsPool.length > 0) {
       try {
-        const oddsTargets = insertedData
+        const oddsTargets = oddsPool
           .filter((g) => {
             if (g.is_final || !g.external_id?.startsWith("espn_mlb_")) return false;
             return g.date && new Date(g.date) >= now;
@@ -599,6 +662,10 @@ serve(async (req) => {
       statsapi_games_inserted: fallbackInserts.length,
       statsapi_games_updated: fallbackUpdated,
       mlbapi_rows_adopted: adopted,
+      espn_core_lookups: coreIds.length,
+      rows_rescheduled: rescheduled,
+      rows_called_off: calledOff,
+      mirror_listings_corrected: mirrorFixes.size,
       probables_from_mlb: probablesFromMlb,
       finals_from_mlb: finalsFromMlb,
       score_corrections_from_mlb: scoreCorrections,
@@ -617,7 +684,7 @@ serve(async (req) => {
 
     await completeSyncLog(supabase, syncLogId, syncStartTime, {
       status: "success",
-      records_added: insertedCount + fallbackUpdated,
+      records_added: insertedCount + fallbackUpdated + rescheduled + calledOff,
       details,
     });
 

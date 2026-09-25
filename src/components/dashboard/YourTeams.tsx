@@ -8,6 +8,7 @@ import { useFollows, FollowRow } from "@/hooks/useFollows";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { tbdKickoffLabel } from "@/lib/kickoff";
 import { displayTeamName } from "@/lib/teamNames";
+import { isCalledOffStatus } from "@/lib/gameStatus";
 
 const SPORT_TABLE: Record<string, { table: string; league?: string; slug: string }> = {
   NFL: { table: "games", league: "NFL", slug: "nfl" },
@@ -49,7 +50,7 @@ async function loadFollowedGames(teamFollows: FollowRow[]): Promise<NextGame[]> 
       .from(cfg.table as "games")
       // NCAAF rows also carry time_tbd; "*" keeps this working on a database
       // that predates that column.
-      .select(sport === "NCAAF" ? "*" : "home_team_name, visitor_team_name, date")
+      .select(sport === "NCAAF" ? "*" : "home_team_name, visitor_team_name, date, status")
       .gte("date", nowIso)
       .or(`home_team_name.in.(${list}),visitor_team_name.in.(${list})`)
       .order("date", { ascending: true })
@@ -60,6 +61,7 @@ async function loadFollowedGames(teamFollows: FollowRow[]): Promise<NextGame[]> 
     // earliest upcoming game per followed team
     const seen = new Set<string>();
     for (const g of (data || []) as any[]) {
+      if (isCalledOffStatus(g.status)) continue; // postponed or canceled: not the next game
       for (const team of teams) {
         if (seen.has(team)) continue;
         const isHome = g.home_team_name === team;

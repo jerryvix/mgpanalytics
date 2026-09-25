@@ -31,6 +31,7 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { withStoredLine } from "@/lib/marketPulse";
 import { fetchStoredLines } from "@/lib/storedLines";
 import { postedMlbOdds } from "@/lib/mlbRunLine";
+import { isCalledOffStatus } from "@/lib/gameStatus";
 
 interface Game {
   id: number | string;
@@ -275,7 +276,8 @@ export function DashboardHome() {
             .limit(10);
           data = extended;
         }
-        mlbGames = data;
+        // Postponed and canceled games (and ones that left their date) are not upcoming
+        mlbGames = (data ?? []).filter((g) => !isCalledOffStatus(g.status));
       }
 
       if (effectiveSports.includes("NCAAF")) {

@@ -9,6 +9,7 @@ import { MLBSlatePlayerCard } from "@/components/mlb/MLBSlatePlayerCard";
 import { HitStreakTable, HitStreakRow } from "@/components/mlb/HitStreakTable";
 import { selectAll } from "../../supabase/functions/_shared/select-all";
 import { queryView } from "@/lib/queryView";
+import { isCalledOffStatus } from "@/lib/gameStatus";
 
 const mlbSeason = () => new Date().getFullYear();
 
@@ -96,13 +97,14 @@ async function loadMlbPlayers() {
   // MLB's live schedule first), so a failure here degrades, not errors.
   const { data: games, error: gamesError } = await supabase
     .from("mlb_games")
-    .select("home_team_name, visitor_team_name, date, starting_pitcher_home, starting_pitcher_away")
+    .select("home_team_name, visitor_team_name, date, status, starting_pitcher_home, starting_pitcher_away")
     .gte("date", new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString())
     .lte("date", in7)
     .order("date", { ascending: true });
   if (gamesError) console.error("MLB next-game fallback unavailable:", gamesError.message);
   const nextByTeam = new Map<string, { opponent: string; pitcher: string | null; date: string }>();
   for (const g of games || []) {
+    if (isCalledOffStatus(g.status)) continue; // postponed or canceled: not his next game
     if (!nextByTeam.has(g.home_team_name)) {
       nextByTeam.set(g.home_team_name, { opponent: g.visitor_team_name, pitcher: g.starting_pitcher_away, date: g.date });
     }

@@ -21,3 +21,13 @@ export function isLiveStatus(status: string | null | undefined): boolean {
 export function isFinalStatus(status: string | null | undefined): boolean {
   return (status || "").toLowerCase().includes("final");
 }
+
+/**
+ * Postponed or canceled: no game at the listed time, so upcoming lists hide it
+ * like a final. ESPN keeps a rainout on its original date as STATUS_POSTPONED,
+ * and sync-mlb-games marks a game that neither ESPN nor MLB lists on its date
+ * any more the same way (supabase/functions/sync-mlb-games/reconcile.ts).
+ */
+export function isCalledOffStatus(status: string | null | undefined): boolean {
+  return /postpone|cancel/i.test(status || "");
+}

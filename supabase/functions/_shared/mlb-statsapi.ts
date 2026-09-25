@@ -514,7 +514,13 @@ export function announcedNearby(
   });
 }
 
-/** Pair each statsapi game with its mlb_games row: same Eastern day and matchup, closest first pitch. */
+/**
+ * Pair each statsapi game with its mlb_games row: same Eastern day and
+ * matchup, closest first pitch, closest pairs first. First-come pairing gave
+ * doubleheader game 1 (Orioles @ Yankees, Sep 25 2026: moved in from
+ * Saturday, no row yet) game 2's only row, so game 1 showed game 2's
+ * projected starter.
+ */
 export function matchProjectionRows(
   games: MlbScheduleGame[],
   rows: ProjectionRow[],
@@ -525,24 +531,21 @@ export function matchProjectionRows(
     if (!byKey.has(k)) byKey.set(k, []);
     byKey.get(k)!.push(r);
   }
-  const out = new Map<number, ProjectionRow>();
-  const used = new Set<ProjectionRow>();
+  const near: Array<{ gamePk: number; row: ProjectionRow; gap: number }> = [];
   for (const g of games) {
     if (g.isPlaceholder) continue;
-    const cands = (byKey.get(matchupKey(g.scheduleDay, g.away.name, g.home.name)) ?? []).filter((r) => !used.has(r));
-    let best: ProjectionRow | null = null;
-    let gap = Infinity;
-    for (const r of cands) {
-      const d = Math.abs(Date.parse(r.date) - Date.parse(g.gameDate));
-      if (d < gap) {
-        gap = d;
-        best = r;
-      }
+    for (const row of byKey.get(matchupKey(g.scheduleDay, g.away.name, g.home.name)) ?? []) {
+      const gap = Math.abs(Date.parse(row.date) - Date.parse(g.gameDate));
+      if (gap <= 6 * 3600_000) near.push({ gamePk: g.gamePk, row, gap });
     }
-    if (best && gap <= 6 * 3600_000) {
-      out.set(g.gamePk, best);
-      used.add(best);
-    }
+  }
+  near.sort((a, b) => a.gap - b.gap);
+  const out = new Map<number, ProjectionRow>();
+  const used = new Set<ProjectionRow>();
+  for (const { gamePk, row } of near) {
+    if (out.has(gamePk) || used.has(row)) continue;
+    out.set(gamePk, row);
+    used.add(row);
   }
   return out;
 }

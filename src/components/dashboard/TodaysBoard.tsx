@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TeamLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { useLiveScores } from "@/hooks/useLiveScores";
-import { isFinalStatus } from "@/lib/gameStatus";
+import { isCalledOffStatus, isFinalStatus } from "@/lib/gameStatus";
 import { fmtAmerican } from "@/lib/odds";
 import { gameMoves, onePerMarket, type BoardMove } from "@/lib/boardMoves";
 import { historyOpens } from "@/hooks/useMarketPulse";
@@ -102,7 +102,9 @@ async function loadBoard(sport: BoardSport) {
     if (sport === "NFL") gq = gq.eq("league", "NFL");
     return gq;
   });
-  const list = (games as unknown as BoardGame[]).filter((g) => !isFinalStatus(g.status));
+  // Postponed and canceled games (and ones that left their date) are not on the board
+  const isUpcoming = (g: BoardGame) => !isFinalStatus(g.status) && !isCalledOffStatus(g.status);
+  const list = (games as unknown as BoardGame[]).filter(isUpcoming);
 
   // Quiet stretch (preseason, bye weekends): pull the next scheduled slate so
   // the board previews what's coming instead of dead-ending.
@@ -116,7 +118,7 @@ async function loadBoard(sport: BoardSport) {
       .limit(6);
     if (sport === "NFL") nq = nq.eq("league", "NFL");
     const { data: next } = await nq;
-    nextGames = ((next || []) as unknown as BoardGame[]).filter((g) => !isFinalStatus(g.status));
+    nextGames = ((next || []) as unknown as BoardGame[]).filter(isUpcoming);
   }
 
   // DraftKings lines for the grid
