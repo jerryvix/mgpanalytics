@@ -9,9 +9,10 @@ import { toast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 
 // sync-mlb-games takes { startDate, endDate } and re-pulls at most this many
-// days per run (MAX_EXPLICIT_DAYS). Its self-heal only looks back 45 days, so
-// March-July 2026 stayed "scheduled" with 0-0 scores until backfilled.
-const MAX_BACKFILL_DAYS = 60;
+// days per run (its MAX_EXPLICIT_DAYS, sized to the edge function's 2s CPU
+// budget). Its self-heal only looks back 45 days, so March-July 2026 stayed
+// "scheduled" with 0-0 scores until backfilled.
+const MAX_BACKFILL_DAYS = 21;
 
 /** Why a backfill range cannot run, or null. Dates are YYYY-MM-DD (date inputs). */
 function backfillRangeProblem(start: string, end: string): string | null {
@@ -19,6 +20,30 @@ function backfillRangeProblem(start: string, end: string): string | null {
   if (end < start) return "The end date is before the start date.";
   const days = Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / 86_400_000) + 1;
   return days > MAX_BACKFILL_DAYS ? `That is ${days} days; backfill at most ${MAX_BACKFILL_DAYS} per run.` : null;
+}
+
+/**
+ * What a sync-mlb-games call actually returned. supabase-js hides the JSON
+ * body on a non-2xx response, and a 200 can still carry { success: false }.
+ */
+async function invokeOutcome(
+  data: { success?: boolean; error?: string; message?: string; gamesCount?: number } | null,
+  error: unknown,
+  fallback: string,
+): Promise<{ ok: boolean; text: string }> {
+  if (error) {
+    let detail = error instanceof Error ? error.message : (error as { message?: string })?.message;
+    const ctx = (error as { context?: Response }).context;
+    if (ctx && typeof ctx.json === "function") {
+      try {
+        const body = await ctx.json();
+        if (body?.error) detail = body.error;
+      } catch { /* not JSON */ }
+    }
+    return { ok: false, text: detail || fallback };
+  }
+  if (!data || data.success === false) return { ok: false, text: data?.error || fallback };
+  return { ok: true, text: data.message || `Synced ${data.gamesCount ?? 0} games` };
 }
 
 // Baseball icon component
@@ -66,8 +91,6 @@ export function MLBSyncCard() {
   const [backfillResult, setBackfillResult] = useState<{ ok: boolean; text: string } | null>(null);
   const rangeProblem = backfillRangeProblem(backfillStart, backfillEnd);
 
-  // Reports what the function actually returned, including its error body
-  // (supabase-js hides it on a non-2xx response).
   const handleBackfill = async () => {
     if (rangeProblem) return;
     setIsBackfilling(true);
@@ -77,22 +100,9 @@ export function MLBSyncCard() {
       const { data, error } = await supabase.functions.invoke("sync-mlb-games", {
         body: { startDate: backfillStart, endDate: backfillEnd },
       });
-      if (error) {
-        let detail = error.message;
-        const ctx = (error as { context?: Response }).context;
-        if (ctx && typeof ctx.json === "function") {
-          try {
-            const body = await ctx.json();
-            if (body?.error) detail = body.error;
-          } catch { /* not JSON */ }
-        }
-        result = { ok: false, text: `Backfill failed: ${detail || "no response"}` };
-      } else if (!data || data.success === false) {
-        result = { ok: false, text: `Backfill failed: ${data?.error || "no result"}` };
-      } else {
-        result = { ok: true, text: data.message || `Synced ${data.gamesCount ?? 0} games` };
-        await fetchCounts();
-      }
+      const outcome = await invokeOutcome(data, error, "no result");
+      result = outcome.ok ? outcome : { ok: false, text: `Backfill failed: ${outcome.text}` };
+      if (outcome.ok) await fetchCounts();
     } catch (err) {
       console.error("MLB backfill error:", err);
       if (err instanceof Error && err.message) result = { ok: false, text: `Backfill failed: ${err.message}` };
@@ -102,38 +112,36 @@ export function MLBSyncCard() {
     setBackfillResult(result);
   };
 
+  // Records and reports what the function actually returned. This used to
+  // write "success" and toast "Synced" even when the call failed, as the NCAAF
+  // card once did.
   const handleSync = async () => {
     setIsSyncing(true);
+    let outcome = { ok: false, text: "Failed to sync MLB games" };
     try {
       const { data, error } = await supabase.functions.invoke("sync-mlb-games");
-      
-      if (error) {
-        console.error("Sync error:", error);
-      }
-
-      // Update sync schedule
+      outcome = await invokeOutcome(data, error, outcome.text);
       await supabase.from("sync_schedule").upsert({
         sport: "MLB",
         data_type: "games",
         last_sync_at: new Date().toISOString(),
-        last_sync_status: "success",
+        last_sync_status: outcome.ok ? "success" : "failed",
+        records_synced: outcome.ok ? data?.gamesCount ?? 0 : 0,
+        error_message: outcome.ok ? null : outcome.text,
       }, { onConflict: "sport,data_type" });
-
       await fetchCounts();
-
-      toast({
-        title: "MLB Games Synced",
-        description: data?.message || `Synced ${data?.gamesCount || 0} games`,
-      });
     } catch (error) {
       console.error("Sync error:", error);
-      toast({
-        title: "Sync Failed",
-        description: "Failed to sync MLB games",
-        variant: "destructive",
-      });
+      if (error instanceof Error && error.message) outcome = { ok: false, text: error.message };
     } finally {
       setIsSyncing(false);
+    }
+
+    if (outcome.ok) {
+      toast({ title: "MLB Games Synced", description: outcome.text });
+    } else {
+      console.error("MLB sync failed:", outcome.text);
+      toast({ title: "MLB Sync Failed", description: outcome.text, variant: "destructive" });
     }
   };
 

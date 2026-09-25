@@ -26,10 +26,10 @@ import {
   groupByMatchup,
   indexMlbSchedule,
   isStorableMlbGame,
+  listingStep,
   listingsToStore,
   mlbLists,
   pairGames,
-  planListing,
   planStranded,
   strandedRows,
   unconfirmedListings,
@@ -52,7 +52,13 @@ const DAYS_AHEAD = 4;
 // after a fix repairs them without anyone remembering to run a backfill.
 const BACKFILL_LOOKBACK_DAYS = 45;
 const BACKFILL_MAX_DAYS = 40;
-const MAX_EXPLICIT_DAYS = 60;
+// Days an explicit { startDate, endDate } backfill covers per run (the range
+// is cut to this; the response's explicit_range says what ran). Edge
+// functions get 2s of CPU, and each ESPN day costs about 12ms of JSON work
+// here (the CDN fallback parses, re-serializes and the caller parses again):
+// measured locally, a 21-day run took about 0.4s of CPU and a 60-day run up
+// to 0.85s, too close to the limit on a slower host.
+const MAX_EXPLICIT_DAYS = 21;
 const DATE_CONCURRENCY = 4;
 // statsapi games we write carry this prefix until ESPN serves the same game,
 // at which point the row is adopted (renamed) instead of duplicated.
@@ -455,10 +461,12 @@ serve(async (req) => {
         const core = coreEvents.get(e.id);
         if (core === undefined) continue;
         const row = existing.find((r) => r.external_id === `espn_mlb_${e.id}`);
-        const fix = planListing({ date: e.date, status: e.status?.type?.name ?? null }, core);
+        const stored = row?.date ?? null;
+        const { fix, date, moved } = listingStep({ date: e.date, status: e.status?.type?.name ?? null }, core, stored);
         if (!fix) continue;
         mirrorFixes.set(e.id, fix);
         if (fix.date && row) row.date = fix.date;
+        if (moved) console.log(`espn_mlb_${e.id} (${e.name}): the mirror lists ${e.date}, ESPN's core has ${date}; stored ${stored}`);
       } catch (err) {
         console.error(`Checking ESPN listing ${e.id} failed:`, err);
       }

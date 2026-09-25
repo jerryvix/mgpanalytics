@@ -9,6 +9,7 @@ import {
   indexMlbSchedule,
   isPlaceholderListing,
   isStorableMlbGame,
+  listingStep,
   listingsToStore,
   mlbLists,
   pairGames,
@@ -412,32 +413,61 @@ describe("planStranded: what to write", () => {
   });
 });
 
-describe("planListing: a mirror listing MLB does not confirm", () => {
+// QC rounds 3 and 4: 3a4f991 took a core date equal to the row's stored date
+// for a stale cached copy. The stored date is the previous run's own write, so
+// the runs wrote Friday, Saturday, Friday... These tests feed each run's
+// written date into the next run, as the sync does.
+describe("listingStep: a mirror listing MLB does not confirm, over consecutive runs", () => {
+  const FRI = "2026-09-25T20:05Z";
+  const SAT = "2026-09-26T23:15Z";
   // 23:36 UTC Sep 24: the mirror still listed the game on Saturday; core had Friday
-  const staleListing = { date: "2026-09-26T23:15Z", status: "STATUS_SCHEDULED" };
-  const coreFriday = { date: "2026-09-25T20:05Z", status: "STATUS_SCHEDULED" };
-  // What the upsert writes for the listing this run
-  const written = (listing: { date: string; status: string }, core: Parameters<typeof planListing>[1]) =>
-    planListing(listing, core)?.date ?? listing.date;
+  const staleListing = { date: SAT, status: "STATUS_SCHEDULED" };
+  const coreFriday = { date: FRI, status: "STATUS_SCHEDULED" };
+  type Core = Parameters<typeof listingStep>[1];
+  type Step = (listing: { date: string; status: string }, core: Core, storedDate: string | null) => { date: string };
+  // n runs of the sync: each run's written date is the next run's stored date
+  const runs = (step: Step, listing: { date: string; status: string }, core: Core, stored: string | null, n = 3) => {
+    const written: string[] = [];
+    for (let i = 0; i < n; i++) {
+      stored = step(listing, core, stored).date;
+      written.push(stored);
+    }
+    return written;
+  };
+  // 3a4f991's listing step, to show these runs catch its flip
+  const step3a4f991: Step = (listing, core, storedDate) => {
+    const fix = planListing(listing, core);
+    const same = (a: string, b: string) => Date.parse(a) === Date.parse(b);
+    const staleCopy = !!fix?.date && !!storedDate && same(fix.date, storedDate) && !same(listing.date, storedDate);
+    return { date: staleCopy ? listing.date : fix?.date ?? listing.date };
+  };
 
   it("moves a listing still on its old day to ESPN's new date, and never hides one", () => {
-    expect(planListing(staleListing, coreFriday)).toEqual({ date: "2026-09-25T20:05Z" });
-    expect(planListing(staleListing, "missing")).toBeNull();
-    expect(planListing(staleListing, null)).toBeNull();
+    expect(listingStep(staleListing, coreFriday, sat.date)).toEqual({ fix: { date: FRI }, date: FRI, moved: true });
+    expect(listingStep(staleListing, "missing", sat.date)).toEqual({ fix: null, date: SAT, moved: false });
+    expect(listingStep(staleListing, null, sat.date).fix).toBeNull();
   });
 
-  // QC round 3: a stored-date guard read run 1's own write as a stale core copy,
-  // so the runs wrote Friday, Saturday, Friday, Saturday...
-  it("keeps Friday on three consecutive runs while the mirror still shows Saturday", () => {
-    expect([1, 2, 3].map(() => written(staleListing, coreFriday))).toEqual(["2026-09-25T20:05Z", "2026-09-25T20:05Z", "2026-09-25T20:05Z"]);
+  it("keeps Friday on three consecutive runs while the mirror still shows Saturday (the 23:36 UTC state)", () => {
+    expect(runs(listingStep, staleListing, coreFriday, sat.date)).toEqual([FRI, FRI, FRI]);
+    expect(runs(step3a4f991, staleListing, coreFriday, sat.date)).toEqual([FRI, SAT, FRI]);
   });
 
   it("keeps a game moved later on its new day while the mirror lists both days", () => {
     // Moved Tuesday to Wednesday and already stored Wednesday by a stranded fix; the
     // mirror lists it on both days and de-duplication keeps the stale Tuesday copy
-    const tuesday = { date: "2026-09-29T23:05Z", status: "STATUS_SCHEDULED" };
-    const coreWednesday = { date: "2026-09-30T17:05Z", status: "STATUS_SCHEDULED" };
-    expect([1, 2, 3].map(() => written(tuesday, coreWednesday))).toEqual(["2026-09-30T17:05Z", "2026-09-30T17:05Z", "2026-09-30T17:05Z"]);
+    const TUE = "2026-09-29T23:05Z";
+    const WED = "2026-09-30T17:05Z";
+    const tuesday = { date: TUE, status: "STATUS_SCHEDULED" };
+    const coreWednesday = { date: WED, status: "STATUS_SCHEDULED" };
+    expect(runs(listingStep, tuesday, coreWednesday, WED)).toEqual([WED, WED, WED]);
+    expect(runs(step3a4f991, tuesday, coreWednesday, WED)).toEqual([TUE, WED, TUE]);
+  });
+
+  it("says whether a run moves the row", () => {
+    expect(listingStep(staleListing, coreFriday, sat.date).moved).toBe(true);
+    expect(listingStep(staleListing, coreFriday, FRI).moved).toBe(false);
+    expect(listingStep(staleListing, coreFriday, null).moved).toBe(false);
   });
 });
 

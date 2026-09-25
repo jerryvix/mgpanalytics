@@ -303,3 +303,22 @@ export function planStranded(
 export function planListing(listing: Pick<SyncRow, "date" | "status">, core: CoreEvent | "missing" | null): RowFix | null {
   return planStranded(listing, core, true);
 }
+
+/**
+ * One run's listing step (sync-mlb-games): for a listing MLB does not
+ * confirm, the fix to apply, the date the row is left with (the upsert writes
+ * the fix's date, else the listing's own), and whether that moves the row
+ * from `storedDate`, its date before this run (null: no row yet). The stored
+ * date must not steer the fix: in 3a4f991 it did, and since each run's write
+ * becomes the next run's stored date, a moved game flipped back every second
+ * run (QC round 4 replays consecutive runs).
+ */
+export function listingStep(
+  listing: Pick<SyncRow, "date" | "status">,
+  core: CoreEvent | "missing" | null,
+  storedDate: string | null,
+): { fix: RowFix | null; date: string; moved: boolean } {
+  const fix = planListing(listing, core);
+  const date = fix?.date ?? listing.date;
+  return { fix, date, moved: readable(storedDate) && Date.parse(date) !== Date.parse(storedDate) };
+}
