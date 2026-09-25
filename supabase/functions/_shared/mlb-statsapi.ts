@@ -195,6 +195,23 @@ export function matchupKey(day: string, away: string, home: string): string {
   return `${day}|${teamKey(away)}|${teamKey(home)}`;
 }
 
+// A traditional doubleheader's game 2 has no first pitch of its own: MLB lists
+// it (startTimeTBD) five minutes after game 1, but it starts once game 1 is
+// over. The nine such games of 2025-26 started 3h01m to 3h51m after game 1's
+// time, 3h25m at the median, so about 3h20m after the placeholder.
+const DH_GAME2_AFTER_PLACEHOLDER_MS = 200 * 60_000;
+
+/**
+ * When a game should start, for pairing it with ESPN's listing or our row by
+ * closest first pitch: MLB's time, or for a doubleheader game 2 MLB has not
+ * timed, about 3h20m after its placeholder. Taken as is, the placeholder
+ * (game 1 plus five minutes) outbid game 1 for game 1's own row.
+ */
+export function expectedStart(g: Pick<MlbScheduleGame, "gameDate" | "gameNumber" | "startTimeTBD">): number {
+  const t = Date.parse(g.gameDate);
+  return g.startTimeTBD && g.gameNumber > 1 ? t + DH_GAME2_AFTER_PLACEHOLDER_MS : t;
+}
+
 // Only what unfinishedGamePks reads
 const STATUS_FIELDS = [
   "dates", "date", "games", "gamePk", "gameDate", "officialDate", "gameNumber", "status", "abstractGameState", "detailedState",
@@ -516,10 +533,10 @@ export function announcedNearby(
 
 /**
  * Pair each statsapi game with its mlb_games row: same Eastern day and
- * matchup, closest first pitch, closest pairs first. First-come pairing gave
- * doubleheader game 1 (Orioles @ Yankees, Sep 25 2026: moved in from
- * Saturday, no row yet) game 2's only row, so game 1 showed game 2's
- * projected starter.
+ * matchup, closest first pitch (expectedStart), closest pairs first.
+ * First-come pairing gave doubleheader game 1 (Orioles @ Yankees, Sep 25
+ * 2026: moved in from Saturday, no row yet) game 2's only row, so game 1
+ * showed game 2's projected starter.
  */
 export function matchProjectionRows(
   games: MlbScheduleGame[],
@@ -535,7 +552,7 @@ export function matchProjectionRows(
   for (const g of games) {
     if (g.isPlaceholder) continue;
     for (const row of byKey.get(matchupKey(g.scheduleDay, g.away.name, g.home.name)) ?? []) {
-      const gap = Math.abs(Date.parse(row.date) - Date.parse(g.gameDate));
+      const gap = Math.abs(Date.parse(row.date) - expectedStart(g));
       if (gap <= 6 * 3600_000) near.push({ gamePk: g.gamePk, row, gap });
     }
   }

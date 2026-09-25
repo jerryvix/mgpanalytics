@@ -14,6 +14,8 @@ import {
   type ProjectionRow,
 } from "../_shared/mlb-statsapi.ts";
 import { chatStarterGames, gameTimeLabel, pitcherBrief, starterLine } from "./mlb-starters.ts";
+// Postponed and canceled games are not upcoming games (the app hides them too)
+import { isCalledOffStatus } from "../_shared/game-status.ts";
 
 // Rate limit: max requests per user per window
 const RATE_LIMIT_MAX = 10;
@@ -350,13 +352,6 @@ function upcomingKickoff(g: { date: string; time_tbd?: boolean | null }): string
   })} ET`;
 }
 
-// Postponed and canceled games are not upcoming games. ESPN keeps a rainout
-// on its original date, and sync-mlb-games marks a game that left its date
-// the same way (the app hides them too: src/lib/gameStatus.ts isCalledOffStatus).
-function calledOff(status: string | null | undefined): boolean {
-  return /postpone|cancel/i.test(status ?? "");
-}
-
 // ============================================================
 // STAT-LEADER DETECTION: grounds "who leads/most/top in <stat>" questions
 // in our own player_season_stats (the exact data the Players pages show), so
@@ -571,7 +566,7 @@ async function fetchRelevantData(
       .order("date", { ascending: true })
       .limit(10);
 
-    const upcoming = (games ?? []).filter((g: { status?: string | null }) => !calledOff(g.status));
+    const upcoming = (games ?? []).filter((g: { status?: string | null }) => !isCalledOffStatus(g.status));
     if (upcoming.length) {
       fetchedData.games = upcoming;
       sources.push({
@@ -1117,7 +1112,7 @@ async function fetchMultiSportData(
         .order("date", { ascending: true })
         .limit(10);
 
-      const upcoming = (games ?? []).filter((g: { status?: string | null }) => !calledOff(g.status));
+      const upcoming = (games ?? []).filter((g: { status?: string | null }) => !isCalledOffStatus(g.status));
       if (upcoming.length) {
         gamesBySport[sport] = upcoming;
         sources.push({

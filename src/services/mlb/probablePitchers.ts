@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   addDays,
   etDate,
+  expectedStart,
   fetchProbableMatchups,
   matchupKey,
   nextMatchupForTeam,
@@ -49,7 +50,9 @@ interface GameLike {
 
 /**
  * The statsapi game for one of our mlb_games rows: same Eastern scoreboard day
- * and matchup, and for doubleheaders the one whose first pitch is closest.
+ * and matchup, and for doubleheaders the one whose first pitch is closest
+ * (expectedStart: game 2's TBD placeholder, five minutes after game 1, must
+ * not claim game 1's row).
  */
 export function findMatchupForGame(matchups: ProbableMatchup[] | undefined, game: GameLike): ProbableMatchup | null {
   if (!matchups?.length) return null;
@@ -60,7 +63,7 @@ export function findMatchupForGame(matchups: ProbableMatchup[] | undefined, game
   for (const m of matchups) {
     if (m.game.isPlaceholder) continue;
     if (matchupKey(m.game.scheduleDay, m.game.away.name, m.game.home.name) !== key) continue;
-    const gap = Math.abs(Date.parse(m.game.gameDate) - t);
+    const gap = Math.abs(expectedStart(m.game) - t);
     if (gap < bestGap) {
       best = m;
       bestGap = gap;

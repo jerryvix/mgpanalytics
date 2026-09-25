@@ -22,12 +22,15 @@ export function isFinalStatus(status: string | null | undefined): boolean {
   return (status || "").toLowerCase().includes("final");
 }
 
+// Postponed or canceled: one rule for the app and the edge functions
+export { isCalledOffStatus } from "../../supabase/functions/_shared/game-status";
+
 /**
- * Postponed or canceled: no game at the listed time, so upcoming lists hide it
- * like a final. ESPN keeps a rainout on its original date as STATUS_POSTPONED,
- * and sync-mlb-games marks a game that neither ESPN nor MLB lists on its date
- * any more the same way (supabase/functions/sync-mlb-games/reconcile.ts).
+ * isCalledOffStatus applied in a query (status is NOT NULL on the game
+ * tables), for reads that limit or count rows: filtered after the read, the
+ * dashboard's 10-game window could fill with called-off games and come back
+ * empty, and the chat's game count would include them.
  */
-export function isCalledOffStatus(status: string | null | undefined): boolean {
-  return /postpone|cancel/i.test(status || "");
+export function excludeCalledOff<Q extends { not(column: string, operator: string, value: unknown): Q }>(query: Q): Q {
+  return query.not("status", "ilike", "%postpone%").not("status", "ilike", "%cancel%");
 }

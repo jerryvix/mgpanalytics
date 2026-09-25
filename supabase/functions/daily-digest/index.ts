@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
+import { nextGamesFor, type NextGame } from "./next-games.ts";
 
 // Daily Edge digest: re-engagement email. Composes a personalized brief
 // (streak status, followed teams' next games, an edge nugget) for each opted-in
@@ -24,13 +25,6 @@ const EDGE_LINES = [
   "Joe DiMaggio's 56-game hit streak (1941) still stands 80+ years later.",
   "Buffalo won five straight AFC East titles before New England took it in '25.",
 ];
-
-interface NextGame {
-  team: string;
-  opponent: string;
-  isHome: boolean;
-  date: string;
-}
 
 const SPORT_TABLE: Record<string, { table: string; league?: string }> = {
   NFL: { table: "games", league: "NFL" },
@@ -117,29 +111,14 @@ Deno.serve(async (req) => {
         const list = teams.map((t) => `"${t.replace(/"/g, "")}"`).join(",");
         let q = supabase
           .from(cfg.table)
-          .select("home_team_name, visitor_team_name, date")
+          .select("home_team_name, visitor_team_name, date, status")
           .gte("date", nowIso)
           .or(`home_team_name.in.(${list}),visitor_team_name.in.(${list})`)
           .order("date", { ascending: true })
           .limit(20);
         if (cfg.league) q = q.eq("league", cfg.league);
         const { data: games } = await q;
-        const seen = new Set<string>();
-        for (const g of games || []) {
-          for (const team of teams) {
-            if (seen.has(team)) continue;
-            const isHome = g.home_team_name === team;
-            const isAway = g.visitor_team_name === team;
-            if (!isHome && !isAway) continue;
-            seen.add(team);
-            nextGames.push({
-              team,
-              opponent: isHome ? g.visitor_team_name : g.home_team_name,
-              isHome,
-              date: g.date,
-            });
-          }
-        }
+        nextGames.push(...nextGamesFor(games || [], teams));
       }
 
       // Only email users who have something personal to say to, or keep the

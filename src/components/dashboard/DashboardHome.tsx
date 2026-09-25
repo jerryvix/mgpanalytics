@@ -31,7 +31,7 @@ import { RecentActivity } from "@/components/dashboard/RecentActivity";
 import { withStoredLine } from "@/lib/marketPulse";
 import { fetchStoredLines } from "@/lib/storedLines";
 import { postedMlbOdds } from "@/lib/mlbRunLine";
-import { isCalledOffStatus } from "@/lib/gameStatus";
+import { upcomingMlbGames } from "@/services/mlb/upcomingGames";
 
 interface Game {
   id: number | string;
@@ -256,28 +256,8 @@ export function DashboardHome() {
       }
 
       if (effectiveSports.includes("MLB")) {
-        let { data } = await supabase
-          .from("mlb_games")
-          .select("*")
-          .not("status", "ilike", "%final%")
-          .gte("date", now.toISOString())
-          .lte("date", in48Hours.toISOString())
-          .order("date", { ascending: true })
-          .limit(10);
-
-        if (!data?.length) {
-          const { data: extended } = await supabase
-            .from("mlb_games")
-            .select("*")
-            .not("status", "ilike", "%final%")
-            .gte("date", now.toISOString())
-            .lte("date", in7Days.toISOString())
-            .order("date", { ascending: true })
-            .limit(10);
-          data = extended;
-        }
         // Postponed and canceled games (and ones that left their date) are not upcoming
-        mlbGames = (data ?? []).filter((g) => !isCalledOffStatus(g.status));
+        mlbGames = await upcomingMlbGames(now);
       }
 
       if (effectiveSports.includes("NCAAF")) {

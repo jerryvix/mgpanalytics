@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { excludeCalledOff } from "@/lib/gameStatus";
 
 export interface MarketContextRow {
   sport: string;
@@ -18,7 +19,8 @@ const SPORT_TABLE: Record<string, string> = {
 // Real, lightweight "what is the Analyst currently looking at" summary - a
 // count of upcoming games per active sport over the next 7 days, plus the
 // real NFL week number when available. No fabricated season-phase labels.
-async function loadMarketContext(sports: string[]): Promise<MarketContextRow[]> {
+// Postponed and canceled games are not upcoming, so they are not counted.
+export async function loadMarketContext(sports: string[]): Promise<MarketContextRow[]> {
   const now = new Date();
   const in7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -27,10 +29,12 @@ async function loadMarketContext(sports: string[]): Promise<MarketContextRow[]> 
       const table = SPORT_TABLE[sport];
       if (!table) return null;
 
-      let query = supabase
-        .from(table as "games")
-        .select(sport === "NFL" ? "id, week" : "id", { count: "exact" })
-        .not("status", "ilike", "%final%")
+      const query = excludeCalledOff(
+        supabase
+          .from(table as "games")
+          .select(sport === "NFL" ? "id, week" : "id", { count: "exact" })
+          .not("status", "ilike", "%final%"),
+      )
         .gte("date", now.toISOString())
         .lte("date", in7Days.toISOString());
 
