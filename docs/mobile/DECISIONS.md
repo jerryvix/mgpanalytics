@@ -118,3 +118,11 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Date:** 2026-11-20 · **By:** Owner
 **What:** the fourth tab is named **Insiders**. The practice bankroll is confirmed for **v1.1** (D-010).
 **Note 4 (what leads Home):** the owner reframed it around the pitch: beat the books, the upper hand pros have, a level playing field. A simulated survey of 1,000 bettors and industry people is testing these headlines and the first Home module. Results go in `docs/mobile/research/`.
+
+### D-026 Headline, Home order and copy rules from the simulated survey
+**Date:** 2026-11-20 · **By:** Owner (headline), builder (the rest) · **Source:** `research/2026-11-20-simulated-survey.md`
+**Headline:** "Bet Smarter, Not Harder." leads the App Store listing and the welcome screen. Supporting line: "Every number you need. One app."
+**Not used in store or app copy:** "Beat the sportsbooks", "Bet like a pro", "The upper hand the pros have", "Level the playing field" (tested last or flagged as tout language), and "See where the money's moving" (MGP has no money-flow data; positioning DO NOT CLAIM). "Get an edge on the books" stays on the website if the owner keeps it, but not in the App Store listing (heavily flagged as a compliance risk).
+**Home order:** your teams first when you've picked teams; biggest line moves first for guests who haven't. Line-move module title: "See where the lines are moving." Streaks sit lower, always with sample size ("12 of last 15").
+**Copy rules:** introduce the Analyst by what it does ("Ask anything about tonight's games"), not by what it won't do. The Insiders tab carries a one-line description ("Well-known betting voices, in one place"). Every odds number shows an "as of" time. Push alerts are opt-in per type with a daily cap.
+**Pro tier input (v1.1):** props tools and faster line-move alerts were the most-wanted paid features; faster alerts can fund their own faster odds refresh (D-022).

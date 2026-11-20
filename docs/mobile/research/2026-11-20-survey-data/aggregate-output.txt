@@ -1,0 +1,53 @@
+panels ['A_online_communities', 'B_general_us_bettors', 'C_industry_professionals', 'D_new_bettors_new_states'] N 1000
+
+Q1 favorite (share) | mean appeal (avg of panels) | per-panel favorite rank
+F  201 20.1%  appeal 3.36  ranks [1, 5, 1, 1]  See where the money's moving.
+A  154 15.4%  appeal 3.25  ranks [4, 6, 2, 3]  Get an edge on the books.
+E  153 15.3%  appeal 3.02  ranks [3, 2, 4, 2]  Bet smarter, not harder.
+G  153 15.3%  appeal 3.11  ranks [2, 3, 3, 6]  Every number you need. One app.
+B  119 11.9%  appeal 2.99  ranks [5, 1, 6, 4]  Beat the sportsbooks.
+H  107 10.7%  appeal 2.86  ranks [6, 4, 5, 5]  Bet like a pro.
+D   57  5.7%  appeal 2.68  ranks [7, 8, 8, 7]  Level the playing field.
+C   56  5.6%  appeal 2.68  ranks [8, 7, 7, 8]  The upper hand the pros have. Now yours.
+compliance flags (industry panel, of 250): {'A': 110, 'B': 149, 'C': 91, 'D': 36, 'E': 26, 'F': 31, 'G': 10, 'H': 78}
+
+Q2 first screen
+  my_teams                          298 29.8%  per panel [56, 87, 75, 80]
+  line_moves                        237 23.7%  per panel [71, 41, 80, 45]
+  props                             183 18.3%  per panel [49, 49, 40, 45]
+  streaks                           140 14.0%  per panel [35, 39, 25, 41]
+  insiders                           81  8.1%  per panel [21, 19, 14, 27]
+  analyst                            61  6.1%  per panel [18, 15, 16, 12]
+
+Q5 signup moment
+  after_browsing_a_bit              357 35.7%  per panel [88, 88, 84, 97]
+  only_to_follow_or_get_alerts      305 30.5%  per panel [68, 62, 113, 62]
+  only_if_free_forever              151 15.1%  per panel [39, 53, 14, 45]
+  never                             129 12.9%  per panel [42, 34, 23, 30]
+  before_seeing_anything             58  5.8%  per panel [13, 13, 16, 16]
+
+Q3 would pay (multi)
+  none                                    486 48.6%
+  props_tools                             228 22.8%
+  faster_line_alerts                      206 20.6%
+  insider_feed                            115 11.5%
+  unlimited_analyst                       109 10.9%
+  practice_bankroll                        82  8.2%
+
+Q4 distrust (multi)
+  guaranteed_win_claims                   650 65.0%
+  notification_spam                       510 51.0%
+  stale_or_wrong_odds                     494 49.4%
+  pick_selling                            459 45.9%
+  paywall_too_early                       459 45.9%
+  forced_signup_before_seeing_anything    400 40.0%
+  ads_or_sponsored_posts                  392 39.2%
+  other                                    85  8.5%
+
+segments {'recreational_weekly': 336, 'serious_high_volume': 137, 'dfs_fantasy': 138, 'casual': 302, 'industry': 87}
+
+favorite by segment per panel:
+  A_online_communities {'recreational_weekly': 'F', 'serious_high_volume': 'F', 'dfs_fantasy': 'G', 'casual': 'E', 'industry': 'F'}
+  B_general_us_bettors {'recreational_weekly': 'F', 'serious_high_volume': 'F', 'dfs_fantasy': 'E', 'casual': 'B', 'industry': 'G'}
+  C_industry_professionals {'recreational_weekly': 'A', 'serious_high_volume': 'F', 'dfs_fantasy': 'G', 'casual': 'G', 'industry': 'F'}
+  D_new_bettors_new_states {'recreational_weekly': 'F', 'serious_high_volume': 'F', 'dfs_fantasy': 'A', 'casual': 'E', 'industry': 'F'}
