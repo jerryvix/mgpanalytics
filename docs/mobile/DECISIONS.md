@@ -59,3 +59,28 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Date:** 2026-11-20 · **By:** Builder
 **What:** keep MGP green; system font (SF Pro) for UI with Space Grotesk for titles and big numbers; sentence case instead of uppercase mono; 10/12/16px corners; light and dark themes following the phone setting. Tokens in `packages/shared/design-tokens/tokens.json`.
 **Why:** the web app's terminal style (IBM Plex Mono, uppercase, 4px corners, dark only) reads as a pro tool; the goal is "clean and easy for new users". Review board: https://claude.ai/artifact/94MNqZHA2ELsZdyq87HKJ7 (private; owner shares it with reviewers).
+
+### D-014 Guest browsing: no login wall (proposed, owner can override on the review board, note 25)
+**Date:** 2026-11-20 · **By:** Builder
+**What:** the app opens on Today with no account. An account is requested only to follow something, set an alert, or use the Analyst, through a bottom sheet over the content (the Stocks.News pattern).
+**Why:** the owner's recording shows Stocks.News never asks a browsing user to sign in. Apple's guideline 5.1.1(v) asks apps whose core features aren't account-based to let people use them without logging in. A login wall is where most new users drop off.
+**How:** Supabase anonymous sign-in gives each guest a user id, so follows and alert settings save from the first tap; signing up links the guest to a real account and keeps them. The Analyst requires a real account (LLM cost and per-user rate limits). Needs anonymous sign-ins enabled in the Supabase dashboard, with CAPTCHA, and an RLS review so anonymous users can't read other users' data.
+**Supersedes:** the welcome-then-sign-up flow in the original PLAN v1 scope rows 1 to 3.
+
+### D-015 Home is a feed of modules under a sport bar
+**Date:** 2026-11-20 · **By:** Builder
+**What:** a scrolling sport bar (All, NFL, NBA, NCAAB, NCAAF, MLB) above short modules that each end in "More": biggest line moves, your teams today, tonight's games, hot streaks (in season), insiders, games this week. Sports out of season show a short offseason module, never an empty screen.
+**Why:** the recording shows this is how Stocks.News Home works (category bar plus modules); it scales to five sports without nested tabs. Replaces "one ranked list" from the store screenshots.
+
+### D-016 No verdict gauges or ratings
+**Date:** 2026-11-20 · **By:** Builder
+**Why:** Stocks.News shows "Strong sell / Strong buy" gauges. For MGP that would be picks language, which the product and the Analyst forbid (`docs/positioning.md`). Show data, never a verdict.
+
+### D-017 No paid placements in the feed
+**Date:** 2026-11-20 · **By:** Builder
+**Why:** Stocks.News places sponsored press releases at the top of Home, and its reviews accuse it of pump-and-dump. MGP's position is "we don't make things up"; paid placement that looks editorial undermines it.
+
+### D-018 Notification permission via soft asks (amends D-012)
+**Date:** 2026-11-20 · **By:** Builder
+**What:** onboarding ends with an optional "Get alerts for your teams" screen. After that, a slim "Turn on alerts" bar above the tab bar and "Alert me" buttons on modules. The iPhone system prompt appears only after the user taps one of these.
+**Why:** the system prompt can be shown once; Stocks.News keeps a persistent soft prompt plus per-module buttons, which keeps the system prompt for people who already said yes.

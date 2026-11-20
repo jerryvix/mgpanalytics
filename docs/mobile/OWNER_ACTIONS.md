@@ -24,11 +24,11 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 
 - [ ] **4. Create a free Expo account** at expo.dev, ideally with the same business email. The builder will then send a secure form for an access token.
 - [ ] **5. Create a free Figma account** at figma.com. The builder will send the import steps for the two review pages.
-- [ ] **6. Optional but valuable (10 minutes):** install Stocks.News on your iPhone and screen-record onboarding, the home screen, setting an alert, and the paywall. Drop the recording into the chat. The store screenshots are marketing images; the real flows are what we're modeling.
+- [x] **6. Done 2026-11-20.** ~~Optional but valuable (10 minutes):~~ install Stocks.News on your iPhone and screen-record onboarding, the home screen, setting an alert, and the paywall. Drop the recording into the chat. The store screenshots are marketing images; the real flows are what we're modeling.
 
 ## When the builder asks (later, with notice)
 
-- [ ] Supabase access token (secure form), needed for Sign in with Apple and the alerts tables.
+- [ ] Supabase access token (secure form), needed for Sign in with Apple, guest sessions (anonymous sign-in) and the alerts tables.
 - [ ] After Apple approval: add the builder's App Store Connect API key to Expo (steps will be provided; the key never passes through chat).
 - [ ] Review the Figma comments (week 2): keep, cut, or change each note.
 - [ ] Install TestFlight and use the app for a few days (week 3).

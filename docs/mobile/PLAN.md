@@ -41,11 +41,11 @@ The rule for v1: only what a brand-new user needs in the first week. Everything 
 
 | # | Screen / feature | Notes |
 |---|---|---|
-| 1 | Welcome | Three-card value intro, then sign up |
-| 2 | Sign in / sign up | Sign in with Apple, Google, email. Same accounts as the website |
-| 3 | Onboarding | Pick sports, pick teams, pick alert types, then ask for notification permission (after value is shown, not on first launch) |
-| 4 | Today (home) | Biggest line moves, your teams today, hot streaks (in season), one edge nugget |
-| 5 | Games | Sport tabs, slate list, game detail with odds by book, line movement, matchup intel, "ask the analyst" |
+| 1 | First launch | One welcome screen, then pick sports and teams (skippable), then an optional "Get alerts for your teams" screen. No account needed (D-014) |
+| 2 | Sign in / sign up | Bottom sheet shown when a guest follows, sets an alert, or opens the Analyst. Sign in with Apple, Google, email. Same accounts as the website; guest data carries over |
+| 3 | Notification asks | Soft asks only: slim bar above the tab bar and "Alert me" on modules; system prompt after a tap (D-018) |
+| 4 | Today (home) | Sport bar over modules: biggest line moves, your teams today, tonight's games, hot streaks (in season), insiders, games this week (D-015) |
+| 5 | Games | Day strip with game counts, sport chips, slate list. Game detail: header with bell, star, share; current line large with change since open and "odds as of"; section bar (Odds, Line movement, Matchup, Streaks, Props, Analyst); disclaimer block at the bottom |
 | 6 | Alerts | Push notifications plus an in-app inbox with filter chips and swipe to edit or remove |
 | 7 | Insiders | The cappers directory (sharps, insiders, analysts, media), follow |
 | 8 | Analyst | The grounded AI chat, with a one-time consent screen for third-party AI |
@@ -75,7 +75,7 @@ Today is Fri Nov 20, 2026. Target: **submit to App Review around Dec 16, live be
 
 - **Framework:** Expo SDK 58, expo-router (file-based routes), TypeScript strict.
 - **Data:** `@supabase/supabase-js` against the same project as the web app; TanStack Query for caching (same as web). Session stored in the device keychain.
-- **Auth:** Supabase Auth. Sign in with Apple via native ID token, Google, email and password. The existing website accounts work unchanged.
+- **Auth:** Supabase Auth. Guests get an anonymous session on first launch (D-014); signing up links it to Sign in with Apple, Google, or email. The existing website accounts work unchanged. The Analyst requires a full account.
 - **Push alerts:** `expo-notifications` with the Expo push service. New tables: device push tokens, alert preferences, alert inbox. A new edge function evaluates alert rules after each sync and sends pushes.
 - **Paywall-ready:** an entitlement hook that returns "everything unlocked" at launch, so a subscription can be switched on in v1.1 without restructuring screens.
 - **Releases:** EAS Build (cloud), EAS Submit (TestFlight and App Store), EAS Update for over-the-air JavaScript fixes between store releases.

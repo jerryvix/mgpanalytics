@@ -10,6 +10,7 @@ Status: `todo` / `in progress` / `done`.
 |---|---|---|---|---|
 | Not a website wrapper; real app functionality | 4.2 | n/a | Native Expo screens, push alerts, native sign-in | todo |
 | Sign in with Apple (or equivalent private login) when Google login is offered | 4.8 | Google + email only | Add Sign in with Apple via Supabase `signInWithIdToken` | todo |
+| Let people use non-account features without logging in | 5.1.1(v) | Website requires login for everything | Guest browsing (D-014) | todo |
 | In-app account deletion | 5.1.1(v) | Not built | Profile, then Delete account, then an edge function deletes auth user + personal rows | todo |
 | Privacy policy URL (in app and in listing) | 5.1.1(i) | None exists | Draft, owner approves, host at `mgp-analytics.com/privacy` | todo |
 | Support URL | 1.5 | None exists | `mgp-analytics.com/support` with contact email | todo |
