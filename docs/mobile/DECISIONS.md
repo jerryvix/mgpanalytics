@@ -60,7 +60,7 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **What:** keep MGP green; system font (SF Pro) for UI with Space Grotesk for titles and big numbers; sentence case instead of uppercase mono; 10/12/16px corners; light and dark themes following the phone setting. Tokens in `packages/shared/design-tokens/tokens.json`.
 **Why:** the web app's terminal style (IBM Plex Mono, uppercase, 4px corners, dark only) reads as a pro tool; the goal is "clean and easy for new users". Review board: https://claude.ai/artifact/94MNqZHA2ELsZdyq87HKJ7 (private; owner shares it with reviewers).
 
-### D-014 Guest browsing: no login wall (proposed, owner can override on the review board, note 25)
+### D-014 Guest browsing: no login wall (approved by owner 2026-11-20)
 **Date:** 2026-11-20 · **By:** Builder
 **What:** the app opens on Today with no account. An account is requested only to follow something, set an alert, or use the Analyst, through a bottom sheet over the content (the Stocks.News pattern).
 **Why:** the owner's recording shows Stocks.News never asks a browsing user to sign in. Apple's guideline 5.1.1(v) asks apps whose core features aren't account-based to let people use them without logging in. A login wall is where most new users drop off.
@@ -84,3 +84,19 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Date:** 2026-11-20 · **By:** Builder
 **What:** onboarding ends with an optional "Get alerts for your teams" screen. After that, a slim "Turn on alerts" bar above the tab bar and "Alert me" buttons on modules. The iPhone system prompt appears only after the user taps one of these.
 **Why:** the system prompt can be shown once; Stocks.News keeps a persistent soft prompt plus per-module buttons, which keeps the system prompt for people who already said yes.
+
+### D-019 Access ladder: guest, then free account, then Pro
+**Date:** 2026-11-20 · **By:** Owner direction, builder design
+**What:** three levels. Guests browse everything public (Today, Games, game detail, Insiders list). A free account unlocks following, alerts and the Analyst. Pro (v1.1, off at launch per D-002) unlocks deeper features to be chosen later. Every locked feature uses the same bottom sheet over visible content, so people see what they'd get.
+**Why:** the owner's read of Stocks.News: "slowly getting people there". Each step asks for a little more after showing value.
+
+### D-020 Sign-up is one tap
+**Date:** 2026-11-20 · **By:** Owner direction, builder design
+**What:** the sign-up sheet leads with Sign in with Apple (Face ID, no typing), then Google, then email with a 6-digit code (no password to invent). Existing web users can still sign in with their password. No profile questions at sign-up; sports and teams were already picked as a guest and carry over.
+**Why:** the owner asked for sign-up to be as easy as possible. Every extra field loses people.
+
+### D-021 Insiders shows what popular X accounts are saying, pulled server-side (cost pending)
+**Date:** 2026-11-20 · **By:** Owner direction, builder design
+**What:** a sync job pulls new posts from a curated list of insider accounts through the X API, stores them, and the app shows them natively in the Insiders tab and on game pages, with name, handle, time and a link to the original post on X.
+**Why:** the website uses X's embed widget plus one hard-coded sample post (`src/components/twitter/LatestFromX.tsx`). Embeds are slow and unreliable on a phone and can't be filtered or ranked. A native feed needs the API.
+**Cost:** X sells API access pay-per-use, reported at about $0.005 per post read (third-party sources, Nov 2026; confirm on console.x.com). Fetching only new posts, 50 accounts posting about 10 times a day is roughly 15,000 reads, about $75 a month. Owner approves before it's switched on. Without it, Insiders launches with profiles, follow and "Open on X" links.

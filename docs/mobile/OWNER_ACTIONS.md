@@ -26,6 +26,10 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 - [ ] **5. Create a free Figma account** at figma.com. The builder will send the import steps for the two review pages.
 - [x] **6. Done 2026-11-20.** ~~Optional but valuable (10 minutes):~~ install Stocks.News on your iPhone and screen-record onboarding, the home screen, setting an alert, and the paywall. Drop the recording into the chat. The store screenshots are marketing images; the real flows are what we're modeling.
 
+## Anytime (optional)
+
+- [ ] Send Stocks.News ads when you see them (screenshots or recordings). They'll guide our App Store screenshots and launch ads later; the app build comes first.
+
 ## When the builder asks (later, with notice)
 
 - [ ] Supabase access token (secure form), needed for Sign in with Apple, guest sessions (anonymous sign-in) and the alerts tables.
@@ -35,6 +39,7 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 - [ ] Approve the privacy policy, terms and support page drafts. A short lawyer review is recommended for an 18+ betting-related app.
 - [ ] Approve the App Store listing text and screenshots (week 4).
 - [ ] Decide on a faster odds plan for real-time line-move alerts (builder will bring the exact monthly cost).
+- [ ] Approve X API spend for the Insiders feed (estimate about $75/month for 50 accounts; see DECISIONS D-021).
 
 ## Costs to expect
 
@@ -45,3 +50,4 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 | Figma | Free tier | Now |
 | Google Play (Android, later) | $25 one-time | After iOS launch |
 | Faster odds polling for real-time alerts | Exact quote coming | Before alerts go live |
+| X API for the Insiders feed | About $75/month estimate (pay-per-use) | Before Insiders posts go live |

@@ -55,6 +55,27 @@ The recording starts on Home, so it doesn't show first-launch screens or the pri
 
 Frames used on the review board: t=0 s (Home + notification bar), 29 s (calendar day strip), 42 s (Trading Halts + Enable Alerts), 49 s (detail + sign-in sheet), 147 s (disclaimer), 155 s (insiders).
 
+## Translation table: stocks to sports
+
+The owner's view: most of Stocks.News transfers, because in both worlds nobody can predict outcomes and the product's job is to give people the information.
+
+| Stocks.News | MGP | When |
+|---|---|---|
+| Category bar (Stocks, Crypto, Forex) | Sport bar (All, NFL, NBA, NCAAB, NCAAF, MLB) | v1 |
+| Top movers, gainers, losers | Biggest line moves since open | v1 |
+| Earnings calendar with counts | Games this week with counts; day strip on Games | v1 |
+| Insider and politician trades | What insiders on X are saying | v1 (D-021) |
+| Billionaires and CEOs, follow | Insiders by category, follow | v1 |
+| Stock detail with section bar | Game detail with section bar | v1 |
+| Price alerts, inbox | Line move, game start and final score alerts, inbox | v1 |
+| Trading halt and resume alerts | Player status alerts (Out, Questionable, Active) | v1.1 |
+| Most symbol mentions | Most talked-about games on X | v1.1 |
+| News scanner with impact stars | Sports news feed | v1.1 |
+| $100K simulator | Practice bankroll | v1.1 |
+| Premium tiers after sign-up | Pro after free account (D-019) | v1.1 |
+| Strong buy/sell gauges | Not adopted (D-016) | Never |
+| Sponsored posts | Not adopted (D-017) | Never |
+
 ## Source material
 
 - Store screenshots: fetched from the iTunes lookup API on 2026-11-20 (`https://itunes.apple.com/lookup?id=6476615803`). Kept outside the repo; re-fetch for the Figma review page.

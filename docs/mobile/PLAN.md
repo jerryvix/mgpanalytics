@@ -14,6 +14,10 @@
 
 ---
 
+## North star
+
+The Bloomberg terminal of sports betting: every number a bettor needs, in one place, without telling them what to bet. Nobody can predict outcomes; MGP gives people the information. This phrase is internal only. App Store and in-app copy can't use it (`docs/positioning.md` bans analogies in shipped copy, and Apple rejects other companies' trademarks in store listings).
+
 ## Goal
 
 Ship MGP as a native iPhone app in the App Store that feels as clean and easy for new users as Stocks.News (App Store id 6476615803), while keeping the existing website live and sharing one backend and one set of user accounts.
@@ -47,11 +51,11 @@ The rule for v1: only what a brand-new user needs in the first week. Everything 
 | 4 | Today (home) | Sport bar over modules: biggest line moves, your teams today, tonight's games, hot streaks (in season), insiders, games this week (D-015) |
 | 5 | Games | Day strip with game counts, sport chips, slate list. Game detail: header with bell, star, share; current line large with change since open and "odds as of"; section bar (Odds, Line movement, Matchup, Streaks, Props, Analyst); disclaimer block at the bottom |
 | 6 | Alerts | Push notifications plus an in-app inbox with filter chips and swipe to edit or remove |
-| 7 | Insiders | The cappers directory (sharps, insiders, analysts, media), follow |
+| 7 | Insiders | Sharps, insiders, analysts and media with category chips and follow. Recent posts from their X accounts, shown natively (D-021, cost approval pending) |
 | 8 | Analyst | The grounded AI chat, with a one-time consent screen for third-party AI |
 | 9 | Profile | Sports and teams, notification settings, legal pages, responsible gaming, sign out, **delete account** |
 
-**Not in v1 (v1.1 or later):** practice bankroll (fake-money "simulator"), home screen widgets, Live Activities for live games, community feed, fantasy tools, draft board, player pages beyond what game detail needs, paywall (built behind a switch, off at launch).
+**Not in v1 (v1.1 or later):** player status alerts (Out, Questionable, Active; the sports version of trading-halt alerts), "most talked-about games" from X mentions, practice bankroll (fake-money "simulator"), home screen widgets, Live Activities for live games, community feed, fantasy tools, draft board, player pages beyond what game detail needs, paywall (built behind a switch, off at launch).
 
 **Never ported:** admin panel, sync observatory, data inspector (stay web only), and any component that shows mock or random data (see `docs/positioning.md`).
 
