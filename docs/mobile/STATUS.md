@@ -14,10 +14,11 @@
 - Design tokens for the app, light and dark, contrast-checked (`packages/shared/design-tokens/`).
 - Review board published: page 1 current app + design system + findings, page 2 Stocks.News comparison with 23 numbered notes.
 - App Store name "MGP Analytics" checked available.
+- Expo app scaffolded in `mobile/`: five native tabs (Today, Games, Alerts, Insiders, Analyst), theme wired to shared tokens, iPhone only, bundle ID set. Typecheck, lint and iOS bundle pass.
 
 ## In progress
 
-- Expo scaffold in `mobile/`.
+- Supabase client and sign-in in the app.
 
 ## Next
 

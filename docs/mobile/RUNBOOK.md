@@ -18,7 +18,17 @@ How to build, test and ship the MGP iPhone app. Sections marked **pending** get 
 | `EXPO_PUBLIC_SUPABASE_URL` | `mobile/.env`, EAS env | Same Supabase project as the web app |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `mobile/.env`, EAS env | Public anon key (same as web `VITE_SUPABASE_PUBLISHABLE_KEY`) |
 
-## Local development (pending)
+## Local development
+
+```sh
+cd mobile
+npm install
+npx expo start
+npm run typecheck && npx expo lint
+npx expo export --platform ios   # bundles the JS for iOS; a quick check that everything resolves
+```
+
+The web app's lint and tests ignore `mobile/`. The app has its own `eslint.config.js`.
 
 ## Build and ship to TestFlight (pending)
 
