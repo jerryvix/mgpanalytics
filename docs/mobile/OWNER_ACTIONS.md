@@ -39,7 +39,7 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 - [ ] Approve the privacy policy, terms and support page drafts. A short lawyer review is recommended for an 18+ betting-related app.
 - [ ] Approve the App Store listing text and screenshots (week 4).
 - [ ] Decide on a faster odds plan for real-time line-move alerts (builder will bring the exact monthly cost).
-- [ ] Approve X API spend for the Insiders feed (estimate about $75/month for 50 accounts; see DECISIONS D-021).
+- On hold by owner (2026-11-20): X API spend for showing insider posts in the app (about $75/month estimate, D-021, D-023).
 
 ## Costs to expect
 
@@ -50,4 +50,4 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 | Figma | Free tier | Now |
 | Google Play (Android, later) | $25 one-time | After iOS launch |
 | Faster odds polling for real-time alerts | Exact quote coming | Before alerts go live |
-| X API for the Insiders feed | About $75/month estimate (pay-per-use) | Before Insiders posts go live |
+| X API for in-app insider posts | On hold (owner, cost) | Only if approved later |

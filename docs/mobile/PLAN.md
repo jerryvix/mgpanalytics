@@ -50,8 +50,8 @@ The rule for v1: only what a brand-new user needs in the first week. Everything 
 | 3 | Notification asks | Soft asks only: slim bar above the tab bar and "Alert me" on modules; system prompt after a tap (D-018) |
 | 4 | Today (home) | Sport bar over modules: biggest line moves, your teams today, tonight's games, hot streaks (in season), insiders, games this week (D-015) |
 | 5 | Games | Day strip with game counts, sport chips, slate list. Game detail: header with bell, star, share; current line large with change since open and "odds as of"; section bar (Odds, Line movement, Matchup, Streaks, Props, Analyst); disclaimer block at the bottom |
-| 6 | Alerts | Push notifications plus an in-app inbox with filter chips and swipe to edit or remove |
-| 7 | Insiders | Sharps, insiders, analysts and media with category chips and follow. Recent posts from their X accounts, shown natively (D-021, cost approval pending) |
+| 6 | Alerts | Your team's game starting, final scores, big line moves (current odds refresh, worded honestly), plus a bell on any game page to follow that game (D-024). In-app inbox with filter chips and swipe to edit or remove |
+| 7 | Insiders | Sharps, insiders, analysts and media with category chips, follow, and "Open on X". Posts shown in the app wait for X API approval (D-023) |
 | 8 | Analyst | The grounded AI chat, with a one-time consent screen for third-party AI |
 | 9 | Profile | Sports and teams, notification settings, legal pages, responsible gaming, sign out, **delete account** |
 

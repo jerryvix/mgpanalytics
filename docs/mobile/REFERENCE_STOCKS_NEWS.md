@@ -64,7 +64,7 @@ The owner's view: most of Stocks.News transfers, because in both worlds nobody c
 | Category bar (Stocks, Crypto, Forex) | Sport bar (All, NFL, NBA, NCAAB, NCAAF, MLB) | v1 |
 | Top movers, gainers, losers | Biggest line moves since open | v1 |
 | Earnings calendar with counts | Games this week with counts; day strip on Games | v1 |
-| Insider and politician trades | What insiders on X are saying | v1 (D-021) |
+| Insider and politician trades | Insider profiles with "Open on X" (v1); their posts in the app if X spend is approved | v1 / later (D-023) |
 | Billionaires and CEOs, follow | Insiders by category, follow | v1 |
 | Stock detail with section bar | Game detail with section bar | v1 |
 | Price alerts, inbox | Line move, game start and final score alerts, inbox | v1 |

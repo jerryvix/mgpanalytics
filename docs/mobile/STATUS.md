@@ -5,7 +5,7 @@
 ## Blocked on owner
 
 - Apple enrollment (D-U-N-S + organization). Critical path; gates the first TestFlight build. See `OWNER_ACTIONS.md` items 1 to 3.
-- Design review: answer the blue "Your call" notes 4, 8, 12 and 23 (note 25 decided: guest browsing) on page 2 of the review board (https://claude.ai/artifact/94MNqZHA2ELsZdyq87HKJ7). Not blocking the build; defaults are the recommended options.
+- Review board notes answered (8 Insiders, 12 alerts + game bell, 23 bankroll v1.1, 25 guest browsing). Note 4 (Home lead and pitch) waits on the simulated survey, running now.
 
 ## Done
 
@@ -29,7 +29,8 @@
 
 ## Open decisions (owner, later)
 
-- X API spend for the Insiders feed (about $75/month estimate, D-021).
+- X API spend for in-app insider posts: on hold by owner (D-023).
+- Faster odds refresh: first check existing Odds API quota headroom (D-024).
 
 - Faster odds polling plan for real-time line-move alerts (cost quote coming).
 - Data licensing review before any paywall (see `APP_STORE_COMPLIANCE.md`).

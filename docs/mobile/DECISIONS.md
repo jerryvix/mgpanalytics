@@ -95,8 +95,26 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **What:** the sign-up sheet leads with Sign in with Apple (Face ID, no typing), then Google, then email with a 6-digit code (no password to invent). Existing web users can still sign in with their password. No profile questions at sign-up; sports and teams were already picked as a guest and carry over.
 **Why:** the owner asked for sign-up to be as easy as possible. Every extra field loses people.
 
-### D-021 Insiders shows what popular X accounts are saying, pulled server-side (cost pending)
+### D-021 Insiders shows what popular X accounts are saying, pulled server-side (ON HOLD, see D-023)
 **Date:** 2026-11-20 · **By:** Owner direction, builder design
 **What:** a sync job pulls new posts from a curated list of insider accounts through the X API, stores them, and the app shows them natively in the Insiders tab and on game pages, with name, handle, time and a link to the original post on X.
 **Why:** the website uses X's embed widget plus one hard-coded sample post (`src/components/twitter/LatestFromX.tsx`). Embeds are slow and unreliable on a phone and can't be filtered or ranked. A native feed needs the API.
 **Cost:** X sells API access pay-per-use, reported at about $0.005 per post read (third-party sources, Nov 2026; confirm on console.x.com). Fetching only new posts, 50 accounts posting about 10 times a day is roughly 15,000 reads, about $75 a month. Owner approves before it's switched on. Without it, Insiders launches with profiles, follow and "Open on X" links.
+
+### D-022 Keep recurring costs as low as possible
+**Date:** 2026-11-20 · **By:** Owner
+**What:** no new paid service or plan upgrade without the owner's approval. Prefer data MGP already syncs and free tiers. When a feature needs paid data, ship the free version first and bring the cost as a separate decision.
+
+### D-023 X API on hold; Insiders launches without in-app posts
+**Date:** 2026-11-20 · **By:** Owner (cost, D-022)
+**What:** v1 Insiders shows profiles, categories (Sharps, Insiders, Analysts, Media, Props), follow, and "Open on X" for each account. No X API spend. Showing posts inside the app (D-021) waits until the owner approves the cost.
+
+### D-024 Launch alerts, plus a bell to follow any single game
+**Date:** 2026-11-20 · **By:** Owner
+**What:** v1 push alerts: your team's game is starting, final scores for your teams, and big line moves on your teams' games. A bell on every game page follows just that game: you get the same alerts for it whether or not you follow either team. Low build cost (one more subscription type).
+**Line moves without new cost:** alerts use the odds refresh MGP already runs (about every 6 hours), and their copy says so plainly ("moved 2 points since this morning"), never "live". Before launch, check The Odds API quota MGP already pays for. If there's headroom, refresh more often on game days at no extra cost. Any plan upgrade goes to the owner (D-022).
+
+### D-025 Owner answers on the review board (notes 8 and 23)
+**Date:** 2026-11-20 · **By:** Owner
+**What:** the fourth tab is named **Insiders**. The practice bankroll is confirmed for **v1.1** (D-010).
+**Note 4 (what leads Home):** the owner reframed it around the pitch: beat the books, the upper hand pros have, a level playing field. A simulated survey of 1,000 bettors and industry people is testing these headlines and the first Home module. Results go in `docs/mobile/research/`.
