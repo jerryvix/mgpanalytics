@@ -54,3 +54,8 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-012 Push permission is requested at the end of onboarding, not on first launch
 **Date:** 2026-11-20 · **By:** Builder
 **Why:** iOS shows the system permission prompt once. Asking after the user has picked teams and alert types (so they know what they'll get) gets far higher opt-in. Alerts are the core feature, so this matters.
+
+### D-013 App visual direction (proposed, pending owner review)
+**Date:** 2026-11-20 · **By:** Builder
+**What:** keep MGP green; system font (SF Pro) for UI with Space Grotesk for titles and big numbers; sentence case instead of uppercase mono; 10/12/16px corners; light and dark themes following the phone setting. Tokens in `packages/shared/design-tokens/tokens.json`.
+**Why:** the web app's terminal style (IBM Plex Mono, uppercase, 4px corners, dark only) reads as a pro tool; the goal is "clean and easy for new users". Review board: https://claude.ai/artifact/94MNqZHA2ELsZdyq87HKJ7 (private; owner shares it with reviewers).

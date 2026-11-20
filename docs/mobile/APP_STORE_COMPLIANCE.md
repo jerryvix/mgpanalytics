@@ -15,6 +15,7 @@ Status: `todo` / `in progress` / `done`.
 | Support URL | 1.5 | None exists | `mgp-analytics.com/support` with contact email | todo |
 | Demo account for App Review | 2.1 | n/a | Dedicated reviewer account with onboarding completed; credentials go only into App Store Connect | todo |
 | Disclose and get consent before sending personal data to a third-party AI | 5.1.2(i) | Chat sends questions to Anthropic with no notice | One-time consent screen before first Analyst use; named in privacy policy | todo |
+| No placeholder or "coming soon" screens | 2.1 | Web has four "Coming Very Soon" pages (Line Movement, Trends, Player Props, Live Edges) | App ships only finished screens; unbuilt features are absent, not teased | todo |
 | Accurate metadata, no claims the app can't back | 2.3.1 | Landing page mentions Kalshi and "real time" | Store listing copy must trace to `docs/positioning.md`; no Kalshi, no "real time" for odds | todo |
 | Privacy nutrition labels match actual collection | 5.1.2 | n/a | Fill from the SDK list at submission time | todo |
 
@@ -33,6 +34,7 @@ Status: `todo` / `in progress` / `done`.
 | Item | Risk | Plan |
 |---|---|---|
 | Team logos (ESPN CDN, 78 references) | League trademarks; hotlinked | Not in icon, screenshots or listing (D-009). Before charging money: license, or switch to team color badges with abbreviations |
+| Player headshots (e.g. NBA players list) | Photo rights belong to leagues and agencies | Same rule as logos: not in store marketing; review before charging money |
 | ESPN unofficial endpoints, MLB StatsAPI | Terms restrict commercial use | Acceptable while free; must be resolved before a paywall goes live |
 | The Odds API, BallDontLie, Sportradar | Commercial terms vary by plan | Confirm plan tiers allow commercial redistribution before a paywall |
 | Stocks.News look and feel | Copycat rejection (4.1) and legal letters | Adopt patterns, not visuals or artwork (see `REFERENCE_STOCKS_NEWS.md`) |
