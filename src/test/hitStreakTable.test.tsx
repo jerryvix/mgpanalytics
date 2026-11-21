@@ -5,7 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import type { ProbableMatchup, PitcherLine } from "../../supabase/functions/_shared/mlb-statsapi";
 
 // The Active Hit Streaks table: MLB QC round 2 (Sep 24 2026).
-// - a team with no game today reads "Off today" + "Next: Fri vs ...", never as tonight
+// - a team with no game today reads "Off Today" + "Next: Fri vs ...", never as tonight
 // - projected starters are labeled; unresolved ones are TBD, not a bare name
 // - a failed load shows an error with Retry, never "No active hit streaks"
 
@@ -109,12 +109,12 @@ const renderTable = (props: Parameters<typeof HitStreakTable>[0]) =>
   );
 
 describe("HitStreakTable", () => {
-  it("says Off today and Next: Fri instead of implying tonight", () => {
+  it("says Off Today and Next: Fri instead of implying tonight", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(NOW);
     mockProbables = [friday, thursday];
     renderTable({ rows: [row({})], teamAbbr: (t) => (t === "Cincinnati Reds" ? "CIN" : null) });
-    expect(screen.getAllByText("Off today").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Off Today").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Next: Fri vs/).length).toBeGreaterThan(0);
     vi.useRealTimers();
   });

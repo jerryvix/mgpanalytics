@@ -5,8 +5,6 @@
  */
 import '@/global.css';
 
-import { Platform } from 'react-native';
-
 import tokens from '@shared/design-tokens/tokens.json';
 
 type ColorSet = typeof tokens.app.color.light;
@@ -61,9 +59,14 @@ export const Spacing = {
   gutter: px(tokens.app.layout.screenGutter.$value),
 } as const;
 
-/** System font for UI. Space Grotesk for titles is loaded in a later step (expo-font). */
-export const Fonts = Platform.select({
-  ios: { sans: 'system-ui', mono: 'ui-monospace' },
-  default: { sans: 'normal', mono: 'monospace' },
-  web: { sans: 'var(--font-display)', mono: 'var(--font-mono)' },
-});
+/**
+ * Manrope everywhere (owner pick, docs/mobile/DECISIONS.md D-032). React Native needs one family
+ * name per weight; these match the faces loaded in src/app/_layout.tsx.
+ */
+export const Font = {
+  regular: 'Manrope_400Regular',
+  medium: 'Manrope_500Medium',
+  semibold: 'Manrope_600SemiBold',
+  bold: 'Manrope_700Bold',
+  extrabold: 'Manrope_800ExtraBold',
+} as const;

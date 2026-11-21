@@ -1,25 +1,31 @@
 import { StyleSheet, Text, type TextProps } from 'react-native';
 
-import { FontSize, type ThemeColor } from '@/constants/theme';
+import { Font, FontSize, type ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'largeTitle' | 'title' | 'headline' | 'body' | 'subhead' | 'footnote' | 'caption';
+  type?: 'largeTitle' | 'title' | 'headline' | 'body' | 'subhead' | 'footnote' | 'caption' | 'number';
   themeColor?: ThemeColor;
 };
 
-/** Text that follows the app type scale and the light or dark palette. */
+/**
+ * Text that follows the app type scale (Manrope) and the light or dark palette.
+ * Copy rule: labels (titles, buttons, tabs, chips, badges) are Title Case; sentences are sentence case.
+ * See docs/mobile/DECISIONS.md D-027 and titleCase() in packages/shared/text.
+ */
 export function ThemedText({ style, type = 'body', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
   return <Text style={[{ color: theme[themeColor ?? 'text'] }, styles[type], style]} {...rest} />;
 }
 
 const styles = StyleSheet.create({
-  largeTitle: { fontSize: FontSize.largeTitle, lineHeight: 41, fontWeight: '700' },
-  title: { fontSize: FontSize.title2, lineHeight: 28, fontWeight: '700' },
-  headline: { fontSize: FontSize.headline, lineHeight: 22, fontWeight: '600' },
-  body: { fontSize: FontSize.body, lineHeight: 22, fontWeight: '400' },
-  subhead: { fontSize: FontSize.subhead, lineHeight: 20, fontWeight: '400' },
-  footnote: { fontSize: FontSize.footnote, lineHeight: 18, fontWeight: '400' },
-  caption: { fontSize: FontSize.caption, lineHeight: 16, fontWeight: '400' },
+  largeTitle: { fontFamily: Font.extrabold, fontSize: FontSize.largeTitle, lineHeight: 41, letterSpacing: -0.5 },
+  title: { fontFamily: Font.bold, fontSize: FontSize.title2, lineHeight: 28 },
+  headline: { fontFamily: Font.semibold, fontSize: FontSize.headline, lineHeight: 22 },
+  body: { fontFamily: Font.regular, fontSize: FontSize.body, lineHeight: 24 },
+  subhead: { fontFamily: Font.regular, fontSize: FontSize.subhead, lineHeight: 21 },
+  footnote: { fontFamily: Font.medium, fontSize: FontSize.footnote, lineHeight: 18 },
+  caption: { fontFamily: Font.medium, fontSize: FontSize.caption, lineHeight: 16 },
+  /** Odds, scores and prices: tabular figures so columns line up. */
+  number: { fontFamily: Font.bold, fontSize: FontSize.headline, lineHeight: 22, fontVariant: ['tabular-nums'] },
 });

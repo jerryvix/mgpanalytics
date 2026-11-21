@@ -45,14 +45,14 @@ The rule for v1: only what a brand-new user needs in the first week. Everything 
 
 | # | Screen / feature | Notes |
 |---|---|---|
-| 1 | First launch | One welcome screen headed "Bet Smarter, Not Harder." (D-026), then pick sports and teams (skippable), then an optional "Get alerts for your teams" screen. No account needed (D-014) |
+| 1 | First launch | Welcome screen headed "Bet Smarter, Not Harder" (D-026), then "What do you bet on?" (pick sports), optional favorite teams, then turn on alerts (D-028, D-029). No account needed (D-014) |
 | 2 | Sign in / sign up | Bottom sheet shown when a guest follows, sets an alert, or opens the Analyst. Sign in with Apple, Google, email. Same accounts as the website; guest data carries over |
-| 3 | Notification asks | Soft asks only: slim bar above the tab bar and "Alert me" on modules; system prompt after a tap (D-018) |
-| 4 | Today (home) | Sport bar over modules. Your teams first if picked, otherwise "See where the lines are moving" first; then tonight's games, hot streaks with sample sizes (in season), insiders, games this week (D-015, D-026) |
+| 3 | Notifications | On from the start: quiet (provisional) alerts from first launch, full permission asked in onboarding, every alert type on by default with a daily cap; soft "Turn On Alerts" bar for anyone who said no (D-029) |
+| 4 | Today (home) | Sport bar (your sports first) over modules: Today in Your Sports (games, current line, move since open, favorite teams pinned), See Where the Lines Are Moving, Hot Streaks with sample sizes (in season), Insiders, Games This Week (D-015, D-028) |
 | 5 | Games | Day strip with game counts, sport chips, slate list. Game detail: header with bell, star, share; current line large with change since open and "odds as of"; section bar (Odds, Line movement, Matchup, Streaks, Props, Analyst); disclaimer block at the bottom |
 | 6 | Alerts | Your team's game starting, final scores, big line moves (current odds refresh, worded honestly), plus a bell on any game page to follow that game (D-024). In-app inbox with filter chips and swipe to edit or remove |
 | 7 | Insiders | Sharps, insiders, analysts and media with category chips, follow, and "Open on X". Posts shown in the app wait for X API approval (D-023) |
-| 8 | Analyst | The grounded AI chat, with a one-time consent screen for third-party AI |
+| 8 | The Analyst (D-030) | The grounded AI chat, with a one-time consent screen for third-party AI |
 | 9 | Profile | Sports and teams, notification settings, legal pages, responsible gaming, sign out, **delete account** |
 
 **Not in v1 (v1.1 or later):** player status alerts (Out, Questionable, Active; the sports version of trading-halt alerts), "most talked-about games" from X mentions, practice bankroll (fake-money "simulator"), home screen widgets, Live Activities for live games, community feed, fantasy tools, draft board, player pages beyond what game detail needs, paywall (built behind a switch, off at launch).

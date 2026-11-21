@@ -87,7 +87,7 @@ export function CapperCard({ capper, isFollowing, onFollow, onUnfollow, isLoadin
             {isEntertainment && (
               <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                 <AlertTriangle className="h-3 w-3 text-primary" />
-                <span>Entertainment personality</span>
+                <span>Entertainment Personality</span>
               </div>
             )}
 

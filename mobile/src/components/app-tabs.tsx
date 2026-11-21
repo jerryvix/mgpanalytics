@@ -1,9 +1,10 @@
 import { NativeTabs } from 'expo-router/native-tabs';
 
+import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
- * The five v1 tabs (docs/mobile/PLAN.md). Profile is reached from the avatar in
+ * The five v1 tabs (docs/mobile/PLAN.md). Labels are Title Case (D-027); the Analyst tab is named "The Analyst" (D-030). Profile is reached from the avatar in
  * each screen's header, not a tab. Icons: SF Symbols on iOS, Material on Android.
  */
 export default function AppTabs() {
@@ -13,7 +14,10 @@ export default function AppTabs() {
     <NativeTabs
       backgroundColor={colors.surface}
       indicatorColor={colors.chipBg}
-      labelStyle={{ selected: { color: colors.text } }}>
+      labelStyle={{
+        default: { fontFamily: Font.semibold },
+        selected: { fontFamily: Font.semibold, color: colors.text },
+      }}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Today</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'flame', selected: 'flame.fill' }} md="local_fire_department" />
@@ -35,7 +39,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="analyst">
-        <NativeTabs.Trigger.Label>Analyst</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>The Analyst</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'bubble.left.and.text.bubble.right', selected: 'bubble.left.and.text.bubble.right.fill' }}
           md="forum"

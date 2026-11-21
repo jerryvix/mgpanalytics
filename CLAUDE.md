@@ -37,8 +37,10 @@ Set `VITE_DEV_BYPASS_AUTH=true` in `.env` to preview the dashboard locally with 
 - **No mock or random data on user-facing surfaces.** Some legacy components still use `Math.random()`; they are listed in `docs/positioning.md` and must not be ported to the app or extended.
 - **The analyst never gives picks.** It is descriptive only: no "should bet", "lock", or recommendations. Market numbers come only from synced data.
 - **Odds math lives in `src/lib/odds.ts`:** consensus is computed in probability space; never average American odds directly.
+- **Labels are Title Case** (titles, buttons, tabs, chips, badges, menu items): "Player Props", "Browse by Sport". Sentences, empty states, tooltips and screen-reader labels stay sentence case. Use `titleCase()` from `packages/shared/text/title-case.ts` for labels built from data. (DECISIONS D-027)
 - **Consumer copy:** positive claims only, second person, short sentences, no em dashes, no competitor names. Odds update on a schedule (about every 6 hours), so don't call odds "real time".
 - **The `gemini-chat` function runs Claude**, not Gemini; the name is legacy.
 - **Secrets** never go in the repo or in chat. Edge function secrets are set with `supabase secrets set`.
+- **No amber for ranks:** rank badges use the `rank` color (black/charcoal). (DECISIONS D-033)
 - **Admin surfaces** (admin panel, sync observatory, data inspector) are web only.
 - Record any non-obvious product or technical decision for the app in `docs/mobile/DECISIONS.md`.

@@ -228,7 +228,7 @@ export default function NFLPlayerDetail() {
   if (!lookupId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-foreground">Invalid player ID</h2>
+        <h2 className="text-xl font-semibold text-foreground">Invalid Player ID</h2>
         <Link to="/dashboard/nfl/players">
           <Button variant="outline" className="mt-4">
             <ArrowLeft className="w-4 h-4 mr-2" />

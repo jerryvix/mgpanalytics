@@ -159,7 +159,7 @@ export function NCAAFSlate() {
     }
     if (isRanked) {
       return (
-        <Badge className="bg-terminal-amber/20 text-terminal-amber border-terminal-amber/50 text-[10px] font-mono">
+        <Badge className="bg-rank text-rank-foreground border-transparent text-[10px] font-mono">
           <Trophy className="w-3 h-3 mr-1" />
           RANKED
         </Badge>
@@ -223,7 +223,7 @@ export function NCAAFSlate() {
           <h1 className="text-2xl font-bold text-foreground tracking-wide font-mono">NCAAF SLATE</h1>
           <p className="text-sm text-muted-foreground font-mono">Upcoming College Football Matchups</p>
         </div>
-        <Badge variant="outline" className="border-terminal-amber text-terminal-amber font-mono">
+        <Badge variant="outline" className="bg-rank text-rank-foreground border-transparent font-mono">
           {rankedGamesCount > 0 ? `${rankedGamesCount} RANKED` : `${games.length} GAMES`}
         </Badge>
       </motion.div>
@@ -322,7 +322,7 @@ export function NCAAFSlate() {
                         <TeamLogo sport="NCAAF" name={game.visitor_team_name} espnId={game.visitor_team_id} size={22} />
                         {formatRank(ranks.away) && (
                           <Badge
-                            className="bg-terminal-amber text-background text-[10px] px-1.5 py-0"
+                            className="bg-rank text-rank-foreground border-transparent text-[10px] px-1.5 py-0"
                             title="AP Top 25 rank"
                           >
                             {formatRank(ranks.away)}
@@ -347,7 +347,7 @@ export function NCAAFSlate() {
                         <TeamLogo sport="NCAAF" name={game.home_team_name} espnId={game.home_team_id} size={22} />
                         {formatRank(ranks.home) && (
                           <Badge
-                            className="bg-terminal-amber text-background text-[10px] px-1.5 py-0"
+                            className="bg-rank text-rank-foreground border-transparent text-[10px] px-1.5 py-0"
                             title="AP Top 25 rank"
                           >
                             {formatRank(ranks.home)}

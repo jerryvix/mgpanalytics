@@ -27,7 +27,7 @@ export function ScreenShell({ title, purpose, children }: Props) {
         {purpose ? (
           <View style={[styles.wip, { borderColor: colors.border }]}>
             <ThemedText type="footnote" themeColor="textTertiary">
-              In development
+              In Development
             </ThemedText>
             <ThemedText type="subhead" themeColor="textSecondary">
               {purpose}

@@ -71,12 +71,12 @@ function getQuestionTypeFooter(questionType?: QuestionType): string | null {
 }
 
 const SUGGESTED_QUESTIONS = [
-  { label: "Tonight's slate", icon: Calendar },
-  { label: "Biggest favorites", icon: TrendingUp },
-  { label: "Value plays", icon: Target },
-  { label: "Player props", icon: BarChart3 },
-  { label: "Line movement", icon: Activity },
-  { label: "Team matchups", icon: Users2 },
+  { label: "Tonight's Slate", icon: Calendar },
+  { label: "Biggest Favorites", icon: TrendingUp },
+  { label: "Value Plays", icon: Target },
+  { label: "Player Props", icon: BarChart3 },
+  { label: "Line Movement", icon: Activity },
+  { label: "Team Matchups", icon: Users2 },
 ];
 
 function CurrentContext({ activeSports }: { activeSports: string[] }) {

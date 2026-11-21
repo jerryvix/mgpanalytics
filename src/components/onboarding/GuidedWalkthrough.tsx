@@ -8,17 +8,17 @@ const WALKTHROUGH_KEY = "mgp-walkthrough-completed";
 const STEPS = [
   {
     targetSelector: '[data-coach="hero-input"]',
-    title: "Ask anything",
+    title: "Ask Anything",
     description: "Type a question about any game, player, or market.",
   },
   {
     targetSelector: '[data-coach="sports-nav"]',
-    title: "Browse by sport",
+    title: "Browse by Sport",
     description: "Browse games, odds, and stats by sport.",
   },
   {
     targetSelector: '[data-coach="chat-panel"]',
-    title: "Your research assistant",
+    title: "Your Research Assistant",
     description: "Ask follow-ups, compare data, dig deeper.",
   },
 ];

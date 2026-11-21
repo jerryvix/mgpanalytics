@@ -60,7 +60,7 @@ export default function CapperProfilePage() {
           </Button>
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">Capper not found</p>
+              <p className="text-muted-foreground">Capper Not Found</p>
             </CardContent>
           </Card>
         </div>

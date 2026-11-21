@@ -180,7 +180,7 @@ export default function PlayerProfile() {
   if (!player) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-foreground">Player not found</h2>
+        <h2 className="text-xl font-semibold text-foreground">Player Not Found</h2>
         <Link to={`/dashboard/${sport}/players`}>
           <Button variant="outline" className="mt-4">
             <ArrowLeft className="w-4 h-4 mr-2" />

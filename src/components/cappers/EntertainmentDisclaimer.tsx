@@ -9,7 +9,7 @@ export function EntertainmentDisclaimer({ compact = false }: EntertainmentDiscla
     return (
       <div className="flex items-center gap-1 text-xs text-pink-400">
         <AlertTriangle className="h-3 w-3" />
-        <span>Entertainment personality</span>
+        <span>Entertainment Personality</span>
       </div>
     );
   }

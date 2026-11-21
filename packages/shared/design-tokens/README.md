@@ -10,11 +10,13 @@
 | | Web today | App v1 |
 |---|---|---|
 | Theme | Dark only | Follows the phone's light or dark setting |
-| Body font | Space Grotesk + IBM Plex Mono everywhere | System font (SF Pro) for UI; Space Grotesk for titles and big numbers |
-| Labels | UPPERCASE MONO | Sentence case |
+| Font | Space Grotesk + IBM Plex Mono everywhere | Manrope everywhere (owner pick, Nov 21): 400 body, 600 labels, 700 to 800 titles and big numbers |
+| Labels | UPPERCASE MONO | Title Case for anything that isn't a sentence (owner rule, Nov 21); sentences stay sentence case |
 | Corners | 4px | 10px chips, 12px rows, 16px cards |
 | Brand green | #22C373 | Same green on dark; deeper #0E874D on light for contrast |
 | Numbers | Mono | Tabular figures so odds and scores line up |
+| Rank badges | Amber | Black on light, charcoal (#3A414D) on dark (owner pick, Nov 21) |
+| Amber | Accent color across the site | Not used, except warning text |
 
 ## Changing a token
 

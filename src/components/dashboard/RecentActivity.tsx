@@ -21,11 +21,11 @@ function inferSport(title: string): string {
 
 function inferType(title: string): string {
   const lower = title.toLowerCase();
-  if (lower.includes("line") || lower.includes("move")) return "Line movement";
-  if (lower.includes("prop")) return "Player props";
-  if (lower.includes("favorite") || lower.includes("spread") || lower.includes("value")) return "Market analysis";
-  if (lower.includes("slate") || lower.includes("tonight") || lower.includes("today")) return "Slate overview";
-  return "General question";
+  if (lower.includes("line") || lower.includes("move")) return "Line Movement";
+  if (lower.includes("prop")) return "Player Props";
+  if (lower.includes("favorite") || lower.includes("spread") || lower.includes("value")) return "Market Analysis";
+  if (lower.includes("slate") || lower.includes("tonight") || lower.includes("today")) return "Slate Overview";
+  return "General Question";
 }
 
 function formatTime(dateStr: string) {

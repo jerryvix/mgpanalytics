@@ -148,8 +148,8 @@ function markerText(view: PulseMarketView, sides: [Side, Side]): string | null {
   if (view.thin) return null;
   const parts: string[] = [];
   for (const s of sides) {
-    if (s.view.sharp) parts.push(`Sharp money: ${s.name}`);
-    if (s.view.publicSide) parts.push(`Public side: ${s.name}`);
+    if (s.view.sharp) parts.push(`Sharp Money: ${s.name}`);
+    if (s.view.publicSide) parts.push(`Public Side: ${s.name}`);
     if (s.view.reverseMove) parts.push(`Reverse move: ${s.name}`);
   }
   return parts.length ? parts.join(" · ") : null;

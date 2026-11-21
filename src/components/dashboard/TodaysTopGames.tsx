@@ -61,7 +61,7 @@ export function TodaysTopGames({ games, loading }: TodaysTopGamesProps) {
           to={seeAllPath}
           className="text-xs text-terminal-blue hover:text-terminal-blue/80 transition-colors inline-flex items-center gap-0.5"
         >
-          See all
+          See All
           <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>
@@ -130,7 +130,7 @@ export function TodaysTopGames({ games, loading }: TodaysTopGamesProps) {
                 {showMove && (
                   <div className="mt-1.5 flex items-center gap-1">
                     <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground">
-                      Line move
+                      Line Move
                     </span>
                     <span
                       className={`inline-flex items-center gap-0.5 font-mono text-xs font-bold ${

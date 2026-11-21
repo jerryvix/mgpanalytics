@@ -71,7 +71,7 @@ Guaranteed-win claims 65.0% · notification spam 51.0% · stale or wrong odds 49
 
 ## Owner decision (2026-11-20)
 
-Headline: **"Bet Smarter, Not Harder."** for the App Store listing and the welcome screen. Recorded as DECISIONS D-026.
+Headline: **"Bet Smarter, Not Harder"** (no period, per owner on 2026-11-21) for the App Store listing and the welcome screen. Recorded as DECISIONS D-026. Home personalization moved from teams to sports by owner direction (D-028).
 
 ## Recommendations
 

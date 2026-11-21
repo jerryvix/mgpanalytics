@@ -124,7 +124,7 @@ export function PlayerPropsCard({
         <div className="flex items-center gap-2">
           <BarChart3 className="w-3 h-3 text-muted-foreground" />
           <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-            Props pending
+            Props Pending
           </span>
         </div>
       </div>

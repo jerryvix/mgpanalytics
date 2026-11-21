@@ -70,6 +70,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        rank: {
+          DEFAULT: "hsl(var(--rank))",
+          foreground: "hsl(var(--rank-foreground))",
+        },
         terminal: {
           green: "hsl(var(--terminal-green))",
           red: "hsl(var(--terminal-red))",

@@ -50,7 +50,7 @@ const MARKERS: MarkerDef[] = [
   {
     key: "sharp",
     icon: Crosshair,
-    label: "Sharp money",
+    label: "Sharp Money",
     meaning: `Under 50% of the bets but over 50% of the money, with at least ${SHARP_EDGE_PTS} more points of money than bets.`,
     lit: (s) => s.sharp,
     litClass: "border-terminal-green/60 bg-terminal-green/15 text-terminal-green",
@@ -58,7 +58,7 @@ const MARKERS: MarkerDef[] = [
   {
     key: "public",
     icon: Users,
-    label: "Public side",
+    label: "Public Side",
     meaning: `${PUBLIC_BETS_PCT}% or more of all bets are on this side.`,
     lit: (s) => s.publicSide,
     litClass: "border-terminal-amber/60 bg-terminal-amber/15 text-terminal-amber",
@@ -66,7 +66,7 @@ const MARKERS: MarkerDef[] = [
   {
     key: "reverse",
     icon: Undo2,
-    label: "Reverse move",
+    label: "Reverse Move",
     meaning: `Since DraftKings opened it, the line moved toward this side even though ${PUBLIC_BETS_PCT}%+ of the bets are on the other side.`,
     lit: (s) => s.reverseMove,
     litClass: "border-terminal-green/60 bg-terminal-green/15 text-terminal-green",

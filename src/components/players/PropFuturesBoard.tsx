@@ -65,7 +65,7 @@ export function PropFuturesBoard({ sport, view = "all" }: PropFuturesBoardProps)
             {sport} SEASON FUTURES
           </h2>
           <p className="text-xs text-muted-foreground font-mono">
-            Season-long O/U board
+            Season-Long O/U Board
             <span className="text-terminal-green"> · tap any line for the MGP Angle</span>
           </p>
         </div>

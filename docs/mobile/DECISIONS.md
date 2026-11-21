@@ -57,7 +57,7 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 
 ### D-013 App visual direction (proposed, pending owner review)
 **Date:** 2026-11-20 · **By:** Builder
-**What:** keep MGP green; system font (SF Pro) for UI with Space Grotesk for titles and big numbers; sentence case instead of uppercase mono; 10/12/16px corners; light and dark themes following the phone setting. Tokens in `packages/shared/design-tokens/tokens.json`.
+**What:** keep MGP green; ~~system font (SF Pro) for UI with Space Grotesk for titles~~ Manrope (D-032); ~~sentence case~~ Title Case labels (D-027) instead of uppercase mono; 10/12/16px corners; light and dark themes following the phone setting. Tokens in `packages/shared/design-tokens/tokens.json`.
 **Why:** the web app's terminal style (IBM Plex Mono, uppercase, 4px corners, dark only) reads as a pro tool; the goal is "clean and easy for new users". Review board: https://claude.ai/artifact/94MNqZHA2ELsZdyq87HKJ7 (private; owner shares it with reviewers).
 
 ### D-014 Guest browsing: no login wall (approved by owner 2026-11-20)
@@ -121,8 +121,39 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 
 ### D-026 Headline, Home order and copy rules from the simulated survey
 **Date:** 2026-11-20 · **By:** Owner (headline), builder (the rest) · **Source:** `research/2026-11-20-simulated-survey.md`
-**Headline:** "Bet Smarter, Not Harder." leads the App Store listing and the welcome screen. Supporting line: "Every number you need. One app."
+**Headline:** "Bet Smarter, Not Harder" (no period, owner 2026-11-21) leads the App Store listing and the welcome screen. Supporting line: "Every number you need. One app."
 **Not used in store or app copy:** "Beat the sportsbooks", "Bet like a pro", "The upper hand the pros have", "Level the playing field" (tested last or flagged as tout language), and "See where the money's moving" (MGP has no money-flow data; positioning DO NOT CLAIM). "Get an edge on the books" stays on the website if the owner keeps it, but not in the App Store listing (heavily flagged as a compliance risk).
-**Home order:** your teams first when you've picked teams; biggest line moves first for guests who haven't. Line-move module title: "See where the lines are moving." Streaks sit lower, always with sample size ("12 of last 15").
+**Home order:** superseded by D-028 (personalize by sports, not teams). Line-move module title: "See where the lines are moving." Streaks sit lower, always with sample size ("12 of last 15").
 **Copy rules:** introduce the Analyst by what it does ("Ask anything about tonight's games"), not by what it won't do. The Insiders tab carries a one-line description ("Well-known betting voices, in one place"). Every odds number shows an "as of" time. Push alerts are opt-in per type with a daily cap.
 **Pro tier input (v1.1):** props tools and faster line-move alerts were the most-wanted paid features; faster alerts can fund their own faster odds refresh (D-022).
+
+### D-027 Labels are Title Case; sentences stay sentence case
+**Date:** 2026-11-21 · **By:** Owner
+**Rule:** any words on screen that aren't in a sentence (titles, headings, buttons, tabs, chips, badges, menu items, section names) are Title Case: every word capitalized except articles, short conjunctions and short prepositions in the middle ("Player Props", "Browse by Sport", "Lakers vs Celtics"). Sentences (descriptions, empty states, alerts, tooltips, screen-reader labels) stay sentence case. Acronyms stay as written (NBA, O/U).
+**Applied:** the iPhone app from day one; the website's visible labels on 2026-11-21 (chat suggestion chips, badges, buttons, headings, walkthrough titles). Labels built from data go through `titleCase()` in `packages/shared/text/title-case.ts` (tested in `src/test/titleCase.test.ts`).
+
+### D-028 Personalize by the sports people bet on, not their teams
+**Date:** 2026-11-21 · **By:** Owner direction, builder design (supersedes D-026 Home order)
+**Why:** bettors bet across a whole sport, not only on their favorite teams.
+**What:** onboarding asks "What do you bet on?" (pick sports) first; favorite teams are optional. The sport bar lists your sports first. Home opens on **Today in Your Sports** (today's games in your sports, each with the current line and the move since open, favorite teams pinned on top), then **See Where the Lines Are Moving** (biggest moves in your sports). Guests who skip see all sports.
+
+### D-029 Push notifications on from the start (amends D-012 and D-018)
+**Date:** 2026-11-21 · **By:** Owner direction, builder design
+**Why:** people forget apps; alerts bring them back.
+**What:** iOS can't switch alerts on without the user's yes, so: (1) from first launch the app requests *provisional* permission, which delivers quiet alerts to Notification Center with no pop-up; (2) right after picking sports, onboarding shows what alerts look like and asks for full permission; (3) every alert type starts ON for your sports, teams and followed games; (4) a daily cap keeps it from becoming spam (51% in the survey delete apps for spam); (5) the soft "Turn On Alerts" bar stays for anyone who said no. Alerts are about games, not marketing; any promotional push would need separate opt-in (App Review 4.5.4).
+
+### D-030 The Analyst
+**Date:** 2026-11-21 · **By:** Owner
+**What:** the AI chat is named **The Analyst**: the tab label, the screen title, and in copy ("Ask The Analyst").
+
+### D-031 Pro tier direction: props tools and faster alerts
+**Date:** 2026-11-21 · **By:** Owner
+**What:** when Pro turns on (v1.1, D-002), it centers on props tools and faster line-move alerts. Pro revenue pays for the faster odds refresh those alerts need (D-022).
+
+### D-032 Font: Manrope
+**Date:** 2026-11-21 · **By:** Owner (chosen from six options: https://claude.ai/artifact/Kinxhem61SWWVRzHKvRbsx)
+**What:** Manrope for everything in the app: 400 body, 500 small text, 600 labels and tabs, 700 to 800 titles and big numbers; tabular figures for odds and scores. Only these five weights ship (about 490 KB). Free (open font license). Supersedes the font part of D-013.
+
+### D-033 Rank badges are black, not amber
+**Date:** 2026-11-21 · **By:** Owner ("amber feels amateurish"; saturation and brightness matter more than hue)
+**What:** rank badges are black with white numbers in light mode and charcoal (#3A414D) with near-white numbers in dark mode. Tokens `rank` and `onRank`. Amber is removed from the app palette except warning text. Website: college team ranks, "Ranked" chips, the ranked-games count and the player top-rank circles now use the same charcoal (`--rank`). Amber still appears elsewhere on the website (ranked game card outlines, "View All Odds" buttons); owner to decide whether those follow.

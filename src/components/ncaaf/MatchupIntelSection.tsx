@@ -192,7 +192,7 @@ export function MatchupIntelSection({
                       <>
                         {(showAllProspects ? prospects : prospects.slice(0, MAX_PROSPECTS_SHOWN)).map((p) => (
                           <p key={p.rank} className="font-mono text-[11px] tabular-nums leading-relaxed truncate">
-                            <span className="text-terminal-amber">#{p.rank}</span> {p.player_name}
+                            <span className="text-muted-foreground">#{p.rank}</span> {p.player_name}
                             <span className="text-muted-foreground"> {p.position ?? ""}</span>
                           </p>
                         ))}

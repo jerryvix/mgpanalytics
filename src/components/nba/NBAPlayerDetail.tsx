@@ -143,7 +143,7 @@ export function NBAPlayerDetail({ playerId }: NBAPlayerDetailProps) {
       <Card className="bg-card border-border">
         <CardContent className="py-12 text-center">
           <User className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-foreground">Player not found</p>
+          <p className="text-foreground">Player Not Found</p>
           <Button
             variant="outline"
             className="mt-4"

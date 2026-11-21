@@ -17,6 +17,8 @@
 - Owner's Stocks.News screen recording analyzed: guest browsing, module Home, soft notification asks, detail layout. Board updated (notes 24 to 33); decisions D-014 to D-018. Owner confirmed guest browsing and the guest, free, Pro ladder (D-019), one-tap sign-up (D-020), Insiders from X (D-021).
 - Expo app scaffolded in `mobile/`: five native tabs (Today, Games, Alerts, Insiders, Analyst), theme wired to shared tokens, iPhone only, bundle ID set. Typecheck, lint and iOS bundle pass.
 
+- 2026-11-21 owner direction applied: headline "Bet Smarter, Not Harder"; Title Case labels (app + website visible labels, shared `titleCase()` with tests); sports-first personalization; alerts on from the start; "The Analyst"; Pro direction; Manrope in the app (5 weights); black rank badges (app tokens + website). Website: 1,040 tests pass, build passes, lint unchanged. App: typecheck, lint, iOS bundle pass. Decisions D-027 to D-033.
+
 ## In progress
 
 - Supabase client and sign-in in the app.
@@ -28,6 +30,8 @@
 - Core screens: onboarding, Today, Games, game detail, Profile.
 
 ## Open decisions (owner, later)
+
+- Website: move the remaining amber (ranked game card outlines, "View All Odds" buttons) to neutral too? (D-033)
 
 - X API spend for in-app insider posts: on hold by owner (D-023).
 - Faster odds refresh: first check existing Odds API quota headroom (D-024).

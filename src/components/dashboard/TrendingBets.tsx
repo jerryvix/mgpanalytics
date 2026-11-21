@@ -66,7 +66,7 @@ function BetRow({ bet, index }: { bet: TrendingBet; index: number }) {
             <div className="flex items-center gap-1.5 mb-1">
               <Lightbulb className="w-3.5 h-3.5 text-terminal-amber" />
               <span className="text-[10px] font-mono uppercase tracking-widest text-terminal-amber">
-                Did you know
+                Did You Know
               </span>
             </div>
             <p className="text-sm text-foreground/90 leading-relaxed">{bet.nugget}</p>

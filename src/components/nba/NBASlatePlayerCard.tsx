@@ -97,21 +97,21 @@ export function NBASlatePlayerCard({
     
     if (rank === 1) {
       return (
-        <div className={`${baseClasses} bg-gradient-to-br from-yellow-400 to-amber-500 text-yellow-900`}>
+        <div className={`${baseClasses} bg-rank text-rank-foreground`}>
           <Flame className="w-4 h-4" />
         </div>
       );
     }
     if (rank === 2) {
       return (
-        <div className={`${baseClasses} bg-gradient-to-br from-slate-300 to-slate-400 text-slate-800`}>
+        <div className={`${baseClasses} bg-rank text-rank-foreground`}>
           #{rank}
         </div>
       );
     }
     if (rank === 3) {
       return (
-        <div className={`${baseClasses} bg-gradient-to-br from-amber-600 to-amber-700 text-amber-100`}>
+        <div className={`${baseClasses} bg-rank text-rank-foreground`}>
           #{rank}
         </div>
       );
