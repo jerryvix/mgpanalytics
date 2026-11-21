@@ -1,0 +1,17 @@
+{"replicate":"B_general_us_bettors","n":250,
+"q1_open_before_bet":{"S":60,"K":58,"V":39,"A":28,"none":65},
+"q2_mean_useful":{"S":3.29,"K":3.46,"V":3.27,"A":2.92},
+"q3_score_trust":{"trust_it":51,"trust_if_shown_how_calculated":102,"dont_trust":48,"its_just_a_pick_in_disguise":49},
+"q4_score_effect_on_app_trust":{"more":74,"same":124,"less":52},
+"q5_check_before_bet":{"recent_form_streaks":161,"ats_record":71,"injuries":175,"line_movement":63,"head_to_head":81,"weather":55,"public_betting_pct":51,"expert_opinions":105,"player_props":88,"rest_travel":35,"team_stats":106},
+"q6_places_checked":{"one":71,"two_three":114,"four_six":48,"seven_plus":17},
+"verbatims":[
+{"segment":"casual","quote":"Honestly I just bet the Chiefs. I'm not reading a bunch of stats first."},
+{"segment":"casual","quote":"The score is the only thing I'd actually look at. Give me a number and I'm good."},
+{"segment":"serious","quote":"A 0 to 100 score that blends ATS and line movement is a pick with extra steps. Show me the raw numbers."},
+{"segment":"recreational_weekly","quote":"Start Here is nice. I don't really get 'against the spread' but 'won 4 straight' I understand."},
+{"segment":"dfs_fantasy","quote":"I'd ask the analyst about prop matchups if it's quick. If it gives me a wall of text, no thanks."},
+{"segment":"recreational_weekly","quote":"If the score says 78 and that team gets blown out, I'm deleting the app."},
+{"segment":"industry","quote":"Odds updating a few times a day isn't enough for line movement to mean much on game day."},
+{"segment":"casual","quote":"AI answering betting questions? I'd want to know where it gets its info. Feels like it could make stuff up."}],
+"researcher_note":"'None' is the biggest Q1 answer (26%), mostly gut-betting casuals. Score fans are casuals wanting a lean. ~40% trust only if method shown. Start Here highest usefulness; plain English avoids ATS jargon. Analyst last (AI accuracy doubts, typing effort)."}

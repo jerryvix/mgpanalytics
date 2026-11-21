@@ -1,0 +1,17 @@
+{"replicate":"A_online_communities","n":250,
+"q1_open_before_bet":{"S":46,"K":56,"V":39,"A":45,"none":64},
+"q2_mean_useful":{"S":2.86,"K":3.25,"V":3.16,"A":3.20},
+"q3_score_trust":{"trust_it":30,"trust_if_shown_how_calculated":103,"dont_trust":52,"its_just_a_pick_in_disguise":65},
+"q4_score_effect_on_app_trust":{"more":53,"same":108,"less":89},
+"q5_check_before_bet":{"recent_form_streaks":155,"ats_record":87,"injuries":217,"line_movement":131,"head_to_head":86,"weather":89,"public_betting_pct":83,"expert_opinions":78,"player_props":103,"rest_travel":90,"team_stats":164},
+"q6_places_checked":{"one":23,"two_three":101,"four_six":88,"seven_plus":38},
+"verbatims":[
+{"segment":"serious_high_volume","quote":"A 0 to 100 score is a pick with extra steps. If it doesn't beat the closing line, I don't care what it combines."},
+{"segment":"serious_high_volume","quote":"ATS records and head-to-head are noise. Four books is a thin screen. I already have one with fifteen."},
+{"segment":"industry","quote":"If the score leans on line movement, you're just echoing the market back to me with a number on it."},
+{"segment":"recreational_weekly","quote":"Free app, no picks, 'well-known betting voices'... so where's the affiliate link? Someone's getting paid."},
+{"segment":"recreational_weekly","quote":"Start Here is what I actually want. I'm not reading six tabs for a Tuesday MAC game."},
+{"segment":"recreational_weekly","quote":"I'd look at the score, sure. Trust it? Show me the weights and how it did last season."},
+{"segment":"dfs_fantasy","quote":"Ask the analyst is cool if it pulls real injury news. Every AI I've tried makes up rosters."},
+{"segment":"casual","quote":"The side-by-side bars are the easiest thing here. I can tell who's better in five seconds."}],
+"researcher_note":"'None' largest Q1 (64), mostly serious bettors with better odds screens. Score most polarizing: 103 trust-if-shown plurality, only 30 trust outright; net lowers trust (89 less vs 53 more). Start Here won Q1 among non-sharps with no trust penalty."}
