@@ -157,3 +157,10 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-033 Rank badges are black, not amber
 **Date:** 2026-11-21 · **By:** Owner ("amber feels amateurish"; saturation and brightness matter more than hue)
 **What:** rank badges are black with white numbers in light mode and charcoal (#3A414D) with near-white numbers in dark mode. Tokens `rank` and `onRank`. Amber is removed from the app palette except warning text. Website: college team ranks, "Ranked" chips, the ranked-games count and the player top-rank circles now use the same charcoal (`--rank`). Amber still appears elsewhere on the website (ranked game card outlines, "View All Odds" buttons); owner to decide whether those follow.
+
+### D-034 Corrections from the Nov 21 data audit
+**Date:** 2026-11-21 · **By:** Builder
+- **D-024 correction:** there is no Odds API quota to check. The Odds API key stopped working in July 2026, and game odds moved to ESPN's free DraftKings feed (owner decision Aug 7, 2026; `supabase/functions/_shared/espn-odds.ts`). Faster line-move alerts would need a new odds source, which is a cost decision (D-022).
+- **D-026 correction:** MGP does have money data for NFL and college football: DraftKings % of bets and % of money (`betting_splits`), refreshed about every 4 hours. Other sports have none. The Home module title stays "See Where the Lines Are Moving" so it reads the same in every sport.
+- **Books:** NFL, college football and MLB odds are DraftKings only; NBA and college basketball have 4 books. App copy names the book next to every price and never claims "4 books" across sports.
+- **Proposal:** the game-first plan, Start Here, and the full audit are in `proposals/2026-11-21-game-first.md`.

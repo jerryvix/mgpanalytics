@@ -3,6 +3,11 @@
 **Audit date:** July 17, 2026 (full-codebase competitive audit: frontend features, data layer, chat/insights).
 **Purpose:** the on-record list of what MGP can truthfully claim, what it must not claim, and why. Consumer copy (landing hero, `/why` page) must trace to this document. Internal and investor material may use analogy language ("Bloomberg terminal for bettors"); shipped UI copy may not.
 
+> **Audit note, 2026-11-21 (facts changed since the July record; owner approval of the lines below is unchanged):**
+> - Public betting % is now **real** for NFL and college football (DraftKings % of bets and % of money via `sync-betting-splits`); `PublicBettingPreview` no longer uses `Math.random`. It is still not available for NBA, college basketball or MLB.
+> - Books: since Aug 7, 2026, NFL, college football and MLB odds are **DraftKings only** (ESPN feed). NBA and college basketball have 4 books. Don't claim "4 books" across all sports.
+> - NFL advanced stats on the player page still use `Math.random` (`src/utils/advancedStatsCalculator.ts`).
+
 ---
 
 ## Confirmed competitive advantages (ranked by defensibility)
