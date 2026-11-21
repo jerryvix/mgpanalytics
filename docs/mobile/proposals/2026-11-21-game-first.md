@@ -143,7 +143,11 @@ The game page was already in v1. Start Here plus the free data fixes add about a
 
 Apple's verification of the LLC is still the critical path.
 
-## Next after alignment
+## Mockups
+
+https://claude.ai/artifact/7ZWWFemMUESwBoLiFsEk3i (private; owner shares it). Six phone screens with example data: game page top (What to Know arrows), game page sections (Form highlighted after tapping its arrow; one DraftKings line; Signal; About This Data link), game page in dark mode, welcome, What Do You Bet On, Today with the first-launch arrow.
+
+## Next after alignment (original plan)
 
 Mockups in Manrope, light and dark:
 
