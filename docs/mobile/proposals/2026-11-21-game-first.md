@@ -1,6 +1,6 @@
 # Proposal: Check MGP Before You Bet
 
-**Date:** 2026-11-21 · **Status:** proposed, awaiting owner alignment · **Inputs:** owner direction (Nov 21), data audit (below), simulated concept test (`../research/2026-11-21-game-page-concepts.md`)
+**Date:** 2026-11-21 · **Status:** aligned 2026-11-21 with changes: Signal kept (D-035), almost no footnotes (D-036), arrows instead of a Start Here box (D-037), everything with data by end of week (D-038) · **Inputs:** owner direction (Nov 21), data audit (below), simulated concept test (`../research/2026-11-21-game-page-concepts.md`)
 
 ## The problem, in the owner's words
 

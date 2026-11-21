@@ -95,15 +95,15 @@ export function MatchupIntelSection({
       <div className="border border-terminal-amber/30 rounded-lg p-3 bg-terminal-amber/5 mb-3">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            Signal Lean
+            Signal
           </span>
           <span className="font-mono text-sm font-bold text-terminal-amber uppercase">
             {leanLabel(composite.lean, home, away)}
           </span>
         </div>
         <p className="font-mono text-[10px] text-muted-foreground mt-1">
-          {composite.signalsUsed} of 3 signals with verified data · roster continuity weighted
-          heaviest: last season matters less if the roster left.
+          Built from the data below: {composite.signalsUsed} of 3 signals with verified data, roster
+          continuity weighted heaviest because last season matters less if the roster left.
         </p>
       </div>
 
@@ -115,7 +115,7 @@ export function MatchupIntelSection({
               <Users className="w-3 h-3" /> Roster Continuity
               {continuity.lean !== "insufficient" && continuity.lean !== "even" && (
                 <span className="ml-auto text-terminal-amber font-bold">
-                  edge: {leanLabel(continuity.lean, home, away)}
+                  signal: {leanLabel(continuity.lean, home, away)}
                 </span>
               )}
             </div>
@@ -170,7 +170,7 @@ export function MatchupIntelSection({
               <GraduationCap className="w-3 h-3" /> NFL Draft Talent
               {talent.result.lean !== "even" && (
                 <span className="ml-auto text-terminal-amber font-bold">
-                  edge: {leanLabel(talent.result.lean, home, away)}
+                  signal: {leanLabel(talent.result.lean, home, away)}
                 </span>
               )}
             </div>

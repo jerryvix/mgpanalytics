@@ -164,3 +164,23 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 - **D-026 correction:** MGP does have money data for NFL and college football: DraftKings % of bets and % of money (`betting_splits`), refreshed about every 4 hours. Other sports have none. The Home module title stays "See Where the Lines Are Moving" so it reads the same in every sport.
 - **Books:** NFL, college football and MLB odds are DraftKings only; NBA and college basketball have 4 books. App copy names the book next to every price and never claims "4 books" across sports.
 - **Proposal:** the game-first plan, Start Here, and the full audit are in `proposals/2026-11-21-game-first.md`.
+
+### D-035 Keep the lean, renamed "Signal" (amends D-016)
+**Date:** 2026-11-21 · **By:** Owner
+**What:** the college football "Signal Lean" tile stays, renamed **Signal**. It's an aggregate of the data shown beneath it and isn't responsible for being right. The app's game page gets a Signal section wherever MGP has signals (college football today: roster continuity, head-to-head, draft talent).
+**Guardrails (builder):** the factors behind a Signal are always visible right under it; one short line says it's built from the data below; it never appears in push alerts, App Store copy or ads; it's named "Signal" rather than "The Analyst's Signal" so The Analyst chat keeps its "won't tell you what to bet" promise (owner can rename). Website tile renamed 2026-11-21.
+**Risk noted to owner:** in the simulated concept test, a side-picking score lowered trust overall and drew the most compliance flags; a lawyer's read before launch is recommended.
+
+### D-036 Almost no footnotes; one "About This Data" page (amends D-026)
+**Date:** 2026-11-21 · **By:** Owner
+**What:** no per-number notes. Each odds section carries one small line naming the book and when it was updated ("DraftKings · Updated 2:10 PM"). Everything else (sources, refresh times, which sports have which books, disclaimers, 1-800-GAMBLER) lives on an **About This Data** page, linked once at the bottom of every game page and from Profile.
+**Odds sources:** launch with what MGP has ($0): DraftKings for NFL, college football and MLB; 4 books for NBA and college basketball. No props at launch (feed is down).
+
+### D-037 Guide with arrows, not a "Start Here" box
+**Date:** 2026-11-21 · **By:** Owner direction, builder design
+**What:** the owner has seen apps point you to where to start with arrows, not a labeled section. First launch: coach marks with arrows walk a new user through tapping a game and what to look at. Game page: the top facts are rows with an arrow that jumps to the section behind each fact, and that section's key number is highlighted when you land. Final label and look decided in the mockups.
+
+### D-038 Everything with data, by end of week
+**Date:** 2026-11-21 · **By:** Owner ("why can't we have everything by end of week?")
+**What:** the game page ships with every section MGP has data for, not a trimmed v1, with a build target of Nov 27/28, 2026.
+**Limits that aren't build time:** backend fixes (injuries for NFL, college football and MLB; college basketball finals; line-movement IDs; against-the-spread; The Analyst per game) need Supabase access; TestFlight needs the Apple account; props need a paid feed (owner chose $0); in-app X posts are on hold (D-023).

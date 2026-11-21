@@ -34,7 +34,7 @@
 - Website: move the remaining amber (ranked game card outlines, "View All Odds" buttons) to neutral too? (D-033)
 
 - X API spend for in-app insider posts: on hold by owner (D-023).
-- Game-first proposal (`proposals/2026-11-21-game-first.md`): awaiting owner alignment, then mockups.
+- Game-first proposal aligned (D-035 to D-038). Next: mockups, then build the full game page by Nov 27/28.
 - Odds sources: football and MLB are DraftKings only; faster alerts or more books need a paid feed (D-034).
 
 - Faster odds polling plan for real-time line-move alerts (cost quote coming).
