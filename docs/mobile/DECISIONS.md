@@ -209,6 +209,15 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Motion standard (to build regardless of direction):** every tap gets a slight press and a light haptic; tapping a game row morphs its logos and line into the game page header; large titles collapse into the nav bar as you scroll and the section bar's underline slides with the scroll position; tapping a What to Know arrow springs to its section and briefly highlights it; odds digits roll to new values instead of jumping; loading uses placeholders shaped like the content, no spinners; pull to refresh draws the MGP pulse line; all animation runs on the UI thread (Reanimated) at the screen's full refresh rate and respects Reduce Motion.
 **Kept:** the first-launch arrow callout (owner likes it).
 
-### D-044 Landing concepts (pending owner pick)
+### D-044 Landing concepts (decided 2026-11-21, see D-045)
 **Date:** 2026-11-21 · **By:** Owner request ("a better, less generic landing page" like Stocks.News's hero)
 **What:** three heroes on the mockup canvas (Landing page), one per direction: A Game Plates (team-color matchup plates, condensed type), B The Line (one big line-movement chart, terminal type), C Game Tickets (fanned game tickets, serif type). Each is sized as the first App Store screenshot and becomes the website hero and the app's Welcome screen. No team logos in store art (D-009); team names and colors instead.
+
+### D-045 Landing: Game Tickets; The Line saved for ads
+**Date:** 2026-11-21 · **By:** Owner
+**What:** concept C, Game Tickets (fanned game tickets, "Bet Smarter, Not Harder"), becomes the first App Store screenshot, the website's top section and the app's Welcome screen. Concept B, The Line (big line-movement chart), is kept for ads and social posts. Its type and colors follow whichever app direction wins (D-046).
+
+### D-046 Visual direction: second round (pending owner pick)
+**Date:** 2026-11-21 · **By:** Owner feedback, builder design
+**Round 1 ranking (owner):** C Editorial, then B Terminal, then A Scoreboard. A's large team-color blocks are out; the scoreboard idea is liked.
+**Round 2 (canvas page "More Directions"):** D Timing Tower (motorsport live timing: thin rows, italic numbers, the line's week as timing sectors, violet accent); E Trading Card (the back of a classic baseball card: one card per game, swipe between games, flip for more; pairs with the Game Tickets landing); F Ballpark Board (hand-hung stadium scoreboard: numbers on black tiles, black and white, one green accent on changed numbers). Owner asked not to borrow from stock boards, newspapers, airport boards, ESPN or streaming apps. Team color appears only as thin accents.
