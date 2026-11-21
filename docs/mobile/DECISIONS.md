@@ -184,3 +184,16 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Date:** 2026-11-21 · **By:** Owner ("why can't we have everything by end of week?")
 **What:** the game page ships with every section MGP has data for, not a trimmed v1, with a build target of Nov 27/28, 2026.
 **Limits that aren't build time:** backend fixes (injuries for NFL, college football and MLB; college basketball finals; line-movement IDs; against-the-spread; The Analyst per game) need Supabase access; TestFlight needs the Apple account; props need a paid feed (owner chose $0); in-app X posts are on hold (D-023).
+
+### D-039 Betting data uses sportsbook-standard notation
+**Date:** 2026-11-21 · **By:** Owner ("make sure all betting data the way we present it is industry standard")
+**What:** spreads read "Oregon −6.5" (team first, sign always shown, "PK" for pick'em); prices in parentheses "−6.5 (−110)"; totals "O 52.5" / "U 52.5" or "O/U 52.5"; moneylines "−245" / "+200"; movement "Opened Oregon −4.5" or "−4.5 → −6.5"; records "5-5" with pushes "5-4-1"; against the spread "5-5 ATS". Odds boards use sportsbook columns: Spread, Total, Moneyline, one row per team with its logo. No invented units like "2.0 Pts".
+**How:** all new UI formats odds through `packages/shared/odds/format.ts` (tested in `src/test/oddsFormat.test.ts`). The website still formats odds inline in about 8 components; they move to the shared helpers during the website relayer.
+
+### D-040 No period at the end of UI text
+**Date:** 2026-11-21 · **By:** Owner
+**What:** facts, captions, subtitles, list items and callouts don't end with a period ("Oregon has won 4 straight"). Copy with more than one sentence keeps the periods between sentences and drops the last one ("Pick a game. We'll show you what matters all in one place").
+
+### D-041 Team logos and the MGP mark throughout the app
+**Date:** 2026-11-21 · **By:** Owner ("we need it to feel like a premium app")
+**What:** team logos on every game row, odds board, injury and form row; league logos on sport chips and sport pickers; the MGP mark (green pulse line on a black rounded square, from `public/favicon.svg`) on Welcome and Today. Logos come from the same ESPN source the website uses. Store screenshots and the app icon still carry no league or team logos (D-009).
