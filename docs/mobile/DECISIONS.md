@@ -197,3 +197,18 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-041 Team logos and the MGP mark throughout the app
 **Date:** 2026-11-21 · **By:** Owner ("we need it to feel like a premium app")
 **What:** team logos on every game row, odds board, injury and form row; league logos on sport chips and sport pickers; the MGP mark (green pulse line on a black rounded square, from `public/favicon.svg`) on Welcome and Today. Logos come from the same ESPN source the website uses. Store screenshots and the app icon still carry no league or team logos (D-009).
+
+### D-042 Ranks are plain "#12" text, no bubble (supersedes the badge shape in D-033)
+**Date:** 2026-11-21 · **By:** Owner ("the bubble feels generic")
+**What:** a rank reads "#12 Oregon": the number in the secondary text color, same size as the name or slightly smaller, no background shape. Applied to the mockups and the website (college football and basketball slates; NBA and MLB player cards now show "#2" before the name instead of a corner circle). The charcoal `rank` color stays only for the "Ranked" label and the ranked-games count.
+
+### D-043 Why the first mockups felt generic, and the motion standard
+**Date:** 2026-11-21 · **By:** Builder, from owner feedback ("feels very basic Claude", "too consistent", wants "sleek")
+**Diagnosis:** every section was a white rounded card on gray with the same radius, padding and pill chips; nearly every label was bold so nothing stood out; icons sat in pale tinted circles. That uniform "card soup" is the default look of template and AI-made apps.
+**Direction:** fewer boxes (hairlines and spacing instead of cards), real typographic contrast (big numbers, small quiet labels), team colors where they mean something, thin-stroke icons, underline tabs instead of pills. Three directions are on the mockup canvas (Directions page): A Scoreboard, B Terminal, C Editorial. Owner picks.
+**Motion standard (to build regardless of direction):** every tap gets a slight press and a light haptic; tapping a game row morphs its logos and line into the game page header; large titles collapse into the nav bar as you scroll and the section bar's underline slides with the scroll position; tapping a What to Know arrow springs to its section and briefly highlights it; odds digits roll to new values instead of jumping; loading uses placeholders shaped like the content, no spinners; pull to refresh draws the MGP pulse line; all animation runs on the UI thread (Reanimated) at the screen's full refresh rate and respects Reduce Motion.
+**Kept:** the first-launch arrow callout (owner likes it).
+
+### D-044 Landing concepts (pending owner pick)
+**Date:** 2026-11-21 · **By:** Owner request ("a better, less generic landing page" like Stocks.News's hero)
+**What:** three heroes on the mockup canvas (Landing page), one per direction: A Game Plates (team-color matchup plates, condensed type), B The Line (one big line-movement chart, terminal type), C Game Tickets (fanned game tickets, serif type). Each is sized as the first App Store screenshot and becomes the website hero and the app's Welcome screen. No team logos in store art (D-009); team names and colors instead.

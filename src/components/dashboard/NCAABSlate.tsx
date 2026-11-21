@@ -311,9 +311,9 @@ export function NCAABSlate() {
                         <div className="flex items-center gap-2">
                           <TeamLogo sport="NCAAB" name={game.visitor_team_name} espnId={game.visitor_team_id} size={22} />
                           {formatRank(game.visitor_team_rank) && (
-                            <Badge className="bg-rank text-rank-foreground border-transparent text-[10px] px-1.5 py-0">
+                            <span className="text-muted-foreground font-semibold tabular-nums">
                               {formatRank(game.visitor_team_rank)}
-                            </Badge>
+                            </span>
                           )}
                           <span className="font-bold">{game.visitor_team_name}</span>
                           {showScore && (
@@ -324,9 +324,9 @@ export function NCAABSlate() {
                         <div className="flex items-center gap-2">
                           <TeamLogo sport="NCAAB" name={game.home_team_name} espnId={game.home_team_id} size={22} />
                           {formatRank(game.home_team_rank) && (
-                            <Badge className="bg-rank text-rank-foreground border-transparent text-[10px] px-1.5 py-0">
+                            <span className="text-muted-foreground font-semibold tabular-nums">
                               {formatRank(game.home_team_rank)}
-                            </Badge>
+                            </span>
                           )}
                           <span className="font-bold">{game.home_team_name}</span>
                           {showScore && (

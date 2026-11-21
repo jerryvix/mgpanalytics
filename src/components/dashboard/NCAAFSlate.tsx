@@ -321,12 +321,12 @@ export function NCAAFSlate() {
                       <div className="flex items-center gap-2">
                         <TeamLogo sport="NCAAF" name={game.visitor_team_name} espnId={game.visitor_team_id} size={22} />
                         {formatRank(ranks.away) && (
-                          <Badge
-                            className="bg-rank text-rank-foreground border-transparent text-[10px] px-1.5 py-0"
+                          <span
+                            className="text-muted-foreground font-semibold tabular-nums"
                             title="AP Top 25 rank"
                           >
                             {formatRank(ranks.away)}
-                          </Badge>
+                          </span>
                         )}
                         {/* The school, as ESPN's scoreboard shows it */}
                         <span className="font-bold">{ncaafSchool(game.visitor_team_name)}</span>
@@ -346,12 +346,12 @@ export function NCAAFSlate() {
                       <div className="flex items-center gap-2">
                         <TeamLogo sport="NCAAF" name={game.home_team_name} espnId={game.home_team_id} size={22} />
                         {formatRank(ranks.home) && (
-                          <Badge
-                            className="bg-rank text-rank-foreground border-transparent text-[10px] px-1.5 py-0"
+                          <span
+                            className="text-muted-foreground font-semibold tabular-nums"
                             title="AP Top 25 rank"
                           >
                             {formatRank(ranks.home)}
-                          </Badge>
+                          </span>
                         )}
                         <span className="font-bold">{ncaafSchool(game.home_team_name)}</span>
                         <FollowButton

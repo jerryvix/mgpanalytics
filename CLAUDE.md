@@ -43,6 +43,6 @@ Set `VITE_DEV_BYPASS_AUTH=true` in `.env` to preview the dashboard locally with 
 - **Consumer copy:** positive claims only, second person, short sentences, no em dashes, no competitor names. Odds update on a schedule (about every 6 hours), so don't call odds "real time".
 - **The `gemini-chat` function runs Claude**, not Gemini; the name is legacy.
 - **Secrets** never go in the repo or in chat. Edge function secrets are set with `supabase secrets set`.
-- **No amber for ranks:** rank badges use the `rank` color (black/charcoal). (DECISIONS D-033)
+- **Ranks are plain text:** "#12 Oregon", number in the secondary text color, no bubble or badge; no amber. (DECISIONS D-042)
 - **Admin surfaces** (admin panel, sync observatory, data inspector) are web only.
 - Record any non-obvious product or technical decision for the app in `docs/mobile/DECISIONS.md`.
