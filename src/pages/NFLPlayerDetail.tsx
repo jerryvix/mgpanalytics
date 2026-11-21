@@ -20,6 +20,7 @@ import { NFLPlayerStatsCard } from "@/components/players/NFLPlayerStatsCard";
 import { NFLGameLog } from "@/components/players/NFLGameLog";
 import { NFLAdvancedStats } from "@/components/players/NFLAdvancedStats";
 import { getPositionGroup } from "@/utils/nflStatsFormatters";
+import { hasAdvancedStats } from "@/utils/advancedStatsCalculator";
 
 /** Detect if we're currently in a sport's postseason period */
 function isInPostseason(sport: "NFL" | "NBA" | "NCAAB" | "MLB"): boolean {
@@ -51,6 +52,7 @@ export default function NFLPlayerDetail() {
   const [seasonType, setSeasonType] = useState<"regular" | "postseason">(
     isInPostseason("NFL") ? "postseason" : "regular"
   );
+  const [statsTab, setStatsTab] = useState("traditional");
 
   // Support both ID formats: "bdl-123" (BDL external_id) or UUID (Supabase ID)
   const isBdlId = playerId?.startsWith("bdl-");
@@ -281,6 +283,11 @@ export default function NFLPlayerDetail() {
     receptions: activeStats.games_played && activeStats.receptions ? activeStats.receptions / activeStats.games_played : undefined,
   } : undefined;
 
+  // The Advanced tab only exists when a stat can be computed from stored data for this
+  // player and season type; no empty or placeholder tab. Fall back to Stats if it goes away.
+  const showAdvancedTab = hasAdvancedStats(activeStats, posAbbr);
+  const activeStatsTab = statsTab === "advanced" && !showAdvancedTab ? "traditional" : statsTab;
+
   // Season label
   const seasonLabel = stats?.season ? String(stats.season) : (() => {
     const now = new Date();
@@ -474,16 +481,18 @@ export default function NFLPlayerDetail() {
       )}
 
       {/* Stats Tabs */}
-      <Tabs defaultValue="traditional" className="w-full">
+      <Tabs value={activeStatsTab} onValueChange={setStatsTab} className="w-full">
         <TabsList className="flex w-full overflow-x-auto scrollbar-hide mb-4">
           <TabsTrigger value="traditional" className="text-xs sm:text-sm flex-1 min-w-0">
             <TrendingUp className="w-4 h-4 mr-1.5 hidden sm:inline" />
             Stats
           </TabsTrigger>
-          <TabsTrigger value="advanced" className="text-xs sm:text-sm flex-1 min-w-0">
-            <Zap className="w-4 h-4 mr-1.5 hidden sm:inline" />
-            Adv
-          </TabsTrigger>
+          {showAdvancedTab && (
+            <TabsTrigger value="advanced" className="text-xs sm:text-sm flex-1 min-w-0">
+              <Zap className="w-4 h-4 mr-1.5 hidden sm:inline" />
+              Adv
+            </TabsTrigger>
+          )}
           <TabsTrigger value="gamelog" className="text-xs sm:text-sm flex-1 min-w-0">
             <Calendar className="w-4 h-4 mr-1.5 hidden sm:inline" />
             Log
@@ -506,14 +515,11 @@ export default function NFLPlayerDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="advanced">
-          <NFLAdvancedStats
-            stats={(seasonType === "postseason" && postseasonStats ? postseasonStats : stats) as never}
-            gameLogs={gameLogs}
-            position={posAbbr}
-            isLoading={(seasonType === "postseason" ? postseasonLoading : statsLoading) || gameLogsLoading}
-          />
-        </TabsContent>
+        {showAdvancedTab && (
+          <TabsContent value="advanced">
+            <NFLAdvancedStats stats={activeStats} position={posAbbr} />
+          </TabsContent>
+        )}
 
         <TabsContent value="gamelog">
           <NFLGameLog

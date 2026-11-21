@@ -260,11 +260,7 @@ function formatAdvancedStatsResponse(
   const position = player.position || "PLAYER";
   
   // Calculate advanced stats
-  const advancedStats = calculateAdvancedStats(
-    stats as any,
-    gameLogs as any,
-    position
-  );
+  const advancedStats = calculateAdvancedStats(stats, position);
   
   const definitions = getStatDefinitions(positionGroup);
   
@@ -319,7 +315,9 @@ function formatAdvancedStatsResponse(
     response += `• **${statDef.shortName}:** ${formattedValue}${indicator}\n`;
   });
   
-  response += `\n*${definitions.length - 5} more advanced metrics available*`;
+  if (definitions.length > topStats.length) {
+    response += `\n*${definitions.length - topStats.length} more advanced metrics available*`;
+  }
   
   return response;
 }

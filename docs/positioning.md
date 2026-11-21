@@ -3,6 +3,11 @@
 **Audit date:** July 17, 2026 (full-codebase competitive audit: frontend features, data layer, chat/insights).
 **Purpose:** the on-record list of what MGP can truthfully claim, what it must not claim, and why. Consumer copy (landing hero, `/why` page) must trace to this document. Internal and investor material may use analogy language ("Bloomberg terminal for bettors"); shipped UI copy may not.
 
+> **Audit note, 2026-11-21 (facts changed since the July record; owner approval of the lines below is unchanged):**
+> - Public betting % is now **real** for NFL and college football (DraftKings % of bets and % of money via `sync-betting-splits`); `PublicBettingPreview` no longer uses `Math.random`. It is still not available for NBA, college basketball or MLB.
+> - Books: since Aug 7, 2026, NFL, college football and MLB odds are **DraftKings only** (ESPN feed). NBA and college basketball have 4 books. Don't claim "4 books" across all sports.
+> - NFL advanced stats on the player page are **fixed** (Nov 21, 2026): `src/utils/advancedStatsCalculator.ts` has no `Math.random` and no estimated metrics left. The Advanced tab shows only stats computed from stored season stats (passer rating for QBs, catch rate for WR/TE) and is hidden when none apply (running backs, and defenders until defensive stats are synced). `src/test/advancedStatsCalculator.test.ts` guards it.
+
 ---
 
 ## Confirmed competitive advantages (ranked by defensibility)
@@ -33,11 +38,11 @@
 | Kalshi / prediction markets coverage | Zero code. Appears only in landing-hero copy and one comment. |
 | Live futures tracking | `src/data/propFutures.ts` is a static snapshot (Matchbetwin, 2026-07-15), static by explicit owner decision. |
 | Public betting % / sharp money indicators | `PublicBettingPreview.tsx` is `Math.random()` mock on NFL/NCAAF/NCAAB. Cleanup task already spawned. |
-| NFL advanced tracking stats (pressure rate, separation, etc.) | Partly `Math.random()` in `src/utils/advancedStatsCalculator.ts`. |
+| NFL advanced tracking stats (pressure rate, separation, EPA, CPOE, etc.) | Not built. We store box-score season stats only, no play-by-play or tracking data. The random and estimated versions were removed Nov 21, 2026; the Advanced tab shows only passer rating (QB) and catch rate (WR/TE). |
 | 50+ sportsbooks | We sync 4 (5 on props). |
 | Real-time / tick-level steam alerts | Snapshots run ~6h; steam heuristic rarely triggers at that cadence. |
 | "Powered by Gemini" | The live analyst is Claude Sonnet 4.6 (`gemini-chat` name is legacy). |
-| Rich prop-grading analyst in chat (EPA, CPOE, target share) | That code lives in the deprecated, unmounted `useChatQuery` path. Users never see it. |
+| Rich prop-grading analyst in chat (EPA, CPOE, target share) | That code lives in the deprecated, unmounted `useChatQuery` path. Users never see it. Its estimated metrics were removed Nov 21, 2026. |
 
 ## Shipped pitch lines (approved July 17, 2026, rev 2)
 - Landing hero: "Get an edge on the books." / "Live odds. Line moves. Hot streaks. One screen."
@@ -59,5 +64,5 @@ The landing hero (`src/pages/Index.tsx`) currently names **Kalshi** (no integrat
 
 ## Positioning risks to fix in product (not copy)
 1. `PublicBettingPreview` fake percentages contradict differentiator #2 if a user ever notices. Remove or replace (task spawned July 17).
-2. NFL advanced stats mix random numbers with real box scores, unlabeled. Same risk class.
+2. ~~NFL advanced stats mix random numbers with real box scores, unlabeled.~~ Fixed Nov 21, 2026: only stats computed from stored data remain (see audit note).
 3. `gemini-chat` function name invites a false "powered by Gemini" claim in future copy. Rename when convenient.

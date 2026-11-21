@@ -247,7 +247,8 @@ function formatPropAnalysisResponse(
   const last5HitRate = last5Values.filter(v => v > line).length / Math.max(last5Values.length, 1);
 
   // Calculate advanced stats
-  const advancedStats = calculateAdvancedStats(stats as any, gameLogs as any, position);
+  // Only stats computed from stored data (catch rate); estimated metrics were removed.
+  const advancedStats = calculateAdvancedStats(stats, position);
 
   // Build context
   const context: PropContext = {
@@ -259,14 +260,7 @@ function formatPropAnalysisResponse(
     last5Avg,
     last5HitRate,
     advancedStats: {
-      epa: advancedStats.epa_per_play,
-      targetShare: advancedStats.target_share,
-      airYardsShare: advancedStats.air_yards_share,
       catchRate: advancedStats.catch_rate,
-      yardsAfterContact: advancedStats.yards_after_contact,
-      explosiveRate: advancedStats.explosive_run_rate,
-      snapShare: advancedStats.snap_share,
-      pressureRate: advancedStats.pressure_rate,
     }
   };
 
@@ -283,17 +277,6 @@ function formatPropAnalysisResponse(
   response += `├─ Season Avg: ${seasonAvg.toFixed(1)} ${seasonAvg > line ? "(over line) ✓" : "(under line)"}\n`;
   response += `├─ Last 5 Avg: ${last5Avg.toFixed(1)}\n`;
   response += `├─ Last 5 Hit Rate: ${Math.round(last5HitRate * 100)}% (${last5Values.filter(v => v > line).length}/5 over)\n`;
-  
-  // Add position-specific advanced stats
-  if (propType === "passing_yards" && advancedStats.pressure_rate) {
-    response += `├─ Pressure Rate: ${advancedStats.pressure_rate.toFixed(1)}%\n`;
-  }
-  if ((propType === "receiving_yards" || propType === "receptions") && advancedStats.target_share) {
-    response += `├─ Target Share: ${advancedStats.target_share.toFixed(1)}%\n`;
-  }
-  if (propType === "rushing_yards" && advancedStats.yards_after_contact) {
-    response += `├─ Yards After Contact: ${advancedStats.yards_after_contact.toFixed(1)}\n`;
-  }
   
   response += `\n**FACTORS TO CONSIDER:**\n`;
   
