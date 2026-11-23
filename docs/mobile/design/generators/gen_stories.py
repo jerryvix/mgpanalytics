@@ -8,7 +8,7 @@ ICON['up'] = '<path d="M6 15l6-6 6 6"/>'
 ICON['score'] = '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 10v4"/><path d="M16 10v4"/><path d="M12 9v.01"/><path d="M12 15v.01"/>'
 
 def head(t, serif=False):
-    fam = 'family=Geist:wght@400..700&family=Instrument+Sans:wdth,wght@75..100,400..700' + ('&family=Instrument+Serif:ital@0;1' if serif else '')
+    fam = 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Sans:wdth,wght@75..100,400..700' + ('&family=Instrument+Serif:ital@0;1' if serif else '')
     return f'''<!doctype html>
 <html lang="en">
 <head>
@@ -58,7 +58,7 @@ def bottom(primary, prim_icon='up', bell=True):
 '''
 
 def eyebrow(t, top=34):
-    return f'  <span style="padding: {top}px 20px 0; font-size: 15px; color: {C["t2"]}">{t}</span>\n'
+    return f'  <span style="padding: {top}px 20px 0; font-size: 15px; font-weight: 600; color: {C["tx"]}">{t}</span>\n'
 
 def write(name, s):
     open(os.path.join(OUT, name), 'w').write(s)
@@ -88,24 +88,30 @@ s += f'  <span style="padding: 14px 20px 0; font-size: 13px; color: {C["t3"]}">D
 s += bottom('Open Game') + '</div>\n' + tail(C['accents'])
 write('SMove1.dc.html', s)
 
-# 2) Bets vs Money
+# 2) Betting Splits: every line carries a number the bars don't already show (owner, Nov 23: "so what?")
+MONO = "font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11.5px; letter-spacing: 0.7px; text-transform: uppercase"
 def bar(label, ore, msu):
-    return f'''  <div style="padding: 26px 20px 0; display: flex; flex-direction: column; gap: 10px; font-variant-numeric: tabular-nums">
-    <span style="font-size: 15px; color: {C["t2"]}">{label}</span>
+    return f'''  <div style="padding: 24px 20px 0; display: flex; flex-direction: column; gap: 10px; font-variant-numeric: tabular-nums">
+    <span style="{MONO}">{label}</span>
     <div style="display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 3px"><span style="width: {ore}%; background: #F5F5F7"></span><span style="flex: 1 1 auto; background: {C["surf2"]}"></span></div>
-    <div style="display: flex; justify-content: space-between; font-size: 17px"><span><span style="font-weight: 600">{ore}%</span> Oregon</span><span style="color: {C["t2"]}">{msu}% Michigan St</span></div>
+    <div style="display: flex; justify-content: space-between; font-size: 17px"><span><span style="font-weight: 600">{ore}%</span> Oregon −6.5</span><span>{msu}% Michigan St +6.5</span></div>
   </div>
 '''
-s = head('Story, Bets vs Money') + frame_open(C) + segs([100, 45, 0]) + game_header()
-s += eyebrow('Bets vs Money')
-s += f'  <span style="padding: 8px 20px 0; font-size: 34px; font-weight: 500; letter-spacing: -0.8px; line-height: 1.12">More money than bets on Oregon</span>\n'
-s += bar('Bets', 58, 42) + bar('Money', 74, 26)
-s += f'''  <div style="margin: 30px 20px 0; padding: 14px 16px; border-radius: 16px; background: {C["surf"]}; display: flex; flex-direction: column; gap: 4px">
-    <span style="font-size: 15px; font-weight: 600">Bets count tickets. Money counts dollars</span>
-    <span style="font-size: 14.5px; color: {C["t2"]}; line-height: 1.4">When the two split, bigger bets are landing on one side</span>
+def fact(big, text):
+    return f'''  <div style="display: flex; align-items: baseline; gap: 14px; margin: 0 20px; padding: 14px 0; border-bottom: 1px solid {C["line"]}; font-variant-numeric: tabular-nums">
+    <span style="flex: 1 1 auto; font-size: 17px; line-height: 1.3">{text}</span>
+    <span style="flex: 0 0 auto; font-size: 19px; font-weight: 600">{big}</span>
   </div>
-  <span style="padding: 14px 20px 0; font-size: 13px; color: {C["t3"]}">Updated 2:10 PM</span>
 '''
+s = head('Story, Betting Splits') + frame_open(C) + segs([100, 45, 0]) + game_header()
+s += eyebrow('Betting Splits')
+s += f'  <span style="padding: 8px 20px 0; font-size: 34px; font-weight: 500; letter-spacing: -0.8px; line-height: 1.12">74% of the money on Oregon −6.5</span>\n'
+s += bar('Bets', 54, 46) + bar('Money', 74, 26)
+s += f'  <span style="padding: 30px 20px 0; font-size: 15px; font-weight: 600">How Sides Like This Have Done</span>\n'
+s += f'  <span style="padding: 6px 20px 2px; {MONO}">ATS · College football, Sep 24 to Nov 2</span>\n'
+s += fact('118-116-3', '70%+ of the money')
+s += fact('51-60-3', 'Money 20+ points ahead of bets')
+s += f'  <span style="padding: 14px 20px 0; {MONO}">DraftKings · Updated 2:10 PM</span>\n'
 s += bottom('Open Game') + '</div>\n' + tail(C['accents'])
 write('SMove2.dc.html', s)
 

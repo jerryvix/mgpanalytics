@@ -1,9 +1,10 @@
-# Direction I, splits-first (D-053): Today, Pulse (Bets & Money, Trends, Results), Game page.
+# Direction I, splits-first (D-053): Today, Pulse (Betting Splits, Trends, Results), Game page.
 # Real data: DraftKings splits captured Nov 23 2026; trends and results from nflverse games + our stored splits.
 import os, sys, csv
 sys.path.insert(0, os.path.dirname(__file__))
 from gen_i import NIGHT, L, ICON, icon, beat, mark, head, tail, frame_open, topbar, title, section
-C = dict(NIGHT); C['t3'] = '#89898E'  # token value after the contrast fix (D-050)
+C = dict(NIGHT); C['t2'] = C['t3'] = C['tx']  # one text color; hierarchy from type (D-064, owner Nov 23)
+MONO = "font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11.5px; letter-spacing: 0.7px; text-transform: uppercase"
 OUT = sys.argv[1]
 L.update({
  'cin':'/_blob/fd13859499ad890b6fa8a6252db59b9b','wsh':'/_blob/249125eb5c771841e4ddb1cdd4be0479','gb':'/_blob/6693f6a43ac4fb11a27782934269cda9',
@@ -46,8 +47,8 @@ def tag(text):
 
 def segs(active):
     out = '  <div style="flex: 0 0 auto; display: flex; gap: 2px; padding: 14px 12px 4px; white-space: nowrap; overflow: hidden">\n'
-    for t, href in [('Bets & Money', 'JPulse.dc.html'), ('Takes', 'JTakes.dc.html'), ('Trends', 'JTrends.dc.html'), ('Leaders', 'JLeaders.dc.html'), ('Results', 'JResults.dc.html')]:
-        st = f'background: {C["surf2"]}; color: {C["tx"]}' if t == active else f'color: {C["t2"]}'
+    for t, href in [('Betting Splits', 'JPulse.dc.html'), ('Takes', 'JTakes.dc.html'), ('Trends', 'JTrends.dc.html'), ('Team Records', 'JLeaders.dc.html')]:
+        st = f'background: {C["surf2"]}; color: {C["tx"]}; font-weight: 600' if t == active else f'color: {C["tx"]}'
         out += f'    <a href="{href}" style="flex: 0 0 auto; padding: 9px 12px; border-radius: 999px; font-size: 15px; text-decoration: none; {st}">{t}</a>\n'
     return out + '  </div>\n'
 
@@ -84,17 +85,18 @@ s += section(C, 'NFL', 18)
 s += today_row('cin', 'wsh', 'Bengals at Commanders', '8:15 PM · ESPN', 'CIN −6', 'O/U 54.5', f'{W("78%")} of money · {W("85%")} of bets on CIN')
 s += section(C, 'NBA', 14)
 s += today_row('por', 'p76', 'Trail Blazers at 76ers', '7:10 PM', 'PHI −3.5', 'O/U 231.5', f'{W("78%")} of money · {W("64%")} of bets on PHI')
-s += today_row('mem', 'cha', 'Grizzlies at Hornets', '7:10 PM', 'MEM −3.5', 'O/U 216.5', f'{W("93%")} of money on CHA +3.5', 'Money vs Bets: 62% of bets on MEM')
-s += today_row('lac', 'hou', 'Clippers at Rockets', '8:40 PM', 'HOU −12.5', 'O/U 225.5', f'{W("73%")} of money on LAC +12.5', 'Money vs Bets: 83% of bets on HOU')
+s += today_row('mem', 'cha', 'Grizzlies at Hornets', '7:10 PM', 'MEM −3.5', 'O/U 216.5', f'{W("93%")} of money on CHA · {W("62%")} of bets on MEM')
+s += today_row('lac', 'hou', 'Clippers at Rockets', '8:40 PM', 'HOU −12.5', 'O/U 225.5', f'{W("73%")} of money on LAC · {W("83%")} of bets on HOU')
 s += today_row('uta', 'lal', 'Jazz at Lakers', '10:10 PM', 'LAL −13.5', 'O/U 228.5', f'{W("99%")} of money · {W("75%")} of bets on LAL')
 s += source('Bets and money from DraftKings · Updated 3:05 PM', 6)
 s += tabbar('Today') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JToday.dc.html'), 'w').write(s)
 
-# ---------- 2) Pulse: Bets & Money
-def board_section(name, sub):
-    return f'''  <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 18px 16px 2px">
-    <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 20px; font-weight: 500; letter-spacing: -0.3px">{name}</span><span style="font-size: 13.5px; color: {C["t3"]}">{sub}</span></span>
+# ---------- 2) Pulse: Betting Splits
+def board_section(name, sub=''):
+    sub_html = f'<span style="{MONO}">{sub}</span>' if sub else ''
+    return f'''  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 18px 16px 2px">
+    <span style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 20px; font-weight: 500; letter-spacing: -0.3px">{name}</span>{sub_html}</span>
     <a href="#all" style="font-size: 15px; color: {C["t2"]}; text-decoration: none">See All</a>
   </div>
 '''
@@ -105,12 +107,12 @@ def board_row(n, k, pick, ctx, big, small):
     <span style="flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-variant-numeric: tabular-nums"><span style="font-size: 17px; font-weight: 600">{big}</span><span style="font-size: 12.5px; color: {C["t3"]}">{small}</span></span>
   </a>
 '''
-s = head('Pulse, Bets and Money') + frame_open(C) + topbar(C)
-s += pulse_title('Week 12 · Thanksgiving week') + segs('Bets & Money')
+s = head('Pulse, Betting Splits') + frame_open(C) + topbar(C)
+s += pulse_title('Week 12 · Thanksgiving Week') + segs('Betting Splits')
 s += board_section('Most Money', 'Share of money on each spread')
 s += board_row(1, 'den', 'Broncos −3', 'at Steelers · Fri', '82%', 'of money') + board_row(2, 'buf', 'Bills −3', 'vs Chiefs · Thu', '78%', 'of money') + board_row(3, 'cin', 'Bengals −6', 'at Commanders · Tonight', '78%', 'of money')
-s += board_section('Money vs Bets', 'More money than bets on one side')
-s += board_row(1, 'phi', 'Eagles +8.5', 'at Cowboys · 29% of bets', '65%', 'of money') + board_row(2, 'gb', 'Packers +123', 'at Rams · 58% of bets', '96%', 'of money') + board_row(3, 'lar', 'Under 44.5', 'Packers at Rams · 23% of bets', '71%', 'of money')
+s += board_section('Biggest Splits', 'Sides like these are 5-12 ATS this season')
+s += board_row(1, 'lar', 'Under 44.5', 'Packers at Rams · 23% of bets', '71%', 'of money') + board_row(2, 'gb', 'Packers +123', 'at Rams · 58% of bets', '96%', 'of money') + board_row(3, 'phi', 'Eagles +8.5', 'at Cowboys · 29% of bets', '65%', 'of money')
 s += board_section('Most Bets', 'Share of bets on each spread')
 s += board_row(1, 'den', 'Broncos −3', 'at Steelers · Fri', '91%', 'of bets') + board_row(2, 'cin', 'Bengals −6', 'at Commanders · Tonight', '85%', 'of bets')
 s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
@@ -122,45 +124,23 @@ def trend(kind, statement, ctx, k=None, league=False):
     return f'''  <a href="JGame.dc.html" style="display: flex; gap: 12px; margin: 0 16px; padding: 14px 0; border-bottom: 1px solid {C["line"]}; text-decoration: none; color: {C["tx"]}">
     {icon_html}
     <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 4px">
-      <span style="font-size: 13px; color: {C["t3"]}">{kind}</span>
+      <span style="{MONO}">{kind}</span>
       <span style="font-size: 18px; line-height: 1.3; letter-spacing: -0.2px">{NB(statement)}</span>
       <span style="font-size: 14px; color: {C["t2"]}; font-variant-numeric: tabular-nums">{ctx}</span>
     </span>
   </a>
 '''
 s = head('Pulse, Trends') + frame_open(C) + topbar(C)
-s += pulse_title('Week 12 · Thanksgiving week') + segs('Trends')
+s += pulse_title('Week 12 · Thanksgiving Week') + segs('Trends')
 s += trend('NFL · Since Week 8', 'Favorites are 35-20 ATS', 'Home teams are 68-88 ATS this season')
-s += trend('NFL · This Season', 'Sides with 70%+ of the money are 17-29-3 ATS', 'Weeks 3 to 9 · DraftKings money')
+s += trend('NFL · This Season', 'Sides with 70%+ of the money are 17-29-3 ATS', 'Weeks 3 to 9 · Side with the most money: 42-54-5')
 s += trend('Eagles at Cowboys · Thu 4:30 PM', 'Cowboys are 5-11 ATS on Thanksgiving since 2010', 'Cowboys −8.5 · 65% of money on the Eagles', 'dal')
 s += trend('Chiefs at Bills · Thu 8:20 PM', 'Patrick Mahomes is 13-5-1 ATS as an underdog', 'Chiefs +3 · 78% of money on the Bills', 'kc')
 s += trend('Broncos at Steelers · Fri 3:00 PM', 'Broncos are 8-2 ATS this season', 'Broncos −3 · 82% of money on the Broncos', 'den')
 s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JTrends.dc.html'), 'w').write(s)
 
-# ---------- 4) Pulse: Results (real Week 8)
-WK8 = [('ne', 'Patriots −7', 90, 'Patriots 24, Dolphins 19', 'No Cover'), ('det', 'Lions −3', 79, 'Lions 19, Vikings 15', 'Covered'),
-       ('gb', 'Packers −3.5', 77, 'Packers 27, Panthers 19', 'Covered'), ('jax', 'Jaguars −1', 73, 'Jaguars 42, Colts 7', 'Covered'),
-       ('dal', 'Cowboys −7', 71, 'Cardinals 33, Cowboys 30', 'No Cover'), ('sea', 'Seahawks −3', 68, 'Bears 34, Seahawks 17', 'No Cover'),
-       ('lar', 'Rams −6.5', 67, 'Rams 24, Chargers 9', 'Covered')]
-s = head('Pulse, Results') + frame_open(C) + topbar(C)
-s += pulse_title('Week 8 · How the money did') + segs('Results')
-s += f'''  <div style="padding: 18px 16px 6px; display: flex; align-items: baseline; gap: 14px; font-variant-numeric: tabular-nums">
-    <span style="flex: 0 0 auto; white-space: nowrap; font-size: 56px; font-weight: 500; letter-spacing: -2px; line-height: 1">9-5</span>
-    <span style="font-size: 15px; color: {C["t2"]}; line-height: 1.35">The side with the most money went 9-5 ATS in Week 8<br><span style="color: {C["t3"]}">Season: 42-56-5 (Weeks 3 to 9)</span></span>
-  </div>
-'''
-for k, pick, pct, score, res in WK8:
-    col = GREEN if res == 'Covered' else RED
-    lg = logo(k, 32) if k in L else f'<span style="flex: 0 0 auto; width: 32px; height: 32px; border-radius: 999px; background: {C["surf"]}"></span>'
-    s += f'''  <div style="display: flex; align-items: center; gap: 12px; margin: 0 16px; padding: 9px 0; border-bottom: 1px solid {C["line"]}">
-    {lg}
-    <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 1px; font-variant-numeric: tabular-nums"><span style="font-size: 16px">{pct}% of money on {pick}</span><span style="font-size: 13.5px; color: {C["t2"]}">{score}</span></span>
-    <span style="flex: 0 0 auto; font-size: 14px; font-weight: 600; color: {col}">{res}</span>
-  </div>
-'''
-s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
-open(os.path.join(OUT, 'JResults.dc.html'), 'w').write(s)
+# ---------- 4) Results tab dropped (owner, Nov 23): money results live in Betting Splits and Trends instead (D-068)
 
 # ---------- 5) Game page: Eagles at Cowboys
 def rec(team):
@@ -197,14 +177,14 @@ s += f'''    <span style="font-size: 15px; color: {C["t2"]}">Thanksgiving · Thu
   </div>
   <div style="display: flex; gap: 4px; padding: 14px 12px 0; white-space: nowrap; overflow: hidden">
 '''
-for t, on in [('Bets & Money', True), ('Trends', False), ('What to Know', False), ('Odds', False)]:
-    st = f'background: {C["surf2"]}; color: {C["tx"]}' if on else f'color: {C["t2"]}'
+for t, on in [('Betting Splits', True), ('Trends', False), ('What to Know', False), ('Odds', False)]:
+    st = f'background: {C["surf2"]}; color: {C["tx"]}; font-weight: 600' if on else f'color: {C["tx"]}'
     s += f'    <a href="#s" style="flex: 0 0 auto; padding: 9px 15px; border-radius: 999px; font-size: 15px; text-decoration: none; {st}">{t}</a>\n'
 s += '  </div>\n  <div style="padding: 2px 16px 0">\n'
 s += split_market('Spread', 'PHI +8.5', 'DAL −8.5', 29, 65)
 s += split_market('Moneyline', 'PHI +324', 'DAL −411', 24, 57)
 s += f'''  </div>
-  <div style="margin: 12px 16px 0; display: flex; gap: 8px; font-size: 15px; line-height: 1.4; color: {C["tx"]}"><span style="flex: 0 0 auto; margin-top: 1px; color: {GREEN}">{beat(18)}</span><span><span style="color: {GREEN}; font-weight: 600">Money vs Bets</span> 65% of the money is on the Eagles +8.5, while 71% of bets are on the Cowboys</span></div>
+  <div style="margin: 12px 16px 0; display: flex; gap: 8px; font-size: 15px; line-height: 1.4; color: {C["tx"]}"><span style="flex: 0 0 auto; margin-top: 1px; color: {GREEN}">{beat(18)}</span><span>Sides with 20+ points more money than bets are <span style="font-weight: 600">5-12 ATS</span> in the NFL this season (Weeks 3 to 9)</span></div>
 '''
 s += section(C, 'Trends', 16)
 for txt in ['Cowboys are 5-11 ATS on Thanksgiving since 2010', 'Cowboys are 6-15 ATS as a favorite since 2024', 'Eagles are 2-8 ATS this season']:
@@ -226,7 +206,7 @@ SHORT = {'Georgia Southern Eagles':'Georgia Southern','Wake Forest Demon Deacons
  'Wyoming Cowboys':'Wyoming','Air Force Falcons':'Air Force','Mississippi State Bulldogs':'Mississippi State','Houston Cougars':'Houston',
  'California Golden Bears':'California','Sam Houston Bearkats':'Sam Houston','Colorado State Rams':'Colorado State','Oklahoma State Cowboys':'Oklahoma State',
  'Stanford Cardinal':'Stanford','Miami Hurricanes':'Miami'}
-LD = _json.load(open(os.path.join(os.path.dirname(__file__), '..', '..', 'research', '2026-11-23-public-data', 'cfb-leaders-since-week4.json')))
+LD = _json.load(open(os.path.join(os.path.dirname(__file__), '..', 'cfb_leaders.json')))
 def leader_row(n, team, rec_, tid, unit='ATS'):
     return f'''  <a href="#team" style="display: flex; align-items: center; gap: 12px; margin: 0 16px; padding: 8px 0; border-bottom: 1px solid {C["line"]}; text-decoration: none; color: {C["tx"]}">
     <span style="width: 14px; font-size: 15px; color: {C["t3"]}; font-variant-numeric: tabular-nums">{n}</span>{logo('cfb' + tid, 32)}
@@ -234,13 +214,13 @@ def leader_row(n, team, rec_, tid, unit='ATS'):
     <span style="flex: 0 0 auto; display: flex; align-items: baseline; gap: 5px; font-variant-numeric: tabular-nums; white-space: nowrap"><span style="font-size: 17px; font-weight: 600">{rec_}</span><span style="font-size: 12.5px; color: {C["t3"]}">{unit}</span></span>
   </a>
 '''
-s = head('Pulse, Leaders') + frame_open(C) + topbar(C)
-s += pulse_title('Since Week 4 · 562 games', 'College Football') + segs('Leaders')
-s += board_section('Best Against the Spread', 'Covers minus misses')
+s = head('Pulse, Team Records') + frame_open(C) + topbar(C)
+s += pulse_title('Since Week 4', 'College Football') + segs('Team Records')
+s += board_section('Best Against the Spread (ATS)')
 for i, (t, r, tid) in enumerate(LD['best'], 1): s += leader_row(i, t, r, tid)
-s += board_section('Worst Against the Spread', 'Fewest covers')
+s += board_section('Worst Against the Spread (ATS)')
 for i, (t, r, tid) in enumerate(LD['worst'][:3], 1): s += leader_row(i, t, r, tid)
-s += board_section('Most Overs', 'Games that went over the total')
+s += board_section('Most Overs')
 for i, (t, r, tid) in enumerate(LD['overs'][:3], 1): s += leader_row(i, t, r, tid, 'O/U')
 s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JLeaders.dc.html'), 'w').write(s)
@@ -306,13 +286,13 @@ def takes_page(title, height, opened=False, coach=False, only_first=False):
   <div style="padding: 10px 16px 0; display: flex; align-items: flex-end; justify-content: space-between">
     <div style="display: flex; flex-direction: column; gap: 8px">
       <h1 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.05">Pulse</h1>
-      <span style="{DF}">What the shows are betting</span>
+      <span style="{DF}">Real Picks from Betting Experts</span>
     </div>
     <a href="#s" style="display: flex; align-items: center; gap: 4px; padding: 8px 12px; border-radius: 999px; background: {TK["surf"]}; color: {W_}; text-decoration: none; font-size: 15px; font-weight: 500">All Sports{icon("down", 16, sw=2)}</a>
   </div>
   <div style="flex: 0 0 auto; display: flex; gap: 2px; padding: 14px 12px 4px; white-space: nowrap; overflow: hidden">
 """
-    for t in ['Bets & Money', 'Takes', 'Trends', 'Leaders', 'Results']:
+    for t in ['Betting Splits', 'Takes', 'Trends', 'Team Records']:
         on = t == 'Takes'
         s_ += f'    <a href="#v" style="flex: 0 0 auto; padding: 9px 12px; border-radius: 999px; font-size: 15px; font-weight: {600 if on else 400}; text-decoration: none; color: {W_}; {"background: " + TK["surf2"] if on else ""}">{t}</a>\n'
     s_ += '  </div>\n'
