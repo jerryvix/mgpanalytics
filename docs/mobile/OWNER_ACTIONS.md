@@ -6,16 +6,19 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 
 ---
 
-## Now (critical path, start today)
+## Now (critical path)
 
-- [ ] **1. Get a D-U-N-S number for the LLC.** Free. Use Apple's lookup first; the LLC may already have one.
+Apple enrollment confirmed approved by the owner on Nov 23.
+
+
+- [x] **1. Get a D-U-N-S number for the LLC.** Free. Use Apple's lookup first; the LLC may already have one.
   - Go to developer.apple.com/enroll/duns-lookup and search for the LLC's exact legal name and address.
   - If not found, request one from the same page. It usually arrives in about 5 business days.
   - The legal name, address and phone must match the LLC's state filing exactly, or enrollment stalls.
-- [ ] **2. Create a dedicated Apple ID for the business.** Per your advisor: separate from your personal Apple ID.
+- [x] **2. Create a dedicated Apple ID for the business.** Per your advisor: separate from your personal Apple ID.
   - Use a business email you control long-term (ideally on the company domain, for example `apps@mgp-analytics.com`), not a personal Gmail.
   - Turn on two-factor authentication. Save the recovery details in a password manager.
-- [ ] **3. Enroll in the Apple Developer Program as an Organization** ($99/year) at developer.apple.com/programs/enroll, signed in with the new Apple ID.
+- [x] **3. Enroll in the Apple Developer Program as an Organization** ($99/year) at developer.apple.com/programs/enroll, signed in with the new Apple ID.
   - You need: the D-U-N-S number, the LLC's legal name, a company website (`mgp-analytics.com` works), and authority to sign for the LLC.
   - Apple may phone you to verify. Answer unknown numbers that week.
   - Tell the builder when the approval email arrives.
@@ -28,8 +31,9 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 
 ## Decide now (from Nov 23)
 
-- [ ] Approve the Pulse plan (D-055, D-057): Pulse replaces Insiders as a tab; name "Pulse" or "Board".
-- [ ] OK to put this branch's website changes live (merge to main): Title Case labels, plain #12 ranks, and the chat guard that lets basketball splits turn on. The builder opens the pull request; you approve it.
+- [x] Pulse plan approved Nov 23: Pulse replaces Insiders; Insiders lives inside it (D-059).
+- [ ] Send the podcasts and YouTube channels you want in Insiders (names are enough).
+- [ ] Merge jerryvix/mgpanalytics#23 on GitHub (approved in principle Nov 23): Title Case labels, plain #12 ranks, and the chat guard that lets basketball splits turn on.
 
 ## Anytime (optional)
 
