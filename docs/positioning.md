@@ -5,6 +5,7 @@
 
 > **Audit note, 2026-11-21 (facts changed since the July record; owner approval of the lines below is unchanged):**
 > - Public betting % is now **real** for NFL and college football (DraftKings % of bets and % of money via `sync-betting-splits`); `PublicBettingPreview` no longer uses `Math.random`. It is still not available for NBA, college basketball or MLB.
+> - **2026-11-23:** splits stopped updating on Nov 2 (DraftKings redesigned its splits page; the parser skipped every game). Parser fixed and tested the same day; live once `sync-betting-splits` is deployed. Until then the site shows Nov 2 numbers. NBA and college basketball splits are on the same DraftKings page and are next.
 > - Books: since Aug 7, 2026, NFL, college football and MLB odds are **DraftKings only** (ESPN feed). NBA and college basketball have 4 books. Don't claim "4 books" across all sports.
 > - NFL advanced stats on the player page still use `Math.random` (`src/utils/advancedStatsCalculator.ts`).
 

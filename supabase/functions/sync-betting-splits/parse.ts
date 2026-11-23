@@ -12,6 +12,11 @@
 //     Carolina"), DK price, handle %, bets %. Row order is NOT fixed (the
 //     moneyline lists home first, the spread favorite first), so sides are
 //     resolved from the label, never from position.
+//   Nov 2026 redesign: one header per event reading ["Selection", "Odds",
+//     "Handle", "Bets"], then <div class="tb-market-wrap"> with each market's
+//     name ("Moneyline", "Spread", "Total") in its own div ahead of its
+//     tb-sm rows; each percentage sits right before a tb-progress bar. The
+//     kickoff reads "Mon 11/23 · 7:10 PM ET". Both layouts are read.
 //   - 10 events per page; ?tb_page=N pages, and a request past the last page
 //     silently repeats the last page, so callers must follow "Next" (disabled
 //     on the last page) and dedupe by event id.
@@ -69,6 +74,8 @@ export class SplitsMarkupError extends Error {
 }
 
 const EXPECTED_COLUMNS = ["Odds", "% Handle", "% Bets"];
+/** Nov 2026 layout: one header per event, then every market */
+const EXPECTED_EVENT_HEADER = ["Selection", "Odds", "Handle", "Bets"];
 const MARKET_BY_HEADER: Record<string, SplitMarket> = {
   moneyline: "moneyline",
   spread: "spread",
@@ -120,8 +127,15 @@ function parsePoints(raw: string): number {
   return n;
 }
 
+/**
+ * Reads DK's kickoff label, Eastern time. Two layouts seen:
+ *   "9/24, 07:30PM"            (through early Nov 2026)
+ *   "Mon 11/23 · 7:10 PM ET"   (from Nov 2026: weekday, middle dot, "ET")
+ */
 export function parseKickoffLabel(label: string): EasternWallClock {
-  const m = label.match(/^(\d{1,2})\/(\d{1,2}),\s*(\d{1,2}):(\d{2})\s*([AP])M$/i);
+  const m = label
+    .trim()
+    .match(/^(?:[A-Za-z]{3,9}\.?\s+)?(\d{1,2})\/(\d{1,2})(?:\s*[,·•·]\s*|\s+)(\d{1,2}):(\d{2})\s*([AP])\.?M\.?(?:\s+E[SD]?T)?$/i);
   if (!m) throw new Error(`unreadable kickoff "${label}"`);
   let hour = Number(m[3]) % 12;
   if (m[5].toUpperCase() === "P") hour += 12;
@@ -191,7 +205,11 @@ function parseMarket(
     const label = text(labelMatch[1]);
     const priceMatch = row.match(/class="tb-odd-s[^"]*"[^>]*>([\s\S]*?)<\/a>/);
     const price = priceMatch ? parseAmericanPrice(priceMatch[1]) : null;
-    const pcts = [...row.matchAll(/<div class="flex-1">\s*(\d{1,3}(?:\.\d+)?)%/g)].map((m) => parsePct(m[1]));
+    let pcts = [...row.matchAll(/<div class="flex-1">\s*(\d{1,3}(?:\.\d+)?)%/g)].map((m) => parsePct(m[1]));
+    if (pcts.length === 0) {
+      // Nov 2026 layout: "<div>78% <div class="tb-progress ...">"
+      pcts = [...row.matchAll(/(\d{1,3}(?:\.\d+)?)%\s*<div class="tb-progress(?=[\s"])/g)].map((m) => parsePct(m[1]));
+    }
     if (pcts.length !== 2) throw new Error(`${market} row "${label}" has ${pcts.length} percentages, expected 2`);
     // Column order was verified against the header: handle first, then bets
     const [handlePct, betsPct] = pcts;
@@ -228,6 +246,31 @@ function parseMarket(
   return a.side === first ? [a, b] : [b, a];
 }
 
+/** Nov 2026 layout: one event header, then each market's name ahead of its rows */
+function readMarketWrap(
+  block: string,
+  wrapAt: number,
+  markets: DkSplitsEvent["markets"],
+  away: string,
+  home: string,
+): void {
+  const head = block.match(/<div class="tb-se-head(?=[\s"])[^>]*>([\s\S]*?)<div class="tb-market-wrap/);
+  const columns = head ? [...head[1].matchAll(/<div[^>]*>([\s\S]*?)<\/div>/g)].map((m) => text(m[1])) : [];
+  if (columns.length !== 4 || EXPECTED_EVENT_HEADER.some((c, i) => columns[i] !== c)) {
+    throw new SplitsMarkupError(`event header reads [${columns.join(", ")}], expected [${EXPECTED_EVENT_HEADER.join(", ")}]`);
+  }
+  const wrap = block.slice(wrapAt);
+  const heads = [...wrap.matchAll(/<div[^>]*>\s*([A-Za-z][A-Za-z ]*?)\s*<\/div>\s*(?=<div class="tb-sm(?=[\s"]))/g)];
+  heads.forEach((h, i) => {
+    const market = MARKET_BY_HEADER[h[1].toLowerCase()];
+    if (!market) return; // a market we do not track
+    if (markets[market]) throw new Error(`${market} listed twice`);
+    const start = h.index! + h[0].length;
+    const end = i + 1 < heads.length ? heads[i + 1].index! : wrap.length;
+    markets[market] = parseMarket(market, wrap.slice(start, end), away, home);
+  });
+}
+
 function parseEvent(block: string): DkSplitsEvent {
   const h5 = block.match(/<h5[^>]*>([\s\S]*?)<\/h5>/);
   if (!h5) throw new Error("event block without a title");
@@ -244,6 +287,15 @@ function parseEvent(block: string): DkSplitsEvent {
   const kickoff = parseKickoffLabel(kickoffLabel);
 
   const markets: DkSplitsEvent["markets"] = {};
+  // Both layouts have a tb-market-wrap; only the Nov 2026 one puts the column
+  // header before it (once per event) instead of inside it (once per market).
+  const wrapAt = block.search(/<div class="tb-market-wrap(?=[\s"])/);
+  const headAt = block.search(/<div class="tb-se-head(?=[\s"])/);
+  if (wrapAt >= 0 && headAt >= 0 && headAt < wrapAt) {
+    readMarketWrap(block, wrapAt, markets, away, home);
+    if (Object.keys(markets).length === 0) throw new Error(`"${title}" has no readable markets`);
+    return { eventId: idMatch[1], away, home, kickoffLabel, kickoff, markets };
+  }
   for (const section of block.split(/<div class="tb-se-head(?=[\s"])/).slice(1)) {
     const headEnd = section.indexOf('<div class="tb-sm');
     const head = headEnd >= 0 ? section.slice(0, headEnd) : section;
