@@ -158,6 +158,18 @@ const SPORTS: SportConfig[] = [
   },
 ];
 
+/**
+ * NBA and NCAAB splits are written only once this is true. The live website's
+ * chat (src/services/chatbot/storedSplits.ts on main) reads every sport's
+ * splits without a sport filter, so a football question about a school could
+ * be answered with that school's basketball game. The filter is on the
+ * claude/exciting-euler-w6d8uw branch; flip this to true (and deploy
+ * gemini-chat, whose pulse-chat guard ships with it) once that branch's web
+ * chat is live. Dry runs can still request NBA or NCAAB. (DECISIONS D-058)
+ */
+const BASKETBALL_SPLITS_LIVE = false;
+const BASKETBALL_SPORTS: ReadonlySet<string> = new Set(["NBA", "NCAAB"]);
+
 const WINDOWS = ["n7days", "today", "tomorrow"] as const;
 const MAX_PAGES = 15;
 const PAGE_DELAY_MS = 250;
@@ -680,7 +692,11 @@ serve(async (req) => {
     const dryRun = body?.dryRun === true;
     const requested: string[] | null = Array.isArray(body?.sports) ? body.sports : null;
     const month = new Date().getUTCMonth();
-    const targets = SPORTS.filter((s) => (requested ? requested.includes(s.sport) : s.inSeason(month)));
+    // Basketball stays off outside dry runs until BASKETBALL_SPLITS_LIVE flips (see its note)
+    const targets = SPORTS.filter((s) => {
+      if (BASKETBALL_SPORTS.has(s.sport) && !BASKETBALL_SPLITS_LIVE && !dryRun) return false;
+      return requested ? requested.includes(s.sport) : s.inSeason(month);
+    });
 
     if (!dryRun) {
       syncLogId = await startSyncLog(supabase, {
