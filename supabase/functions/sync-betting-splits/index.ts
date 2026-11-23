@@ -159,15 +159,14 @@ const SPORTS: SportConfig[] = [
 ];
 
 /**
- * NBA and NCAAB splits are written only once this is true. The live website's
- * chat (src/services/chatbot/storedSplits.ts on main) reads every sport's
- * splits without a sport filter, so a football question about a school could
- * be answered with that school's basketball game. The filter is on the
- * claude/exciting-euler-w6d8uw branch; flip this to true (and deploy
- * gemini-chat, whose pulse-chat guard ships with it) once that branch's web
- * chat is live. Dry runs can still request NBA or NCAAB. (DECISIONS D-058)
+ * NBA and NCAAB splits are written only when this is true. It was false until
+ * the website's chat filtered splits by sport (src/services/chatbot/
+ * storedSplits.ts, live on main from jerryvix/mgpanalytics#23, Nov 23 2026)
+ * and gemini-chat's pulse-chat guard was deployed: before that, a football
+ * question about a school could be answered with its basketball game.
+ * Dry runs can always request NBA or NCAAB. (DECISIONS D-058)
  */
-const BASKETBALL_SPLITS_LIVE = false;
+const BASKETBALL_SPLITS_LIVE = true;
 const BASKETBALL_SPORTS: ReadonlySet<string> = new Set(["NBA", "NCAAB"]);
 
 const WINDOWS = ["n7days", "today", "tomorrow"] as const;
