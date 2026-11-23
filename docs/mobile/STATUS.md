@@ -4,7 +4,6 @@
 
 ## Blocked on owner
 
-- **Deploy `sync-betting-splits`.** Splits (the core data, D-053) have been frozen since Nov 2 because DraftKings redesigned its page. The parser fix is pushed on this branch and tested; it needs a deploy (owner runs it, or gives Claude a Supabase access token through the secure form).
 
 - Apple enrollment (D-U-N-S + organization). Critical path; gates the first TestFlight build. See `OWNER_ACTIONS.md` items 1 to 3.
 - Review board notes answered (8 Insiders, 12 alerts + game bell, 23 bankroll v1.1, 25 guest browsing). Note 4 decided after a simulated survey of 1,000: headline "Bet Smarter, Not Harder.", your teams first on Home (D-026, `research/`).
@@ -27,7 +26,7 @@
 
 ## Next
 
-1. Deploy the splits parser fix (football splits frozen since Nov 2), then confirm fresh rows in `betting_splits`.
+1. Splits parser fix deployed Nov 23 (`sync-betting-splits` v12; Claude now deploys with the owner's token, D-054). Confirm the first scheduled run writes fresh NFL and college football rows. Health check now probes split freshness directly.
 2. NBA and college basketball splits: built and tested (D-056), go live with the same deploy. College basketball covers only the ranked games `ncaab_games` stores until `sync-ncaab-games` keeps every Division I game. MLB when DraftKings lists it in spring.
 3. Splits-first mockups done with real data (canvas page "Splits First · Pulse"): Today rows with bets and money, a Pulse tab (Bets & Money, Trends, Results) replacing Insiders, and a game page that opens on Bets & Money then Trends. Proposal pending owner review (D-055, `proposals/2026-11-23-pulse.md`). Leaders view (ATS and over/under tables) added after the owner's college football example (D-057); needs a one-time CollegeFootballData backfill of Weeks 0 to 3.
 4. Backend for trends: ATS and over/under from results plus closing lines (football and MLB first), `odds_history` ID fix for basketball, injuries for NFL, college football and MLB, The Analyst game_id support.
