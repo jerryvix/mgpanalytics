@@ -23,8 +23,13 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 ## This week (5 minutes each)
 
 - [ ] **4. Create a free Expo account** at expo.dev, ideally with the same business email. The builder will then send a secure form for an access token.
-- [ ] **5. Create a free Figma account** at figma.com. The builder will send the import steps for the two review pages.
+- [ ] ~~**5. Create a free Figma account**~~ Not needed for now: design review happens on the mockup canvas (claude.ai/artifact/7ZWWFemMUESwBoLiFsEk3i).
 - [x] **6. Done 2026-11-20.** ~~Optional but valuable (10 minutes):~~ install Stocks.News on your iPhone and screen-record onboarding, the home screen, setting an alert, and the paywall. Drop the recording into the chat. The store screenshots are marketing images; the real flows are what we're modeling.
+
+## Decide now (from Nov 23)
+
+- [ ] Approve the Pulse plan (D-055, D-057): Pulse replaces Insiders as a tab; name "Pulse" or "Board".
+- [ ] OK to put this branch's website changes live (merge to main): Title Case labels, plain #12 ranks, and the chat guard that lets basketball splits turn on. The builder opens the pull request; you approve it.
 
 ## Anytime (optional)
 
@@ -32,13 +37,13 @@ Things only Jerry can do. Everything not on this list is handled by the builder.
 
 ## When the builder asks (later, with notice)
 
-- [ ] Supabase access token (secure form), needed for Sign in with Apple, guest sessions (anonymous sign-in) and the alerts tables.
+- [x] Supabase access token (secure form). Done Nov 23 ("MGP Claude deploy", 90 days). Delete the earlier "MGP - Claude" token; it only reached mgp-staging.
 - [ ] After Apple approval: add the builder's App Store Connect API key to Expo (steps will be provided; the key never passes through chat).
 - [ ] Review the Figma comments (week 2): keep, cut, or change each note.
 - [ ] Install TestFlight and use the app for a few days (week 3).
 - [ ] Approve the privacy policy, terms and support page drafts. A short lawyer review is recommended for an 18+ betting-related app.
 - [ ] Approve the App Store listing text and screenshots (week 4).
-- [ ] Decide on a faster odds plan for real-time line-move alerts (builder will bring the exact monthly cost).
+- [ ] ~~Decide on a faster odds plan for real-time line-move alerts~~ Dropped Nov 23: line movement is a detail, not the product (D-053), so no paid odds feed is planned.
 - On hold by owner (2026-11-20): X API spend for showing insider posts in the app (about $75/month estimate, D-021, D-023).
 
 ## Costs to expect
