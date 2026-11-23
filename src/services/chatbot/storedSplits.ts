@@ -20,6 +20,7 @@ import {
   PUBLIC_BETS_PCT,
   PULSE_MARKETS,
   SHARP_EDGE_PTS,
+  SPLITS_SPORTS,
   splitAsOf,
   type OddsRowLike,
   type PulseMarket,
@@ -178,6 +179,8 @@ export async function answerFromStoredSplits(query: string, now: Date = new Date
           .from("betting_splits")
           .select("sport, game_id, source_matchup, away_team, home_team, event_start, market, side, bets_pct, handle_pct, captured_at, source_as_of")
           .eq("source", "draftkings")
+          // NCAAF and NFL only: the sync also stores NBA and NCAAB splits, which this answer does not read
+          .in("sport", [...SPLITS_SPORTS])
           .gte("event_start", since)
           .order("id"),
       { label: "betting_splits for chat" },

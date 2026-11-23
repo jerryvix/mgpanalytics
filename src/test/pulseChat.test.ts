@@ -330,6 +330,29 @@ describe("marketPulseBlock (what gemini-chat adds to the prompt)", () => {
     expect(reads).toEqual([]);
   });
 
+  it("never reads the basketball splits the sync also stores", async () => {
+    const basketball = [
+      ...splitRows("NBA", "nba-phx-nop", "PHO Suns @ NO Pelicans", "Phoenix Suns", "New Orleans Pelicans", "2026-09-26T00:10:00Z", [
+        ["spread", "away", 30, 70],
+        ["spread", "home", 70, 30],
+      ]),
+      ...splitRows("NCAAB", "ncaab-csu-ari", "Colorado State @ Arizona", "Colorado State Rams", "Arizona Wildcats", "2026-09-26T04:30:00Z", [
+        ["total", "over", 20, 80],
+        ["total", "under", 80, 20],
+      ]),
+    ].map((r) => ({ ...r, source: "draftkings" })) as unknown as Row[];
+    const football = db.betting_splits;
+    db.betting_splits = [...football, ...basketball];
+    try {
+      for (const q of ["Suns Pelicans public betting", "Where is the sharp money?", "Colorado State Arizona sharp money"]) {
+        const block = await marketPulseBlock(client, q, "general", null, now);
+        expect(block, q).not.toMatch(/Suns|Pelicans|Colorado State|NBA|NCAAB/);
+      }
+    } finally {
+      db.betting_splits = football;
+    }
+  });
+
   it("reads nothing for a question that names no team and is not about splits", async () => {
     reads.length = 0;
     for (const q of ["What games are on tonight?", "Any good college football odds this weekend?", "who is favored this week"]) {

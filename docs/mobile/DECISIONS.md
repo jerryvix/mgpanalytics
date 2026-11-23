@@ -287,3 +287,10 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Proof:** reproduced an analyst's trend exactly from free data, and MGP's own stored splits already yield season receipts (side with the most money 42-56-5 ATS, NFL Weeks 3 to 9).
 **Not possible for free:** prop and touchdown scorer splits, ranking by bet volume, other books' numbers.
 **Details:** `docs/mobile/proposals/2026-11-23-pulse.md`. Mockups (real data): canvas page "Splits First · Pulse".
+
+### D-056 Basketball splits: splits only, no second line; games we don't store are counted, not guessed
+**Date:** 2026-11-23 · **By:** Builder (owner direction D-053: add NBA and college basketball splits)
+**What:** `sync-betting-splits` also stores DraftKings' % of bets and % of money for the NBA (DK event group 42648, October to June) and men's college basketball (92483, November to April). Nothing shows them yet: the website and the chat read stored splits for NCAAF and NFL only (`SPLITS_SPORTS`), and both chat reads now filter on sport so basketball rows can't slip into a football answer.
+**No lines step for basketball:** NBA and NCAAB lines on the website come from BallDontLie (four books), so the function writes no competing DraftKings line to `betting_lines`. Basketball split rows keep DK's page number for audit and no opening line.
+**Matching:** NBA on the nickname, like the NFL ("POR Trail Blazers", "PHO Suns"); NCAAB on the school name, like NCAAF, plus four aliases seen failing on Nov 23 (Saint Bonaventure, St. Johns, MD Eastern Shore, A&M-Corpus Christi). Basketball uses a 12 hour kickoff window (football keeps 36) so a DK event never lands on the same two teams' other game.
+**Coverage:** our basketball games tables hold only part of DK's list. `ncaab_games` keeps ranked games in the next 24 hours (4 of DK's 39 college games on Nov 23); `nba_games` runs about 48 hours ahead. A DK game with neither team on our rows is counted and logged as "not in our games" rather than as a miss, unless the run matched nothing while we hold games in DK's range. Splits on every college game need `sync-ncaab-games` to store every Division I game.

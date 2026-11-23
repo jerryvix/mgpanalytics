@@ -52,7 +52,11 @@ export type PulseMarket = LineMarket;
 export type PulseSide = LineSide;
 export const PULSE_MARKETS: PulseMarket[] = LINE_MARKETS;
 
-/** Sports sync-betting-splits stores DraftKings splits and lines for */
+/**
+ * Sports the app and chat read stored DraftKings splits and lines for.
+ * sync-betting-splits also stores NBA and NCAAB splits (no lines), which no
+ * surface shows yet: every splits read filters on this set.
+ */
 export const SPLITS_SPORTS: ReadonlySet<string> = LINE_SPORTS;
 
 /** Threshold for the sharp read: money share at least this many points above bet share */

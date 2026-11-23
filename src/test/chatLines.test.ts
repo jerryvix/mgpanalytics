@@ -189,4 +189,38 @@ describe("stored-splits chat without a DK split", () => {
       vi.useRealTimers();
     }
   });
+
+  it("never answers from the basketball splits the sync also stores", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(now);
+    try {
+      const nbaSplit = (market: string, side: string, bets: number, money: number) => ({
+        sport: "NBA",
+        game_id: "nba-phx-nop",
+        source: "draftkings",
+        source_matchup: "PHO Suns @ NO Pelicans",
+        away_team: "Phoenix Suns",
+        home_team: "New Orleans Pelicans",
+        event_start: "2026-09-25T00:10:00Z",
+        market,
+        side,
+        bets_pct: bets,
+        handle_pct: money,
+        captured_at: "2026-09-24T10:00:00Z",
+        source_as_of: "2026-09-24T10:00:00Z",
+      });
+      Object.assign(db, {
+        betting_splits: [nbaSplit("spread", "away", 30, 70), nbaSplit("spread", "home", 70, 30)],
+        ncaaf_games: [],
+        games: [],
+        betting_lines: [],
+        ncaaf_odds: [],
+      });
+      expect(await answerFromStoredSplits("sharp money Suns Pelicans", now)).toBeNull();
+      const splitsRead = reads.find((r) => r.table === "betting_splits")!;
+      expect(splitsRead.filters).toContainEqual(["in", "sport", ["NCAAF", "NFL"]]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

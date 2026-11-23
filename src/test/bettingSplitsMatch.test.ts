@@ -4,11 +4,18 @@ import { resolve } from "node:path";
 import {
   matchEventsToGames,
   normalizeTeamName,
+  ourGamesInRange,
   schoolCandidates,
   teamMatchScore,
+  triageUnmatched,
   type GameRow,
 } from "../../supabase/functions/sync-betting-splits/match";
-import { kickoffToUtc, parseKickoffLabel, type DkSplitsEvent } from "../../supabase/functions/sync-betting-splits/parse";
+import {
+  kickoffToUtc,
+  parseDkSplitsPage,
+  parseKickoffLabel,
+  type DkSplitsEvent,
+} from "../../supabase/functions/sync-betting-splits/parse";
 import { buildSplitRows, splitChanged, type OpeningLines } from "../../supabase/functions/sync-betting-splits/rows";
 
 // Every Week 4 2026 matchup on the DK splits pages plus our ncaaf_games rows
@@ -86,6 +93,40 @@ describe("teamMatchScore", () => {
     expect(teamMatchScore("NFL", "SF 49ers", "San Francisco 49ers")).toBe(2);
     expect(teamMatchScore("NFL", "LA Rams", "Los Angeles Chargers")).toBe(0);
     expect(teamMatchScore("NFL", "NY Jets", "New York Giants")).toBe(0);
+  });
+
+  it("matches NBA teams on the nickname, two-word ones included", () => {
+    const exact: Array<[string, string]> = [
+      ["POR Trail Blazers", "Portland Trail Blazers"],
+      ["PHI 76ers", "Philadelphia 76ers"],
+      ["PHO Suns", "Phoenix Suns"],
+      ["LA Clippers", "LA Clippers"],
+      ["LA Lakers", "Los Angeles Lakers"],
+      ["UTA Jazz", "Utah Jazz"],
+      ["NO Pelicans", "New Orleans Pelicans"],
+      ["MIN Timberwolves", "Minnesota Timberwolves"],
+    ];
+    for (const [dk, ours] of exact) expect(teamMatchScore("NBA", dk, ours), `${dk} vs ${ours}`).toBe(2);
+    expect(teamMatchScore("NBA", "LA Clippers", "Los Angeles Lakers")).toBe(0);
+    expect(teamMatchScore("NBA", "POR Trail Blazers", "Golden State Warriors")).toBe(0);
+  });
+
+  it("reads DK's college basketball labels that only the NCAAB map covers", () => {
+    const exact: Array<[string, string]> = [
+      ["Saint Bonaventure", "St. Bonaventure Bonnies"],
+      ["St. Johns", "St. John's Red Storm"],
+      ["MD Eastern Shore", "Maryland Eastern Shore Hawks"],
+      ["A&M-Corpus Christi", "Texas A&M-Corpus Christi Islanders"],
+      // The football map still applies
+      ["FIU", "Florida International Panthers"],
+      ["Appalachian State", "App State Mountaineers"],
+      ["Miami FL", "Miami Hurricanes"],
+      ["Long Beach State", "Long Beach State Beach"],
+    ];
+    for (const [dk, ours] of exact) expect(teamMatchScore("NCAAB", dk, ours), `${dk} vs ${ours}`).toBe(2);
+    // NCAAB aliases do not leak into football
+    expect(teamMatchScore("NCAAF", "Saint Bonaventure", "St. Bonaventure Bonnies")).toBe(0);
+    expect(teamMatchScore("NCAAB", "Texas", "Texas A&M-Corpus Christi Islanders")).toBe(1); // prefix only
   });
 });
 
@@ -225,3 +266,135 @@ describe("splitChanged", () => {
     expect(splitChanged({ line: -3, price: -112, bets_pct: 79, handle_pct: 90 }, next)).toBe(true);
   });
 });
+
+
+// Nov 23 2026: DK's NBA and college basketball splits pages (the parsed
+// fixtures from the parser fix, plus every NCAAB matchup on that day's n7days
+// pages) against our games as ESPN names them that day. Built from the DK
+// pages and ESPN's scoreboards (dates=20261123 for the NBA; Division I,
+// 20261123 and 20261124, for NCAAB).
+const basketball = JSON.parse(
+  readFileSync(resolve(__dirname, "fixtures", "dk-splits-basketball-2026-11-23-matchups.json"), "utf-8"),
+) as {
+  capturedAt: string;
+  nba: { dkEvents: Array<{ eventId: string; away: string; home: string; kickoffLabel: string }>; games: GameRow[] };
+  ncaab: {
+    dkEvents: Array<{ eventId: string; away: string; home: string; kickoffLabel: string }>;
+    games: Array<GameRow & { home_team_rank: number | null; visitor_team_rank: number | null }>;
+  };
+};
+const bbNow = new Date(basketball.capturedAt);
+const withKickoff = <T extends { kickoffLabel: string }>(events: T[]) =>
+  events.map((e) => ({ ...e, kickoffUtc: kickoffToUtc(parseKickoffLabel(e.kickoffLabel), bbNow) }));
+const fixturePage = (name: string) =>
+  withKickoff(parseDkSplitsPage(readFileSync(resolve(__dirname, "fixtures", name), "utf-8")).events);
+const pairOf = (m: { game: GameRow }) => `${m.game.visitor_team_name} @ ${m.game.home_team_name}`;
+
+describe("basketball matching (Nov 23 2026)", () => {
+  it("maps every NBA matchup on DK's page to its game", () => {
+    const events = fixturePage("dk-splits-nba-2026-11-23-p1.html");
+    const { matched, unmatched } = matchEventsToGames("NBA", events, basketball.nba.games);
+    expect(unmatched).toEqual([]);
+    expect(matched).toHaveLength(10);
+    expect(matched.every((m) => m.score === 4 && !m.swapped)).toBe(true);
+    const by = (away: string) => pairOf(matched.find((m) => m.event.away === away)!);
+    expect(by("POR Trail Blazers")).toBe("Portland Trail Blazers @ Philadelphia 76ers");
+    expect(by("PHO Suns")).toBe("Phoenix Suns @ New Orleans Pelicans");
+    expect(by("LA Clippers")).toBe("LA Clippers @ Houston Rockets");
+    expect(by("UTA Jazz")).toBe("Utah Jazz @ Los Angeles Lakers");
+    expect(by("SA Spurs")).toBe("San Antonio Spurs @ Sacramento Kings");
+  });
+
+  it("maps every NCAAB matchup on DK's first page to its game", () => {
+    const events = fixturePage("dk-splits-ncaab-2026-11-23-p1.html");
+    const { matched, unmatched } = matchEventsToGames("NCAAB", events, basketball.ncaab.games);
+    expect(unmatched).toEqual([]);
+    expect(matched).toHaveLength(10);
+    const by = (away: string) => pairOf(matched.find((m) => m.event.away === away)!);
+    expect(by("Saint Bonaventure")).toBe("St. Bonaventure Bonnies @ App State Mountaineers");
+    expect(by("Long Beach State")).toBe("Long Beach State Beach @ Florida International Panthers"); // DK "FIU"
+    expect(by("Northern Iowa")).toBe("Northern Iowa Panthers @ Davidson Wildcats");
+    expect(by("Tulsa")).toBe("Tulsa Golden Hurricane @ Oregon State Beavers");
+  });
+
+  it("maps all 39 NCAAB matchups DK listed for the week, a neutral-site flip included", () => {
+    const events = withKickoff(basketball.ncaab.dkEvents);
+    const { matched, unmatched } = matchEventsToGames("NCAAB", events, basketball.ncaab.games);
+    expect(unmatched).toEqual([]);
+    expect(matched).toHaveLength(39);
+    const by = (away: string) => matched.find((m) => m.event.away === away)!;
+    expect(pairOf(by("MD Eastern Shore"))).toBe("Maryland Eastern Shore Hawks @ Youngstown State Penguins");
+    expect(pairOf(by("A&M-Corpus Christi"))).toBe("Texas A&M-Corpus Christi Islanders @ Wichita State Shockers");
+    expect(pairOf(by("Oregon"))).toBe("Oregon Ducks @ St. John's Red Storm");
+    expect(pairOf(by("Miami FL"))).toBe("Miami Hurricanes @ TCU Horned Frogs");
+    // DK lists this neutral-site game the other way round from ESPN
+    expect(by("Utah Valley")).toMatchObject({ swapped: true, score: 4 });
+    expect(pairOf(by("Utah Valley"))).toBe("Stephen F. Austin Lumberjacks @ Utah Valley Wolverines");
+  });
+
+  it("keeps an NBA event off the same teams' game the next night", () => {
+    const tonight = [event("1", "PHO Suns", "NO Pelicans", "2026-11-24T01:10:00Z")];
+    const rows = [
+      game("g-mon", "2026-11-24T01:00:00Z", "Phoenix Suns", "New Orleans Pelicans"),
+      game("g-tue", "2026-11-25T01:00:00Z", "Phoenix Suns", "New Orleans Pelicans"),
+    ];
+    const both = matchEventsToGames("NBA", tonight, rows);
+    expect(both.matched.map((m) => m.game.id)).toEqual(["g-mon"]);
+    // Tonight's row not stored: tomorrow's is no stand-in
+    const onlyTue = matchEventsToGames("NBA", tonight, [rows[1]]);
+    expect(onlyTue.matched).toEqual([]);
+    expect(onlyTue.unmatched[0]).toMatchObject({ reason: "no game row with either team within 12h", neitherTeamSeen: true });
+  });
+});
+
+describe("triageUnmatched", () => {
+  // What ncaab_games holds when DK's page is read: ranked games in the next 24 hours
+  const ranked = basketball.ncaab.games.filter(
+    (g) =>
+      (g.home_team_rank !== null || g.visitor_team_rank !== null) &&
+      Date.parse(g.date) > bbNow.getTime() &&
+      Date.parse(g.date) <= bbNow.getTime() + 24 * 3600_000,
+  );
+  const events = withKickoff(basketball.ncaab.dkEvents);
+
+  it("counts DK games our ranked-only table does not store apart from misses", () => {
+    expect(ranked.map((g) => pairOf({ game: g }))).toEqual([
+      "Washington Huskies @ BYU Cougars",
+      "Winthrop Eagles @ Illinois Fighting Illini",
+      "Denver Pioneers @ Kansas Jayhawks",
+      "Colorado State Rams @ Arizona Wildcats",
+    ]);
+    const { matched, unmatched } = matchEventsToGames("NCAAB", events, ranked);
+    expect(matched).toHaveLength(4);
+    const t = triageUnmatched("subset", unmatched, { matched: matched.length, ourGamesInRange: ourGamesInRange(ranked, events, bbNow) });
+    expect(t.misses).toEqual([]);
+    expect(t.notInOurGames).toHaveLength(35);
+    expect(t.notInOurGames.every((u) => u.reason === "no game row with either team within 12h")).toBe(true);
+    // Tomorrow's ranked games, past the table's 24 hours, are "not stored" too
+    expect(t.notInOurGames.map((u) => u.event.away)).toEqual(expect.arrayContaining(["Tennessee", "Oregon", "Texas Tech"]));
+    // Football's table holds every game: the same leftovers would all be misses
+    expect(triageUnmatched("all", unmatched, { matched: matched.length, ourGamesInRange: 4 }).misses).toHaveLength(35);
+  });
+
+  it("keeps a name that fails on a stored game as a miss", () => {
+    const renamed = events.map((e) => (e.home === "BYU" ? { ...e, home: "Brigham Young U" } : e));
+    const { matched, unmatched } = matchEventsToGames("NCAAB", renamed, ranked);
+    const t = triageUnmatched("subset", unmatched, { matched: matched.length, ourGamesInRange: ourGamesInRange(ranked, renamed, bbNow) });
+    expect(t.misses).toHaveLength(1);
+    expect(t.misses[0].reason).toBe("no game row with both teams within 12h; no row has Brigham Young U");
+  });
+
+  it("treats every leftover as a miss when nothing matched games we hold", () => {
+    // DK starts printing records after the names: no name is seen anywhere, yet our table has games in DK's range
+    const relabeled = events.map((e) => ({ ...e, away: `${e.away} (5-1)`, home: `${e.home} (6-0)` }));
+    const { matched, unmatched } = matchEventsToGames("NCAAB", relabeled, ranked);
+    expect(matched).toEqual([]);
+    expect(unmatched.every((u) => u.neitherTeamSeen)).toBe(true);
+    const inRange = ourGamesInRange(ranked, relabeled, bbNow);
+    expect(inRange).toBe(4);
+    const t = triageUnmatched("subset", unmatched, { matched: 0, ourGamesInRange: inRange });
+    expect(t.misses).toHaveLength(39);
+    expect(t.notInOurGames).toEqual([]);
+  });
+});
+

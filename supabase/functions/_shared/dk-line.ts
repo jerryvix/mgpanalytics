@@ -17,7 +17,11 @@ export type LineMarket = "spread" | "total" | "moneyline";
 export type LineSide = "away" | "home" | "over" | "under";
 export const LINE_MARKETS: LineMarket[] = ["spread", "total", "moneyline"];
 
-/** Sports sync-betting-splits stores DraftKings lines (and splits) for */
+/**
+ * Sports sync-betting-splits stores DraftKings lines (and splits) for, and
+ * the only sports the app and chat read stored splits for. It also stores NBA
+ * and NCAAB splits (no lines), which nothing reads yet.
+ */
 export const LINE_SPORTS: ReadonlySet<string> = new Set(["NCAAF", "NFL"]);
 
 /** [away, home] or [over, under] */
