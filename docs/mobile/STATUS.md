@@ -29,7 +29,7 @@
 
 1. Deploy the splits parser fix (football splits frozen since Nov 2), then confirm fresh rows in `betting_splits`.
 2. NBA and college basketball splits: built and tested (D-056), go live with the same deploy. College basketball covers only the ranked games `ncaab_games` stores until `sync-ncaab-games` keeps every Division I game. MLB when DraftKings lists it in spring.
-3. Splits-first mockups done with real data (canvas page "Splits First · Pulse"): Today rows with bets and money, a Pulse tab (Bets & Money, Trends, Results) replacing Insiders, and a game page that opens on Bets & Money then Trends. Proposal pending owner review (D-055, `proposals/2026-11-23-pulse.md`).
+3. Splits-first mockups done with real data (canvas page "Splits First · Pulse"): Today rows with bets and money, a Pulse tab (Bets & Money, Trends, Results) replacing Insiders, and a game page that opens on Bets & Money then Trends. Proposal pending owner review (D-055, `proposals/2026-11-23-pulse.md`). Leaders view (ATS and over/under tables) added after the owner's college football example (D-057); needs a one-time CollegeFootballData backfill of Weeks 0 to 3.
 4. Backend for trends: ATS and over/under from results plus closing lines (football and MLB first), `odds_history` ID fix for basketball, injuries for NFL, college football and MLB, The Analyst game_id support.
 5. Build the game page in the app by Nov 27/28.
 
