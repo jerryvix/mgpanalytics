@@ -349,4 +349,4 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-065 Takes look forward only; no visible track records
 **Date:** 2026-11-23 · **By:** Owner ("I don't want historical stuff… looking forward… we're not trying to track people's records… the point is real picks and why, so people know it's not a robot making the decisions")
 **What:** Takes shows picks and early leans for games that haven't started, from each show's newest episodes. A take disappears from the app at kickoff. No won/lost results or records for shows or people anywhere in the app (MGP may keep results privately to judge which sources to carry). Each show's newest episode is transcribed even when its title doesn't say "bets", because early-week leans live in those episodes too (`--any-title`).
-**Format changes:** same-game parlay legs listed one per line under the pick; "Risks they named" becomes "Risk"; drop commentary about co-hosts disagreeing.
+**Format changes:** same-game parlay legs listed one per line under the pick; "Risks they named" becomes "Risks Flagged" (owner wording); drop commentary about co-hosts disagreeing.
