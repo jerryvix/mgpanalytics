@@ -1,5 +1,5 @@
 // Takes sources (DECISIONS D-059, D-060): outside shows and personalities the
-// owner picked. They are not MGP's insiders; their picks are theirs, shown
+// owner picked (Bookit Blitz dropped Nov 23: video only). They are not MGP's insiders; their picks are theirs, shown
 // credited by name with a link to the original. MGP itself gives no picks.
 //
 // Feed: YouTube's free public per-channel feed (no API key), which returns the
@@ -30,7 +30,7 @@ export interface TakesSource {
   /** Regular hosts and contributors named in the show's descriptions */
   people: TakesPerson[];
   /** Official podcast feed, when the show publishes audio (lets us find spoken picks) */
-  podcast?: { applePodcastsId: string };
+  podcast?: { applePodcastsId: string; feed: string };
 }
 
 export const TAKES_SOURCES: readonly TakesSource[] = [
@@ -46,7 +46,7 @@ export const TAKES_SOURCES: readonly TakesSource[] = [
       { name: "Will Hill" },
       { name: "Bruce Feldman" },
     ],
-    podcast: { applePodcastsId: "1704233690" },
+    podcast: { applePodcastsId: "1704233690", feed: "https://feeds.megaphone.fm/bearbets" },
   },
   {
     channelId: "UCsyYwtlAzNCsCk2uLa4B1Cg",
@@ -57,16 +57,7 @@ export const TAKES_SOURCES: readonly TakesSource[] = [
     x: "holdthe_phone",
     people: [],
     // Almost Friday Media, presented by BetMGM
-    podcast: { applePodcastsId: "1760085357" },
-  },
-  {
-    channelId: "UCOJq3FrHd0TBxrUZEEm4vtw",
-    handle: "@BookitBlitz",
-    name: "Bookit Blitz",
-    // Descriptions mention bookitsports and BookitHQ; video descriptions are otherwise empty.
-    // No podcast feed found (Nov 23 2026): video only, so picks can't be captured automatically.
-    x: "bookitsports",
-    people: [],
+    podcast: { applePodcastsId: "1760085357", feed: "https://feeds.megaphone.fm/holdthephone" },
   },
 ];
 
