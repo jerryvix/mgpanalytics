@@ -254,8 +254,13 @@ L['htp'] = '/_blob/25f016deb53ef142ede410377a5c7512'
 DF = 'font-family: {{df}}; font-size: {{dfs}}; letter-spacing: {{dfl}}; text-transform: {{dft}}; font-style: {{dfi}}'
 W_ = TK['tx']
 def show_logo(k):
+    if isinstance(k, (list, tuple)):
+        a, b = k
+        return (f'<span aria-hidden="true" style="position: relative; flex: 0 0 auto; width: 38px; height: 38px">'
+                f'<img src="{L[a]}" alt="" width="28" height="28" style="position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 999px; object-fit: cover; border: 2px solid {TK["bg"]}">'
+                f'<img src="{L[b]}" alt="" width="28" height="28" style="position: absolute; left: 10px; top: 10px; width: 28px; height: 28px; border-radius: 999px; object-fit: cover; border: 2px solid {TK["bg"]}"></span>')
     return f'<img src="{L[k]}" alt="" width="38" height="38" style="flex: 0 0 auto; width: 38px; height: 38px; border-radius: 999px; object-fit: cover">'
-def tk_take(k, pick, who, status, body=None):
+def tk_take(k, pick, who, status, body=None, legs=None):
     chev = '<path d="M6 15l6-6 6 6"/>' if body else '<path d="M6 9l6 6 6-6"/>'
     out = f"""  <div style="margin: 0 16px; padding: 13px 0; border-bottom: 1px solid {TK["line"]}; display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 12px">
@@ -264,15 +269,18 @@ def tk_take(k, pick, who, status, body=None):
         <span style="font-size: 17px; font-weight: 700; letter-spacing: -0.2px; font-variant-numeric: tabular-nums">{pick}</span>
         <span style="{DF}">{who}</span>
       </span>
-      <span style="flex: 0 0 auto; {DF}">{status}</span>
+      {f'<span style="flex: 0 0 auto; {DF}">{status}</span>' if status else ''}
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{W_}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 auto">{chev}</svg>
     </div>
 """
+    if legs:
+        rows = ''.join(f'<span style="display: flex; gap: 12px; align-items: baseline"><span style="flex: 0 0 auto; width: 14px; {DF}">{i}</span><span style="font-size: 15px; font-weight: 500">{leg}</span></span>' for i, leg in enumerate(legs, 1))
+        out += f'    <div style="margin-left: 50px; display: flex; flex-direction: column; gap: 7px">{rows}</div>\n'
     if body:
         out += f'    <div style="margin-left: 50px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.42">{body}</div>\n'
     return out + '  </div>\n'
 def tk_sec(label, sub):
-    return f'  <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 18px 16px 2px"><span style="font-size: 19px; font-weight: 600; letter-spacing: -0.3px">{label}</span><span style="{DF}">{sub}</span></div>\n'
+    return f'  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 18px 16px 2px"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 19px; font-weight: 600; letter-spacing: -0.3px">{label}</span><span style="flex: 0 0 auto; {DF}">{sub}</span></div>\n'
 def tk_tabbar():
     items = [('Today','today'),('Games','games'),('Pulse','pulse'),('Alerts','bell'),('The Analyst','analyst')]
     out = []
@@ -283,7 +291,7 @@ def tk_tabbar():
     return fade + f"""  <nav aria-label="Tabs" style="position: absolute; left: 14px; right: 14px; bottom: 22px; height: 64px; border-radius: 999px; background: {TK["tab"]}; border: 1px solid {TK["tabBorder"]}; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding: 0 6px; box-shadow: {TK["shadow"]}">{"".join(out)}</nav>
 """
 head_tk = head('Pulse, Takes').replace('family=Geist:wght@400..700&', 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&')
-s_ = head_tk + frame_open(TK).replace('height: 844px', 'height: 1120px')
+s_ = head_tk + frame_open(TK).replace('height: 844px', 'height: 1600px')
 s_ += f"""  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 0 16px">
     {mark(TK)}
     <div style="display: flex; align-items: center; gap: 4px">
@@ -296,7 +304,7 @@ s_ += f"""  <div style="display: flex; align-items: center; justify-content: spa
       <h1 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.05">Pulse</h1>
       <span style="{DF}">What the shows are betting</span>
     </div>
-    <a href="#s" style="display: flex; align-items: center; gap: 4px; padding: 8px 12px; border-radius: 999px; background: {TK["surf"]}; color: {W_}; text-decoration: none; font-size: 15px; font-weight: 500">NFL{icon("down", 16, sw=2)}</a>
+    <a href="#s" style="display: flex; align-items: center; gap: 4px; padding: 8px 12px; border-radius: 999px; background: {TK["surf"]}; color: {W_}; text-decoration: none; font-size: 15px; font-weight: 500">All Sports{icon("down", 16, sw=2)}</a>
   </div>
   <div style="flex: 0 0 auto; display: flex; gap: 2px; padding: 14px 12px 4px; white-space: nowrap; overflow: hidden">
 """
@@ -305,18 +313,26 @@ for t in ['Bets & Money', 'Takes', 'Trends', 'Leaders', 'Results']:
     s_ += f'    <a href="#v" style="flex: 0 0 auto; padding: 9px 12px; border-radius: 999px; font-size: 15px; font-weight: {600 if on else 400}; text-decoration: none; color: {W_}; {"background: " + TK["surf2"] if on else ""}">{t}</a>\n'
 s_ += '  </div>\n'
 s_ += tk_sec('Bengals at Commanders', 'Tonight 8:15 PM')
-body = f"""<span><span style="display: block; margin-bottom: 3px; {DF}">Why</span>Washington is due after hanging with the Rams at home. Jayden Daniels plays his best in prime time at home. Cincinnati's defense is weak too</span>
-      <span><span style="display: block; margin-bottom: 3px; {DF}">Risks they named</span>Washington's defense is bad. Ja'Marr Chase is hot, 230 yards last week. Co-host Danny leans Bengals</span>
+body = f"""<span><span style="display: block; margin-bottom: 3px; {DF}">Why</span>Washington is due after hanging with the Rams at home, and Jayden Daniels plays his best in prime time. Bear Bets calls it a sell-high spot on the Bengals: the look-ahead line was 3 to 3.5, and Washington is rested and desperate</span>
+      <span><span style="display: block; margin-bottom: 3px; {DF}">Risks Flagged</span>Washington's defense is bad. Ja'Marr Chase is hot, 230 yards last week</span>
       <span style="{DF}">MGP · 22% of money, 15% of bets on WAS</span>"""
-s_ += tk_take('htp', 'Commanders +6 (−107)', 'Hold The Phone · Game Pick', 'Tonight', body)
-s_ += tk_take('htp', 'Same Game Parlay +400', 'Hold The Phone · 4 Legs', 'Tonight')
-s_ += tk_take('htp', 'Chig Okonkwo Anytime TD', 'Danny · Hold The Phone', 'Tonight')
-s_ += tk_sec('Week 11 · Bear Bets', '1-3 · 1 Pending')
-s_ += tk_take('bearbets', 'Raiders Team Total Under 15.5', 'Chris “The Bear” Fallica · @chrisfallica', 'Lost')
-s_ += tk_take('bearbets', 'Giants +6', 'Sammy Panayotovich · @spshoot', 'Won')
-s_ += tk_take('bearbets', 'Bears −11.5', 'Sammy Panayotovich · @spshoot', 'Lost')
+s_ += tk_take(('htp', 'bearbets'), 'Commanders +6 (−107)', 'Hold The Phone, Bear Bets · Game Pick', '', body)
+s_ += tk_take('htp', 'Same Game Parlay +400', 'Hold The Phone', '', legs=["Ja'Marr Chase 75+ Receiving Yards", 'Jayden Daniels 25+ Rushing Yards', 'Stefon Diggs 50+ Receiving Yards', 'Chase Brown Anytime TD'])
+s_ += tk_take('htp', 'Chig Okonkwo Anytime TD', 'Danny · Hold The Phone', '')
+s_ += tk_sec('Bears at Lions', 'Thu 1:00 PM')
+s_ += tk_take('bearbets', 'Lions +2.5 (−106)', 'Bear Bets · Early Lean', '')
+s_ += tk_sec('Florida at Florida State', 'Fri 3:30 PM')
+s_ += tk_take('bearbets', 'Florida State +6 (−110)', 'Bear Bets · Early Lean', '')
+s_ += tk_sec('Minnesota at Wisconsin', 'Fri 7:30 PM')
+s_ += tk_take('bearbets', 'Minnesota +7.5 (−112)', 'Bear Bets · Early Lean', '')
+s_ += tk_sec('LSU at Arkansas', 'Sat 12:45 PM')
+s_ += tk_take('bearbets', 'Arkansas +12.5 (Now +14.5)', 'Bear Bets · Early Lean', '')
+s_ += tk_sec('Southern Miss at Old Dominion', 'Sat 1:00 PM')
+s_ += tk_take('bearbets', 'Southern Miss +5.5 (−105)', 'Bear Bets', '')
+s_ += tk_sec('Georgia Tech at Georgia', 'Sat 3:30 PM')
+s_ += tk_take('bearbets', 'Georgia Tech +35.5 (−110)', 'Bear Bets · Early Lean', '')
 s_ += tk_tabbar() + '</div>\n'
-props = '{"detailFont":{"editor":"enum","options":["Geist Mono","Instrument Serif","Geist"],"default":"Geist Mono","section":"Look"},"$preview":{"width":390,"height":1120}}'
+props = '{"detailFont":{"editor":"enum","options":["Geist Mono","Instrument Serif","Geist"],"default":"Geist Mono","section":"Look"},"$preview":{"width":390,"height":1600}}'
 s_ += f"""</x-dc>
 <script type="text/x-dc" data-dc-script data-props='{props}'>
 class Component extends DCLogic {{
