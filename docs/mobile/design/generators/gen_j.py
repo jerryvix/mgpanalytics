@@ -246,8 +246,9 @@ s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JLeaders.dc.html'), 'w').write(s)
 print('leaders written')
 
-# ---------- 7) Pulse: Takes, one text color (owner feedback Nov 23): hierarchy from fonts, not grays.
-# Real picks transcribed Nov 23 2026 from the shows' podcast audio. "Detail font" is a canvas Tweak.
+# ---------- 7) Pulse: Takes, one text color (D-064), upcoming only (D-065), notes of Nov 23 (D-066):
+# rows collapsed by default (Why and Risks Flagged in the dropdown), soonest game first, league tag on each
+# game header, no "Early Lean". Three boards: the page, one take opened, and the first-visit pointer.
 TK = dict(C); TK.update(t2=C['tx'], t3=C['tx'])
 L['bearbets'] = '/_blob/4bc33a77df289e9af9da8e1425eb2085'
 L['htp'] = '/_blob/25f016deb53ef142ede410377a5c7512'
@@ -260,8 +261,8 @@ def show_logo(k):
                 f'<img src="{L[a]}" alt="" width="28" height="28" style="position: absolute; left: 0; top: 0; width: 28px; height: 28px; border-radius: 999px; object-fit: cover; border: 2px solid {TK["bg"]}">'
                 f'<img src="{L[b]}" alt="" width="28" height="28" style="position: absolute; left: 10px; top: 10px; width: 28px; height: 28px; border-radius: 999px; object-fit: cover; border: 2px solid {TK["bg"]}"></span>')
     return f'<img src="{L[k]}" alt="" width="38" height="38" style="flex: 0 0 auto; width: 38px; height: 38px; border-radius: 999px; object-fit: cover">'
-def tk_take(k, pick, who, status, body=None, legs=None):
-    chev = '<path d="M6 15l6-6 6 6"/>' if body else '<path d="M6 9l6 6 6-6"/>'
+def tk_take(k, pick, who, body=None, legs=None, opened=False):
+    chev = '<path d="M6 15l6-6 6 6"/>' if opened else '<path d="M6 9l6 6 6-6"/>'
     out = f"""  <div style="margin: 0 16px; padding: 13px 0; border-bottom: 1px solid {TK["line"]}; display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 12px">
       {show_logo(k)}
@@ -269,18 +270,17 @@ def tk_take(k, pick, who, status, body=None, legs=None):
         <span style="font-size: 17px; font-weight: 700; letter-spacing: -0.2px; font-variant-numeric: tabular-nums">{pick}</span>
         <span style="{DF}">{who}</span>
       </span>
-      {f'<span style="flex: 0 0 auto; {DF}">{status}</span>' if status else ''}
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{W_}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 auto">{chev}</svg>
+      {'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + W_ + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 auto">' + chev + '</svg>' if body else ''}
     </div>
 """
     if legs:
         rows = ''.join(f'<span style="display: flex; gap: 12px; align-items: baseline"><span style="flex: 0 0 auto; width: 14px; {DF}">{i}</span><span style="font-size: 15px; font-weight: 500">{leg}</span></span>' for i, leg in enumerate(legs, 1))
         out += f'    <div style="margin-left: 50px; display: flex; flex-direction: column; gap: 7px">{rows}</div>\n'
-    if body:
+    if body and opened:
         out += f'    <div style="margin-left: 50px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.42">{body}</div>\n'
     return out + '  </div>\n'
 def tk_sec(label, sub):
-    return f'  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 18px 16px 2px"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 19px; font-weight: 600; letter-spacing: -0.3px">{label}</span><span style="flex: 0 0 auto; {DF}">{sub}</span></div>\n'
+    return f'  <div style="display: flex; flex-direction: column; gap: 5px; padding: 20px 16px 2px"><span style="{DF}">{sub}</span><span style="font-size: 19px; font-weight: 600; letter-spacing: -0.3px">{label}</span></div>\n'
 def tk_tabbar():
     items = [('Today','today'),('Games','games'),('Pulse','pulse'),('Alerts','bell'),('The Analyst','analyst')]
     out = []
@@ -290,9 +290,13 @@ def tk_tabbar():
     fade = f'<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 130px; background: linear-gradient(to bottom, rgba(0,0,0,0), {TK["bg"]} 55%); pointer-events: none"></div>'
     return fade + f"""  <nav aria-label="Tabs" style="position: absolute; left: 14px; right: 14px; bottom: 22px; height: 64px; border-radius: 999px; background: {TK["tab"]}; border: 1px solid {TK["tabBorder"]}; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding: 0 6px; box-shadow: {TK["shadow"]}">{"".join(out)}</nav>
 """
-head_tk = head('Pulse, Takes').replace('family=Geist:wght@400..700&', 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&')
-s_ = head_tk + frame_open(TK).replace('height: 844px', 'height: 1600px')
-s_ += f"""  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 0 16px">
+WHY = f"""<span><span style="display: block; margin-bottom: 3px; {DF}">Why</span>Washington is due after hanging with the Rams at home, and Jayden Daniels plays his best in prime time. Bear Bets calls it a sell-high spot on the Bengals: the look-ahead line was 3 to 3.5, and Washington is rested and desperate</span>
+      <span><span style="display: block; margin-bottom: 3px; {DF}">Risks Flagged</span>Washington's defense is bad. Ja'Marr Chase is hot, 230 yards last week</span>
+      <span style="{DF}">MGP · 22% of money, 15% of bets on WAS (DraftKings)</span>"""
+def takes_page(title, height, opened=False, coach=False, only_first=False):
+    head_tk = head(title).replace('family=Geist:wght@400..700&', 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&')
+    s_ = head_tk + frame_open(TK).replace('height: 844px', f'height: {height}px')
+    s_ += f"""  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 0 16px">
     {mark(TK)}
     <div style="display: flex; align-items: center; gap: 4px">
       <button aria-label="Search" style="width: 44px; height: 44px; border: 0; background: none; color: {W_}; display: flex; align-items: center; justify-content: center; padding: 0">{icon("search")}</button>
@@ -308,32 +312,41 @@ s_ += f"""  <div style="display: flex; align-items: center; justify-content: spa
   </div>
   <div style="flex: 0 0 auto; display: flex; gap: 2px; padding: 14px 12px 4px; white-space: nowrap; overflow: hidden">
 """
-for t in ['Bets & Money', 'Takes', 'Trends', 'Leaders', 'Results']:
-    on = t == 'Takes'
-    s_ += f'    <a href="#v" style="flex: 0 0 auto; padding: 9px 12px; border-radius: 999px; font-size: 15px; font-weight: {600 if on else 400}; text-decoration: none; color: {W_}; {"background: " + TK["surf2"] if on else ""}">{t}</a>\n'
-s_ += '  </div>\n'
-s_ += tk_sec('Bengals at Commanders', 'Tonight 8:15 PM')
-body = f"""<span><span style="display: block; margin-bottom: 3px; {DF}">Why</span>Washington is due after hanging with the Rams at home, and Jayden Daniels plays his best in prime time. Bear Bets calls it a sell-high spot on the Bengals: the look-ahead line was 3 to 3.5, and Washington is rested and desperate</span>
-      <span><span style="display: block; margin-bottom: 3px; {DF}">Risks Flagged</span>Washington's defense is bad. Ja'Marr Chase is hot, 230 yards last week</span>
-      <span style="{DF}">MGP · 22% of money, 15% of bets on WAS</span>"""
-s_ += tk_take(('htp', 'bearbets'), 'Commanders +6 (−107)', 'Hold The Phone, Bear Bets · Game Pick', '', body)
-s_ += tk_take('htp', 'Same Game Parlay +400', 'Hold The Phone', '', legs=["Ja'Marr Chase 75+ Receiving Yards", 'Jayden Daniels 25+ Rushing Yards', 'Stefon Diggs 50+ Receiving Yards', 'Chase Brown Anytime TD'])
-s_ += tk_take('htp', 'Chig Okonkwo Anytime TD', 'Danny · Hold The Phone', '')
-s_ += tk_sec('Bears at Lions', 'Thu 1:00 PM')
-s_ += tk_take('bearbets', 'Lions +2.5 (−106)', 'Bear Bets · Early Lean', '')
-s_ += tk_sec('Florida at Florida State', 'Fri 3:30 PM')
-s_ += tk_take('bearbets', 'Florida State +6 (−110)', 'Bear Bets · Early Lean', '')
-s_ += tk_sec('Minnesota at Wisconsin', 'Fri 7:30 PM')
-s_ += tk_take('bearbets', 'Minnesota +7.5 (−112)', 'Bear Bets · Early Lean', '')
-s_ += tk_sec('LSU at Arkansas', 'Sat 12:45 PM')
-s_ += tk_take('bearbets', 'Arkansas +12.5 (Now +14.5)', 'Bear Bets · Early Lean', '')
-s_ += tk_sec('Southern Miss at Old Dominion', 'Sat 1:00 PM')
-s_ += tk_take('bearbets', 'Southern Miss +5.5 (−105)', 'Bear Bets', '')
-s_ += tk_sec('Georgia Tech at Georgia', 'Sat 3:30 PM')
-s_ += tk_take('bearbets', 'Georgia Tech +35.5 (−110)', 'Bear Bets · Early Lean', '')
-s_ += tk_tabbar() + '</div>\n'
-props = '{"detailFont":{"editor":"enum","options":["Geist Mono","Instrument Serif","Geist"],"default":"Geist Mono","section":"Look"},"$preview":{"width":390,"height":1600}}'
-s_ += f"""</x-dc>
+    for t in ['Bets & Money', 'Takes', 'Trends', 'Leaders', 'Results']:
+        on = t == 'Takes'
+        s_ += f'    <a href="#v" style="flex: 0 0 auto; padding: 9px 12px; border-radius: 999px; font-size: 15px; font-weight: {600 if on else 400}; text-decoration: none; color: {W_}; {"background: " + TK["surf2"] if on else ""}">{t}</a>\n'
+    s_ += '  </div>\n'
+    s_ += tk_sec('Bengals at Commanders', 'NFL · Tonight 8:15 PM')
+    s_ += tk_take(('htp', 'bearbets'), 'Commanders +6 (−107)', 'Hold The Phone, Bear Bets', body=WHY, opened=opened)
+    s_ += tk_take('htp', 'Same Game Parlay +400 (4 Legs)', 'Hold The Phone', legs=["Ja'Marr Chase 75+ Receiving Yards", 'Jayden Daniels 25+ Rushing Yards', 'Stefon Diggs 50+ Receiving Yards', 'Chase Brown Anytime TD'])
+    s_ += tk_take('htp', 'Chig Okonkwo Anytime TD', 'Danny · Hold The Phone')
+    if not only_first:
+        s_ += tk_sec('Bears at Lions', 'NFL · Thu 1:00 PM')
+        s_ += tk_take('bearbets', 'Lions +2.5 (−106)', 'Bear Bets', body='x')
+        s_ += tk_sec('Florida at Florida State', 'NCAAF · Fri 3:30 PM')
+        s_ += tk_take('bearbets', 'Florida State +6 (−110)', 'Bear Bets', body='x')
+        s_ += tk_sec('Minnesota at Wisconsin', 'NCAAF · Fri 7:30 PM')
+        s_ += tk_take('bearbets', 'Minnesota +7.5 (−112)', 'Bear Bets', body='x')
+        s_ += tk_sec('LSU at Arkansas', 'NCAAF · Sat 12:45 PM')
+        s_ += tk_take('bearbets', 'Arkansas +12.5 (Now +14.5)', 'Bear Bets', body='x')
+        s_ += tk_sec('Southern Miss at Old Dominion', 'NCAAF · Sat 1:00 PM')
+        s_ += tk_take('bearbets', 'Southern Miss +5.5 (−105)', 'Bear Bets', body='x')
+        s_ += tk_sec('Georgia Tech at Georgia', 'NCAAF · Sat 3:30 PM')
+        s_ += tk_take('bearbets', 'Georgia Tech +35.5 (−110)', 'Bear Bets', body='x')
+    if coach:
+        # first-visit pointer (D-037 style): dim the page, light up the Takes tab, one short note
+        s_ += f"""  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(0, 0, 0, 0.74); z-index: 5"></div>
+  <span aria-hidden="true" style="position: absolute; z-index: 6; left: 137px; top: 140px; width: 68px; height: 38px; border-radius: 999px; background: {TK["surf2"]}; color: {W_}; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; box-shadow: 0 0 0 2px {W_}">Takes</span>
+  <svg aria-hidden="true" width="40" height="44" viewBox="0 0 40 44" fill="none" stroke="{W_}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; z-index: 6; left: 150px; top: 184px"><path d="M20 42V4"/><path d="M8 16L20 4l12 12"/></svg>
+  <div role="dialog" aria-label="Takes" style="position: absolute; z-index: 6; left: 24px; right: 24px; top: 236px; padding: 18px; border-radius: 18px; background: {W_}; color: #0A0A0B; display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 20px; font-weight: 700; letter-spacing: -0.3px">Real Picks From Real People</span>
+    <span style="font-size: 15.5px; line-height: 1.4">See what popular betting shows are taking on today's games. Tap any pick for their reasons and the risks they see</span>
+    <span style="display: flex; justify-content: flex-end; margin-top: 6px"><span style="padding: 10px 18px; border-radius: 999px; background: #0A0A0B; color: {W_}; font-size: 15px; font-weight: 600">Got It</span></span>
+  </div>
+"""
+    s_ += tk_tabbar() + '</div>\n'
+    props = '{"detailFont":{"editor":"enum","options":["Geist Mono","Instrument Serif","Geist"],"default":"Geist Mono","section":"Look"},"$preview":{"width":390,"height":' + str(height) + '}}'
+    s_ += f"""</x-dc>
 <script type="text/x-dc" data-dc-script data-props='{props}'>
 class Component extends DCLogic {{
   renderVals() {{
@@ -350,5 +363,8 @@ class Component extends DCLogic {{
 </body>
 </html>
 """
-open(os.path.join(OUT, 'JTakes.dc.html'), 'w').write(s_)
-print('takes v2 written')
+    return s_
+open(os.path.join(OUT, 'JTakes.dc.html'), 'w').write(takes_page('Pulse, Takes', 1480))
+open(os.path.join(OUT, 'JTakesOpen.dc.html'), 'w').write(takes_page('Pulse, Takes, One Opened', 844, opened=True, only_first=True))
+open(os.path.join(OUT, 'JTakesCoach.dc.html'), 'w').write(takes_page('Pulse, Takes, First Visit', 844, coach=True))
+print('takes v3 written')
