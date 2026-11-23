@@ -25,7 +25,7 @@ Apple enrollment confirmed approved by the owner on Nov 23.
 
 ## This week (5 minutes each)
 
-- [ ] **4. Create a free Expo account** at expo.dev, ideally with the same business email. The builder will then send a secure form for an access token.
+- [x] **4. Create a free Expo account** at expo.dev, ideally with the same business email. The builder will then send a secure form for an access token.
 - [ ] ~~**5. Create a free Figma account**~~ Not needed for now: design review happens on the mockup canvas (claude.ai/artifact/7ZWWFemMUESwBoLiFsEk3i).
 - [x] **6. Done 2026-11-20.** ~~Optional but valuable (10 minutes):~~ install Stocks.News on your iPhone and screen-record onboarding, the home screen, setting an alert, and the paywall. Drop the recording into the chat. The store screenshots are marketing images; the real flows are what we're modeling.
 
@@ -34,6 +34,10 @@ Apple enrollment confirmed approved by the owner on Nov 23.
 - [x] Pulse plan approved Nov 23: Pulse replaces Insiders; Insiders lives inside it (D-059).
 - [x] Insiders channels sent Nov 23: Bear Bets, Hold The Phone, Bookit Blitz. Send more anytime.
 - [ ] Merge jerryvix/mgpanalytics#23 on GitHub (approved in principle Nov 23): Title Case labels, plain #12 ranks, and the chat guard that lets basketball splits turn on.
+
+## Recommended (5 minutes)
+
+- [ ] Turn on two-factor authentication for the Expo account (expo.dev → Account settings → Security). The account now has an active access token.
 
 ## Anytime (optional)
 

@@ -5,13 +5,14 @@
 ## Blocked on owner
 
 - Merge jerryvix/mgpanalytics#23 (website changes). After it is live: flip `BASKETBALL_SPLITS_LIVE`, deploy `sync-betting-splits` and `gemini-chat` (D-058).
-- Expo account (free), then a token through the secure form.
 
 
 - Apple enrollment (D-U-N-S + organization). Critical path; gates the first TestFlight build. See `OWNER_ACTIONS.md` items 1 to 3.
 - Review board notes answered (8 Insiders, 12 alerts + game bell, 23 bankroll v1.1, 25 guest browsing). Note 4 decided after a simulated survey of 1,000: headline "Bet Smarter, Not Harder.", your teams first on Home (D-026, `research/`).
 
 ## Done
+
+- Nov 23: Expo account `jerryvix` connected (token in the mgpanalytics environment's network secrets); project created as @jerryvix/mgp-analytics (ID e2931e03-8ca1-450e-a95e-82cafa55c651, in `mobile/app.json`). Apple Developer Program approved (owner).
 
 - Plan, decisions, compliance checklist, reference teardown (`docs/mobile/`).
 - Current web app captured at iPhone size (`docs/mobile/design/current/`).
