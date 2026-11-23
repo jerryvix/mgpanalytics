@@ -246,42 +246,93 @@ s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JLeaders.dc.html'), 'w').write(s)
 print('leaders written')
 
-# ---------- 7) Pulse: Takes (real picks transcribed Nov 23 2026 from the shows' podcast audio)
-def avatar(initials):
-    return f'<span style="flex: 0 0 auto; width: 36px; height: 36px; border-radius: 999px; background: {C["surf2"]}; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 600; color: {C["tx"]}">{initials}</span>'
-def take(initials, who, pick, meta, right, right_color=None, body=None):
-    rc = right_color or C["t2"]
-    chevron = icon("down", 18, sw=2) if body is None else '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>'
-    out = f'''  <div style="margin: 0 16px; padding: 12px 0; border-bottom: 1px solid {C["line"]}; display: flex; flex-direction: column; gap: 8px">
+# ---------- 7) Pulse: Takes, one text color (owner feedback Nov 23): hierarchy from fonts, not grays.
+# Real picks transcribed Nov 23 2026 from the shows' podcast audio. "Detail font" is a canvas Tweak.
+TK = dict(C); TK.update(t2=C['tx'], t3=C['tx'])
+L['bearbets'] = '/_blob/4bc33a77df289e9af9da8e1425eb2085'
+L['htp'] = '/_blob/25f016deb53ef142ede410377a5c7512'
+DF = 'font-family: {{df}}; font-size: {{dfs}}; letter-spacing: {{dfl}}; text-transform: {{dft}}; font-style: {{dfi}}'
+W_ = TK['tx']
+def show_logo(k):
+    return f'<img src="{L[k]}" alt="" width="38" height="38" style="flex: 0 0 auto; width: 38px; height: 38px; border-radius: 999px; object-fit: cover">'
+def tk_take(k, pick, who, status, body=None):
+    chev = '<path d="M6 15l6-6 6 6"/>' if body else '<path d="M6 9l6 6 6-6"/>'
+    out = f"""  <div style="margin: 0 16px; padding: 13px 0; border-bottom: 1px solid {TK["line"]}; display: flex; flex-direction: column; gap: 10px">
     <div style="display: flex; align-items: center; gap: 12px">
-      {avatar(initials)}
-      <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px">
-        <span style="font-size: 16.5px; font-weight: 700; letter-spacing: -0.2px; font-variant-numeric: tabular-nums">{pick}</span>
-        <span style="font-size: 13.5px; color: {C["t2"]}">{who} · {meta}</span>
+      {show_logo(k)}
+      <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 17px; font-weight: 700; letter-spacing: -0.2px; font-variant-numeric: tabular-nums">{pick}</span>
+        <span style="{DF}">{who}</span>
       </span>
-      <span style="flex: 0 0 auto; font-size: 13.5px; font-weight: 600; color: {rc}">{right}</span>
-      <span style="flex: 0 0 auto; color: {C["t3"]}">{chevron}</span>
+      <span style="flex: 0 0 auto; {DF}">{status}</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{W_}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 auto">{chev}</svg>
     </div>
-'''
+"""
     if body:
-        out += f'    <div style="margin-left: 48px; display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; line-height: 1.4">{body}</div>\n'
+        out += f'    <div style="margin-left: 50px; display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.42">{body}</div>\n'
     return out + '  </div>\n'
-def sec(label, sub=''):
-    s_ = f'<span style="font-size: 13px; color: {C["t3"]}">{sub}</span>' if sub else ''
-    return f'  <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 16px 16px 2px"><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.3px">{label}</span>{s_}</div>\n'
-s = head('Pulse, Takes') + frame_open(C).replace('height: 844px', 'height: 1120px') + topbar(C)
-s += pulse_title('What the shows are betting', 'NFL') + segs('Takes')
-s += sec('Bengals at Commanders', 'Tonight 8:15 PM')
-why = f'''<span><span style="color: {C["t2"]}">Why</span> Washington is due after hanging with the Rams at home; Jayden Daniels plays his best in prime time at home; Cincinnati's defense is weak too</span>
-      <span><span style="color: {C["t2"]}">Risks they named</span> Washington's defense is bad; Ja'Marr Chase is hot (230 yards last week); co-host Danny leans Bengals</span>
-      <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><span style="color: {C["t3"]}; font-size: 13.5px">MGP: 22% of money · 15% of bets on WAS</span><a href="#listen" style="flex: 0 0 auto; color: {GREEN}; text-decoration: none; font-size: 14px; font-weight: 600">Listen at 7:45</a></span>'''
-s += take('HP', 'Hold The Phone', 'Commanders +6 (−107)', 'Game Pick', 'Tonight', body=why)
-s += take('HP', 'Hold The Phone', 'Same Game Parlay +400', "Chase 75+ Rec · Daniels 25+ Rush · Diggs 50+ Rec · Brown TD", 'Tonight')
-s += take('D', 'Danny, Hold The Phone', 'Chig Okonkwo Anytime TD', 'Sneaky Prop', 'Tonight')
-s += sec('Week 11 · Bear Bets', '1-3 · 1 pending')
-s += take('CF', 'Chris “The Bear” Fallica @chrisfallica', 'Raiders Team Total Under 15.5', 'Raiders scored 24', 'Lost', RED)
-s += take('SP', 'Sammy Panayotovich @spshoot', 'Giants +6', 'Giants 23, Jaguars 18', 'Won', GREEN)
-s += take('SP', 'Sammy Panayotovich @spshoot', 'Bears −11.5', 'Bears 21, Saints 13', 'Lost', RED)
-s += tabbar('Pulse') + '</div>\n' + tail(C['accents']).replace('"$preview":{"width":390,"height":844}', '"$preview":{"width":390,"height":1120}')
-open(os.path.join(OUT, 'JTakes.dc.html'), 'w').write(s)
-print('takes written')
+def tk_sec(label, sub):
+    return f'  <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 18px 16px 2px"><span style="font-size: 19px; font-weight: 600; letter-spacing: -0.3px">{label}</span><span style="{DF}">{sub}</span></div>\n'
+def tk_tabbar():
+    items = [('Today','today'),('Games','games'),('Pulse','pulse'),('Alerts','bell'),('The Analyst','analyst')]
+    out = []
+    for label, ic in items:
+        on = label == 'Pulse'
+        out.append(f'<a href="#t" style="height: 52px; border-radius: 999px; {"background: " + TK["tabOn"] + ";" if on else ""} display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: {W_}; text-decoration: none; font-size: 10.5px; font-weight: {700 if on else 400}">{icon(ic, stroke=W_, sw=1.9 if on else 1.6)}{label}</a>')
+    fade = f'<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 130px; background: linear-gradient(to bottom, rgba(0,0,0,0), {TK["bg"]} 55%); pointer-events: none"></div>'
+    return fade + f"""  <nav aria-label="Tabs" style="position: absolute; left: 14px; right: 14px; bottom: 22px; height: 64px; border-radius: 999px; background: {TK["tab"]}; border: 1px solid {TK["tabBorder"]}; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding: 0 6px; box-shadow: {TK["shadow"]}">{"".join(out)}</nav>
+"""
+head_tk = head('Pulse, Takes').replace('family=Geist:wght@400..700&', 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&family=Instrument+Serif:ital@0;1&')
+s_ = head_tk + frame_open(TK).replace('height: 844px', 'height: 1120px')
+s_ += f"""  <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 0 16px">
+    {mark(TK)}
+    <div style="display: flex; align-items: center; gap: 4px">
+      <button aria-label="Search" style="width: 44px; height: 44px; border: 0; background: none; color: {W_}; display: flex; align-items: center; justify-content: center; padding: 0">{icon("search")}</button>
+      <button aria-label="Profile" style="width: 34px; height: 34px; border-radius: 999px; border: 0; background: {TK["surf2"]}; color: {W_}; font-family: inherit; font-size: 12px; font-weight: 600">JV</button>
+    </div>
+  </div>
+  <div style="padding: 10px 16px 0; display: flex; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.05">Pulse</h1>
+      <span style="{DF}">What the shows are betting</span>
+    </div>
+    <a href="#s" style="display: flex; align-items: center; gap: 4px; padding: 8px 12px; border-radius: 999px; background: {TK["surf"]}; color: {W_}; text-decoration: none; font-size: 15px; font-weight: 500">NFL{icon("down", 16, sw=2)}</a>
+  </div>
+  <div style="flex: 0 0 auto; display: flex; gap: 2px; padding: 14px 12px 4px; white-space: nowrap; overflow: hidden">
+"""
+for t in ['Bets & Money', 'Takes', 'Trends', 'Leaders', 'Results']:
+    on = t == 'Takes'
+    s_ += f'    <a href="#v" style="flex: 0 0 auto; padding: 9px 12px; border-radius: 999px; font-size: 15px; font-weight: {600 if on else 400}; text-decoration: none; color: {W_}; {"background: " + TK["surf2"] if on else ""}">{t}</a>\n'
+s_ += '  </div>\n'
+s_ += tk_sec('Bengals at Commanders', 'Tonight 8:15 PM')
+body = f"""<span><span style="display: block; margin-bottom: 3px; {DF}">Why</span>Washington is due after hanging with the Rams at home. Jayden Daniels plays his best in prime time at home. Cincinnati's defense is weak too</span>
+      <span><span style="display: block; margin-bottom: 3px; {DF}">Risks they named</span>Washington's defense is bad. Ja'Marr Chase is hot, 230 yards last week. Co-host Danny leans Bengals</span>
+      <span style="{DF}">MGP · 22% of money, 15% of bets on WAS</span>"""
+s_ += tk_take('htp', 'Commanders +6 (−107)', 'Hold The Phone · Game Pick', 'Tonight', body)
+s_ += tk_take('htp', 'Same Game Parlay +400', 'Hold The Phone · 4 Legs', 'Tonight')
+s_ += tk_take('htp', 'Chig Okonkwo Anytime TD', 'Danny · Hold The Phone', 'Tonight')
+s_ += tk_sec('Week 11 · Bear Bets', '1-3 · 1 Pending')
+s_ += tk_take('bearbets', 'Raiders Team Total Under 15.5', 'Chris “The Bear” Fallica · @chrisfallica', 'Lost')
+s_ += tk_take('bearbets', 'Giants +6', 'Sammy Panayotovich · @spshoot', 'Won')
+s_ += tk_take('bearbets', 'Bears −11.5', 'Sammy Panayotovich · @spshoot', 'Lost')
+s_ += tk_tabbar() + '</div>\n'
+props = '{"detailFont":{"editor":"enum","options":["Geist Mono","Instrument Serif","Geist"],"default":"Geist Mono","section":"Look"},"$preview":{"width":390,"height":1120}}'
+s_ += f"""</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{props}'>
+class Component extends DCLogic {{
+  renderVals() {{
+    const d = {{
+      'Geist Mono': {{ df: "'Geist Mono', ui-monospace, monospace", dfs: '11.5px', dfl: '0.7px', dft: 'uppercase', dfi: 'normal' }},
+      'Instrument Serif': {{ df: "'Instrument Serif', Georgia, serif", dfs: '16px', dfl: '0px', dft: 'none', dfi: 'italic' }},
+      'Geist': {{ df: "'Geist', system-ui, sans-serif", dfs: '13px', dfl: '0px', dft: 'none', dfi: 'normal' }}
+    }};
+    const pick = d[this.props.detailFont ?? 'Geist Mono'] ?? d['Geist Mono'];
+    return {{ ff: "'Geist', system-ui, sans-serif", accent: '#2FE38A', ...pick }};
+  }}
+}}
+</script>
+</body>
+</html>
+"""
+open(os.path.join(OUT, 'JTakes.dc.html'), 'w').write(s_)
+print('takes v2 written')
