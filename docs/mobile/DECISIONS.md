@@ -258,3 +258,10 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Data it depends on:** line history (`odds_history`; the NBA and college basketball ID mismatch must be fixed first), splits (NFL and college football only), injuries (NBA only until the planned NFL, college football and MLB fix), ATS results (football and MLB) for Last Night. Your Brief is one Claude call per sport per day through the existing analyst function, grounded in synced data and descriptive only (no picks).
 **Recommended scope:** v1 ships Move stories and Share (they reuse game page data). Your Brief and Last Night follow in v1.1, after the analyst's game_id work and ATS computation, to protect the mid-December submit.
 **Mockups:** canvas page "Stories". Generators: `docs/mobile/design/generators/`.
+
+### D-052 Stories parked; v1 tests sharing cheaply instead
+**Date:** 2026-11-23 · **By:** Owner concern ("is there even an appetite for that, or are we building extra stuff to be cool"), builder recommendation
+**Why:** the app's job is the game page: data to make a decision. The full story viewer, Your Brief and Last Night add build time before the mid-December submit and have no evidence of demand yet (the Nov 20 survey was simulated, so it can't prove appetite). Bettors already share bet slips and wins; whether they would share line moves is unproven.
+**v1:** the Biggest Moves circles stay. Tapping one opens that game's page, scrolled to the line movement, with no separate story viewer. The game page gets a Share button that uses the iPhone share sheet: a short line ("Oregon −6.5, moved from −4.5") plus the App Store link. Each tap is counted in our own database, no new service.
+**Test before building:** the owner can post a few line-move cards in the ad style on MGP's X and Instagram this week. Engagement there, plus Share taps after launch, decides whether the designed share card and stories get built in v1.1.
+**Kept, not lost:** line history is on the game page; finals and who covered appear on Games once ATS is computed. D-051 stays as the design if the test says yes.
