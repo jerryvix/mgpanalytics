@@ -13,7 +13,7 @@ export default function AppTabs() {
   return (
     <NativeTabs
       backgroundColor={colors.surface}
-      indicatorColor={colors.chipBg}
+      indicatorColor={colors.chipActiveBg}
       labelStyle={{
         default: { fontFamily: Font.semibold },
         selected: { fontFamily: Font.semibold, color: colors.text },

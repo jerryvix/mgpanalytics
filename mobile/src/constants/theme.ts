@@ -60,13 +60,13 @@ export const Spacing = {
 } as const;
 
 /**
- * Manrope everywhere (owner pick, docs/mobile/DECISIONS.md D-032). React Native needs one family
- * name per weight; these match the faces loaded in src/app/_layout.tsx.
+ * Geist everywhere in the app (Direction I, docs/mobile/DECISIONS.md D-049 and D-050). Titles use
+ * medium (500), not bold: size and gray set the hierarchy. React Native needs one family name per
+ * weight; these match the faces loaded in src/app/_layout.tsx.
  */
 export const Font = {
-  regular: 'Manrope_400Regular',
-  medium: 'Manrope_500Medium',
-  semibold: 'Manrope_600SemiBold',
-  bold: 'Manrope_700Bold',
-  extrabold: 'Manrope_800ExtraBold',
+  regular: 'Geist_400Regular',
+  medium: 'Geist_500Medium',
+  semibold: 'Geist_600SemiBold',
+  bold: 'Geist_700Bold',
 } as const;
