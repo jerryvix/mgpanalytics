@@ -9,6 +9,10 @@ on:
       per_show:
         description: Episodes per show
         default: "1"
+      any_title:
+        description: Take the newest episodes even without a picks word in the title
+        type: boolean
+        default: true
   push:
     branches: [claude/exciting-euler-w6d8uw]
     paths:
@@ -33,7 +37,7 @@ jobs:
           path: ~/.cache/huggingface
           key: whisper-small-en-v1
       - run: pip install "faster-whisper>=1.1,<2"
-      - run: python scripts/takes/transcribe.py --per-show "${{ github.event.inputs.per_show || '1' }}" --out takes-out
+      - run: python scripts/takes/transcribe.py --per-show "${{ github.event.inputs.per_show || '1' }}" --any-title --out takes-out
       - uses: actions/upload-artifact@v4
         with:
           name: takes-transcripts
