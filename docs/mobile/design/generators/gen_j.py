@@ -45,10 +45,10 @@ def tag(text):
     return f'<span style="display: inline-flex; align-items: center; gap: 4px; color: {GREEN}; font-weight: 500">{beat(17)}{text}</span>'
 
 def segs(active):
-    out = '  <div style="display: flex; gap: 4px; padding: 14px 12px 4px">\n'
-    for t, href in [('Bets & Money', 'JPulse.dc.html'), ('Trends', 'JTrends.dc.html'), ('Leaders', 'JLeaders.dc.html'), ('Results', 'JResults.dc.html')]:
+    out = '  <div style="flex: 0 0 auto; display: flex; gap: 2px; padding: 14px 12px 4px; white-space: nowrap; overflow: hidden">\n'
+    for t, href in [('Bets & Money', 'JPulse.dc.html'), ('Takes', 'JTakes.dc.html'), ('Trends', 'JTrends.dc.html'), ('Leaders', 'JLeaders.dc.html'), ('Results', 'JResults.dc.html')]:
         st = f'background: {C["surf2"]}; color: {C["tx"]}' if t == active else f'color: {C["t2"]}'
-        out += f'    <a href="{href}" style="flex: 0 0 auto; padding: 9px 13px; border-radius: 999px; font-size: 15px; text-decoration: none; {st}">{t}</a>\n'
+        out += f'    <a href="{href}" style="flex: 0 0 auto; padding: 9px 12px; border-radius: 999px; font-size: 15px; text-decoration: none; {st}">{t}</a>\n'
     return out + '  </div>\n'
 
 def pulse_title(sub, sport='NFL'):
@@ -245,3 +245,43 @@ for i, (t, r, tid) in enumerate(LD['overs'][:3], 1): s += leader_row(i, t, r, ti
 s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JLeaders.dc.html'), 'w').write(s)
 print('leaders written')
+
+# ---------- 7) Pulse: Takes (real picks transcribed Nov 23 2026 from the shows' podcast audio)
+def avatar(initials):
+    return f'<span style="flex: 0 0 auto; width: 36px; height: 36px; border-radius: 999px; background: {C["surf2"]}; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 600; color: {C["tx"]}">{initials}</span>'
+def take(initials, who, pick, meta, right, right_color=None, body=None):
+    rc = right_color or C["t2"]
+    chevron = icon("down", 18, sw=2) if body is None else '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>'
+    out = f'''  <div style="margin: 0 16px; padding: 12px 0; border-bottom: 1px solid {C["line"]}; display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      {avatar(initials)}
+      <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+        <span style="font-size: 16.5px; font-weight: 700; letter-spacing: -0.2px; font-variant-numeric: tabular-nums">{pick}</span>
+        <span style="font-size: 13.5px; color: {C["t2"]}">{who} · {meta}</span>
+      </span>
+      <span style="flex: 0 0 auto; font-size: 13.5px; font-weight: 600; color: {rc}">{right}</span>
+      <span style="flex: 0 0 auto; color: {C["t3"]}">{chevron}</span>
+    </div>
+'''
+    if body:
+        out += f'    <div style="margin-left: 48px; display: flex; flex-direction: column; gap: 6px; font-size: 14.5px; line-height: 1.4">{body}</div>\n'
+    return out + '  </div>\n'
+def sec(label, sub=''):
+    s_ = f'<span style="font-size: 13px; color: {C["t3"]}">{sub}</span>' if sub else ''
+    return f'  <div style="display: flex; align-items: baseline; justify-content: space-between; padding: 16px 16px 2px"><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.3px">{label}</span>{s_}</div>\n'
+s = head('Pulse, Takes') + frame_open(C).replace('height: 844px', 'height: 1120px') + topbar(C)
+s += pulse_title('What the shows are betting', 'NFL') + segs('Takes')
+s += sec('Bengals at Commanders', 'Tonight 8:15 PM')
+why = f'''<span><span style="color: {C["t2"]}">Why</span> Washington is due after hanging with the Rams at home; Jayden Daniels plays his best in prime time at home; Cincinnati's defense is weak too</span>
+      <span><span style="color: {C["t2"]}">Risks they named</span> Washington's defense is bad; Ja'Marr Chase is hot (230 yards last week); co-host Danny leans Bengals</span>
+      <span style="display: flex; align-items: center; justify-content: space-between; gap: 10px"><span style="color: {C["t3"]}; font-size: 13.5px">MGP: 22% of money · 15% of bets on WAS</span><a href="#listen" style="flex: 0 0 auto; color: {GREEN}; text-decoration: none; font-size: 14px; font-weight: 600">Listen at 7:45</a></span>'''
+s += take('HP', 'Hold The Phone', 'Commanders +6 (−107)', 'Game Pick', 'Tonight', body=why)
+s += take('HP', 'Hold The Phone', 'Same Game Parlay +400', "Chase 75+ Rec · Daniels 25+ Rush · Diggs 50+ Rec · Brown TD", 'Tonight')
+s += take('D', 'Danny, Hold The Phone', 'Chig Okonkwo Anytime TD', 'Sneaky Prop', 'Tonight')
+s += sec('Week 11 · Bear Bets', '1-3 · 1 pending')
+s += take('CF', 'Chris “The Bear” Fallica @chrisfallica', 'Raiders Team Total Under 15.5', 'Raiders scored 24', 'Lost', RED)
+s += take('SP', 'Sammy Panayotovich @spshoot', 'Giants +6', 'Giants 23, Jaguars 18', 'Won', GREEN)
+s += take('SP', 'Sammy Panayotovich @spshoot', 'Bears −11.5', 'Bears 21, Saints 13', 'Lost', RED)
+s += tabbar('Pulse') + '</div>\n' + tail(C['accents']).replace('"$preview":{"width":390,"height":844}', '"$preview":{"width":390,"height":1120}')
+open(os.path.join(OUT, 'JTakes.dc.html'), 'w').write(s)
+print('takes written')
