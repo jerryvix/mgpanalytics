@@ -27,9 +27,11 @@
 
 ## Next
 
-- Figma import of the review board for the advisor (owner runs one plugin step; instructions in chat).
-- Backend prerequisites: account deletion function, push token and alert tables.
-- Core screens: onboarding, Today, Games, game detail, Profile.
+1. Deploy the splits parser fix (football splits frozen since Nov 2), then confirm fresh rows in `betting_splits`.
+2. Add NBA and college basketball splits from the same DraftKings page (free; team-name matching and season dates are the work). MLB when DraftKings lists it in spring.
+3. Revise the Direction I mockups to the splits-first plot (D-053, D-054): Today without circles, rows that show % of bets and % of money; game page that opens on Bets vs Money, then Trends (ATS, over/under, public and money results, form and matchups), then What to Know, then Odds.
+4. Backend for trends: ATS and over/under from results plus closing lines (football and MLB first), `odds_history` ID fix for basketball, injuries for NFL, college football and MLB, The Analyst game_id support.
+5. Build the game page in the app by Nov 27/28.
 
 ## Open decisions (owner, later)
 
