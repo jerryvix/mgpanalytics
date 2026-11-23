@@ -56,12 +56,15 @@ export const TAKES_SOURCES: readonly TakesSource[] = [
     // the hosts' doctorlocks.md and glue.guy; which of these are X accounts is unconfirmed.
     x: "holdthe_phone",
     people: [],
+    // Almost Friday Media, presented by BetMGM
+    podcast: { applePodcastsId: "1760085357" },
   },
   {
     channelId: "UCOJq3FrHd0TBxrUZEEm4vtw",
     handle: "@BookitBlitz",
     name: "Bookit Blitz",
     // Descriptions mention bookitsports and BookitHQ; video descriptions are otherwise empty.
+    // No podcast feed found (Nov 23 2026): video only, so picks can't be captured automatically.
     x: "bookitsports",
     people: [],
   },
