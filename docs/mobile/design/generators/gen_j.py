@@ -46,18 +46,18 @@ def tag(text):
 
 def segs(active):
     out = '  <div style="display: flex; gap: 4px; padding: 14px 12px 4px">\n'
-    for t, href in [('Bets & Money', 'JPulse.dc.html'), ('Trends', 'JTrends.dc.html'), ('Results', 'JResults.dc.html')]:
+    for t, href in [('Bets & Money', 'JPulse.dc.html'), ('Trends', 'JTrends.dc.html'), ('Leaders', 'JLeaders.dc.html'), ('Results', 'JResults.dc.html')]:
         st = f'background: {C["surf2"]}; color: {C["tx"]}' if t == active else f'color: {C["t2"]}'
-        out += f'    <a href="{href}" style="flex: 0 0 auto; padding: 9px 16px; border-radius: 999px; font-size: 15px; text-decoration: none; {st}">{t}</a>\n'
+        out += f'    <a href="{href}" style="flex: 0 0 auto; padding: 9px 13px; border-radius: 999px; font-size: 15px; text-decoration: none; {st}">{t}</a>\n'
     return out + '  </div>\n'
 
-def pulse_title(sub):
+def pulse_title(sub, sport='NFL'):
     return f'''  <div style="padding: 10px 16px 0; display: flex; align-items: flex-end; justify-content: space-between">
     <div style="display: flex; flex-direction: column; gap: 6px">
       <h1 style="margin: 0; font-size: 34px; font-weight: 500; letter-spacing: -0.8px; line-height: 1.05">Pulse</h1>
       <span style="font-size: 15px; color: {C["t2"]}">{sub}</span>
     </div>
-    <a href="#s" style="display: flex; align-items: center; gap: 4px; padding: 8px 12px; border-radius: 999px; background: {C["surf"]}; color: {C["tx"]}; text-decoration: none; font-size: 15px">NFL{icon("down", 16, sw=2)}</a>
+    <a href="#s" style="display: flex; align-items: center; gap: 4px; padding: 8px 12px; border-radius: 999px; background: {C["surf"]}; color: {C["tx"]}; text-decoration: none; font-size: 15px">{sport}{icon("down", 16, sw=2)}</a>
   </div>
 '''
 
@@ -212,3 +212,36 @@ for txt in ['Cowboys are 5-11 ATS on Thanksgiving since 2010', 'Cowboys are 6-15
 s += tabbar('Today') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JGame.dc.html'), 'w').write(s)
 print('J written')
+
+# ---------- 6) Pulse: Leaders (college football, real data from MGP's stored closing lines)
+import json as _json
+CFB = {'290':'/_blob/a1a1adff6d6047cc1d08209fe8a42961','154':'/_blob/2f23b00b3fed6aa71b7e6cd549b8caf2','2348':'/_blob/59021d600a2bc00b8bed0bb1b303e624',
+ '2335':'/_blob/b70557715b2a877f87aff4c689cc8f28','2751':'/_blob/a78d09c669aba166b7b552958587bf78','2005':'/_blob/fdcd0066cea9be96a2b935218d7322e7',
+ '344':'/_blob/230de0c13124d7a4bd1151c58e07ba9f','248':'/_blob/77c96d761fc79bc688ada62522353c47','25':'/_blob/5dfbb4c649416ed62490cab86f026494',
+ '2534':'/_blob/107e6c055b5008a01b0e10522b40da0a','36':'/_blob/6a977f072e3323c269840c846781a828','197':'/_blob/f5a533068999d81f3551a38ac06ce7ce',
+ '24':'/_blob/6c7213456c570993ed015b0841f72832','2390':'/_blob/a59338c753e968e35f407281e2cc30c8'}
+for k, v in CFB.items(): L['cfb' + k] = v
+SCHOOL = lambda n: ' '.join(n.split()[:-1]) if n.split()[-1] not in ('State',) else n
+SHORT = {'Georgia Southern Eagles':'Georgia Southern','Wake Forest Demon Deacons':'Wake Forest','Louisiana Tech Bulldogs':'Louisiana Tech','Liberty Flames':'Liberty',
+ 'Wyoming Cowboys':'Wyoming','Air Force Falcons':'Air Force','Mississippi State Bulldogs':'Mississippi State','Houston Cougars':'Houston',
+ 'California Golden Bears':'California','Sam Houston Bearkats':'Sam Houston','Colorado State Rams':'Colorado State','Oklahoma State Cowboys':'Oklahoma State',
+ 'Stanford Cardinal':'Stanford','Miami Hurricanes':'Miami'}
+LD = _json.load(open(os.path.join(os.path.dirname(__file__), '..', '..', 'research', '2026-11-23-public-data', 'cfb-leaders-since-week4.json')))
+def leader_row(n, team, rec_, tid, unit='ATS'):
+    return f'''  <a href="#team" style="display: flex; align-items: center; gap: 12px; margin: 0 16px; padding: 8px 0; border-bottom: 1px solid {C["line"]}; text-decoration: none; color: {C["tx"]}">
+    <span style="width: 14px; font-size: 15px; color: {C["t3"]}; font-variant-numeric: tabular-nums">{n}</span>{logo('cfb' + tid, 32)}
+    <span style="flex: 1 1 auto; font-size: 16.5px">{SHORT.get(team, team)}</span>
+    <span style="flex: 0 0 auto; display: flex; align-items: baseline; gap: 5px; font-variant-numeric: tabular-nums; white-space: nowrap"><span style="font-size: 17px; font-weight: 600">{rec_}</span><span style="font-size: 12.5px; color: {C["t3"]}">{unit}</span></span>
+  </a>
+'''
+s = head('Pulse, Leaders') + frame_open(C) + topbar(C)
+s += pulse_title('Since Week 4 · 562 games', 'College Football') + segs('Leaders')
+s += board_section('Best Against the Spread', 'Covers minus misses')
+for i, (t, r, tid) in enumerate(LD['best'], 1): s += leader_row(i, t, r, tid)
+s += board_section('Worst Against the Spread', 'Fewest covers')
+for i, (t, r, tid) in enumerate(LD['worst'][:3], 1): s += leader_row(i, t, r, tid)
+s += board_section('Most Overs', 'Games that went over the total')
+for i, (t, r, tid) in enumerate(LD['overs'][:3], 1): s += leader_row(i, t, r, tid, 'O/U')
+s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
+open(os.path.join(OUT, 'JLeaders.dc.html'), 'w').write(s)
+print('leaders written')

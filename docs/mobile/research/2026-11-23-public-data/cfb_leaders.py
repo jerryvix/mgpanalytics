@@ -1,5 +1,5 @@
 import json, urllib.request, os
-K=open('anon.key').read().strip(); U='https://vwezujtftfccamoduglp.supabase.co/rest/v1/'
+K=open('anon.key').read().strip()  # the website's public key (VITE_SUPABASE_PUBLISHABLE_KEY), saved to anon.key; U='https://vwezujtftfccamoduglp.supabase.co/rest/v1/'
 def fetch(q):
     out=[]; off=0
     while True:

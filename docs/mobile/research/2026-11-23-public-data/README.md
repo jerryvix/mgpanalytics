@@ -10,3 +10,4 @@ Findings used in the proposal:
 - NFL favorites since Week 8: 35-20 ATS on nflverse closing lines.
 - MGP's stored DraftKings splits, NFL Weeks 3 to 9 (103 games): side with the most money 42-56-5 ATS; sides with 70%+ of the money 17-29-3; Week 8 alone 9-5.
 - This week: Cowboys 5-11 ATS on Thanksgiving since 2010 and 6-15 ATS as a favorite since 2024; Patrick Mahomes 13-5-1 ATS as an underdog; Broncos and Bills 8-2 ATS this season; Eagles 2-8.
+- `cfb_leaders.py` and `cfb-leaders-since-week4.json`: college football ATS and over/under leaders from MGP's stored closing lines (`betting_lines`) and finals (`ncaaf_games`), Sep 24 onward (562 games). The top of the list matches the owner's Nov 23 screenshot (Georgia Southern, Louisiana Tech, Wake Forest, Liberty, Air Force, Utah, Iowa, Nebraska, Kennesaw State) with shorter records because Weeks 0 to 3 are missing.
