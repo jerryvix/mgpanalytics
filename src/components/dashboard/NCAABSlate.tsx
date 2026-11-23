@@ -160,7 +160,7 @@ export function NCAABSlate() {
     }
     if (isRanked) {
       return (
-        <Badge className="bg-terminal-amber/20 text-terminal-amber border-terminal-amber/50 text-[10px] font-mono">
+        <Badge className="bg-rank text-rank-foreground border-transparent text-[10px] font-mono">
           <Trophy className="w-3 h-3 mr-1" />
           RANKED
         </Badge>
@@ -223,7 +223,7 @@ export function NCAABSlate() {
               : "Featured Matchups (Next 24 Hours)"}
           </p>
         </div>
-        <Badge variant="outline" className="border-terminal-amber text-terminal-amber font-mono">
+        <Badge variant="outline" className="bg-rank text-rank-foreground border-transparent font-mono">
           {rankedGamesCount > 0 ? `${rankedGamesCount} RANKED` : `${games.length} GAMES`}
         </Badge>
       </motion.div>
@@ -311,9 +311,9 @@ export function NCAABSlate() {
                         <div className="flex items-center gap-2">
                           <TeamLogo sport="NCAAB" name={game.visitor_team_name} espnId={game.visitor_team_id} size={22} />
                           {formatRank(game.visitor_team_rank) && (
-                            <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
+                            <span className="text-muted-foreground font-semibold tabular-nums">
                               {formatRank(game.visitor_team_rank)}
-                            </Badge>
+                            </span>
                           )}
                           <span className="font-bold">{game.visitor_team_name}</span>
                           {showScore && (
@@ -324,9 +324,9 @@ export function NCAABSlate() {
                         <div className="flex items-center gap-2">
                           <TeamLogo sport="NCAAB" name={game.home_team_name} espnId={game.home_team_id} size={22} />
                           {formatRank(game.home_team_rank) && (
-                            <Badge className="bg-terminal-amber text-background text-[10px] px-1.5 py-0">
+                            <span className="text-muted-foreground font-semibold tabular-nums">
                               {formatRank(game.home_team_rank)}
-                            </Badge>
+                            </span>
                           )}
                           <span className="font-bold">{game.home_team_name}</span>
                           {showScore && (

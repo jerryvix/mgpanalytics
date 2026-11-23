@@ -7,7 +7,7 @@ export default function NBAPlayerDetailPage() {
   if (!playerId) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-foreground">Invalid player ID</h2>
+        <h2 className="text-xl font-semibold text-foreground">Invalid Player ID</h2>
       </div>
     );
   }

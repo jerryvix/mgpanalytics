@@ -1,0 +1,46 @@
+panels ['A_online_communities', 'B_general_us_bettors', 'C_industry_professionals', 'D_new_bettors_new_states'] N 1000
+
+Q1 most likely to make you open MGP before a bet
+  Start Here (ranked facts)     251 25.1%  per panel [56, 58, 70, 67]
+  MGP Score (0-100 per side)    226 22.6%  per panel [46, 60, 66, 54]
+  None                          215 21.5%  per panel [64, 65, 33, 53]
+  Ask The Analyst               155 15.5%  per panel [45, 28, 45, 37]
+  Side-by-Side bars             153 15.3%  per panel [39, 39, 36, 39]
+
+Q2 usefulness 1-5 (avg of panels)
+  Start Here (ranked facts)    3.46  per panel [3.25, 3.46, 3.54, 3.61]
+  Side-by-Side bars            3.21  per panel [3.16, 3.27, 3.13, 3.3]
+  MGP Score (0-100 per side)   3.09  per panel [2.86, 3.29, 2.87, 3.34]
+  Ask The Analyst              3.10  per panel [3.2, 2.92, 3.16, 3.13]
+
+Q3 MGP Score trust
+  trust_it                          156 15.6%  per panel [30, 51, 23, 52]
+  trust_if_shown_how_calculated     392 39.2%  per panel [103, 102, 97, 90]
+  dont_trust                        197 19.7%  per panel [52, 48, 54, 43]
+  its_just_a_pick_in_disguise       255 25.5%  per panel [65, 49, 76, 65]
+
+Q4 Score effect on trust in the app
+  more                              277 27.7%  per panel [53, 74, 72, 78]
+  same                              415 41.5%  per panel [108, 124, 73, 110]
+  less                              308 30.8%  per panel [89, 52, 105, 62]
+
+Q6 places checked before a bet
+  one                               161 16.1%  per panel [23, 71, 19, 48]
+  two_three                         440 44.0%  per panel [101, 114, 112, 113]
+  four_six                          292 29.2%  per panel [88, 48, 91, 65]
+  seven_plus                        107 10.7%  per panel [38, 17, 28, 24]
+
+Q5 checked before betting (multi)
+  injuries                785 78.5%
+  recent_form_streaks     676 67.6%
+  team_stats              536 53.6%
+  expert_opinions         452 45.2%
+  player_props            441 44.1%
+  line_movement           438 43.8%
+  head_to_head            365 36.5%
+  ats_record              359 35.9%
+  public_betting_pct      332 33.2%
+  weather                 282 28.2%
+  rest_travel             241 24.1%
+
+Q7 industry risk flags (of 250): {'S': 71, 'K': 9, 'V': 6, 'A': 36}

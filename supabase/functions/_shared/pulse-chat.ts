@@ -1078,6 +1078,8 @@ export async function marketPulseBlock(client: any, message: string, intent: str
           .from("betting_splits")
           .select("sport, game_id, source_matchup, away_team, home_team, event_start, market, side, bets_pct, handle_pct, captured_at, source_as_of")
           .eq("source", "draftkings")
+          // Football only: the sync also stores NBA and NCAAB splits, which this block does not read
+          .in("sport", [...LINE_SPORTS])
           .gte("event_start", since)
           .order("id"),
       { label: "betting_splits for chat" },

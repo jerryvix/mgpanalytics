@@ -110,7 +110,7 @@ describe("PublicBettingPreview (slate cards)", () => {
 
     fireEvent.click(trigger);
     expect(cardClick).not.toHaveBeenCalled();
-    expect(await screen.findByText("Public side: Liberty")).toBeInTheDocument();
+    expect(await screen.findByText("Public Side: Liberty")).toBeInTheDocument();
     expect(screen.getAllByText("Money")).toHaveLength(2);
     expect(screen.getByText("Coastal 10%")).toBeInTheDocument();
     expect(screen.getByText("90% Liberty")).toBeInTheDocument();
@@ -125,7 +125,7 @@ describe("PublicBettingPreview (slate cards)", () => {
     expect(trigger).toHaveTextContent("Sharp: Oklahoma"); // 32% of bets, 65% of money
     fireEvent.click(trigger);
     // Georgia opened -10 and is -14: the line moved WITH the public, so no reverse move
-    expect(await screen.findByText("Public side: Georgia · Sharp money: Oklahoma")).toBeInTheDocument();
+    expect(await screen.findByText("Public Side: Georgia · Sharp Money: Oklahoma")).toBeInTheDocument();
   });
 
   it("holds a placeholder on a first read that is still out or paused offline, never an empty card", async () => {

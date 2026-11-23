@@ -63,8 +63,8 @@ const QUICK_PROMPTS: QuickPrompt[] = [
   { label: "What's the best value play today?", icon: Target, iconClassName: "text-terminal-green" },
   { label: "Show me tonight's slate", icon: Calendar, iconClassName: "text-terminal-blue" },
   { label: "How has the line moved?", icon: Activity, iconClassName: "text-terminal-blue" },
-  { label: "Player prop edges", icon: BarChart3, iconClassName: "text-terminal-blue" },
-  { label: "Compare teams", icon: Users2, iconClassName: "text-terminal-blue" },
+  { label: "Player Prop Edges", icon: BarChart3, iconClassName: "text-terminal-blue" },
+  { label: "Compare Teams", icon: Users2, iconClassName: "text-terminal-blue" },
 ];
 
 const ALL_SPORTS = ["NFL", "NBA", "NCAAB", "NCAAF", "MLB"] as const;

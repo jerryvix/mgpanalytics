@@ -147,3 +147,54 @@ describe("kickoff times", () => {
     expect(kickoffToUtc({ month: 1, day: 1, hour: 20, minute: 0 }, dec).toISOString()).toBe("2027-01-02T01:00:00.000Z");
   });
 });
+
+// DK redesigned the splits page in Nov 2026 (one header per event, market
+// names above their rows, "Mon 11/23 · 8:15 PM ET" kickoffs). The sync wrote
+// nothing from Nov 2 until the parser learned this layout. Fixtures: Nov 23
+// 2026 captures, trimmed to the splits container like the ones above.
+describe("Nov 2026 layout", () => {
+  const nfl = parseDkSplitsPage(fixture("dk-splits-nfl-2026-11-23-p1.html"));
+  const nba = parseDkSplitsPage(fixture("dk-splits-nba-2026-11-23-p1.html"));
+  const ncaab = parseDkSplitsPage(fixture("dk-splits-ncaab-2026-11-23-p1.html"));
+
+  it("reads every event with no skips, in football and basketball", () => {
+    for (const page of [nfl, nba, ncaab]) {
+      expect(page.skipped).toEqual([]);
+      expect(page.events.length).toBeGreaterThan(0);
+      for (const e of page.events) expect(Object.keys(e.markets).length).toBeGreaterThan(0);
+    }
+    expect(nfl.events).toHaveLength(10);
+  });
+
+  it("extracts one event field by field, handle then bets", () => {
+    const e = nfl.events[0];
+    expect(e.eventId).toBe("34118063");
+    expect(e.away).toBe("CIN Bengals");
+    expect(e.home).toBe("WAS Commanders");
+    expect(e.kickoffLabel).toBe("Mon 11/23 · 8:15 PM ET");
+    expect(e.kickoff).toEqual({ month: 11, day: 23, hour: 20, minute: 15 });
+    expect(e.markets.spread).toEqual([
+      { side: "away", label: "CIN Bengals -6", line: -6, price: -113, handlePct: 78, betsPct: 85 },
+      { side: "home", label: "WAS Commanders +6", line: 6, price: -107, handlePct: 22, betsPct: 15 },
+    ]);
+    expect(e.markets.moneyline?.map((o) => [o.side, o.price, o.handlePct, o.betsPct])).toEqual([
+      ["away", -296, 91, 94],
+      ["home", 241, 9, 6],
+    ]);
+    expect(e.markets.total?.map((o) => [o.side, o.line, o.handlePct, o.betsPct])).toEqual([
+      ["over", 54.5, 85, 60],
+      ["under", 54.5, 15, 40],
+    ]);
+  });
+
+  it("fails loudly if the event header changes again", () => {
+    const html = fixture("dk-splits-nfl-2026-11-23-p1.html").replace(/<div>Handle<\/div>/g, "<div>Money</div>");
+    expect(() => parseDkSplitsPage(html)).toThrow(SplitsMarkupError);
+  });
+
+  it("parses the new kickoff label", () => {
+    expect(parseKickoffLabel("Mon 11/23 · 7:10 PM ET")).toEqual({ month: 11, day: 23, hour: 19, minute: 10 });
+    expect(parseKickoffLabel("Thu 11/26 · 12:30 PM ET")).toEqual({ month: 11, day: 26, hour: 12, minute: 30 });
+    expect(parseKickoffLabel("Sat 11/28 · 12:05 AM ET")).toEqual({ month: 11, day: 28, hour: 0, minute: 5 });
+  });
+});

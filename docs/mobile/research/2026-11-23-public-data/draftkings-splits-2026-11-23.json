@@ -1,0 +1,2012 @@
+{
+ "nfl": [
+  {
+   "eventId": "34118063",
+   "away": "CIN Bengals",
+   "home": "WAS Commanders",
+   "kickoffLabel": "Mon 11/23 · 8:15 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 20,
+    "minute": 15
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "CIN Bengals",
+      "line": null,
+      "price": -296,
+      "handlePct": 91,
+      "betsPct": 94
+     },
+     {
+      "side": "home",
+      "label": "WAS Commanders",
+      "line": null,
+      "price": 241,
+      "handlePct": 9,
+      "betsPct": 6
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "CIN Bengals -6",
+      "line": -6,
+      "price": -113,
+      "handlePct": 78,
+      "betsPct": 85
+     },
+     {
+      "side": "home",
+      "label": "WAS Commanders +6",
+      "line": 6,
+      "price": -107,
+      "handlePct": 22,
+      "betsPct": 15
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 54.5",
+      "line": 54.5,
+      "price": -116,
+      "handlePct": 85,
+      "betsPct": 60
+     },
+     {
+      "side": "under",
+      "label": "Under 54.5",
+      "line": 54.5,
+      "price": -103,
+      "handlePct": 15,
+      "betsPct": 40
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "34118092",
+   "away": "GB Packers",
+   "home": "LA Rams",
+   "kickoffLabel": "Wed 11/25 · 8:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 25,
+    "hour": 20,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "GB Packers",
+      "line": null,
+      "price": 123,
+      "handlePct": 96,
+      "betsPct": 58
+     },
+     {
+      "side": "home",
+      "label": "LA Rams",
+      "line": null,
+      "price": -145,
+      "handlePct": 4,
+      "betsPct": 42
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "GB Packers +3",
+      "line": 3,
+      "price": -117,
+      "handlePct": 46,
+      "betsPct": 47
+     },
+     {
+      "side": "home",
+      "label": "LA Rams -3",
+      "line": -3,
+      "price": -102,
+      "handlePct": 54,
+      "betsPct": 53
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 44.5",
+      "line": 44.5,
+      "price": -114,
+      "handlePct": 29,
+      "betsPct": 77
+     },
+     {
+      "side": "under",
+      "label": "Under 44.5",
+      "line": 44.5,
+      "price": -105,
+      "handlePct": 71,
+      "betsPct": 23
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "34118200",
+   "away": "CHI Bears",
+   "home": "DET Lions",
+   "kickoffLabel": "Thu 11/26 · 1:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 26,
+    "hour": 13,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "CHI Bears",
+      "line": null,
+      "price": -147,
+      "handlePct": 33,
+      "betsPct": 43
+     },
+     {
+      "side": "home",
+      "label": "DET Lions",
+      "line": null,
+      "price": 124,
+      "handlePct": 67,
+      "betsPct": 57
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "CHI Bears -2.5",
+      "line": -2.5,
+      "price": -114,
+      "handlePct": 68,
+      "betsPct": 51
+     },
+     {
+      "side": "home",
+      "label": "DET Lions +2.5",
+      "line": 2.5,
+      "price": -106,
+      "handlePct": 32,
+      "betsPct": 49
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 55.5",
+      "line": 55.5,
+      "price": -110,
+      "handlePct": 78,
+      "betsPct": 62
+     },
+     {
+      "side": "under",
+      "label": "Under 55.5",
+      "line": 55.5,
+      "price": -110,
+      "handlePct": 22,
+      "betsPct": 38
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "34118122",
+   "away": "PHI Eagles",
+   "home": "DAL Cowboys",
+   "kickoffLabel": "Thu 11/26 · 4:30 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 26,
+    "hour": 16,
+    "minute": 30
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "PHI Eagles",
+      "line": null,
+      "price": 324,
+      "handlePct": 57,
+      "betsPct": 24
+     },
+     {
+      "side": "home",
+      "label": "DAL Cowboys",
+      "line": null,
+      "price": -411,
+      "handlePct": 43,
+      "betsPct": 76
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "PHI Eagles +8.5",
+      "line": 8.5,
+      "price": -110,
+      "handlePct": 65,
+      "betsPct": 29
+     },
+     {
+      "side": "home",
+      "label": "DAL Cowboys -8.5",
+      "line": -8.5,
+      "price": -110,
+      "handlePct": 35,
+      "betsPct": 71
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 47.5",
+      "line": 47.5,
+      "price": -110,
+      "handlePct": 100,
+      "betsPct": 86
+     },
+     {
+      "side": "under",
+      "label": "Under 47.5",
+      "line": 47.5,
+      "price": -109,
+      "handlePct": 0,
+      "betsPct": 14
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "34118209",
+   "away": "KC Chiefs",
+   "home": "BUF Bills",
+   "kickoffLabel": "Thu 11/26 · 8:20 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 26,
+    "hour": 20,
+    "minute": 20
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "KC Chiefs",
+      "line": null,
+      "price": 131,
+      "handlePct": 58,
+      "betsPct": 32
+     },
+     {
+      "side": "home",
+      "label": "BUF Bills",
+      "line": null,
+      "price": -155,
+      "handlePct": 42,
+      "betsPct": 68
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "KC Chiefs +3",
+      "line": 3,
+      "price": -121,
+      "handlePct": 22,
+      "betsPct": 42
+     },
+     {
+      "side": "home",
+      "label": "BUF Bills -3",
+      "line": -3,
+      "price": 101,
+      "handlePct": 78,
+      "betsPct": 58
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 50.5",
+      "line": 50.5,
+      "price": -105,
+      "handlePct": 80,
+      "betsPct": 70
+     },
+     {
+      "side": "under",
+      "label": "Under 50.5",
+      "line": 50.5,
+      "price": -114,
+      "handlePct": 20,
+      "betsPct": 30
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "34118077",
+   "away": "DEN Broncos",
+   "home": "PIT Steelers",
+   "kickoffLabel": "Fri 11/27 · 3:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 27,
+    "hour": 15,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "DEN Broncos",
+      "line": null,
+      "price": -152,
+      "handlePct": 85,
+      "betsPct": 84
+     },
+     {
+      "side": "home",
+      "label": "PIT Steelers",
+      "line": null,
+      "price": 128,
+      "handlePct": 15,
+      "betsPct": 16
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "DEN Broncos -3",
+      "line": -3,
+      "price": -104,
+      "handlePct": 82,
+      "betsPct": 91
+     },
+     {
+      "side": "home",
+      "label": "PIT Steelers +3",
+      "line": 3,
+      "price": -115,
+      "handlePct": 18,
+      "betsPct": 9
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 38.5",
+      "line": 38.5,
+      "price": -110,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "under",
+      "label": "Under 38.5",
+      "line": 38.5,
+      "price": -110,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "34118274",
+   "away": "NY Giants",
+   "home": "IND Colts",
+   "kickoffLabel": "Sun 11/29 · 1:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 29,
+    "hour": 13,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "NY Giants",
+      "line": null,
+      "price": -299,
+      "handlePct": 94,
+      "betsPct": 94
+     },
+     {
+      "side": "home",
+      "label": "IND Colts",
+      "line": null,
+      "price": 244,
+      "handlePct": 6,
+      "betsPct": 6
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "NY Giants -6.5",
+      "line": -6.5,
+      "price": -113,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "home",
+      "label": "IND Colts +6.5",
+      "line": 6.5,
+      "price": -106,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "34118022",
+   "away": "BAL Ravens",
+   "home": "HOU Texans",
+   "kickoffLabel": "Sun 11/29 · 1:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 29,
+    "hour": 13,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "BAL Ravens",
+      "line": null,
+      "price": 228,
+      "handlePct": 61,
+      "betsPct": 26
+     },
+     {
+      "side": "home",
+      "label": "HOU Texans",
+      "line": null,
+      "price": -279,
+      "handlePct": 39,
+      "betsPct": 74
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "BAL Ravens +6.5",
+      "line": 6.5,
+      "price": -110,
+      "handlePct": 0,
+      "betsPct": 0
+     },
+     {
+      "side": "home",
+      "label": "HOU Texans -6.5",
+      "line": -6.5,
+      "price": -110,
+      "handlePct": 100,
+      "betsPct": 100
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 46.5",
+      "line": 46.5,
+      "price": -108,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "under",
+      "label": "Under 46.5",
+      "line": 46.5,
+      "price": -111,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "34118158",
+   "away": "ATL Falcons",
+   "home": "MIN Vikings",
+   "kickoffLabel": "Sun 11/29 · 1:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 29,
+    "hour": 13,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "ATL Falcons",
+      "line": null,
+      "price": 248,
+      "handlePct": 6,
+      "betsPct": 10
+     },
+     {
+      "side": "home",
+      "label": "MIN Vikings",
+      "line": null,
+      "price": -305,
+      "handlePct": 94,
+      "betsPct": 90
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "ATL Falcons +7",
+      "line": 7,
+      "price": -120,
+      "handlePct": 0,
+      "betsPct": 0
+     },
+     {
+      "side": "home",
+      "label": "MIN Vikings -7",
+      "line": -7,
+      "price": 100,
+      "handlePct": 100,
+      "betsPct": 100
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 42.5",
+      "line": 42.5,
+      "price": -110,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "under",
+      "label": "Under 42.5",
+      "line": 42.5,
+      "price": -109,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "34118248",
+   "away": "TEN Titans",
+   "home": "JAX Jaguars",
+   "kickoffLabel": "Sun 11/29 · 1:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 29,
+    "hour": 13,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "TEN Titans",
+      "line": null,
+      "price": 740,
+      "handlePct": 64,
+      "betsPct": 8
+     },
+     {
+      "side": "home",
+      "label": "JAX Jaguars",
+      "line": null,
+      "price": -1180,
+      "handlePct": 36,
+      "betsPct": 92
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "TEN Titans +14.5",
+      "line": 14.5,
+      "price": -110,
+      "handlePct": 99,
+      "betsPct": 83
+     },
+     {
+      "side": "home",
+      "label": "JAX Jaguars -14.5",
+      "line": -14.5,
+      "price": -109,
+      "handlePct": 1,
+      "betsPct": 17
+     }
+    ]
+   }
+  }
+ ],
+ "nba": [
+  {
+   "eventId": "35062791",
+   "away": "POR Trail Blazers",
+   "home": "PHI 76ers",
+   "kickoffLabel": "Mon 11/23 · 7:10 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 19,
+    "minute": 10
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "POR Trail Blazers",
+      "line": null,
+      "price": 142,
+      "handlePct": 1,
+      "betsPct": 12
+     },
+     {
+      "side": "home",
+      "label": "PHI 76ers",
+      "line": null,
+      "price": -169,
+      "handlePct": 99,
+      "betsPct": 88
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "POR Trail Blazers +3.5",
+      "line": 3.5,
+      "price": -108,
+      "handlePct": 22,
+      "betsPct": 36
+     },
+     {
+      "side": "home",
+      "label": "PHI 76ers -3.5",
+      "line": -3.5,
+      "price": -112,
+      "handlePct": 78,
+      "betsPct": 64
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 231.5",
+      "line": 231.5,
+      "price": -108,
+      "handlePct": 99,
+      "betsPct": 75
+     },
+     {
+      "side": "under",
+      "label": "Under 231.5",
+      "line": 231.5,
+      "price": -112,
+      "handlePct": 1,
+      "betsPct": 25
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35062790",
+   "away": "MEM Grizzlies",
+   "home": "CHA Hornets",
+   "kickoffLabel": "Mon 11/23 · 7:10 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 19,
+    "minute": 10
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "MEM Grizzlies",
+      "line": null,
+      "price": -162,
+      "handlePct": 92,
+      "betsPct": 87
+     },
+     {
+      "side": "home",
+      "label": "CHA Hornets",
+      "line": null,
+      "price": 136,
+      "handlePct": 8,
+      "betsPct": 13
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "MEM Grizzlies -3.5",
+      "line": -3.5,
+      "price": -111,
+      "handlePct": 7,
+      "betsPct": 62
+     },
+     {
+      "side": "home",
+      "label": "CHA Hornets +3.5",
+      "line": 3.5,
+      "price": -109,
+      "handlePct": 93,
+      "betsPct": 38
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 216.5",
+      "line": 216.5,
+      "price": -110,
+      "handlePct": 86,
+      "betsPct": 75
+     },
+     {
+      "side": "under",
+      "label": "Under 216.5",
+      "line": 216.5,
+      "price": -110,
+      "handlePct": 14,
+      "betsPct": 25
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35062794",
+   "away": "MIL Bucks",
+   "home": "TOR Raptors",
+   "kickoffLabel": "Mon 11/23 · 7:40 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 19,
+    "minute": 40
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "MIL Bucks",
+      "line": null,
+      "price": 378,
+      "handlePct": 49,
+      "betsPct": 22
+     },
+     {
+      "side": "home",
+      "label": "TOR Raptors",
+      "line": null,
+      "price": -494,
+      "handlePct": 51,
+      "betsPct": 78
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "MIL Bucks +10.5",
+      "line": 10.5,
+      "price": -107,
+      "handlePct": 8,
+      "betsPct": 13
+     },
+     {
+      "side": "home",
+      "label": "TOR Raptors -10.5",
+      "line": -10.5,
+      "price": -113,
+      "handlePct": 92,
+      "betsPct": 88
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 223.5",
+      "line": 223.5,
+      "price": -110,
+      "handlePct": 46,
+      "betsPct": 43
+     },
+     {
+      "side": "under",
+      "label": "Under 223.5",
+      "line": 223.5,
+      "price": -110,
+      "handlePct": 54,
+      "betsPct": 57
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35062793",
+   "away": "BKN Nets",
+   "home": "MIN Timberwolves",
+   "kickoffLabel": "Mon 11/23 · 7:40 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 19,
+    "minute": 40
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "BKN Nets",
+      "line": null,
+      "price": 455,
+      "handlePct": 0,
+      "betsPct": 0
+     },
+     {
+      "side": "home",
+      "label": "MIN Timberwolves",
+      "line": null,
+      "price": -620,
+      "handlePct": 100,
+      "betsPct": 100
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "BKN Nets +12.5",
+      "line": 12.5,
+      "price": -115,
+      "handlePct": 0,
+      "betsPct": 0
+     },
+     {
+      "side": "home",
+      "label": "MIN Timberwolves -12.5",
+      "line": -12.5,
+      "price": -106,
+      "handlePct": 100,
+      "betsPct": 100
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 223.5",
+      "line": 223.5,
+      "price": -110,
+      "handlePct": 55,
+      "betsPct": 50
+     },
+     {
+      "side": "under",
+      "label": "Under 223.5",
+      "line": 223.5,
+      "price": -110,
+      "handlePct": 45,
+      "betsPct": 50
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35062792",
+   "away": "OKC Thunder",
+   "home": "IND Pacers",
+   "kickoffLabel": "Mon 11/23 · 7:40 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 19,
+    "minute": 40
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "OKC Thunder",
+      "line": null,
+      "price": -191,
+      "handlePct": 93,
+      "betsPct": 95
+     },
+     {
+      "side": "home",
+      "label": "IND Pacers",
+      "line": null,
+      "price": 160,
+      "handlePct": 7,
+      "betsPct": 5
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "OKC Thunder -4.5",
+      "line": -4.5,
+      "price": -113,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "home",
+      "label": "IND Pacers +4.5",
+      "line": 4.5,
+      "price": -107,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 222.5",
+      "line": 222.5,
+      "price": -110,
+      "handlePct": 85,
+      "betsPct": 75
+     },
+     {
+      "side": "under",
+      "label": "Under 222.5",
+      "line": 222.5,
+      "price": -110,
+      "handlePct": 15,
+      "betsPct": 25
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35062796",
+   "away": "PHO Suns",
+   "home": "NO Pelicans",
+   "kickoffLabel": "Mon 11/23 · 8:10 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 20,
+    "minute": 10
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "PHO Suns",
+      "line": null,
+      "price": -155,
+      "handlePct": 99,
+      "betsPct": 76
+     },
+     {
+      "side": "home",
+      "label": "NO Pelicans",
+      "line": null,
+      "price": 131,
+      "handlePct": 1,
+      "betsPct": 24
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "PHO Suns -3.5",
+      "line": -3.5,
+      "price": -105,
+      "handlePct": 54,
+      "betsPct": 50
+     },
+     {
+      "side": "home",
+      "label": "NO Pelicans +3.5",
+      "line": 3.5,
+      "price": -115,
+      "handlePct": 46,
+      "betsPct": 50
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 233.5",
+      "line": 233.5,
+      "price": -108,
+      "handlePct": 41,
+      "betsPct": 33
+     },
+     {
+      "side": "under",
+      "label": "Under 233.5",
+      "line": 233.5,
+      "price": -112,
+      "handlePct": 59,
+      "betsPct": 67
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35062795",
+   "away": "CLE Cavaliers",
+   "home": "CHI Bulls",
+   "kickoffLabel": "Mon 11/23 · 8:10 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 20,
+    "minute": 10
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "CLE Cavaliers",
+      "line": null,
+      "price": -337,
+      "handlePct": 98,
+      "betsPct": 96
+     },
+     {
+      "side": "home",
+      "label": "CHI Bulls",
+      "line": null,
+      "price": 271,
+      "handlePct": 2,
+      "betsPct": 4
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "CLE Cavaliers -8.5",
+      "line": -8.5,
+      "price": -112,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "home",
+      "label": "CHI Bulls +8.5",
+      "line": 8.5,
+      "price": -108,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 240.5",
+      "line": 240.5,
+      "price": -110,
+      "handlePct": 85,
+      "betsPct": 75
+     },
+     {
+      "side": "under",
+      "label": "Under 240.5",
+      "line": 240.5,
+      "price": -109,
+      "handlePct": 15,
+      "betsPct": 25
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35062797",
+   "away": "LA Clippers",
+   "home": "HOU Rockets",
+   "kickoffLabel": "Mon 11/23 · 8:40 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 20,
+    "minute": 40
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "LA Clippers",
+      "line": null,
+      "price": 471,
+      "handlePct": 90,
+      "betsPct": 10
+     },
+     {
+      "side": "home",
+      "label": "HOU Rockets",
+      "line": null,
+      "price": -650,
+      "handlePct": 10,
+      "betsPct": 90
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "LA Clippers +12.5",
+      "line": 12.5,
+      "price": -108,
+      "handlePct": 73,
+      "betsPct": 17
+     },
+     {
+      "side": "home",
+      "label": "HOU Rockets -12.5",
+      "line": -12.5,
+      "price": -112,
+      "handlePct": 27,
+      "betsPct": 83
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 225.5",
+      "line": 225.5,
+      "price": -105,
+      "handlePct": 20,
+      "betsPct": 33
+     },
+     {
+      "side": "under",
+      "label": "Under 225.5",
+      "line": 225.5,
+      "price": -115,
+      "handlePct": 80,
+      "betsPct": 67
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35062799",
+   "away": "SA Spurs",
+   "home": "SAC Kings",
+   "kickoffLabel": "Mon 11/23 · 10:10 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 22,
+    "minute": 10
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "SA Spurs",
+      "line": null,
+      "price": -484,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "home",
+      "label": "SAC Kings",
+      "line": null,
+      "price": 371,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "SA Spurs -10.5",
+      "line": -10.5,
+      "price": -115,
+      "handlePct": 100,
+      "betsPct": 89
+     },
+     {
+      "side": "home",
+      "label": "SAC Kings +10.5",
+      "line": 10.5,
+      "price": -105,
+      "handlePct": 0,
+      "betsPct": 11
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 224.5",
+      "line": 224.5,
+      "price": -112,
+      "handlePct": 34,
+      "betsPct": 50
+     },
+     {
+      "side": "under",
+      "label": "Under 224.5",
+      "line": 224.5,
+      "price": -108,
+      "handlePct": 66,
+      "betsPct": 50
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35062798",
+   "away": "UTA Jazz",
+   "home": "LA Lakers",
+   "kickoffLabel": "Mon 11/23 · 10:10 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 22,
+    "minute": 10
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "UTA Jazz",
+      "line": null,
+      "price": 554,
+      "handlePct": 1,
+      "betsPct": 6
+     },
+     {
+      "side": "home",
+      "label": "LA Lakers",
+      "line": null,
+      "price": -790,
+      "handlePct": 99,
+      "betsPct": 94
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "UTA Jazz +13.5",
+      "line": 13.5,
+      "price": -110,
+      "handlePct": 1,
+      "betsPct": 25
+     },
+     {
+      "side": "home",
+      "label": "LA Lakers -13.5",
+      "line": -13.5,
+      "price": -110,
+      "handlePct": 99,
+      "betsPct": 75
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 228.5",
+      "line": 228.5,
+      "price": -107,
+      "handlePct": 1,
+      "betsPct": 40
+     },
+     {
+      "side": "under",
+      "label": "Under 228.5",
+      "line": 228.5,
+      "price": -113,
+      "handlePct": 99,
+      "betsPct": 60
+     }
+    ]
+   }
+  }
+ ],
+ "ncaab": [
+  {
+   "eventId": "35070609",
+   "away": "Northern Iowa",
+   "home": "Davidson",
+   "kickoffLabel": "Mon 11/23 · 11:00 AM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 11,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Northern Iowa",
+      "line": null,
+      "price": 185,
+      "handlePct": 5,
+      "betsPct": 21
+     },
+     {
+      "side": "home",
+      "label": "Davidson",
+      "line": null,
+      "price": -225,
+      "handlePct": 95,
+      "betsPct": 79
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Northern Iowa +5.5",
+      "line": 5.5,
+      "price": -115,
+      "handlePct": 4,
+      "betsPct": 43
+     },
+     {
+      "side": "home",
+      "label": "Davidson -5.5",
+      "line": -5.5,
+      "price": -105,
+      "handlePct": 96,
+      "betsPct": 57
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 141.5",
+      "line": 141.5,
+      "price": -108,
+      "handlePct": 99,
+      "betsPct": 83
+     },
+     {
+      "side": "under",
+      "label": "Under 141.5",
+      "line": 141.5,
+      "price": -112,
+      "handlePct": 1,
+      "betsPct": 17
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35070610",
+   "away": "Saint Bonaventure",
+   "home": "Appalachian State",
+   "kickoffLabel": "Mon 11/23 · 11:00 AM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 11,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Saint Bonaventure",
+      "line": null,
+      "price": -225,
+      "handlePct": 93,
+      "betsPct": 62
+     },
+     {
+      "side": "home",
+      "label": "Appalachian State",
+      "line": null,
+      "price": 185,
+      "handlePct": 7,
+      "betsPct": 38
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Saint Bonaventure -5.5",
+      "line": -5.5,
+      "price": -102,
+      "handlePct": 34,
+      "betsPct": 50
+     },
+     {
+      "side": "home",
+      "label": "Appalachian State +5.5",
+      "line": 5.5,
+      "price": -118,
+      "handlePct": 66,
+      "betsPct": 50
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 133.5",
+      "line": 133.5,
+      "price": -115,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "under",
+      "label": "Under 133.5",
+      "line": 133.5,
+      "price": -105,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35070611",
+   "away": "Indiana State",
+   "home": "East Carolina",
+   "kickoffLabel": "Mon 11/23 · 12:30 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 12,
+    "minute": 30
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Indiana State",
+      "line": null,
+      "price": 130,
+      "handlePct": 8,
+      "betsPct": 64
+     },
+     {
+      "side": "home",
+      "label": "East Carolina",
+      "line": null,
+      "price": -155,
+      "handlePct": 92,
+      "betsPct": 36
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Indiana State +2.5",
+      "line": 2.5,
+      "price": -105,
+      "handlePct": 2,
+      "betsPct": 40
+     },
+     {
+      "side": "home",
+      "label": "East Carolina -2.5",
+      "line": -2.5,
+      "price": -115,
+      "handlePct": 98,
+      "betsPct": 60
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 146.5",
+      "line": 146.5,
+      "price": -110,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "under",
+      "label": "Under 146.5",
+      "line": 146.5,
+      "price": -110,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35070612",
+   "away": "Long Beach State",
+   "home": "FIU",
+   "kickoffLabel": "Mon 11/23 · 1:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 13,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Long Beach State",
+      "line": null,
+      "price": 390,
+      "handlePct": 25,
+      "betsPct": 21
+     },
+     {
+      "side": "home",
+      "label": "FIU",
+      "line": null,
+      "price": -520,
+      "handlePct": 75,
+      "betsPct": 79
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Long Beach State +9.5",
+      "line": 9.5,
+      "price": -105,
+      "handlePct": 0,
+      "betsPct": 0
+     },
+     {
+      "side": "home",
+      "label": "FIU -9.5",
+      "line": -9.5,
+      "price": -115,
+      "handlePct": 100,
+      "betsPct": 100
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 160.5",
+      "line": 160.5,
+      "price": -108,
+      "handlePct": 1,
+      "betsPct": 33
+     },
+     {
+      "side": "under",
+      "label": "Under 160.5",
+      "line": 160.5,
+      "price": -112,
+      "handlePct": 99,
+      "betsPct": 67
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35070613",
+   "away": "Akron",
+   "home": "Wright State",
+   "kickoffLabel": "Mon 11/23 · 1:30 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 13,
+    "minute": 30
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Akron",
+      "line": null,
+      "price": 102,
+      "handlePct": 12,
+      "betsPct": 50
+     },
+     {
+      "side": "home",
+      "label": "Wright State",
+      "line": null,
+      "price": -122,
+      "handlePct": 88,
+      "betsPct": 50
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Akron +1.5",
+      "line": 1.5,
+      "price": -108,
+      "handlePct": 0,
+      "betsPct": 22
+     },
+     {
+      "side": "home",
+      "label": "Wright State -1.5",
+      "line": -1.5,
+      "price": -112,
+      "handlePct": 100,
+      "betsPct": 78
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 148.5",
+      "line": 148.5,
+      "price": -108,
+      "handlePct": 93,
+      "betsPct": 75
+     },
+     {
+      "side": "under",
+      "label": "Under 148.5",
+      "line": 148.5,
+      "price": -112,
+      "handlePct": 7,
+      "betsPct": 25
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35070614",
+   "away": "Charlotte",
+   "home": "Florida Gulf Coast",
+   "kickoffLabel": "Mon 11/23 · 1:30 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 13,
+    "minute": 30
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Charlotte",
+      "line": null,
+      "price": -278,
+      "handlePct": 91,
+      "betsPct": 71
+     },
+     {
+      "side": "home",
+      "label": "Florida Gulf Coast",
+      "line": null,
+      "price": 225,
+      "handlePct": 9,
+      "betsPct": 29
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Charlotte -6.5",
+      "line": -6.5,
+      "price": -110,
+      "handlePct": 2,
+      "betsPct": 25
+     },
+     {
+      "side": "home",
+      "label": "Florida Gulf Coast +6.5",
+      "line": 6.5,
+      "price": -110,
+      "handlePct": 98,
+      "betsPct": 75
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 145.5",
+      "line": 145.5,
+      "price": -105,
+      "handlePct": 93,
+      "betsPct": 75
+     },
+     {
+      "side": "under",
+      "label": "Under 145.5",
+      "line": 145.5,
+      "price": -115,
+      "handlePct": 7,
+      "betsPct": 25
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35070615",
+   "away": "Tulsa",
+   "home": "Oregon State",
+   "kickoffLabel": "Mon 11/23 · 2:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 14,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Tulsa",
+      "line": null,
+      "price": 230,
+      "handlePct": 20,
+      "betsPct": 14
+     },
+     {
+      "side": "home",
+      "label": "Oregon State",
+      "line": null,
+      "price": -285,
+      "handlePct": 80,
+      "betsPct": 86
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Tulsa +6.5",
+      "line": 6.5,
+      "price": -110,
+      "handlePct": 28,
+      "betsPct": 22
+     },
+     {
+      "side": "home",
+      "label": "Oregon State -6.5",
+      "line": -6.5,
+      "price": -110,
+      "handlePct": 72,
+      "betsPct": 78
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 153.5",
+      "line": 153.5,
+      "price": -112,
+      "handlePct": 57,
+      "betsPct": 63
+     },
+     {
+      "side": "under",
+      "label": "Under 153.5",
+      "line": 153.5,
+      "price": -108,
+      "handlePct": 43,
+      "betsPct": 38
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35070616",
+   "away": "Ole Miss",
+   "home": "Clemson",
+   "kickoffLabel": "Mon 11/23 · 2:30 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 14,
+    "minute": 30
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Ole Miss",
+      "line": null,
+      "price": -250,
+      "handlePct": 60,
+      "betsPct": 65
+     },
+     {
+      "side": "home",
+      "label": "Clemson",
+      "line": null,
+      "price": 205,
+      "handlePct": 40,
+      "betsPct": 35
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Ole Miss -5.5",
+      "line": -5.5,
+      "price": -115,
+      "handlePct": 80,
+      "betsPct": 73
+     },
+     {
+      "side": "home",
+      "label": "Clemson +5.5",
+      "line": 5.5,
+      "price": -105,
+      "handlePct": 20,
+      "betsPct": 27
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 148.5",
+      "line": 148.5,
+      "price": -110,
+      "handlePct": 92,
+      "betsPct": 67
+     },
+     {
+      "side": "under",
+      "label": "Under 148.5",
+      "line": 148.5,
+      "price": -110,
+      "handlePct": 8,
+      "betsPct": 33
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35070617",
+   "away": "Middle Tennessee",
+   "home": "Southern Illinois",
+   "kickoffLabel": "Mon 11/23 · 3:00 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 15,
+    "minute": 0
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Middle Tennessee",
+      "line": null,
+      "price": 114,
+      "handlePct": 27,
+      "betsPct": 43
+     },
+     {
+      "side": "home",
+      "label": "Southern Illinois",
+      "line": null,
+      "price": -135,
+      "handlePct": 73,
+      "betsPct": 57
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Middle Tennessee +2.5",
+      "line": 2.5,
+      "price": -112,
+      "handlePct": 100,
+      "betsPct": 100
+     },
+     {
+      "side": "home",
+      "label": "Southern Illinois -2.5",
+      "line": -2.5,
+      "price": -108,
+      "handlePct": 0,
+      "betsPct": 0
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 148.5",
+      "line": 148.5,
+      "price": -115,
+      "handlePct": 51,
+      "betsPct": 50
+     },
+     {
+      "side": "under",
+      "label": "Under 148.5",
+      "line": 148.5,
+      "price": -105,
+      "handlePct": 49,
+      "betsPct": 50
+     }
+    ]
+   }
+  },
+  {
+   "eventId": "35070618",
+   "away": "Arkansas State",
+   "home": "Southern Utah",
+   "kickoffLabel": "Mon 11/23 · 3:30 PM ET",
+   "kickoff": {
+    "month": 11,
+    "day": 23,
+    "hour": 15,
+    "minute": 30
+   },
+   "markets": {
+    "moneyline": [
+     {
+      "side": "away",
+      "label": "Arkansas State",
+      "line": null,
+      "price": -325,
+      "handlePct": 45,
+      "betsPct": 67
+     },
+     {
+      "side": "home",
+      "label": "Southern Utah",
+      "line": null,
+      "price": 260,
+      "handlePct": 55,
+      "betsPct": 33
+     }
+    ],
+    "spread": [
+     {
+      "side": "away",
+      "label": "Arkansas State -7.5",
+      "line": -7.5,
+      "price": -108,
+      "handlePct": 100,
+      "betsPct": 83
+     },
+     {
+      "side": "home",
+      "label": "Southern Utah +7.5",
+      "line": 7.5,
+      "price": -112,
+      "handlePct": 0,
+      "betsPct": 17
+     }
+    ],
+    "total": [
+     {
+      "side": "over",
+      "label": "Over 162.5",
+      "line": 162.5,
+      "price": -110,
+      "handlePct": 43,
+      "betsPct": 33
+     },
+     {
+      "side": "under",
+      "label": "Under 162.5",
+      "line": 162.5,
+      "price": -110,
+      "handlePct": 57,
+      "betsPct": 67
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,14 +1,19 @@
 // sync-betting-splits: DraftKings' line and public betting splits for NCAAF
 // and NFL, feeding Game Insights > Market Pulse, the slate cards and the
-// chat's public-betting answers.
+// chat's public-betting answers; and DraftKings' splits alone for the NBA and
+// men's college basketball (NCAAB), which no surface reads yet.
 //
 // Two sources, one job each:
-//   - LINES (betting_lines): DraftKings' current and opening number for EVERY
-//     game in the next LINES_WINDOW_DAYS, read from ESPN's core odds API
-//     (keyless, relays DK, both spread prices). This is the one line every
-//     surface shows. NCAAF rows are ESPN events (external_id); the NFL games
-//     table is BDL-keyed, so its games are paired with ESPN's scoreboard on
-//     both teams + kickoff, the way sync-nfl-games does it.
+//   - LINES (betting_lines), football only: DraftKings' current and opening
+//     number for EVERY game in the next LINES_WINDOW_DAYS, read from ESPN's
+//     core odds API (keyless, relays DK, both spread prices). This is the one
+//     line every surface shows. NCAAF rows are ESPN events (external_id); the
+//     NFL games table is BDL-keyed, so its games are paired with ESPN's
+//     scoreboard on both teams + kickoff, the way sync-nfl-games does it.
+//     Basketball has no lines step: the website's NBA and NCAAB lines come
+//     from BallDontLie (nba_odds, ncaab_odds, four books), so this function
+//     writes no competing line, and its basketball split rows carry no
+//     DraftKings open.
 //   - SPLITS (betting_splits): DK's % of bets and % of money per side from
 //     the DK Network splits page (server-rendered HTML, no key; robots.txt
 //     only disallows /search-results). Its odds column lags DraftKings, so it
@@ -30,7 +35,11 @@
 //      label reads.
 //   2. Match every DK matchup onto our games (both teams + a kickoff window).
 //      Unmatched matchups are logged, counted and returned; the run reports
-//      "partial" when any remain.
+//      "partial" when any remain. Basketball's games tables keep only some
+//      of DK's games (ncaab_games: ranked games in the next 24 hours;
+//      nba_games: about 48 hours ahead), so there a matchup with neither
+//      team on our rows is counted as notInOurGames instead (match.ts
+//      triageUnmatched).
 //   3. Upsert the latest row per side, prune sides DK stopped listing for the
 //      games seen this run, and append history only for sides whose numbers
 //      changed.
@@ -40,7 +49,7 @@
 // sport. Parse lives in ./parse.ts, name matching in ./match.ts, line and
 // row shaping in ./lines.ts and ./rows.ts: all pure and vitest-covered.
 //
-// POST body (all optional): { "sports": ["NCAAF"], "dryRun": true }
+// POST body (all optional): { "sports": ["NCAAF", "NBA"], "dryRun": true }
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { startSyncLog, completeSyncLog, detectTriggerSource } from "../_shared/sync-logger.ts";
@@ -57,7 +66,7 @@ import {
   type PageObservation,
   type PageRecord,
 } from "./freshness.ts";
-import { matchEventsToGames } from "./match.ts";
+import { matchEventsToGames, ourGamesInRange, triageUnmatched, type GamesCoverage, type MatchSport } from "./match.ts";
 import {
   eventsInWindow,
   linesFromQuotes,
@@ -69,19 +78,35 @@ import {
 } from "./lines.ts";
 import { buildSplitRows, splitChanged, type DkEventQuote, type LineRow, type SplitRow } from "./rows.ts";
 
-type SyncSport = "NCAAF" | "NFL";
+type SyncSport = MatchSport;
+
+interface LinesConfig {
+  espnLeague: EspnOddsLeague;
+  /** How our games map to ESPN events */
+  espnIds: { idPrefix: string } | { scoreboard: string };
+}
 
 interface SportConfig {
   sport: SyncSport;
   /** DK Network event group (the splits page's tb_eg) */
   eventGroup: number;
-  gamesTable: "ncaaf_games" | "games";
+  gamesTable: "ncaaf_games" | "games" | "nba_games" | "ncaab_games";
   gameColumns: string;
-  /** The shared `games` table also holds NBA rows */
+  /**
+   * League filter for the shared `games` table, which also holds NBA rows.
+   * NBA splits key on nba_games instead: the table sync-nba-games writes and
+   * the website's NBA pages read.
+   */
   league: string | null;
-  espnLeague: EspnOddsLeague;
-  /** How our games map to ESPN events */
-  espnIds: { idPrefix: string } | { scoreboard: string };
+  /**
+   * The LINES step, or null for splits only. NBA and NCAAB lines on the
+   * website come from BallDontLie (nba_odds, ncaab_odds) and nothing reads
+   * betting_lines for them, so no competing line is written; their split
+   * rows keep the page's number for audit and a null open.
+   */
+  lines: LinesConfig | null;
+  /** How much of DK's list the games table holds (match.ts triageUnmatched) */
+  gamesCoverage: GamesCoverage;
   /** UTC month 0-11 */
   inSeason: (month: number) => boolean;
 }
@@ -93,8 +118,8 @@ const SPORTS: SportConfig[] = [
     gamesTable: "ncaaf_games",
     gameColumns: "id, external_id, date, time_tbd, home_team_name, visitor_team_name",
     league: null,
-    espnLeague: "college-football",
-    espnIds: { idPrefix: "espn_ncaaf_" },
+    lines: { espnLeague: "college-football", espnIds: { idPrefix: "espn_ncaaf_" } },
+    gamesCoverage: "all",
     inSeason: (m) => m >= 7 || m === 0, // Aug through the January title game
   },
   {
@@ -103,11 +128,47 @@ const SPORTS: SportConfig[] = [
     gamesTable: "games",
     gameColumns: "id, external_id, date, home_team_name, visitor_team_name",
     league: "NFL",
-    espnLeague: "nfl",
-    espnIds: { scoreboard: "football/nfl" },
+    lines: { espnLeague: "nfl", espnIds: { scoreboard: "football/nfl" } },
+    gamesCoverage: "all",
     inSeason: (m) => m >= 7 || m <= 1, // Aug through the Super Bowl
   },
+  {
+    // sync-nba-games writes ESPN's games (external_id espn_nba_<id>) from
+    // yesterday to 48 hours ahead
+    sport: "NBA",
+    eventGroup: 42648,
+    gamesTable: "nba_games",
+    gameColumns: "id, external_id, date, home_team_name, visitor_team_name",
+    league: null,
+    lines: null,
+    gamesCoverage: "subset",
+    inSeason: (m) => m >= 9 || m <= 5, // Oct through the June Finals
+  },
+  {
+    // sync-ncaab-games writes ESPN's games (external_id espn_ncaab_<id>) in
+    // the next 24 hours with a ranked team (or 5 featured games when none)
+    sport: "NCAAB",
+    eventGroup: 92483,
+    gamesTable: "ncaab_games",
+    gameColumns: "id, external_id, date, home_team_name, visitor_team_name",
+    league: null,
+    lines: null,
+    gamesCoverage: "subset",
+    inSeason: (m) => m >= 10 || m <= 3, // Nov through the early-April title game
+  },
 ];
+
+/**
+ * NBA and NCAAB splits are written only once this is true. The live website's
+ * chat (src/services/chatbot/storedSplits.ts on main) reads every sport's
+ * splits without a sport filter, so a football question about a school could
+ * be answered with that school's basketball game. The filter is on the
+ * claude/exciting-euler-w6d8uw branch; flip this to true (and deploy
+ * gemini-chat, whose pulse-chat guard ships with it) once that branch's web
+ * chat is live. Dry runs can still request NBA or NCAAB. (DECISIONS D-058)
+ */
+const BASKETBALL_SPLITS_LIVE = false;
+const BASKETBALL_SPORTS: ReadonlySet<string> = new Set(["NBA", "NCAAB"]);
 
 const WINDOWS = ["n7days", "today", "tomorrow"] as const;
 const MAX_PAGES = 15;
@@ -200,6 +261,7 @@ interface LinesSummary {
 async function syncLines(
   supabase: any,
   cfg: SportConfig,
+  lines: LinesConfig,
   capturedAt: string,
   dryRun: boolean,
 ): Promise<{ summary: LinesSummary; quotesByGame: Map<string, DkEventQuote> }> {
@@ -218,16 +280,16 @@ async function syncLines(
   const games = upcomingGames(all, now);
 
   const events =
-    "scoreboard" in cfg.espnIds
-      ? eventsInWindow(await fetchScoreboard(cfg.espnIds.scoreboard, now, LINES_WINDOW_DAYS), now, new Date(until))
+    "scoreboard" in lines.espnIds
+      ? eventsInWindow(await fetchScoreboard(lines.espnIds.scoreboard, now, LINES_WINDOW_DAYS), now, new Date(until))
       : [];
   const { byGame, unmatchedEspnEvents } = (() => {
-    const r = resolveEspnEvents(cfg.sport, games, "idPrefix" in cfg.espnIds ? cfg.espnIds : { events });
+    const r = resolveEspnEvents(cfg.sport, games, "idPrefix" in lines.espnIds ? lines.espnIds : { events });
     return { byGame: r.byGame, unmatchedEspnEvents: r.unmatchedEvents };
   })();
 
   const eventIds = [...new Set([...byGame.values()].map((r) => r.eventId))];
-  const quotes = (await fetchEspnOddsBatch(cfg.espnLeague, eventIds)) as Map<string, DkEventQuote & { sportsbook: string }>;
+  const quotes = (await fetchEspnOddsBatch(lines.espnLeague, eventIds)) as Map<string, DkEventQuote & { sportsbook: string }>;
   const { rows, quotesByGame } = linesFromQuotes(cfg.sport, byGame, quotes, capturedAt);
 
   const summary: LinesSummary = {
@@ -270,7 +332,10 @@ interface SplitsSummary {
   dkEvents: number;
   alreadyStarted: number;
   matched: number;
+  /** Misses: a name or a row to fix (the run reports partial) */
   unmatched: Array<{ matchup: string; kickoff: string; reason: string }>;
+  /** Basketball games our table does not store (neither team on our rows); not a miss */
+  notInOurGames: Array<{ matchup: string; kickoff: string; reason: string }>;
   windows: Record<string, { events: number; pages: number; capped: boolean }>;
   skippedBlocks: string[];
   rows: number;
@@ -302,6 +367,7 @@ async function syncSplits(
     alreadyStarted: 0,
     matched: 0,
     unmatched: [],
+    notInOurGames: [],
     windows: {},
     skippedBlocks: [],
     rows: 0,
@@ -415,13 +481,22 @@ async function syncSplits(
 
   const { matched, unmatched } = matchEventsToGames(cfg.sport, upcoming, games);
   summary.matched = matched.length;
-  summary.unmatched = unmatched.map((u) => ({
+  const { misses, notInOurGames } = triageUnmatched(cfg.gamesCoverage, unmatched, {
+    matched: matched.length,
+    ourGamesInRange: ourGamesInRange(games, upcoming, now),
+  });
+  const report = (u: (typeof unmatched)[number]) => ({
     matchup: `${u.event.away} @ ${u.event.home}`,
     kickoff: u.event.kickoffLabel,
     reason: u.reason,
-  }));
+  });
+  summary.unmatched = misses.map(report);
+  summary.notInOurGames = notInOurGames.map(report);
   for (const u of summary.unmatched) {
     console.warn(`[sync-betting-splits] ${cfg.sport} UNMATCHED ${u.matchup} (${u.kickoff}): ${u.reason}`);
+  }
+  for (const u of summary.notInOurGames) {
+    console.log(`[sync-betting-splits] ${cfg.sport} NOT IN ${cfg.gamesTable} ${u.matchup} (${u.kickoff}): ${u.reason}`);
   }
   if (matched.length === 0) return summary;
 
@@ -540,13 +615,16 @@ async function syncSport(
 ): Promise<SportResult> {
   const result: SportResult = { errors: [] };
   // Lines first: every surface's number, and the splits step's DK opens
+  // (basketball has no lines step, so its split rows carry no open)
   let quotesByGame = new Map<string, DkEventQuote>();
-  try {
-    const lines = await syncLines(supabase, cfg, capturedAt, dryRun);
-    result.lines = lines.summary;
-    quotesByGame = lines.quotesByGame;
-  } catch (err) {
-    result.errors.push(`lines: ${err instanceof Error ? err.message : String(err)}`);
+  if (cfg.lines) {
+    try {
+      const lines = await syncLines(supabase, cfg, cfg.lines, capturedAt, dryRun);
+      result.lines = lines.summary;
+      quotesByGame = lines.quotesByGame;
+    } catch (err) {
+      result.errors.push(`lines: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
   try {
     result.splits = await syncSplits(supabase, cfg, capturedAt, dryRun, quotesByGame, runBuster);
@@ -614,7 +692,11 @@ serve(async (req) => {
     const dryRun = body?.dryRun === true;
     const requested: string[] | null = Array.isArray(body?.sports) ? body.sports : null;
     const month = new Date().getUTCMonth();
-    const targets = SPORTS.filter((s) => (requested ? requested.includes(s.sport) : s.inSeason(month)));
+    // Basketball stays off outside dry runs until BASKETBALL_SPLITS_LIVE flips (see its note)
+    const targets = SPORTS.filter((s) => {
+      if (BASKETBALL_SPORTS.has(s.sport) && !BASKETBALL_SPLITS_LIVE && !dryRun) return false;
+      return requested ? requested.includes(s.sport) : s.inSeason(month);
+    });
 
     if (!dryRun) {
       syncLogId = await startSyncLog(supabase, {
@@ -664,7 +746,13 @@ serve(async (req) => {
             .map(([sport, r]) => {
               const parts: string[] = [];
               if (r.lines) parts.push(`lines for ${r.lines.withDkLine}/${r.lines.games} games`);
-              if (r.splits) parts.push(`splits ${r.splits.matched}/${r.splits.dkEvents - r.splits.alreadyStarted} DK games matched`);
+              if (r.splits) {
+                const notStored = r.splits.notInOurGames.length;
+                parts.push(
+                  `splits ${r.splits.matched}/${r.splits.dkEvents - r.splits.alreadyStarted} DK games matched` +
+                    (notStored ? ` (${notStored} not in our games)` : ""),
+                );
+              }
               if (r.errors.length) parts.push(`FAILED ${r.errors.join("; ")}`);
               return `${sport}: ${parts.join(", ")}`;
             })

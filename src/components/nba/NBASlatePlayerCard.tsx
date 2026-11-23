@@ -90,38 +90,6 @@ export function NBASlatePlayerCard({
   };
 
   // Rank badge styling
-  const getRankBadge = () => {
-    if (!showRank) return null;
-
-    const baseClasses = "absolute -top-2 -left-2 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg";
-    
-    if (rank === 1) {
-      return (
-        <div className={`${baseClasses} bg-gradient-to-br from-yellow-400 to-amber-500 text-yellow-900`}>
-          <Flame className="w-4 h-4" />
-        </div>
-      );
-    }
-    if (rank === 2) {
-      return (
-        <div className={`${baseClasses} bg-gradient-to-br from-slate-300 to-slate-400 text-slate-800`}>
-          #{rank}
-        </div>
-      );
-    }
-    if (rank === 3) {
-      return (
-        <div className={`${baseClasses} bg-gradient-to-br from-amber-600 to-amber-700 text-amber-100`}>
-          #{rank}
-        </div>
-      );
-    }
-    return (
-      <div className={`${baseClasses} bg-muted text-muted-foreground border border-border`}>
-        #{rank}
-      </div>
-    );
-  };
 
   // Format game context
   const formatGameContext = () => {
@@ -159,8 +127,6 @@ export function NBASlatePlayerCard({
   return (
     <Link to={`/dashboard/nba/players/${id}`}>
       <Card className="bg-card border-border hover:border-terminal-green/50 transition-all cursor-pointer group relative">
-        {/* Rank Badge */}
-        {getRankBadge()}
 
         <CardContent className="p-4 space-y-3">
           {/* Performance Surge Badge - Top of card */}
@@ -192,6 +158,7 @@ export function NBASlatePlayerCard({
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-foreground group-hover:text-terminal-green transition-colors truncate">
+                {showRank && rank ? <span className="text-muted-foreground tabular-nums mr-1.5">#{rank}</span> : null}
                 {name}
               </h3>
               <div className="flex items-center gap-2 text-sm">

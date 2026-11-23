@@ -1,0 +1,18 @@
+{"replicate":"C_industry_professionals","n":250,
+"q1_open_before_bet":{"S":66,"K":70,"V":36,"A":45,"none":33},
+"q2_mean_useful":{"S":2.87,"K":3.54,"V":3.13,"A":3.16},
+"q3_score_trust":{"trust_it":23,"trust_if_shown_how_calculated":97,"dont_trust":54,"its_just_a_pick_in_disguise":76},
+"q4_score_effect_on_app_trust":{"more":72,"same":73,"less":105},
+"q5_check_before_bet":{"recent_form_streaks":189,"ats_record":131,"injuries":221,"line_movement":176,"head_to_head":102,"weather":88,"public_betting_pct":143,"expert_opinions":152,"player_props":117,"rest_travel":79,"team_stats":158},
+"q6_places_checked":{"one":19,"two_three":112,"four_six":91,"seven_plus":28},
+"q7_risk_flags":{"S":71,"K":9,"V":6,"A":36},
+"verbatims":[
+{"segment":"compliance_responsible_gaming","quote":"A 0 to 100 'who the data likes' number is a tip with a progress bar. App Review and our RG team would both read it that way."},
+{"segment":"sportsbook_trading_risk","quote":"The market already has a number for each side. It's called the price. If your score disagrees with the line, I'd want to know why before anyone trusts it."},
+{"segment":"pro_bettor","quote":"ATS records and four-game streaks are mostly noise. Start Here is fine for casuals, but sharp guys won't open an app for it."},
+{"segment":"affiliate_marketer","quote":"The score is the hook. People screenshot a 78 vs 22. That's what drives installs."},
+{"segment":"betting_media_creator","quote":"Start Here is basically my show prep. Three facts I can say on air in 20 seconds."},
+{"segment":"sports_data_odds_feed","quote":"Four books refreshed a few times a day is thin. Line movement that's hours stale near kickoff won't impress anyone serious."},
+{"segment":"sportsbook_product","quote":"Side-by-Side is the cleanest. It's what our own game pages try to do, and users still scroll past half of it."},
+{"segment":"compliance_legal_counsel","quote":"The AI analyst is the bigger legal question. 'Won't tell you what to bet' has to hold up when someone asks 'who wins tonight' fifty different ways."}],
+"researcher_note":"Start Here top Q1 (70 vs 66) and best usefulness. Score splits hardest: 23/250 trust as is, 71 risk flags (more than other three combined), 105 say lowers trust. Analyst 36 flags: compliance doubts guardrail holds under probing."}

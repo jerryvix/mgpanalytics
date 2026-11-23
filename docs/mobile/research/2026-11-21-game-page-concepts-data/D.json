@@ -1,0 +1,17 @@
+{"replicate":"D_new_bettors_new_states","n":250,
+"q1_open_before_bet":{"S":54,"K":67,"V":39,"A":37,"none":53},
+"q2_mean_useful":{"S":3.34,"K":3.61,"V":3.30,"A":3.13},
+"q3_score_trust":{"trust_it":52,"trust_if_shown_how_calculated":90,"dont_trust":43,"its_just_a_pick_in_disguise":65},
+"q4_score_effect_on_app_trust":{"more":78,"same":110,"less":62},
+"q5_check_before_bet":{"recent_form_streaks":171,"ats_record":70,"injuries":172,"line_movement":68,"head_to_head":96,"weather":50,"public_betting_pct":55,"expert_opinions":117,"player_props":133,"rest_travel":37,"team_stats":108},
+"q6_places_checked":{"one":48,"two_three":113,"four_six":65,"seven_plus":24},
+"verbatims":[
+{"segment":"casual","quote":"Honestly if it says Oregon 78 and Michigan State 41, I'm tailing the 78. That's what I'd want it for."},
+{"segment":"casual","quote":"I bet my Eagles every week no matter what. I'm not opening an app to tell me they're 5-5 against the spread."},
+{"segment":"recreational_weekly","quote":"Start Here is the one. Three facts I can read in the Uber and I'm done."},
+{"segment":"serious","quote":"A 0 to 100 that blends ATS, rest and line movement is a pick with extra steps. Show me the weights or I'm out."},
+{"segment":"dfs_fantasy","quote":"I'd use the analyst to ask how a guy does without his WR1. That's what I Google now anyway."},
+{"segment":"creator","quote":"The score is content, people would screenshot it. But if it goes 3-9 my comments are going to roast me for posting it."},
+{"segment":"recreational_weekly","quote":"Another stats app. The guys on TikTok already did the work, I'll just watch them."},
+{"segment":"casual","quote":"The bars look clean but half the time I don't know what against the spread even means."}],
+"researcher_note":"Many of the 65 'pick in disguise' were casual SGP bettors who meant it as praise. Serious and DFS dislike the score most. Start Here leads open intent and usefulness without splitting people. ~1/5 would open none."}

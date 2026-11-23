@@ -131,7 +131,7 @@ function GameStateChip({
         className="font-mono text-[10px] uppercase tracking-wider border border-border rounded px-1.5 py-0.5 text-muted-foreground whitespace-nowrap"
         title="No game today"
       >
-        Off today
+        Off Today
       </span>
     );
   }

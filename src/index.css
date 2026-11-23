@@ -59,6 +59,10 @@
     --terminal-blue: 217 85% 60%;
     --terminal-purple: 262 75% 66%;
     --terminal-dim: 215 12% 55%;
+
+    /* Rank badges (team and player ranks): black family, not amber. Owner decision Nov 21, 2026. */
+    --rank: 218 14% 26%;
+    --rank-foreground: 214 33% 96%;
   }
 
   .dark {

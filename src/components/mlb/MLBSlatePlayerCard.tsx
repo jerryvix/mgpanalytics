@@ -80,25 +80,6 @@ export function MLBSlatePlayerCard({
     return name.substring(0, 2).toUpperCase();
   };
 
-  const getRankBadge = () => {
-    if (!showRank) return null;
-    const baseClasses =
-      "absolute -top-2 -left-2 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shadow-lg";
-    if (rank === 1) {
-      return (
-        <div className={`${baseClasses} bg-gradient-to-br from-yellow-400 to-amber-500 text-yellow-900`}>
-          <Flame className="w-4 h-4" />
-        </div>
-      );
-    }
-    if (rank === 2) {
-      return <div className={`${baseClasses} bg-gradient-to-br from-slate-300 to-slate-400 text-slate-800`}>#{rank}</div>;
-    }
-    if (rank === 3) {
-      return <div className={`${baseClasses} bg-gradient-to-br from-amber-600 to-amber-700 text-amber-100`}>#{rank}</div>;
-    }
-    return <div className={`${baseClasses} bg-muted text-muted-foreground border border-border`}>#{rank}</div>;
-  };
 
   const formatGameContext = () => {
     if (!gameContext) return null;
@@ -127,7 +108,6 @@ export function MLBSlatePlayerCard({
   return (
     <Link to={`/dashboard/mlb/players/${id}`}>
       <Card className="bg-card border-border hover:border-terminal-green/50 transition-all cursor-pointer group relative">
-        {getRankBadge()}
         <CardContent className="p-4 space-y-3">
           <div className="flex items-start gap-3">
             <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
@@ -149,6 +129,7 @@ export function MLBSlatePlayerCard({
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-foreground group-hover:text-terminal-green transition-colors truncate">
+                {showRank && rank ? <span className="text-muted-foreground tabular-nums mr-1.5">#{rank}</span> : null}
                 {name}
               </h3>
               <div className="flex items-center gap-2 text-sm">

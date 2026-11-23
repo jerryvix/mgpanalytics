@@ -158,6 +158,21 @@ const PROBES = [
     query: "ncaaf_games?select=updated_at&order=updated_at.desc&limit=1",
     field: "updated_at", maxAgeHours: 30,
   },
+  // DraftKings splits: the core data (DECISIONS D-053). DK redesigned its page
+  // around Nov 2 2026 and runs failed for three weeks before anyone noticed;
+  // these catch a run that "succeeds" but writes nothing, too.
+  {
+    sport: "NFL", name: "nfl_splits_captured",
+    what: "newest NFL DraftKings split captured",
+    query: "betting_splits?select=captured_at&sport=eq.NFL&order=captured_at.desc&limit=1",
+    field: "captured_at", maxAgeHours: 6, // 2h interval, allow two misses
+  },
+  {
+    sport: "NCAAF", name: "ncaaf_splits_captured",
+    what: "newest NCAAF DraftKings split captured",
+    query: "betting_splits?select=captured_at&sport=eq.NCAAF&order=captured_at.desc&limit=1",
+    field: "captured_at", maxAgeHours: 6,
+  },
   {
     sport: "ALL", name: "odds_snapshot_latest",
     what: "line-movement odds history last captured",
