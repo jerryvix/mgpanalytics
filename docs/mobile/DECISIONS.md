@@ -274,3 +274,9 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 - Splits (DraftKings % of bets and % of handle) exist for NFL and college football, but have been frozen since **Nov 2** on the website: DraftKings redesigned its splits page and our parser skipped every game. Fixed in code the same day (`supabase/functions/sync-betting-splits/parse.ts`, tests with Nov 23 captures); goes live when the function is deployed.
 - The same free DraftKings page lists **NBA and college basketball** splits today, so adding them costs nothing but build time. MLB appears there in spring.
 - Trends: ATS and over/under records are computable for football and MLB from results plus closing lines; NBA and college basketball need the `odds_history` ID fix first. Split history starts Sep 23, 2026, so "how the public side has done" covers this season only.
+
+### D-054 All four trend types; no circles; Claude deploys backend fixes
+**Date:** 2026-11-23 · **By:** Owner
+**Trends:** the game page shows all four: ATS records (overall, home and away, as favorite and underdog), over/under records, how teams have done this season when the public or the money was on them, and form and matchups (recent results, head-to-head, rest, back-to-backs, short weeks). Football and MLB first; basketball once `odds_history` IDs are fixed.
+**Circles:** removed. Today opens straight to the game list. The Stories designs (D-051) stay on the canvas as a record only.
+**Deploys:** the owner gave Claude a Supabase personal access token through the secure form. It is stored only on the new personal cloud environment "mgpanalytics" (16 allowed hosts, a setup script that runs `npm install` in the repo and in `mobile/`), not on the owner's Default environment, and never in the repo or chat. The network proxy injects it into requests to `api.supabase.com`; run the CLI with a placeholder token (see RUNBOOK). A developer taking over uses their own token.

@@ -46,3 +46,13 @@ Checklist lives in `APP_STORE_COMPLIANCE.md`. Store listing copy must trace to `
 2. If it's a code or metadata fix, fix and resubmit; log it in `DECISIONS.md`.
 3. If it needs a business decision (pricing, content, legal), raise it to the owner with options.
 4. Reply in Resolution Center when a clarification (not a change) resolves it.
+
+## Deploying a Supabase edge function (cloud sessions)
+
+The "mgpanalytics" cloud environment holds the owner's Supabase access token as a network secret for `api.supabase.com` (D-054). The CLI needs some token in its environment to start, so pass a placeholder built at run time (a literal one in the repo trips GitHub's secret scanning); the proxy replaces it on the way out:
+
+```sh
+SUPABASE_ACCESS_TOKEN="sbp_$(printf '0%.0s' $(seq 40))" npx supabase functions deploy <name> --project-ref vwezujtftfccamoduglp --use-api
+```
+
+On your own machine, run `npx supabase login` once instead and drop the placeholder. Deploy only from a branch whose tests pass; the functions serve the live website.
