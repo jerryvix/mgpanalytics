@@ -59,6 +59,22 @@ export const TAKES_SOURCES: readonly TakesSource[] = [
     // Almost Friday Media, presented by BetMGM
     podcast: { applePodcastsId: "1760085357", feed: "https://feeds.megaphone.fm/holdthephone" },
   },
+  {
+    channelId: "UCZmtXolnY7-z9HLiBESjkyQ",
+    handle: "@SportsLine",
+    name: "The Early Edge (SportsLine, CBS Sports)",
+    x: "SportsLine",
+    // Hosts named in the show's descriptions (Nov 23 2026); X handles not yet confirmed.
+    // Daily on weekdays at 10 a.m. ET: NFL, college football, NBA, college basketball, MLB, NHL, soccer.
+    people: [
+      { name: "Sia Nejad" },
+      { name: "Buckets" },
+      { name: "Bob Konarski" },
+      { name: "Martin Green" },
+      { name: "Mike Barner" },
+    ],
+    podcast: { applePodcastsId: "1543098312", feed: "https://rss.amperwave.net/v2/feed/audacynetwork/earlyedge" },
+  },
 ];
 
 export const youtubeFeedUrl = (channelId: string) =>

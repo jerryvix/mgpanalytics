@@ -20,6 +20,7 @@ import xml.etree.ElementTree as ET
 FEEDS = {
     "bear-bets": "https://feeds.megaphone.fm/bearbets",
     "hold-the-phone": "https://feeds.megaphone.fm/holdthephone",
+    "early-edge": "https://rss.amperwave.net/v2/feed/audacynetwork/earlyedge",
 }
 # Episodes whose titles suggest picks; others (news talk) are skipped
 PICK_TITLE = re.compile(r"\b(bets?|picks?|parlay|best bets|plays?)\b", re.I)
