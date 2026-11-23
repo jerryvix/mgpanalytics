@@ -32,7 +32,7 @@ Apple enrollment confirmed approved by the owner on Nov 23.
 ## Decide now (from Nov 23)
 
 - [x] Pulse plan approved Nov 23: Pulse replaces Insiders; Insiders lives inside it (D-059).
-- [ ] Send the podcasts and YouTube channels you want in Insiders (names are enough).
+- [x] Insiders channels sent Nov 23: Bear Bets, Hold The Phone, Bookit Blitz. Send more anytime.
 - [ ] Merge jerryvix/mgpanalytics#23 on GitHub (approved in principle Nov 23): Title Case labels, plain #12 ranks, and the chat guard that lets basketball splits turn on.
 
 ## Anytime (optional)

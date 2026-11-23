@@ -6,7 +6,6 @@
 
 - Merge jerryvix/mgpanalytics#23 (website changes). After it is live: flip `BASKETBALL_SPLITS_LIVE`, deploy `sync-betting-splits` and `gemini-chat` (D-058).
 - Expo account (free), then a token through the secure form.
-- List of podcasts and YouTube channels for Insiders (D-059).
 
 
 - Apple enrollment (D-U-N-S + organization). Critical path; gates the first TestFlight build. See `OWNER_ACTIONS.md` items 1 to 3.
