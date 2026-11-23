@@ -82,13 +82,13 @@ W = lambda x: f'<span style="color: {C["tx"]}; font-weight: 500">{x}</span>'
 s = head('Today, Splits First') + frame_open(C) + topbar(C)
 s += title(C, 'Today', 'Monday, November 23 · 11 games in your sports')
 s += section(C, 'NFL', 18)
-s += today_row('cin', 'wsh', 'Bengals at Commanders', '8:15 PM · ESPN', 'CIN −6', 'O/U 54.5', f'{W("78%")} of money · {W("85%")} of bets on CIN')
+s += today_row('cin', 'wsh', 'Bengals at Commanders', '8:15 PM · ESPN', 'CIN −6', 'O/U 54.5', f'{W("78%")} of Money · {W("85%")} of Bets on CIN')
 s += section(C, 'NBA', 14)
-s += today_row('por', 'p76', 'Trail Blazers at 76ers', '7:10 PM', 'PHI −3.5', 'O/U 231.5', f'{W("78%")} of money · {W("64%")} of bets on PHI')
-s += today_row('mem', 'cha', 'Grizzlies at Hornets', '7:10 PM', 'MEM −3.5', 'O/U 216.5', f'{W("93%")} of money on CHA · {W("62%")} of bets on MEM')
-s += today_row('lac', 'hou', 'Clippers at Rockets', '8:40 PM', 'HOU −12.5', 'O/U 225.5', f'{W("73%")} of money on LAC · {W("83%")} of bets on HOU')
-s += today_row('uta', 'lal', 'Jazz at Lakers', '10:10 PM', 'LAL −13.5', 'O/U 228.5', f'{W("99%")} of money · {W("75%")} of bets on LAL')
-s += source('Bets and money from DraftKings · Updated 3:05 PM', 6)
+s += today_row('por', 'p76', 'Trail Blazers at 76ers', '7:10 PM', 'PHI −3.5', 'O/U 231.5', f'{W("78%")} of Money · {W("64%")} of Bets on PHI')
+s += today_row('mem', 'cha', 'Grizzlies at Hornets', '7:10 PM', 'MEM −3.5', 'O/U 216.5', f'{W("93%")} of Money on CHA · {W("62%")} of Bets on MEM')
+s += today_row('lac', 'hou', 'Clippers at Rockets', '8:40 PM', 'HOU −12.5', 'O/U 225.5', f'{W("73%")} of Money on LAC · {W("83%")} of Bets on HOU')
+s += today_row('uta', 'lal', 'Jazz at Lakers', '10:10 PM', 'LAL −13.5', 'O/U 228.5', f'{W("99%")} of Money · {W("75%")} of Bets on LAL')
+s += source('Betting Splits from DraftKings · Updated 3:05 PM', 6)
 s += tabbar('Today') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JToday.dc.html'), 'w').write(s)
 
@@ -232,6 +232,7 @@ print('leaders written')
 TK = dict(C); TK.update(t2=C['tx'], t3=C['tx'])
 L['bearbets'] = '/_blob/4bc33a77df289e9af9da8e1425eb2085'
 L['htp'] = '/_blob/25f016deb53ef142ede410377a5c7512'
+L['sportsline'] = '/_blob/2c2923d036a45a84694c54597ee338e8'  # SportsLine, The Early Edge
 DF = 'font-family: {{df}}; font-size: {{dfs}}; letter-spacing: {{dfl}}; text-transform: {{dft}}; font-style: {{dfi}}'
 W_ = TK['tx']
 def show_logo(k):
@@ -298,8 +299,12 @@ def takes_page(title, height, opened=False, coach=False, only_first=False):
     s_ += '  </div>\n'
     s_ += tk_sec('Bengals at Commanders', 'NFL · Tonight 8:15 PM')
     s_ += tk_take(('htp', 'bearbets'), 'Commanders +6 (−107)', 'Hold The Phone, Bear Bets', body=WHY, opened=opened)
+    s_ += tk_take('sportsline', 'Bengals −6 (−113)', 'McClure, Hartstein · The Early Edge', body='x')
+    s_ += tk_take('sportsline', 'Under 54.5 (−103)', 'Hartstein, McClure · The Early Edge', body='x')
     s_ += tk_take('htp', 'Same Game Parlay +400 (4 Legs)', 'Hold The Phone', legs=["Ja'Marr Chase 75+ Receiving Yards", 'Jayden Daniels 25+ Rushing Yards', 'Stefon Diggs 50+ Receiving Yards', 'Chase Brown Anytime TD'])
     s_ += tk_take('htp', 'Chig Okonkwo Anytime TD', 'Danny · Hold The Phone')
+    s_ += tk_take('sportsline', 'Joe Burrow O 7.5 Rushing Yards', 'Mike McClure · The Early Edge', body='x')
+    s_ += tk_take('sportsline', 'Stefon Diggs Anytime TD +180', 'Sia Nejad · The Early Edge', body='x')
     if not only_first:
         s_ += tk_sec('Bears at Lions', 'NFL · Thu 1:00 PM')
         s_ += tk_take('bearbets', 'Lions +2.5 (−106)', 'Bear Bets', body='x')
@@ -344,7 +349,7 @@ class Component extends DCLogic {{
 </html>
 """
     return s_
-open(os.path.join(OUT, 'JTakes.dc.html'), 'w').write(takes_page('Pulse, Takes', 1480))
+open(os.path.join(OUT, 'JTakes.dc.html'), 'w').write(takes_page('Pulse, Takes', 1760))
 open(os.path.join(OUT, 'JTakesOpen.dc.html'), 'w').write(takes_page('Pulse, Takes, One Opened', 844, opened=True, only_first=True))
 open(os.path.join(OUT, 'JTakesCoach.dc.html'), 'w').write(takes_page('Pulse, Takes, First Visit', 844, coach=True))
 print('takes v3 written')

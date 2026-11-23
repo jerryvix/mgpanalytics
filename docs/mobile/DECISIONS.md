@@ -374,3 +374,9 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Pulse views now:** Betting Splits, Takes, Trends, Team Records. Week labels are Title Case ("Week 12 · Thanksgiving Week").
 **Takes subtitle:** "Real Picks from Betting Experts" (owner wording) replaces "What the shows are betting".
 
+
+### D-069 The Early Edge joins Takes; a sport mix from multi-sport shows; "Money" and "Bets" capitalized on Today
+**Date:** 2026-11-23 · **By:** Owner ("they do nba too which is good, would be good to have a mix"; "can we capitalize 'Money' and 'Bets' on the Today tab"; "I see 'Bets and money' in all the mockups")
+**The Early Edge (SportsLine):** transcribed free like the others (GitHub Actions run 45290598324, 14:50 of audio in 105 s). Its newest episode covers tonight's Bengals at Commanders: Mike McClure and Larry Hartstein take Bengals −6 and the under 54.5; McClure Joe Burrow O 7.5 rushing yards; host Sia Nejad Stefon Diggs anytime TD +180. It disagrees with Bear Bets and Hold The Phone (Commanders +6), which is the point: real people, real opinions. Prices are DraftKings' current line where MGP has it (Bengals −6 −113, Under 54.5 −103); props carry the price the show quoted. Two people on one pick are credited by last name ("McClure, Hartstein · The Early Edge") so the line fits.
+**Sport mix:** `scripts/takes/transcribe.py` takes `--shows` and `--title-match`; the workflow also pulls each multi-sport show's newest NBA episode (titles matching NBA or a team nickname). Whisper misspells names ("Stefan Diggs", "Samaj P. Ryan"); the Haiku extraction step (D-063) corrects them against rosters before anything is shown.
+**Labels:** on Today rows, "Money" and "Bets" are capitalized as the names of the two numbers ("78% of Money · 85% of Bets on CIN"). The source line reads "Betting Splits from DraftKings · Updated 3:05 PM"; "bets and money" no longer appears as a label anywhere in the mockups.

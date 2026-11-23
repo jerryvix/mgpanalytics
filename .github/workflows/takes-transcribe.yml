@@ -38,6 +38,11 @@ jobs:
           key: whisper-small-en-v1
       - run: pip install "faster-whisper>=1.1,<2"
       - run: python scripts/takes/transcribe.py --per-show "${{ github.event.inputs.per_show || '1' }}" --any-title --out takes-out
+      # Multi-sport shows: also take the newest NBA episode, so Takes carries a sport mix (owner, Nov 23)
+      - name: Newest NBA episode from multi-sport shows
+        env:
+          NBA_TITLES: '\b(NBA|basketball|Lakers|Celtics|Knicks|Nets|76ers|Sixers|Raptors|Bulls|Cavaliers|Cavs|Pistons|Pacers|Bucks|Hawks|Hornets|Heat|Magic|Wizards|Nuggets|Timberwolves|Thunder|Blazers|Jazz|Warriors|Clippers|Suns|Mavericks|Mavs|Rockets|Grizzlies|Pelicans|Spurs)\b'
+        run: python scripts/takes/transcribe.py --shows early-edge --title-match "$NBA_TITLES" --per-show 1 --any-title --out takes-out
       - uses: actions/upload-artifact@v4
         with:
           name: takes-transcripts

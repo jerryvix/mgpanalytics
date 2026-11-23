@@ -27,7 +27,7 @@ PICK_TITLE = re.compile(r"\b(bets?|picks?|parlay|best bets|plays?)\b", re.I)
 UA = {"User-Agent": "MGPAnalytics/1.0 (+https://mgp-analytics.com)"}
 
 
-def newest_pick_episodes(feed_url: str, n: int, any_title: bool = False) -> list[dict]:
+def newest_pick_episodes(feed_url: str, n: int, any_title: bool = False, title_match: "re.Pattern | None" = None) -> list[dict]:
     with urllib.request.urlopen(urllib.request.Request(feed_url, headers=UA), timeout=60) as r:
         root = ET.fromstring(r.read())
     out = []
@@ -35,6 +35,8 @@ def newest_pick_episodes(feed_url: str, n: int, any_title: bool = False) -> list
         title = (item.findtext("title") or "").strip()
         enc = item.find("enclosure")
         if enc is None or (not any_title and not PICK_TITLE.search(title)):
+            continue
+        if title_match is not None and not title_match.search(title):
             continue
         out.append({"title": title, "pubDate": item.findtext("pubDate"), "guid": item.findtext("guid"), "audio": enc.get("url")})
         if len(out) >= n:
@@ -53,14 +55,24 @@ def main() -> None:
     ap.add_argument("--model", default=os.environ.get("WHISPER_MODEL", "small.en"))
     ap.add_argument("--any-title", action="store_true",
                     help="take each show's newest episodes even without a picks word in the title (early-week leans live there too)")
+    ap.add_argument("--shows", default="",
+                    help="comma-separated show keys from FEEDS (default: all)")
+    ap.add_argument("--title-match", default="",
+                    help="regex an episode title must match, e.g. NBA team names to pull a multi-sport show's newest basketball episode")
     args = ap.parse_args()
+    shows = [x.strip() for x in args.shows.split(",") if x.strip()] or list(FEEDS)
+    unknown = [x for x in shows if x not in FEEDS]
+    if unknown:
+        ap.error(f"unknown show(s): {', '.join(unknown)}; known: {', '.join(FEEDS)}")
+    title_match = re.compile(args.title_match, re.I) if args.title_match else None
     os.makedirs(args.out, exist_ok=True)
 
     from faster_whisper import WhisperModel  # imported late so --help works without it
 
     model = WhisperModel(args.model, device="cpu", compute_type="int8")
-    for show, feed in FEEDS.items():
-        for ep in newest_pick_episodes(feed, args.per_show, args.any_title):
+    for show in shows:
+        feed = FEEDS[show]
+        for ep in newest_pick_episodes(feed, args.per_show, args.any_title, title_match):
             slug = re.sub(r"[^a-z0-9]+", "-", ep["title"].lower()).strip("-")[:60]
             audio_path = os.path.join(args.out, f"{show}-{slug}.mp3")
             t0 = time.time()
