@@ -496,3 +496,8 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-088 No placeholder when Betting Splits aren't in yet
 **Date:** 2026-11-24 · **By:** Owner ("If betting splits aren't available yet, you can just remove that for now... But if we have it bring it in")
 **What:** game rows drop the "Betting Splits once the public weighs in" note, and the game page hides its Betting Splits section, until DraftKings posts real numbers. Placeholder splits (D-071's hold-back) still never show. The splits line appears on its own once the numbers arrive.
+
+### D-089 Betting Splits on the game page: one row per side
+**Date:** 2026-11-24 · **By:** Owner ("It is not clear at all what side is what. You're saying 80% of the money is on who?")
+**What:** each market (Spread, Total, Moneyline) lists both sides on their own rows, each with its logo (or an up or down arrow for Over and Under) and its line, then its share of bets and its share of money under BETS and MONEY column labels. The bigger share in each column is bold. Example: "Miami OH +6.5 · 46% · **80%**" over "W Michigan -6.5 · **54%** · 20%". Replaces D-067's two-sided bars, which put the side names far from the numbers.
+**Placeholders:** a market showing DraftKings' 100% / 0% placeholder (any share at 2% or less, or 98% or more) is hidden on its own, so a game can show a real spread split while its total and moneyline wait. The whole section hides when no market is real (D-088).

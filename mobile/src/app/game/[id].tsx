@@ -49,12 +49,7 @@ export default function GameScreen() {
               })}
               <T size={15}>{[g.state === 'pre' ? whenLabel(g.start) : g.status, g.tv, g.line, g.total ? `O/U ${g.total}` : null].filter(Boolean).join(' · ')}</T>
             </View>
-            {g.splits && !g.splitsPending ? (
-              <>
-                <SectionTitle>Betting Splits</SectionTitle>
-                <SplitsBlock game={g} />
-              </>
-            ) : null}
+            <SplitsBlock game={g} />
             {g.oneLine ? <View style={{ paddingHorizontal: 16, paddingTop: 14 }}><OneLineText line={g.oneLine} size={18} /></View> : null}
             {g.splitsAsOf ? <Mono style={{ paddingHorizontal: 16, paddingTop: 12 }}>DraftKings · Updated {clock(g.splitsAsOf)}</Mono> : null}
             {g.takes && g.takes.length ? (
