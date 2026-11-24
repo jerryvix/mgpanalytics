@@ -1,0 +1,52 @@
+# The one line per game (DECISIONS D-075, D-078). Every morning: refresh this season's
+# results and lines (ESPN, nflverse; free), compute each upcoming game's strongest
+# fact-checked angle for the NFL, college football and the NBA, and store it through the
+# ingest-game-lines function. No AI and no stored secret (GitHub OIDC auth).
+name: Game lines
+
+on:
+  schedule:
+    # 9:23 AM and 3:23 PM Eastern (UTC times; off the hour so GitHub doesn't delay them).
+    # The afternoon run picks up NBA lines posted after the morning.
+    - cron: "23 14 * * *"
+    - cron: "23 20 * * *"
+  workflow_dispatch:
+  push:
+    branches: [claude/exciting-euler-w6d8uw]
+    paths:
+      - .github/workflows/game-lines.yml
+      - scripts/angles/**
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: game-lines
+  cancel-in-progress: false
+
+jobs:
+  lines:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Restore the ESPN response cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/espn-history
+          key: espn-history-${{ github.run_id }}
+          restore-keys: espn-history-
+      - name: nflverse games
+        run: curl -sSfL -o games.csv https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv
+      - name: Compute and store the lines
+        run: |
+          # College football and NFL seasons are named by their start year, the NBA by its end year.
+          M=$(date -u +%m); Y=$(date -u +%Y)
+          if [ "$M" -le 6 ]; then CFB=$((Y-1)); else CFB=$Y; fi
+          if [ "$M" -ge 8 ]; then NBA=$((Y+1)); else NBA=$Y; fi
+          python -I scripts/angles/run_daily.py --nflverse games.csv --cfb-season "$CFB" --nba-season "$NBA" \
+            --ingest-url https://vwezujtftfccamoduglp.supabase.co/functions/v1/ingest-game-lines

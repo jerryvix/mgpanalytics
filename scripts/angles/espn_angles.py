@@ -49,7 +49,7 @@ class Row:
     neutral: bool
     line: float        # the team's spread, negative = favorite
     ats: int
-    ou: int
+    ou: int | None     # None when no total was posted: such games sit out total angles
     coach: str
     conf: bool
     opp_ranked: bool
@@ -90,7 +90,15 @@ def coach_lookup(path: str):
     return ordered
 
 
+# ESPN display names that don't start with CollegeFootballData's school name
+ALIASES = {"Appalachian State": "App State", "UT San Antonio": "UTSA", "San Jose State": "San José State",
+           "Southern Mississippi": "Southern Miss", "Connecticut": "UConn"}
+
+
 def school_for(display: str, schools: list[str]) -> str | None:
+    for espn, cfbd in ALIASES.items():
+        if display.startswith(espn + " ") and cfbd in schools:
+            return cfbd
     best = None
     for s in schools:
         if display == s or display.startswith(s + " "):
@@ -124,12 +132,16 @@ def load(league: str, paths: list[str], coaches_path: str):
             coach = r[f"{side}_coach"]
             if coach:
                 last_coach[tid] = coach
+            if league == "cfb":
+                coach = ""  # ESPN lists today's coach for past seasons too; only CollegeFootballData's list is used
             if league == "cfb" and lookup:
                 if tid not in school_of:
                     school_of[tid] = school_for(r[side], schools)
                 school = school_of[tid]
                 lst = lookup.get((school, season)) if school else None
-                if lst and sum(g for _, g in lst) > 0:
+                if lst and sum(g for _, g in lst) == 0:
+                    coach = lst[-1][0]  # current season: game counts not filled in yet
+                elif lst:
                     # games in date order: the first coach's games first, then the next (mid-season changes)
                     k = games_seen[(tid, season)]
                     games_seen[(tid, season)] += 1
@@ -148,13 +160,13 @@ def load(league: str, paths: list[str], coaches_path: str):
                 margin = (hp - ap) + hl
                 m = margin if side == "home" else -margin
                 ats = (m > 0) - (m < 0)
-                ou = 0
+                ou = None
                 if r["total"] != "":
                     t = hp + ap - float(r["total"])
                     ou = (t > 0) - (t < 0)
                 opp_rank = int(r["away_rank" if side == "home" else "home_rank"] or 99)
                 rows.append(Row(season=season, start=start, event=r["event_id"], team=tid, opp=oid, home=side == "home",
-                                neutral=r["neutral"] == "1", line=line, ats=ats, ou=ou if r["total"] != "" else 0,
+                                neutral=r["neutral"] == "1", line=line, ats=ats, ou=ou,
                                 coach=coach, conf=r["conf_game"] == "1", opp_ranked=opp_rank <= 25, prev=prev_res,
                                 rest=rest, month=start.astimezone(timezone(timedelta(hours=-5))).month))
             won = (hp > ap) if side == "home" else (ap > hp)
@@ -293,7 +305,7 @@ def build_angles(league: str, g: dict, rows: list[Row], last, lookup, school_of,
             school = school_of.get(tid)
             lst = lookup.get((school, season)) if school else None
             # this season's coach: the last one listed (an interim replaces a fired coach), else ESPN's
-            coach = (lst[-1][0] if lst else "") or last_coach.get(tid, "")
+            coach = lst[-1][0] if lst else ""
             if coach:
                 crow = [r for r in rows if r.coach == coach]
                 if crow:
@@ -337,11 +349,15 @@ def build_angles(league: str, g: dict, rows: list[Row], last, lookup, school_of,
                         over = rate > 0.5
                         rec = f"{w}-{l}" if over else f"{l}-{w}"
                         rec += f"-{p}" if p else ""
-                        lead = f"{who}'s games" if kind == "coach" else f"{who} games"
+                        lead = (f"{who}'" if who.endswith("s") else f"{who}'s") + " games" if kind == "coach" else f"{who} games"
+                        for group in ("in conference games", "in division games"):
+                            if phrase.startswith(group):
+                                lead, phrase = lead.replace(" games", f" {group.split()[1]} games"), phrase[len(group):].strip()
                         text = f"The {'over' if over else 'under'} is {rec} in {lead} {phrase} {frame}"
                         supports = f"{'Over' if over else 'Under'} {float(total):g}"
                     out.append(Angle(" ".join(text.split()), supports, "spread" if metric == "ats" else "total", metric,
-                                     w, l, p, z, len(combo), rate, relevance, [(r.event, r.team) for r in sel]))
+                                     w, l, p, z, len(combo), rate, relevance,
+                                     [(r.event, r.team) for r in sel if getattr(r, metric) is not None]))
     return out
 
 
