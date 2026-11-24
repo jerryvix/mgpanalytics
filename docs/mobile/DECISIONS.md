@@ -492,3 +492,7 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-087 Final games: winner bold, loser gray
 **Date:** 2026-11-24 · **By:** Owner ("If a game is over, bold the winning team and whatever score they had, and then gray out the losing team... If the game hasn't started yet, keep it the way it is now")
 **What:** on game rows (Today, Games) and the game page header, a final game shows the winning team's name and its score in semibold and the losing team's name and score in the tertiary gray. Upcoming and live games, and ties, stay as they were. The one exception to all-white text (D-064).
+
+### D-088 No placeholder when Betting Splits aren't in yet
+**Date:** 2026-11-24 · **By:** Owner ("If betting splits aren't available yet, you can just remove that for now... But if we have it bring it in")
+**What:** game rows drop the "Betting Splits once the public weighs in" note, and the game page hides its Betting Splits section, until DraftKings posts real numbers. Placeholder splits (D-071's hold-back) still never show. The splits line appears on its own once the numbers arrive.

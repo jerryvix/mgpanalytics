@@ -6,7 +6,7 @@ import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Pressable, Text, View, type TextStyle } from 'react-native';
 
-import { B, Mono, OneLineText, T, TeamPair } from '@/components/night';
+import { B, OneLineText, T, TeamPair } from '@/components/night';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Game } from '@/lib/feed';
@@ -82,8 +82,6 @@ export function GameRow({ game: g }: { game: Game }) {
               <Image source={logoFor(g, money.team)} style={{ width: 16, height: 16 }} contentFit="contain" accessibilityLabel={money.team} />
               <T size={13.5}><B>{money.pct}%</B> Public Money</T>
             </View>
-          ) : g.splitsPending ? (
-            <Mono>Betting Splits once the public weighs in</Mono>
           ) : null}
           {g.oneLine ? <OneLineText line={g.oneLine} /> : null}
         </View>
