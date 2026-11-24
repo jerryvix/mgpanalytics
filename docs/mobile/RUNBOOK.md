@@ -56,3 +56,13 @@ SUPABASE_ACCESS_TOKEN="sbp_$(printf '0%.0s' $(seq 40))" npx supabase functions d
 ```
 
 On your own machine, run `npx supabase login` once instead and drop the placeholder. Deploy only from a branch whose tests pass; the functions serve the live website.
+
+## Preview the app on a phone (Expo Go)
+
+The app runs in Expo Go (free on the App Store) before any TestFlight build. Each `eas update` to the `preview` channel shows up the next time Expo Go opens the app.
+
+```bash
+cd mobile && EXPO_TOKEN=proxy-injected npx -y eas-cli@latest update --channel preview --environment preview --platform ios --message "what changed" --non-interactive
+```
+
+Open on the phone: install Expo Go, then scan `docs/mobile/preview-qr.png` with the iPhone camera, or open `exp://u.expo.dev/e2931e03-8ca1-450e-a95e-82cafa55c651?channel-name=preview&runtime-version=exposdk:58.0.0`. The runtime version is `exposdk:58.0.0` because `app.json` uses the `sdkVersion` runtime policy, which is what Expo Go loads. Switch to the `fingerprint` policy once TestFlight builds replace Expo Go.

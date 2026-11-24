@@ -54,6 +54,12 @@
         "projectId": "e2931e03-8ca1-450e-a95e-82cafa55c651"
       }
     },
-    "owner": "jerryvix"
+    "owner": "jerryvix",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e2931e03-8ca1-450e-a95e-82cafa55c651"
+    }
   }
 }
