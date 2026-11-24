@@ -19,6 +19,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { espnFetch } from "../_shared/espn-fetch.ts";
+import { xAccount } from "../_shared/takes-sources.ts";
 import { creditedPerson, finalLabel, type GameBox, gradeTake, needsBox, parseBox } from "../_shared/takes-grade.ts";
 
 type Sport = "NFL" | "NCAAF" | "NBA";
@@ -253,10 +254,18 @@ async function attachNotes(supabase: any, games: any[]) {
   for (const g of games) g.notes = [];
   if (!open.length) return;
   const { data, error } = await supabase.from("market_notes")
-    .select("id, espn_event_id, credit, body, url, market, handle")
-    .in("espn_event_id", open.map((g) => g.id));
+    .select("id, espn_event_id, credit, body, url, market, handle, author_name, posted_at")
+    .in("espn_event_id", open.map((g) => g.id))
+    .order("posted_at", { ascending: false });
   if (error) return;
-  for (const g of open) g.notes = (data ?? []).filter((n: { espn_event_id: string }) => n.espn_event_id === g.id);
+  // Shown as posts from people in the industry (D-104): name, photo and check come from the registry
+  // deno-lint-ignore no-explicit-any
+  const shaped = (data ?? []).map((n: any) => {
+    const acct = xAccount(n.handle ?? "");
+    return { ...n, name: acct?.person ?? n.author_name ?? n.handle, avatar_url: acct?.avatarUrl ?? null,
+             verified: acct?.verified ?? false, source: acct?.source ?? null };
+  });
+  for (const g of open) g.notes = shaped.filter((n: { espn_event_id: string }) => n.espn_event_id === g.id);
 }
 
 function json(body: unknown, maxAge = 120): Response {

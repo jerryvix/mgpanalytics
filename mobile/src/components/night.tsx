@@ -112,10 +112,23 @@ export function Segs<K extends string>({ items, active, onChange }: { items: { k
   );
 }
 
-export function SectionTitle({ children, sub, style }: { children: ReactNode; sub?: string; style?: ViewStyle }) {
+/** A tiny outlined tag beside a section title: DATA for numbers, EXPERT for people's picks (D-104). */
+export function Tag({ children }: { children: string }) {
+  const c = useTheme();
+  return (
+    <View style={{ borderWidth: 1, borderColor: c.border, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 1 }}>
+      <Mono style={{ fontSize: 9.5, letterSpacing: 0.8 }}>{children}</Mono>
+    </View>
+  );
+}
+
+export function SectionTitle({ children, sub, tag, style }: { children: ReactNode; sub?: string; tag?: string; style?: ViewStyle }) {
   return (
     <View style={[{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: 4, gap: 4 }, style]}>
-      <T size={20} weight="medium" style={{ letterSpacing: -0.3 }}>{children}</T>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <T size={20} weight="medium" style={{ letterSpacing: -0.3 }}>{children}</T>
+        {tag ? <Tag>{tag}</Tag> : null}
+      </View>
       {sub ? <Mono>{sub}</Mono> : null}
     </View>
   );

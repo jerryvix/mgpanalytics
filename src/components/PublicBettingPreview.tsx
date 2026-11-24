@@ -228,7 +228,11 @@ export function PublicBettingPreview({ homeTeam, awayTeam, gameId, sport, odds, 
           className="w-full space-y-1 text-left py-1 hover:bg-terminal-green/5 rounded transition-colors"
         >
           <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-            <span className="flex-1">DK {MARKET_LABELS[headline.market]} bets</span>
+            <span className="flex flex-1 items-center gap-2">
+              DK {MARKET_LABELS[headline.market]} bets
+              {/* Numbers, not people (D-104) */}
+              <span className="rounded border border-border px-1 py-px text-[9px] leading-none tracking-wider">Data</span>
+            </span>
             {sharp && (
               <span className="flex items-center gap-0.5 normal-case tracking-normal text-foreground">
                 <Crosshair className="h-3 w-3" /> Sharp: {sharp.name}

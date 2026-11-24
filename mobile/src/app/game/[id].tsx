@@ -65,7 +65,7 @@ export default function GameScreen() {
             <MarketNotes notes={g.notes} />
             {g.takes && g.takes.length ? (
               <>
-                <SectionTitle>Expert Picks</SectionTitle>
+                <SectionTitle tag="EXPERT">Expert Picks</SectionTitle>
                 {g.takes.map((t, i) => <TakeRow key={t.id ?? `${i}-${t.show}-${t.pick}`} take={t} />)}
               </>
             ) : null}

@@ -47,6 +47,9 @@ describe("market notes beside splits", () => {
         body: "Bengals opened -4 now -6.5, 75% of bets / 55% of money on Bengals",
         url: "https://x.com/johnewing/status/9876543210",
         starts_at: new Date(Date.now() + 3600_000).toISOString(),
+        handle: "johnewing",
+        author_name: "John Ewing",
+        posted_at: new Date(Date.now() - 2 * 3600_000).toISOString(),
       }],
     };
     const cardClick = vi.fn();
@@ -55,9 +58,16 @@ describe("market notes beside splits", () => {
         <PublicBettingPreview sport="NFL" gameId="g-was" homeTeam="Washington Commanders" awayTeam="Cincinnati Bengals" />
       </div>,
     );
-    const link = await screen.findByRole("link", { name: "John Ewing, BetMGM" });
+    // D-104: shown as a post from an industry insider, not game data
+    const link = await screen.findByRole("link", { name: /View on X/ });
     expect(link).toHaveAttribute("href", "https://x.com/johnewing/status/9876543210");
-    expect(screen.getByText("Market Note")).toBeInTheDocument();
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(screen.getByText("Word from the Window")).toBeInTheDocument();
+    expect(screen.getByText("John Ewing")).toBeInTheDocument();
+    expect(screen.getByText("@johnewing · 2h")).toBeInTheDocument();
+    expect(screen.getByText("via BetMGM")).toBeInTheDocument();
+    expect(screen.getByLabelText("Verified")).toBeInTheDocument();
+    expect(screen.queryByText("Market Note")).not.toBeInTheDocument();
     expect(screen.getByText(/75% of bets \/ 55% of money on Bengals/)).toBeInTheDocument();
     fireEvent.click(link);
     expect(cardClick).not.toHaveBeenCalled();
@@ -76,6 +86,6 @@ describe("market notes beside splits", () => {
       <PublicBettingPreview sport="NFL" gameId="g-was" homeTeam="Washington Commanders" awayTeam="Cincinnati Bengals" />,
     );
     await waitFor(() => expect(screen.getByText(/DK spread bets/i)).toBeInTheDocument());
-    expect(screen.queryByText("Market Note")).not.toBeInTheDocument();
+    expect(screen.queryByText("Word from the Window")).not.toBeInTheDocument();
   });
 });

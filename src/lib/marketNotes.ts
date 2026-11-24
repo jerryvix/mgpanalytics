@@ -10,6 +10,9 @@ export interface MarketNoteRow {
   body: string;
   url: string;
   starts_at: string;
+  handle?: string | null;
+  author_name?: string | null;
+  posted_at?: string | null;
 }
 
 const COMBINING = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, "g");

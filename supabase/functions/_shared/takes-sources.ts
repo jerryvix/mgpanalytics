@@ -120,6 +120,12 @@ export interface XTakesAccount {
   noteCredit: string;
   /** picks: may file takes. notes: a pick from this account is refused. */
   kind: "picks" | "notes";
+  /** The account's X profile photo, shown on its posts (initials when missing or broken) */
+  avatarUrl?: string;
+  /** Shows the blue verified check */
+  verified?: boolean;
+  /** Where the person works, shown as "via BetMGM" under a note */
+  source?: string;
 }
 
 export const X_TAKES_ACCOUNTS: readonly XTakesAccount[] = [
@@ -138,6 +144,9 @@ export const X_TAKES_ACCOUNTS: readonly XTakesAccount[] = [
     person: "John Ewing",
     noteCredit: "John Ewing, BetMGM",
     kind: "notes",
+    avatarUrl: "https://pbs.twimg.com/profile_images/1689058505876008960/070yJkxs_400x400.jpg",
+    verified: true,
+    source: "BetMGM",
   },
 ];
 
