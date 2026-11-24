@@ -193,20 +193,24 @@ s += tabbar('Today') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JGame.dc.html'), 'w').write(s)
 print('J written')
 
-# ---------- 6) Pulse: Leaders (college football, real data from MGP's stored closing lines)
+# ---------- 6) Pulse: Team Records (college football, full season)
 import json as _json
 CFB = {'290':'/_blob/a1a1adff6d6047cc1d08209fe8a42961','154':'/_blob/2f23b00b3fed6aa71b7e6cd549b8caf2','2348':'/_blob/59021d600a2bc00b8bed0bb1b303e624',
  '2335':'/_blob/b70557715b2a877f87aff4c689cc8f28','2751':'/_blob/a78d09c669aba166b7b552958587bf78','2005':'/_blob/fdcd0066cea9be96a2b935218d7322e7',
  '344':'/_blob/230de0c13124d7a4bd1151c58e07ba9f','248':'/_blob/77c96d761fc79bc688ada62522353c47','25':'/_blob/5dfbb4c649416ed62490cab86f026494',
  '2534':'/_blob/107e6c055b5008a01b0e10522b40da0a','36':'/_blob/6a977f072e3323c269840c846781a828','197':'/_blob/f5a533068999d81f3551a38ac06ce7ce',
- '24':'/_blob/6c7213456c570993ed015b0841f72832','2390':'/_blob/a59338c753e968e35f407281e2cc30c8'}
+ '24':'/_blob/6c7213456c570993ed015b0841f72832','2390':'/_blob/a59338c753e968e35f407281e2cc30c8',
+ '61':'/_blob/75ae71317d38e105a74c8db51db34b83','26':'/_blob/b6dc51907493b4b791763740e4aab324','254':'/_blob/a8d6fb9bb9771519e58504101c5a661f',
+ '84':'/_blob/823aaf12e6f350972b007ed16b73913e','2638':'/_blob/c00456bf946ece0ee0af14859a808ee9','204':'/_blob/82d841bf8bde6bafe8d83975757bdebf'}
 for k, v in CFB.items(): L['cfb' + k] = v
 SCHOOL = lambda n: ' '.join(n.split()[:-1]) if n.split()[-1] not in ('State',) else n
 SHORT = {'Georgia Southern Eagles':'Georgia Southern','Wake Forest Demon Deacons':'Wake Forest','Louisiana Tech Bulldogs':'Louisiana Tech','Liberty Flames':'Liberty',
  'Wyoming Cowboys':'Wyoming','Air Force Falcons':'Air Force','Mississippi State Bulldogs':'Mississippi State','Houston Cougars':'Houston',
  'California Golden Bears':'California','Sam Houston Bearkats':'Sam Houston','Colorado State Rams':'Colorado State','Oklahoma State Cowboys':'Oklahoma State',
- 'Stanford Cardinal':'Stanford','Miami Hurricanes':'Miami'}
-LD = _json.load(open(os.path.join(os.path.dirname(__file__), '..', 'cfb_leaders.json')))
+ 'Stanford Cardinal':'Stanford','Miami Hurricanes':'Miami','Georgia Bulldogs':'Georgia','UCLA Bruins':'UCLA','Utah Utes':'Utah',
+ 'Indiana Hoosiers':'Indiana','UTEP Miners':'UTEP','Oregon State Beavers':'Oregon State','Auburn Tigers':'Auburn'}
+# Full season, Weeks 1 to 12 (822 games), DraftKings closing lines via CollegeFootballData; see docs/mobile/research/2026-11-23-public-data/cfb_leaders_full_season.py
+LD = _json.load(open(os.path.join(os.path.dirname(__file__), '..', 'cfb_leaders_full.json')))
 def leader_row(n, team, rec_, tid, unit='ATS'):
     return f'''  <a href="#team" style="display: flex; align-items: center; gap: 12px; margin: 0 16px; padding: 8px 0; border-bottom: 1px solid {C["line"]}; text-decoration: none; color: {C["tx"]}">
     <span style="width: 14px; font-size: 15px; color: {C["t3"]}; font-variant-numeric: tabular-nums">{n}</span>{logo('cfb' + tid, 32)}
@@ -215,13 +219,13 @@ def leader_row(n, team, rec_, tid, unit='ATS'):
   </a>
 '''
 s = head('Pulse, Team Records') + frame_open(C) + topbar(C)
-s += pulse_title('Since Week 4', 'College Football') + segs('Team Records')
+s += pulse_title('2026 Season', 'College Football') + segs('Team Records')
 s += board_section('Best Against the Spread (ATS)')
-for i, (t, r, tid) in enumerate(LD['best'], 1): s += leader_row(i, t, r, tid)
+for i, (t, r, tid) in enumerate(LD['best'][:5], 1): s += leader_row(i, t, r, tid)  # 6th is an eight-way tie at 8-3, so stop at 5
 s += board_section('Worst Against the Spread (ATS)')
 for i, (t, r, tid) in enumerate(LD['worst'][:3], 1): s += leader_row(i, t, r, tid)
 s += board_section('Most Overs')
-for i, (t, r, tid) in enumerate(LD['overs'][:3], 1): s += leader_row(i, t, r, tid, 'O/U')
+for i, (t, r, tid) in enumerate(LD['overs'][:4], 1): s += leader_row(i, t, r, tid, 'O/U')
 s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JLeaders.dc.html'), 'w').write(s)
 print('leaders written')

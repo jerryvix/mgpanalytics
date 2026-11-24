@@ -1,0 +1,80 @@
+{
+ "best": [
+  [
+   "Georgia Southern Eagles",
+   "10-1",
+   "290"
+  ],
+  [
+   "Louisiana Tech Bulldogs",
+   "10-1",
+   "2348"
+  ],
+  [
+   "Georgia Bulldogs",
+   "9-2",
+   "61"
+  ],
+  [
+   "UCLA Bruins",
+   "9-2",
+   "26"
+  ],
+  [
+   "Utah Utes",
+   "9-2",
+   "254"
+  ],
+  [
+   "Air Force Falcons",
+   "8-3",
+   "2005"
+  ]
+ ],
+ "worst": [
+  [
+   "California Golden Bears",
+   "2-9",
+   "25"
+  ],
+  [
+   "Indiana Hoosiers",
+   "2-9",
+   "84"
+  ],
+  [
+   "UTEP Miners",
+   "2-9",
+   "2638"
+  ],
+  [
+   "Auburn Tigers",
+   "3-8",
+   "2"
+  ]
+ ],
+ "overs": [
+  [
+   "Colorado State Rams",
+   "10-1",
+   "36"
+  ],
+  [
+   "Miami Hurricanes",
+   "9-2",
+   "2390"
+  ],
+  [
+   "Oregon State Beavers",
+   "9-2",
+   "204"
+  ],
+  [
+   "Stanford Cardinal",
+   "9-2",
+   "24"
+  ]
+ ],
+ "weeks": "1 to 12",
+ "games": 822
+}
