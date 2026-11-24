@@ -20,6 +20,9 @@ import {
   type SplitRowLike,
 } from "@/lib/marketPulse";
 import { selectAll } from "../../supabase/functions/_shared/select-all";
+import { MarketNoteList } from "@/components/MarketNoteList";
+import { useMarketNotes } from "@/hooks/useMarketNotes";
+import { noteForTeams } from "@/lib/marketNotes";
 
 // Slate-card public split: DraftKings' real share of bets and share of money
 // for this game, read from betting_splits (NCAAF and NFL). This replaced a
@@ -158,6 +161,7 @@ function markerText(view: PulseMarketView, sides: [Side, Side]): string | null {
 export function PublicBettingPreview({ homeTeam, awayTeam, gameId, sport, odds, className }: PublicBettingPreviewProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { data, isError, fetchStatus, refetch } = useSlateSplits(sport);
+  const notesQ = useMarketNotes(sport);
   if (!SPLITS_SPORTS.has(sport)) return null;
   // First read still out, or PAUSED (offline, a retry held while the tab is
   // hidden: React Query 5 reports that as neither loading nor error). A
@@ -206,6 +210,7 @@ export function PublicBettingPreview({ homeTeam, awayTeam, gameId, sport, odds, 
   const sharp = headline.thin ? undefined : headSides.find((s) => s.view.sharp);
   // DK's page freshness, not our fetch time (sync-betting-splits freshness.ts)
   const capturedAt = rows.map(splitAsOf).sort().pop();
+  const notes = noteForTeams(notesQ.data ?? [], homeTeam, awayTeam);
   // Rendered inside clickable slate cards: never let a tap here open the sheet
   const stop = (e: React.MouseEvent) => e.stopPropagation();
 
@@ -234,6 +239,7 @@ export function PublicBettingPreview({ homeTeam, awayTeam, gameId, sport, odds, 
           <SplitBar left={headSides[0]} right={headSides[1]} pick={(s) => s.betsPct} />
         </button>
       </CollapsibleTrigger>
+      <MarketNoteList notes={notes} />
 
       <CollapsibleContent onClick={stop}>
         <div className="space-y-3 pt-2">

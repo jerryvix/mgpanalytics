@@ -69,6 +69,13 @@ Apple enrollment confirmed approved by the owner on Nov 23.
 - [x] Insiders channels sent Nov 23: Bear Bets, Hold The Phone, Bookit Blitz. Send more anytime.
 - [ ] Merge jerryvix/mgpanalytics#23 on GitHub (approved in principle Nov 23): Title Case labels, plain #12 ranks, and the chat guard that lets basketball splits turn on.
 
+## X takes (after the branch is merged)
+
+- [ ] **Set up X takes ingest (D-102).** No paid X API. Do this only after `grokbot/x-takes-ingest` is merged, and never paste the secret into chat or the repo.
+  1. Run the migration `supabase/migrations/20261124180000_x_takes.sql` on the MGP Supabase project.
+  2. Set the secret: `supabase secrets set X_TAKES_INGEST_SECRET=...` (the name is `X_TAKES_INGEST_SECRET`; you choose the value).
+  3. Deploy `ingest-x-takes`, and redeploy `ingest-takes` and `app-feed`, the same way other functions are deployed (`docs/mobile/RUNBOOK.md`). Migration first, then the functions.
+
 ## Recommended (5 minutes)
 
 - [ ] Turn on two-factor authentication for the Expo account (expo.dev → Account settings → Security). The account now has an active access token.

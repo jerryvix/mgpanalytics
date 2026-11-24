@@ -2,8 +2,9 @@
 //
 // Joins, per game: ESPN's schedule, status and DraftKings line; the latest DraftKings
 // Betting Splits (betting_splits, synced every 4 hours); the one line per game
-// (game_lines, D-075); and the shows' picks (takes, D-074). Public data only, so it runs
-// without a user token and is cached briefly at the edge.
+// (game_lines, D-075); the shows' picks (takes, D-074); and, on the game view,
+// credited market notes from public X posts (market_notes, D-102). Public data only,
+// so it runs without a user token and is cached briefly at the edge.
 //
 // GET ?view=day&date=YYYY-MM-DD&sports=NFL,NCAAF,NBA   games on one Eastern date
 // GET ?view=game&id=<ESPN event id>&sport=NBA           one game with every market's splits and its Takes
@@ -221,8 +222,9 @@ async function attachLinesAndTakes(supabase: any, games: any[], withTakes: boole
     if (l) g.oneLine = { text: l.line_text, record: l.record, supports: l.supports, market: l.market, tier: l.tier };
   }
   const { data: takes } = await supabase.from("takes")
-    .select("espn_event_id, show, show_name, person, market, pick, price, legs, why, risks")
+    .select("id, espn_event_id, show, show_name, person, market, pick, price, units, legs, why, risks, url, source")
     .in("espn_event_id", ids).gte("starts_at", takesSince());
+  for (const row of takes ?? []) coerceTake(row);
   for (const g of games) {
     const mine = (takes ?? []).filter((t: Record<string, string>) => t.espn_event_id === g.id);
     g.takesCount = mine.length;
@@ -231,6 +233,30 @@ async function attachLinesAndTakes(supabase: any, games: any[], withTakes: boole
       g.takes = mine;
     }
   }
+}
+
+// numeric columns can come back as strings; the app reads units as a number
+// deno-lint-ignore no-explicit-any
+function coerceTake(t: any) {
+  if (t.units == null || t.units === "") {
+    t.units = null;
+    return;
+  }
+  const n = Number(t.units);
+  t.units = Number.isFinite(n) ? n : null;
+}
+
+// Market notes sit beside Betting Splits. Final games don't carry them.
+// deno-lint-ignore no-explicit-any
+async function attachNotes(supabase: any, games: any[]) {
+  const open = games.filter((g) => g.state !== "post");
+  for (const g of games) g.notes = [];
+  if (!open.length) return;
+  const { data, error } = await supabase.from("market_notes")
+    .select("id, espn_event_id, credit, body, url, market, handle")
+    .in("espn_event_id", open.map((g) => g.id));
+  if (error) return;
+  for (const g of open) g.notes = (data ?? []).filter((n: { espn_event_id: string }) => n.espn_event_id === g.id);
 }
 
 function json(body: unknown, maxAge = 120): Response {
@@ -281,6 +307,7 @@ serve(async (req) => {
       if (g) {
         await attachSplits(supabase, [g]);
         await attachLinesAndTakes(supabase, [g], true);
+        await attachNotes(supabase, [g]);
         return json({ game: g });
       }
     }
@@ -291,7 +318,7 @@ serve(async (req) => {
     const days = [0, 1, 2].map((i) => etDate(new Date(Date.now() + i * 86_400_000)));
     // Picks from the last 12 hours, soonest game first; fetched alongside the scoreboards
     const takesQuery = supabase.from("takes")
-      .select("id, show, show_name, person, sport, espn_event_id, matchup, starts_at, market, pick, price, legs, why, risks")
+      .select("id, show, show_name, person, sport, espn_event_id, matchup, starts_at, market, pick, price, units, legs, why, risks, url, source")
       .gte("starts_at", takesSince()).order("starts_at").limit(300)
       .then((r: { data: Record<string, unknown>[] | null }) => r);
     const lists = await Promise.all(want.flatMap((s) => days.map((d) => espnEvents(s, d))));
@@ -310,6 +337,7 @@ serve(async (req) => {
     const top = (arr: typeof sides, key: (x: typeof sides[number]) => number) => [...arr].sort((a, b) => key(b) - key(a)).slice(0, 5);
     const { data: takeRows } = await takesQuery;
     const takes = (takeRows ?? []).filter((t) => (want as string[]).includes(String(t.sport)));
+    for (const t of takes) coerceTake(t);
     // Last night's games sit on an earlier ESPN date than the boards: look those dates up too
     const byId = new Map(allGames.map((g) => [g.id, g]));
     const missing = new Set<string>();

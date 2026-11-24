@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { matchupLabel, winnerOf } from '@/components/game-row';
 import { Empty, Icon, Logo, OneLineText, SectionTitle, SourceNote, T } from '@/components/night';
 import { SplitsBlock } from '@/components/splits';
+import { MarketNotes } from '@/components/market-notes';
 import { TakeRow } from '@/components/take-row';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -61,6 +62,7 @@ export default function GameScreen() {
             <SplitsBlock game={g} />
             {g.oneLine ? <View style={{ paddingHorizontal: 16, paddingTop: 14 }}><OneLineText line={g.oneLine} size={18} /></View> : null}
             {g.splits && !g.splitsPending ? <SourceNote /> : null}
+            <MarketNotes notes={g.notes} />
             {g.takes && g.takes.length ? (
               <>
                 <SectionTitle sub="Real Picks from Betting Experts">Takes</SectionTitle>

@@ -54,7 +54,7 @@ function TakesByGame({ takes }: { takes: Take[] }) {
     const k = t.espn_event_id ?? t.matchup ?? '';
     games.set(k, [...(games.get(k) ?? []), t]);
   }
-  if (!games.size) return <Empty>New picks from the shows land here around noon and 6 PM Eastern</Empty>;
+  if (!games.size) return <Empty>New picks land here around noon and 6 PM Eastern</Empty>;
   return (
     <View>
       {[...games.entries()].map(([k, list]) => (

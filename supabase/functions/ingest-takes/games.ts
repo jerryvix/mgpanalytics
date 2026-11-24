@@ -1,6 +1,8 @@
 // Upcoming games from ESPN's public scoreboards, the candidate list the extractor
-// must match each pick to. Only games that have not started are returned, so a
-// pick for a game already under way or final can never be stored (D-065).
+// must match each pick to. By default only games that have not started are returned,
+// so a pick for a game already under way or final can never be stored (D-065).
+// Pass `{ includeInProgress: true }` to also return games ESPN lists as in progress
+// (X posts can arrive after kickoff, D-102). Final games are never returned.
 
 import { espnFetch } from "../_shared/espn-fetch.ts";
 
@@ -12,8 +14,13 @@ export interface UpcomingGame {
   startsAt: string; // ISO
   matchup: string; // "Cavaliers at Bulls", "VCU vs Providence"
   teams: string[]; // display, short, location, name, abbreviation for both sides (lowercase)
+  awayWords: string[]; // same fields, away side only, for matching a post to this game
+  homeWords: string[];
+  awayName: string; // ESPN display name, "Cincinnati Bengals"
+  homeName: string;
   teamIds: string[]; // ESPN team ids, away then home, for roster lookups
   line: string; // one line for the prompt
+  state: "pre" | "in";
 }
 
 const PATHS: Record<TakesSport, { path: string; query: string }> = {
@@ -27,7 +34,7 @@ const ET = "America/New_York";
 
 function ymd(d: Date): string {
   const p = new Intl.DateTimeFormat("en-CA", { timeZone: ET, year: "numeric", month: "2-digit", day: "2-digit" }).format(d);
-  return p.replaceAll("-", "");
+  return p.replace(/-/g, "");
 }
 
 export function etLabel(iso: string): string {
@@ -43,10 +50,28 @@ function teamWords(t: any): string[] {
     .map((x: string) => x.toLowerCase());
 }
 
-/** Games from now to `days` days ahead (ET dates), not yet started. */
-export async function upcomingGames(sports: TakesSport[], days = 4, now = new Date()): Promise<UpcomingGame[]> {
+/**
+ * A game can be matched when it has not started, or when it is in progress and
+ * the caller asked for those. Final, postponed and other states are left out.
+ */
+export function gameIsMatchable(state: string, startsAt: string, now: Date, includeInProgress: boolean): boolean {
+  if (state === "in") return includeInProgress;
+  if (state === "pre") return Date.parse(startsAt) > now.getTime();
+  return false;
+}
+
+/** Games from now to `days` days ahead (ET dates). In-progress games are off unless asked for. */
+export async function upcomingGames(
+  sports: TakesSport[],
+  days = 4,
+  now = new Date(),
+  opts?: { includeInProgress?: boolean },
+): Promise<UpcomingGame[]> {
+  const includeInProgress = Boolean(opts?.includeInProgress);
   const dates: string[] = [];
-  for (let i = 0; i < days; i++) dates.push(ymd(new Date(now.getTime() + i * 86_400_000)));
+  // Yesterday too, so a game that started before midnight and is still on is in the list
+  const startDay = includeInProgress ? -1 : 0;
+  for (let i = startDay; i < days; i++) dates.push(ymd(new Date(now.getTime() + i * 86_400_000)));
   const out: UpcomingGame[] = [];
   const seen = new Set<string>();
   await Promise.all(sports.flatMap((sport) => dates.map(async (date) => {
@@ -56,22 +81,29 @@ export async function upcomingGames(sports: TakesSport[], days = 4, now = new Da
     const body = await res.json();
     for (const e of body.events ?? []) {
       const c = e.competitions?.[0];
-      if (!c || c.status?.type?.state !== "pre") continue;
-      if (Date.parse(e.date) <= now.getTime()) continue;
+      const state = String(c?.status?.type?.state ?? "");
+      if (!c || !gameIsMatchable(state, e.date, now, includeInProgress)) continue;
       const home = c.competitors?.find((x: { homeAway: string }) => x.homeAway === "home")?.team;
       const away = c.competitors?.find((x: { homeAway: string }) => x.homeAway === "away")?.team;
       if (!home || !away || seen.has(e.id)) continue;
       seen.add(e.id);
       const sep = c.neutralSite ? "vs" : "at";
       const matchup = `${away.shortDisplayName} ${sep} ${home.shortDisplayName}`;
+      const awayWords = teamWords(away);
+      const homeWords = teamWords(home);
       out.push({
         id: String(e.id),
         sport,
         startsAt: new Date(e.date).toISOString(),
         matchup,
-        teams: [...teamWords(away), ...teamWords(home)],
+        teams: [...awayWords, ...homeWords],
+        awayWords,
+        homeWords,
+        awayName: String(away.displayName ?? away.shortDisplayName ?? ""),
+        homeName: String(home.displayName ?? home.shortDisplayName ?? ""),
         teamIds: [String(away.id), String(home.id)],
         line: `${e.id} | ${sport} | ${etLabel(e.date)} | ${away.displayName} ${sep} ${home.displayName}`,
+        state: state === "in" ? "in" : "pre",
       });
     }
   })));
@@ -171,4 +203,66 @@ export function correctName(pick: string, roster: string[]): string {
   }
   if (!best || best.score < 0.8 || best.score === 1) return pick;
   return [best.name, ...words.slice(best.take)].join(" ");
+}
+
+// How sure a post-to-game match is. Both team names, and nobody else mentioned, is the
+// high mark. A single distinctive name is enough when only one game has it.
+export const MATCH_BOTH = 0.95;
+export const MATCH_BOTH_TIEBREAK = 0.9;
+export const MATCH_ONE = 0.75;
+
+// A lone "State" or "Carolina" is shared by too many schools to pick a game.
+const GENERIC = new Set([
+  "state", "tech", "southern", "northern", "eastern", "western", "central",
+  "university", "college", "carolina",
+]);
+
+function padded(text: string): string {
+  return ` ${text.toLowerCase().replace(/[^a-z0-9&' ]+/g, " ").replace(/\s+/g, " ").trim()} `;
+}
+
+/** Longest team phrase in `hay` that is not only a generic school word. 0 when nothing hits. */
+function specificLength(words: string[], hay: string): number {
+  let best = 0;
+  for (const word of words) {
+    const n = word.toLowerCase().replace(/[^a-z0-9&' ]+/g, " ").replace(/\s+/g, " ").trim();
+    if (n.length < 4 || !hay.includes(` ${n} `)) continue;
+    if (n.split(" ").every((p) => GENERIC.has(p))) continue;
+    if (n.length > best) best = n.length;
+  }
+  return best;
+}
+
+export type GameMatch =
+  | { ok: true; game: UpcomingGame; confidence: number }
+  | { ok: false; reason: string };
+
+/**
+ * Match a post to one game in `games` (already limited to upcoming and, when wanted,
+ * in-progress games). Both sides named, with no other game scoring as high, wins.
+ * One side wins only when that game's name is a strictly longer hit than every other
+ * game, so "LSU Tigers" beats a second "Tigers" and "Tigers" alone matches neither.
+ */
+export function matchToGame(
+  games: UpcomingGame[],
+  input: { sport?: string | null; text?: string | null },
+): GameMatch {
+  const hay = padded(input.text ?? "");
+  const sport = (input.sport ?? "").trim();
+  const pool = sport ? games.filter((g) => g.sport === sport) : games;
+  const scored: { game: UpcomingGame; both: boolean; score: number }[] = [];
+  for (const game of pool) {
+    const away = specificLength(game.awayWords, hay);
+    const home = specificLength(game.homeWords, hay);
+    const both = away >= 4 && home >= 4;
+    const score = both ? away + home : Math.max(away, home);
+    if (score >= 4) scored.push({ game, both, score });
+  }
+  if (!scored.length) return { ok: false, reason: "no upcoming or in-progress game" };
+  const best = Math.max(...scored.map((s) => s.score));
+  const top = scored.filter((s) => s.score === best);
+  if (top.length !== 1) return { ok: false, reason: "matched more than one game" };
+  const winner = top[0];
+  const confidence = winner.both ? (scored.length > 1 ? MATCH_BOTH_TIEBREAK : MATCH_BOTH) : MATCH_ONE;
+  return { ok: true, game: winner.game, confidence };
 }

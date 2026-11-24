@@ -29,6 +29,7 @@
 ## In progress
 
 - Supabase client and sign-in in the app.
+- X posts as a free Takes source (picks in Takes, market notes next to Betting Splits) through `ingest-x-takes`. No paid X API. In progress on `grokbot/x-takes-ingest`. Jerry merges.
 
 ## Next
 
