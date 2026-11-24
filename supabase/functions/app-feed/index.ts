@@ -8,10 +8,17 @@
 // GET ?view=day&date=YYYY-MM-DD&sports=NFL,NCAAF,NBA   games on one Eastern date
 // GET ?view=game&id=<ESPN event id>&sport=NBA           one game with every market's splits and its Takes
 // GET ?view=pulse&sports=NFL,NCAAF,NBA                  boards across the next 3 days, Takes, the day's strongest lines
+//
+// Expert Picks (D-093): a show's pick stays up for 12 hours after its game starts. Each
+// pick on the pulse and game views carries `state` (ESPN's pre, in or post), `final`
+// ("WSH 22, CIN 20" once the game is final) and `result` (hit, miss, push, or null when
+// it can't be graded; see _shared/takes-grade.ts). `person` is one host's name only
+// when exactly one is known; otherwise null and the app credits the show.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { espnFetch } from "../_shared/espn-fetch.ts";
+import { creditedPerson, finalLabel, type GameBox, gradeTake, needsBox, parseBox } from "../_shared/takes-grade.ts";
 
 type Sport = "NFL" | "NCAAF" | "NBA";
 const PATHS: Record<Sport, string> = {
@@ -20,6 +27,7 @@ const PATHS: Record<Sport, string> = {
   NBA: "basketball/nba",
 };
 const QUERY: Record<Sport, string> = { NFL: "", NCAAF: "&groups=80&limit=300", NBA: "" };
+const LEAGUE: Record<Sport, string> = { NFL: "nfl", NCAAF: "college-football", NBA: "nba" };
 const ALL: Sport[] = ["NFL", "NCAAF", "NBA"];
 const ET = "America/New_York";
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type" };
@@ -125,6 +133,83 @@ async function attachSplits(supabase: any, games: any[]) {
   }
 }
 
+// Expert Picks stay up for 12 hours after their game starts, so tonight's picks are still there in the morning (D-093)
+const TAKES_KEEP_MS = 12 * 3600_000;
+const takesSince = () => new Date(Date.now() - TAKES_KEEP_MS).toISOString();
+
+// deno-lint-ignore no-explicit-any
+async function summaryJson(sport: Sport, id: string): Promise<any | null> {
+  // site.api can 403 edge functions (see espn-fetch.ts); site.web.api and the CDN box score answer them
+  for (const host of ["site.api.espn.com", "site.web.api.espn.com"]) {
+    try {
+      const res = await espnFetch(`https://${host}/apis/site/v2/sports/${PATHS[sport]}/summary?event=${id}`);
+      if (!res.ok) {
+        await res.body?.cancel();
+        continue;
+      }
+      const body = await res.json();
+      if (body?.boxscore?.players?.length) return body;
+    } catch { /* try the next source */ }
+  }
+  try {
+    const res = await espnFetch(`https://cdn.espn.com/core/${LEAGUE[sport]}/boxscore?xhr=1&gameId=${id}`);
+    if (!res.ok) return null;
+    const body = await res.json();
+    return body?.gamepackageJSON?.boxscore?.players?.length ? body.gamepackageJSON : null;
+  } catch {
+    return null;
+  }
+}
+
+// A final game's box score never changes, so a warm instance keeps it
+const boxCache = new Map<string, Promise<GameBox | null>>();
+function finalBox(sport: Sport, id: string): Promise<GameBox | null> {
+  if (!PATHS[sport]) return Promise.resolve(null);
+  const key = `${sport}|${id}`;
+  let box = boxCache.get(key);
+  if (!box) {
+    if (boxCache.size > 300) boxCache.clear();
+    box = summaryJson(sport, id).then((s) => (s ? parseBox(s) : null)).catch(() => null);
+    boxCache.set(key, box);
+    box.then((b) => { if (!b) boxCache.delete(key); });
+  }
+  return box;
+}
+
+/**
+ * Adds `state`, `result` and `final` to each pick, from its game in `byId` (ESPN), and
+ * keeps `person` only when it names one host. Props and parlays on a final game are
+ * graded from the box score.
+ */
+// deno-lint-ignore no-explicit-any
+async function attachTakeResults(takes: any[], byId: Map<string, any>) {
+  const now = Date.now();
+  const boxes = new Map<string, Promise<GameBox | null>>();
+  for (const t of takes) {
+    const g = byId.get(t.espn_event_id);
+    t.person = creditedPerson(t.person);
+    if (g) {
+      t.state = g.state;
+      t.result = null;
+      t.final = g.state === "post" && /^final/i.test(g.status ?? "") ? finalLabel(g) : null;
+    } else {
+      // ESPN didn't answer for this game: go by the start time
+      const start = Date.parse(t.starts_at);
+      t.state = !(start <= now) ? "pre" : now - start < 5 * 3600_000 ? "in" : "post";
+      t.result = null;
+      t.final = null;
+    }
+    const sport = (t.sport ?? g?.sport) as Sport;
+    if (t.final && needsBox(t) && !boxes.has(t.espn_event_id)) boxes.set(t.espn_event_id, finalBox(sport, t.espn_event_id));
+  }
+  const loaded = new Map(await Promise.all([...boxes].map(async ([id, box]) => [id, await box] as const)));
+  for (const t of takes) {
+    if (!t.final) continue;
+    const g = byId.get(t.espn_event_id);
+    t.result = gradeTake({ ...t, sport: t.sport ?? g?.sport }, g, loaded.get(t.espn_event_id) ?? null);
+  }
+}
+
 // deno-lint-ignore no-explicit-any
 async function attachLinesAndTakes(supabase: any, games: any[], withTakes: boolean) {
   const ids = games.map((g) => g.id);
@@ -137,11 +222,14 @@ async function attachLinesAndTakes(supabase: any, games: any[], withTakes: boole
   }
   const { data: takes } = await supabase.from("takes")
     .select("espn_event_id, show, show_name, person, market, pick, price, legs, why, risks")
-    .in("espn_event_id", ids).gt("starts_at", new Date().toISOString());
+    .in("espn_event_id", ids).gte("starts_at", takesSince());
   for (const g of games) {
     const mine = (takes ?? []).filter((t: Record<string, string>) => t.espn_event_id === g.id);
     g.takesCount = mine.length;
-    if (withTakes) g.takes = mine;
+    if (withTakes) {
+      await attachTakeResults(mine, new Map([[g.id, g]]));
+      g.takes = mine;
+    }
   }
 }
 
@@ -187,8 +275,14 @@ serve(async (req) => {
 
   if (view === "pulse") {
     const days = [0, 1, 2].map((i) => etDate(new Date(Date.now() + i * 86_400_000)));
+    // Picks from the last 12 hours, soonest game first; fetched alongside the scoreboards
+    const takesQuery = supabase.from("takes")
+      .select("id, show, show_name, person, sport, espn_event_id, matchup, starts_at, market, pick, price, legs, why, risks")
+      .gte("starts_at", takesSince()).order("starts_at").limit(300)
+      .then((r: { data: Record<string, unknown>[] | null }) => r);
     const lists = await Promise.all(want.flatMap((s) => days.map((d) => espnEvents(s, d))));
-    const games = lists.flat().filter((g) => g.state === "pre");
+    const allGames = lists.flat();
+    const games = allGames.filter((g) => g.state === "pre");
     await attachSplits(supabase, games);
     await attachLinesAndTakes(supabase, games, false);
     // DraftKings shows 100% / 0% on games with almost no bets yet: hold those back until real numbers come in
@@ -200,9 +294,19 @@ serve(async (req) => {
                opponent: g[s === "away" ? "home" : "away"].name, home: s === "home", line: m.line, bets: m.bets, money: m.money };
     }));
     const top = (arr: typeof sides, key: (x: typeof sides[number]) => number) => [...arr].sort((a, b) => key(b) - key(a)).slice(0, 5);
-    const { data: takes } = await supabase.from("takes")
-      .select("id, show, show_name, person, sport, espn_event_id, matchup, starts_at, market, pick, price, legs, why, risks")
-      .gt("starts_at", new Date().toISOString()).order("starts_at").limit(300);
+    const { data: takeRows } = await takesQuery;
+    const takes = (takeRows ?? []).filter((t) => (want as string[]).includes(String(t.sport)));
+    // Last night's games sit on an earlier ESPN date than the boards: look those dates up too
+    const byId = new Map(allGames.map((g) => [g.id, g]));
+    const missing = new Set<string>();
+    for (const t of takes) {
+      if (!byId.has(String(t.espn_event_id)) && Date.parse(String(t.starts_at)) <= Date.now()) {
+        missing.add(`${t.sport}|${etDate(new Date(String(t.starts_at)))}`);
+      }
+    }
+    const extra = await Promise.all([...missing].map((k) => espnEvents(k.split("|")[0] as Sport, k.split("|")[1])));
+    for (const g of extra.flat()) if (!byId.has(g.id)) byId.set(g.id, g);
+    await attachTakeResults(takes, byId);
     const strongest = games.filter((g) => g.oneLine?.tier === "strong").map((g) => ({
       gameId: g.id, sport: g.sport, start: g.start, matchup: `${g.away.name} ${g.neutral ? "vs" : "at"} ${g.home.name}`,
       logo: g.home.logo, ...g.oneLine,
@@ -211,7 +315,7 @@ serve(async (req) => {
       mostMoney: top(sides, (x) => x.money),
       biggestSplits: top(sides.filter((x) => x.money - x.bets >= 10), (x) => x.money - x.bets),
       mostBets: top(sides, (x) => x.bets),
-      takes: (takes ?? []).filter((t: Record<string, string>) => (want as string[]).includes(t.sport)),
+      takes,
       lines: strongest,
     });
   }

@@ -429,6 +429,7 @@ export type Database = {
           created_at: string
           id: string
           role: string
+          sources: Json | null
         }
         Insert: {
           content: string
@@ -436,6 +437,7 @@ export type Database = {
           created_at?: string
           id?: string
           role: string
+          sources?: Json | null
         }
         Update: {
           content?: string
@@ -443,6 +445,7 @@ export type Database = {
           created_at?: string
           id?: string
           role?: string
+          sources?: Json | null
         }
         Relationships: [
           {
