@@ -1,10 +1,10 @@
 /**
- * Betting Splits as skinny bars (D-093, owner's pick Nov 24): white for the first side
- * (away, Over), gray for the second (home, Under). Every bar names its sides: on the game
- * page each market starts with the two sides' logos and bets ("MEM -2.5", "O 212.5") above the
- * matching ends of its Bets and Money bars; on game rows each bar carries a logo at each end.
+ * Betting Splits as slim bars (D-093, D-095): white for the first side (away, Over), gray for
+ * the second (home, Under), each side's bet ("MEM -2.5", "O 212.5") written inside its part of
+ * the bar when it fits. Game rows add a logo at each end.
  */
 import { Image } from 'expo-image';
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Icon, Mono, SectionTitle, T } from '@/components/night';
@@ -24,13 +24,27 @@ function Mark({ side, size }: { side: SideMark; size: number }) {
   return null;
 }
 
-/** One skinny bar: share, bar, share. The bigger share is bold. */
-function Bar({ left, right, height = 6 }: { left: number; right: number; height?: number }) {
+/** One slim bar with each side's bet written inside its segment when it fits (D-095). */
+function Bar({ left, right, leftLabel, rightLabel, height, fontSize }: {
+  left: number; right: number; leftLabel: string; rightLabel: string; height: number; fontSize: number;
+}) {
   const c = useTheme();
+  const [w, setW] = useState(0);
+  const total = Math.max(left + right, 1);
+  const segW = (share: number) => ((w - 2) * share) / total;
+  const fits = (label: string, share: number) => w > 0 && segW(share) >= label.length * fontSize * 0.56 + 10;
+  const label = (text: string, color: string) => (
+    <Text numberOfLines={1} style={{ color, fontFamily: Font.semibold, fontSize, includeFontPadding: false }}>{text}</Text>
+  );
   return (
-    <View style={{ flex: 1, flexDirection: 'row', height, borderRadius: height / 2, overflow: 'hidden', gap: 2 }}>
-      <View style={{ flex: left, backgroundColor: c.text }} />
-      <View style={{ flex: right, backgroundColor: c.surfaceRaised }} />
+    <View onLayout={(e) => setW(e.nativeEvent.layout.width)}
+      style={{ flex: 1, flexDirection: 'row', height, borderRadius: height / 2, overflow: 'hidden', gap: 2 }}>
+      <View style={{ flex: left, backgroundColor: c.text, justifyContent: 'center', paddingLeft: 7 }}>
+        {fits(leftLabel, left) ? label(leftLabel, c.bg) : null}
+      </View>
+      <View style={{ flex: right, backgroundColor: c.surfaceRaised, justifyContent: 'center', alignItems: 'flex-end', paddingRight: 7 }}>
+        {fits(rightLabel, right) ? label(rightLabel, c.text) : null}
+      </View>
     </View>
   );
 }
@@ -43,13 +57,14 @@ export function RowSplits({ game: g }: { game: Game }) {
   const sp = g.splits?.spread;
   if (g.splitsPending || !realSplit(sp?.away) || !realSplit(sp?.home)) return null;
   const a = sp.away, h = sp.home;
+  const aLabel = `${g.away.abbr} ${fmtLine(a.line)}`, hLabel = `${g.home.abbr} ${fmtLine(h.line)}`;
   const line = (label: string, l: number, r: number) => (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-      accessible accessibilityLabel={`${label}: ${g.away.abbr} ${fmtLine(a.line)} ${l}%, ${g.home.abbr} ${fmtLine(h.line)} ${r}%`}>
+      accessible accessibilityLabel={`${label}: ${aLabel} ${l}%, ${hLabel} ${r}%`}>
       <View style={{ width: 46 }}><Mono style={{ fontSize: 10.5 }}>{label}</Mono></View>
       <Mark side={{ logo: g.away.logo }} size={14} />
       <T size={13} style={[{ width: 32, textAlign: 'right' }, pctStyle(l > r)]}>{l}%</T>
-      <Bar left={l} right={r} height={5} />
+      <Bar left={l} right={r} leftLabel={aLabel} rightLabel={hLabel} height={17} fontSize={10.5} />
       <T size={13} style={[{ width: 32 }, pctStyle(r > l)]}>{r}%</T>
       <Mark side={{ logo: g.home.logo }} size={14} />
     </View>
@@ -73,23 +88,13 @@ function Market({ name, left, right }: { name: string; left: Side; right: Side }
       accessible accessibilityLabel={`${label}: ${left.label} ${l}%, ${right.label} ${r}%`}>
       <View style={{ width: 52 }}><Mono>{label}</Mono></View>
       <T size={14} style={[{ width: 38, textAlign: 'right' }, pctStyle(l > r)]}>{l}%</T>
-      <Bar left={l} right={r} height={8} />
+      <Bar left={l} right={r} leftLabel={left.label} rightLabel={right.label} height={20} fontSize={11.5} />
       <T size={14} style={[{ width: 38 }, pctStyle(r > l)]}>{r}%</T>
     </View>
   );
   return (
     <View style={{ gap: 8, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: c.border }}>
       <T size={15} weight="semibold">{name}</T>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-          <Mark side={left} size={18} />
-          <Text numberOfLines={1} style={{ color: c.text, fontFamily: Font.medium, fontSize: 15 }}>{left.label}</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 1 }}>
-          <Text numberOfLines={1} style={{ color: c.text, fontFamily: Font.medium, fontSize: 15 }}>{right.label}</Text>
-          <Mark side={right} size={18} />
-        </View>
-      </View>
       {row('Bets', left.split.bets, right.split.bets)}
       {row('Money', left.split.money, right.split.money)}
     </View>
