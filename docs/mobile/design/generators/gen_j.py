@@ -2,7 +2,11 @@
 # Real data: DraftKings splits captured Nov 23 2026; trends and results from nflverse games + our stored splits.
 import os, sys, csv
 sys.path.insert(0, os.path.dirname(__file__))
-from gen_i import NIGHT, L, ICON, icon, beat, mark, head, tail, frame_open, topbar, title, section
+from gen_i import NIGHT, L, ICON, icon, beat, mark, head, tail, frame_open, topbar as _topbar, title, section
+
+def topbar(c):
+    """The JV button opens Profile, where Alerts and your teams live (D-076)."""
+    return _topbar(c).replace('<button aria-label="Profile" style="', '<a href="JProfile.dc.html" aria-label="Profile" style="display: flex; align-items: center; justify-content: center; text-decoration: none; ').replace('JV</button>', 'JV</a>')
 C = dict(NIGHT); C['t2'] = C['t3'] = C['tx']  # one text color; hierarchy from type (D-064, owner Nov 23)
 MONO = "font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11.5px; letter-spacing: 0.7px; text-transform: uppercase"
 OUT = sys.argv[1]
@@ -75,16 +79,16 @@ def angle_line(k):
 ANGLES = {'cin': f"Joe Burrow is {B('33-15-1 ATS')} on the road in his career"}  # scripts/angles/nfl_angles.py, Week 11 (D-075)
 def today_row(a, h, an, ar, hn, hr, time_, line, total, bs, bp, ms, mp, at, ats, venue, vword):
     if bs == ms:
-        two = f'{bs}: {B(str(bp) + "%")} of Public Bets · {B(str(mp) + "%")} of Public Money'
+        two = f'{bs} {B(str(bp) + "%")} Public Bets · {B(str(mp) + "%")} Public Money'
     else:
-        two = f'<span style="display: flex; flex-direction: column; gap: 3px"><span>{bs}: {B(str(bp) + "%")} of Public Bets</span><span>{ms}: {B(str(mp) + "%")} of Public Money</span></span>'  # different teams: one line each
+        two = f'{bs} {B(str(bp) + "%")} Public Bets · {ms} {B(str(mp) + "%")} Public Money'  # one line even when they split (owner, Nov 24)
     one = (f'<span>{B(str(mp) + "%")} of Public Money on {ms}</span><span>{B(str(bp) + "%")} of Public Bets on {bs}</span>')
     return f'''  <a href="JGame.dc.html" style="display: flex; align-items: flex-start; gap: 12px; padding: 11px 16px; text-decoration: none; color: {C["tx"]}">
     {pair(a, h)}
     <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-variant-numeric: tabular-nums">
       <span style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 16.5px; letter-spacing: -0.2px"><span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{an}{REC(ar)} at {hn}{REC(hr)}</span><span style="display: {{{{lt}}}}; flex: 0 0 auto; font-weight: 500">{line}</span></span>
       <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px"><span>{time_}</span><span><span style="display: {{{{lb}}}}"><span style="font-weight: 600">{line}</span> · </span>{total}</span></span>
-      <span style="display: {{{{o2}}}}; font-size: 14px; line-height: 1.35">{two}</span>
+      <span style="display: {{{{o2}}}}; font-size: 13.5px; letter-spacing: -0.1px; line-height: 1.35; white-space: nowrap">{two}</span>
       <span style="display: {{{{o1}}}}; font-size: 14px; line-height: 1.35"><span style="display: flex; flex-direction: column; gap: 3px">{one}</span></span>
       {angle_line(a) if a in ANGLES else f'<span style="font-size: 14px; line-height: 1.35">{at} {B(ats)} ATS this season, {B(venue)} {vword}</span>'}
     </span>
@@ -288,7 +292,7 @@ def scope_row(label, desc, on, last=False):
 sx = head('Alerts Settings').replace('family=Geist:wght@400..700&', 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&', 1).replace('<title>Alerts Settings</title>', '<title>Alerts Settings</title>')
 sx += frame_open(C)
 sx += f"""  <div style="display: flex; align-items: center; padding: 10px 16px 0">
-    <a href="JGameAlerts.dc.html" aria-label="Back" style="{circ}; color: {C["tx"]}">{icon("back", 22)}</a>
+    <a href="JProfile.dc.html" aria-label="Back" style="{circ}; color: {C["tx"]}">{icon("back", 22)}</a>
   </div>
   <div style="padding: 10px 20px 0; display: flex; flex-direction: column; gap: 6px">
     <h1 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.05">Alerts</h1>
@@ -319,6 +323,39 @@ class Component extends DCLogic {{
 </html>
 """
 open(os.path.join(OUT, 'JAlertSettings.dc.html'), 'w').write(sx)
+
+# ---------- 5d) Profile (tap JV, top right): Alerts lives here, not in the tab bar (owner, Nov 24)
+def prow(label, desc, href='#p', last=False):
+    border = '' if last else f'border-bottom: 1px solid {C["line"]};'
+    return f"""    <a href="{href}" style="display: flex; align-items: center; gap: 14px; padding: 15px 0; {border} color: {C["tx"]}; text-decoration: none">
+      <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 17px; font-weight: 600">{label}</span>{f'<span style="font-size: 14px; line-height: 1.35">{desc}</span>' if desc else ''}</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{C["tx"]}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+"""
+sp = head('Profile').replace('family=Geist:wght@400..700&', 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&', 1) + frame_open(C)
+sp += f"""  <div style="display: flex; align-items: center; padding: 10px 16px 0">
+    <a href="JToday.dc.html" aria-label="Back" style="{circ}; color: {C["tx"]}">{icon("back", 22)}</a>
+  </div>
+  <div style="padding: 14px 20px 0; display: flex; align-items: center; gap: 14px">
+    <span style="flex: 0 0 auto; width: 56px; height: 56px; border-radius: 999px; background: {C["surf2"]}; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600">JV</span>
+    <span style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 26px; font-weight: 600; letter-spacing: -0.5px">Profile</span><span style="{MONO}">Free Account</span></span>
+  </div>
+  <div style="margin: 18px 20px 0">
+{prow('Alerts', 'Before Kickoff, Money Moves, New Takes, Final Score', 'JAlertSettings.dc.html')}{prow('Your Teams', 'Eagles, Lakers')}{prow('Your Sports', 'NFL, NBA, College Football, College Basketball')}{prow('Appearance', 'Night')}{prow('Account', '')}{prow('Help and Feedback', '', last=True)}  </div>
+  <span style="padding: 22px 20px 0; font-size: 16px; font-weight: 600">Sign Out</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{{"$preview":{{"width":390,"height":844}}}}'>
+class Component extends DCLogic {{
+  renderVals() {{
+    return {{ ff: "'Geist', system-ui, sans-serif", accent: '{C["accents"][0]}' }};
+  }}
+}}
+</script>
+</body>
+</html>
+"""
+open(os.path.join(OUT, 'JProfile.dc.html'), 'w').write(sp)
 
 # ---------- 6) Pulse: Team Records (college football, full season)
 import json as _json
@@ -412,7 +449,7 @@ def takes_page(title, height, opened=False, coach=False, only_first=False):
     {mark(TK)}
     <div style="display: flex; align-items: center; gap: 4px">
       <button aria-label="Search" style="width: 44px; height: 44px; border: 0; background: none; color: {W_}; display: flex; align-items: center; justify-content: center; padding: 0">{icon("search")}</button>
-      <button aria-label="Profile" style="width: 34px; height: 34px; border-radius: 999px; border: 0; background: {TK["surf2"]}; color: {W_}; font-family: inherit; font-size: 12px; font-weight: 600">JV</button>
+      <a href="JProfile.dc.html" aria-label="Profile" style="width: 34px; height: 34px; border-radius: 999px; background: {TK["surf2"]}; color: {W_}; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; text-decoration: none">JV</a>
     </div>
   </div>
   <div style="padding: 10px 16px 0; display: flex; align-items: flex-end; justify-content: space-between">
