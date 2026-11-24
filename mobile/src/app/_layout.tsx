@@ -1,5 +1,6 @@
 // Import each weight on its own so only these four font files ship with the app.
 import { Geist_400Regular } from '@expo-google-fonts/geist/400Regular';
+import { Geist_400Regular_Italic } from '@expo-google-fonts/geist/400Regular_Italic';
 import { Geist_500Medium } from '@expo-google-fonts/geist/500Medium';
 import { Geist_600SemiBold } from '@expo-google-fonts/geist/600SemiBold';
 import { Geist_700Bold } from '@expo-google-fonts/geist/700Bold';
@@ -20,6 +21,7 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [fontsLoaded, fontError] = useFonts({
     Geist_400Regular,
+    Geist_400Regular_Italic,
     Geist_500Medium,
     Geist_600SemiBold,
     Geist_700Bold,
@@ -44,6 +46,7 @@ export default function RootLayout() {
         <Stack.Screen name="game/[id]" />
         <Stack.Screen name="profile" options={{ presentation: 'card' }} />
         <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="analyst-history" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
     </AuthProvider>

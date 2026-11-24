@@ -40,6 +40,14 @@
             "backgroundColor": "#121317"
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attach a screenshot, like a bet slip or an odds board, for the Analyst to read",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {
@@ -58,7 +66,7 @@
     },
     "owner": "jerryvix",
     "runtimeVersion": {
-      "policy": "sdkVersion"
+      "policy": "fingerprint"
     },
     "updates": {
       "url": "https://u.expo.dev/e2931e03-8ca1-450e-a95e-82cafa55c651"

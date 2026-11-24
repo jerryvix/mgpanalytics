@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Divider, Empty, Footer, Logo, Mono, OneLineText, SectionTitle, Segs, T, TopBar } from '@/components/night';
+import { Divider, Empty, Footer, Logo, Mono, OneLineText, SectionTitle, Segs, T, TopBar, SourceNote } from '@/components/night';
 import { TakeRow } from '@/components/take-row';
 import { TAB_BAR_SPACE } from '@/constants/layout';
 import { useTheme } from '@/hooks/use-theme';
@@ -54,7 +54,7 @@ function TakesByGame({ takes }: { takes: Take[] }) {
       {[...games.values()].map((list) => (
         <View key={list[0].espn_event_id ?? list[0].matchup}>
           <View style={{ paddingHorizontal: 16, paddingTop: 20, gap: 5 }}>
-            <Mono>{list[0].sport} · {whenLabel(list[0].starts_at ?? '')}</Mono>
+            <Mono>{list[0].sport} · {list[0].final ? `Final · ${list[0].final}` : list[0].state === 'in' ? 'Live' : whenLabel(list[0].starts_at ?? '')}</Mono>
             <T size={19} weight="semibold" style={{ letterSpacing: -0.3 }}>{list[0].matchup}</T>
           </View>
           {list.map((t) => <TakeRow key={t.id ?? `${t.show}-${t.pick}`} take={t} />)}
@@ -74,7 +74,7 @@ export default function PulseScreen() {
         <TopBar />
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 6 }}>
           <T size={34} weight="medium" style={{ letterSpacing: -0.8 }}>Pulse</T>
-          <Mono>{view === 'takes' ? 'Real Picks from Betting Experts' : 'The next three days'}</Mono>
+          <Mono>{view === 'takes' ? 'Expert Picks' : 'The next three days'}</Mono>
         </View>
         <Segs items={[{ key: 'splits', label: 'Betting Splits' }, { key: 'takes', label: 'Takes' }, { key: 'trends', label: 'Trends' }]} active={view} onChange={setView} />
         {error ? <Empty>{"Pulse couldn't load. Pull down to try again"}</Empty> : null}
@@ -83,7 +83,7 @@ export default function PulseScreen() {
             <Board title="Most Money" rows={data.mostMoney} big={(s) => `${s.money}%`} small={() => 'Of Money'} />
             <Board title="Money Ahead of Bets" rows={data.biggestSplits} big={(s) => `${s.money}% Money`} small={(s) => `${s.bets}% Of Bets`} />
             <Board title="Most Bets" rows={data.mostBets} big={(s) => `${s.bets}%`} small={() => 'Of Bets'} />
-            <Mono style={{ paddingHorizontal: 16, paddingTop: 16 }}>Betting Splits from DraftKings, spread</Mono>
+            <SourceNote />
           </>
         ) : null}
         {data && view === 'takes' ? <TakesByGame takes={data.takes} /> : null}

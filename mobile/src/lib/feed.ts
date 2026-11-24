@@ -49,6 +49,10 @@ export type Take = {
   legs: string[] | null;
   why: string | null;
   risks: string | null;
+  /** D-093: picks stay up all day; graded once the game is final */
+  state?: 'pre' | 'in' | 'post';
+  result?: 'hit' | 'miss' | 'push' | null;
+  final?: string | null;
 };
 
 export type Game = {

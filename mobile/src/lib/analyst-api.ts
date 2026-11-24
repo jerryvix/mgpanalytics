@@ -19,7 +19,9 @@ async function logFailure(userId: string | undefined, status: number | null, ms:
   }).then(() => undefined, () => undefined);
 }
 
-export async function askAnalyst(messages: { role: 'user' | 'assistant'; content: string }[]): Promise<AnalystReply> {
+export type OutMsg = { role: 'user' | 'assistant'; content: string; images?: { mediaType: string; data: string }[] };
+
+export async function askAnalyst(messages: OutMsg[]): Promise<AnalystReply> {
   const started = Date.now();
   let status: number | null = null;
   let userId: string | undefined;

@@ -21,6 +21,15 @@ export function pickLabel(t: Take): string {
   return t.price ? `${t.pick} (${t.price})` : t.pick;
 }
 
+/** Live while the game is on, then Hit, Miss or Push once it's graded (D-093). */
+function Outcome({ take: t }: { take: Take }) {
+  const c = useTheme();
+  const label = t.result ? { hit: 'Hit', miss: 'Miss', push: 'Push' }[t.result] : t.state === 'in' ? 'Live' : t.state === 'post' ? 'Final' : null;
+  if (!label) return null;
+  const color = t.result === 'hit' || (t.state === 'in' && !t.result) ? c.brand : t.result === 'miss' ? c.textTertiary : c.text;
+  return <T size={14} weight="semibold" style={{ color }}>{label}</T>;
+}
+
 export function TakeRow({ take: t }: { take: Take }) {
   const c = useTheme();
   const [open, setOpen] = useState(false);
@@ -35,6 +44,7 @@ export function TakeRow({ take: t }: { take: Take }) {
           <T size={17} weight="bold">{pickLabel(t)}</T>
           <Mono>{credit}</Mono>
         </View>
+        <Outcome take={t} />
         {details ? <Icon name={open ? 'chevron.up' : 'chevron.down'} size={16} /> : null}
       </Pressable>
       {(t.legs ?? []).length > 1 ? (

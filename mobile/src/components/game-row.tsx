@@ -1,12 +1,12 @@
 /**
  * One game on Today and Games (D-070, D-077): matchup and line, time and total,
- * Public Bets and Public Money on one line, then the game's one line (D-075).
+ * skinny Bets and Money bars for the spread (D-093), then the game's one line (D-075).
  */
-import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Pressable, Text, View, type TextStyle } from 'react-native';
 
-import { B, OneLineText, T, TeamPair } from '@/components/night';
+import { OneLineText, T, TeamPair } from '@/components/night';
+import { RowSplits } from '@/components/splits';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Game } from '@/lib/feed';
@@ -26,11 +26,6 @@ export function useResultStyle(g: Game) {
   const w = winnerOf(g);
   return (side: 'away' | 'home'): TextStyle | undefined =>
     !w ? undefined : side === w ? { fontFamily: Font.semibold } : { color: c.textTertiary };
-}
-
-/** Team logos stand in for abbreviations on the splits line (owner, Nov 24). */
-function logoFor(g: Game, abbr: string) {
-  return abbr === g.home.abbr ? g.home.logo : g.away.logo;
 }
 
 export function matchupLabel(g: Game) {
@@ -55,8 +50,6 @@ function StatusLine({ g }: { g: Game }) {
 }
 
 export function GameRow({ game: g }: { game: Game }) {
-  const bets = g.publicBets;
-  const money = g.publicMoney;
   const style = useResultStyle(g);
   return (
     <Link href={{ pathname: '/game/[id]', params: { id: g.id, sport: g.sport } }} asChild>
@@ -75,14 +68,7 @@ export function GameRow({ game: g }: { game: Game }) {
             <StatusLine g={g} />
             {g.total ? <T size={14}>O/U {g.total}</T> : null}
           </View>
-          {bets && money ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Image source={logoFor(g, bets.team)} style={{ width: 16, height: 16 }} contentFit="contain" accessibilityLabel={bets.team} />
-              <T size={13.5}><B>{bets.pct}%</B> Public Bets · </T>
-              <Image source={logoFor(g, money.team)} style={{ width: 16, height: 16 }} contentFit="contain" accessibilityLabel={money.team} />
-              <T size={13.5}><B>{money.pct}%</B> Public Money</T>
-            </View>
-          ) : null}
+          <RowSplits game={g} />
           {g.oneLine ? <OneLineText line={g.oneLine} /> : null}
         </View>
       </Pressable>

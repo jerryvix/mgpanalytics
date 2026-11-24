@@ -4,13 +4,13 @@ import { Pressable, RefreshControl, ScrollView, Share, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { matchupLabel, winnerOf } from '@/components/game-row';
-import { Empty, Icon, Logo, Mono, OneLineText, SectionTitle, T } from '@/components/night';
+import { Empty, Icon, Logo, OneLineText, SectionTitle, SourceNote, T } from '@/components/night';
 import { SplitsBlock } from '@/components/splits';
 import { TakeRow } from '@/components/take-row';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useFeed, type Game } from '@/lib/feed';
-import { clock, whenLabel } from '@/lib/time';
+import { whenLabel } from '@/lib/time';
 
 export default function GameScreen() {
   const c = useTheme();
@@ -51,7 +51,7 @@ export default function GameScreen() {
             </View>
             <SplitsBlock game={g} />
             {g.oneLine ? <View style={{ paddingHorizontal: 16, paddingTop: 14 }}><OneLineText line={g.oneLine} size={18} /></View> : null}
-            {g.splitsAsOf ? <Mono style={{ paddingHorizontal: 16, paddingTop: 12 }}>DraftKings · Updated {clock(g.splitsAsOf)}</Mono> : null}
+            {g.splits && !g.splitsPending ? <SourceNote /> : null}
             {g.takes && g.takes.length ? (
               <>
                 <SectionTitle sub="Real Picks from Betting Experts">Takes</SectionTitle>

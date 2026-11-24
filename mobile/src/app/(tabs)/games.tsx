@@ -4,7 +4,7 @@ import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GameRow } from '@/components/game-row';
-import { Divider, Empty, Footer, Mono, SectionTitle, T, TopBar } from '@/components/night';
+import { Divider, Empty, Footer, Mono, SectionTitle, T, TopBar, SourceNote } from '@/components/night';
 import { TAB_BAR_SPACE } from '@/constants/layout';
 import { useTheme } from '@/hooks/use-theme';
 import { SPORT_LABEL, SPORTS, useFeed, type Game, type Sport } from '@/lib/feed';
@@ -59,6 +59,7 @@ export default function GamesScreen() {
             </View>
           );
         })}
+        {games.some((g) => g.splits && !g.splitsPending) ? <SourceNote /> : null}
         <Footer />
       </ScrollView>
     </SafeAreaView>

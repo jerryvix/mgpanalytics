@@ -13,16 +13,17 @@ import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { OneLine } from '@/lib/feed';
 
-export function T({ children, style, weight = 'regular', size = 16, numberOfLines }: {
+export function T({ children, style, weight = 'regular', size = 16, numberOfLines, selectable }: {
   children: ReactNode;
   style?: TextStyle | TextStyle[];
   weight?: 'regular' | 'medium' | 'semibold' | 'bold';
   size?: number;
   numberOfLines?: number;
+  selectable?: boolean;
 }) {
   const c = useTheme();
   return (
-    <Text numberOfLines={numberOfLines} style={[{ color: c.text, fontFamily: Font[weight], fontSize: size, fontVariant: ['tabular-nums'] }, style]}>
+    <Text numberOfLines={numberOfLines} selectable={selectable} style={[{ color: c.text, fontFamily: Font[weight], fontSize: size, fontVariant: ['tabular-nums'] }, style]}>
       {children}
     </Text>
   );
@@ -133,6 +134,16 @@ export function TopBar() {
           <Icon name="person.fill" size={16} />
         </Pressable>
       </Link>
+    </View>
+  );
+}
+
+/** The Betting Splits source, small and italic (D-093). */
+export function SourceNote({ style }: { style?: ViewStyle }) {
+  const c = useTheme();
+  return (
+    <View style={[{ paddingHorizontal: 16, paddingTop: 14 }, style]}>
+      <Text style={{ color: c.text, fontFamily: Font.italic, fontSize: 12 }}>Based on DraftKings</Text>
     </View>
   );
 }

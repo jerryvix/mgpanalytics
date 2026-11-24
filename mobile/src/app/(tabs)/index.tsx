@@ -3,11 +3,11 @@ import { RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GameRow } from '@/components/game-row';
-import { Divider, Empty, Footer, Mono, SectionTitle, T, TopBar } from '@/components/night';
+import { Divider, Empty, Footer, SectionTitle, SourceNote, T, TopBar } from '@/components/night';
 import { TAB_BAR_SPACE } from '@/constants/layout';
 import { useTheme } from '@/hooks/use-theme';
 import { SPORT_LABEL, SPORTS, useFeed, type Game } from '@/lib/feed';
-import { clock, longDate, ymd } from '@/lib/time';
+import { longDate, ymd } from '@/lib/time';
 
 export default function TodayScreen() {
   const c = useTheme();
@@ -40,7 +40,7 @@ export default function TodayScreen() {
             </View>
           );
         })}
-        {asOf ? <Mono style={{ paddingHorizontal: 16, paddingTop: 16 }}>Betting Splits from DraftKings · Updated {clock(asOf)}</Mono> : null}
+        {asOf ? <SourceNote /> : null}
         <Footer />
       </ScrollView>
     </SafeAreaView>
