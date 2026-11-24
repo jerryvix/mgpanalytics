@@ -325,6 +325,9 @@ def takes_page(title, height, opened=False, coach=False, only_first=False):
         on = t == 'Takes'
         s_ += f'    <a href="#v" style="flex: 0 0 auto; padding: 9px 12px; border-radius: 999px; font-size: 15px; font-weight: {600 if on else 400}; text-decoration: none; color: {W_}; {"background: " + TK["surf2"] if on else ""}">{t}</a>\n'
     s_ += '  </div>\n'
+    if not only_first:  # Early Edge, Nov 23 morning show (D-069 sport mix); soonest first (D-066)
+        s_ += tk_sec('Cavaliers at Bulls', 'NBA · Tonight 8:00 PM')
+        s_ += tk_take('sportsline', 'Jarrett Allen U 15.5 Points (−120)', 'SportsLine', body='x')
     s_ += tk_sec('Bengals at Commanders', 'NFL · Tonight 8:15 PM')
     s_ += tk_take(('htp', 'bearbets'), 'Commanders +6 (−107)', 'Hold The Phone, Bear Bets', body=WHY, opened=opened)
     s_ += tk_take('sportsline', 'Bengals −6 (−113)', 'SportsLine', body='x')
@@ -334,6 +337,10 @@ def takes_page(title, height, opened=False, coach=False, only_first=False):
     s_ += tk_take('sportsline', 'Joe Burrow O 7.5 Rushing Yards', 'Mike McClure · SportsLine', body='x')
     s_ += tk_take('sportsline', 'Stefon Diggs Anytime TD +180', 'Sia Nejad · SportsLine', body='x')
     if not only_first:
+        s_ += tk_sec('VCU vs Providence', 'NCAAB · Tonight 9:00 PM')
+        s_ += tk_take('sportsline', 'Under 154.5 (−105)', 'SportsLine', body='x')
+        s_ += tk_sec('Colorado State vs Arizona', 'NCAAB · Tonight 11:30 PM')
+        s_ += tk_take('sportsline', 'Under 159.5 (Now 158.5)', 'SportsLine', body='x')
         s_ += tk_sec('Bears at Lions', 'NFL · Thu 1:00 PM')
         s_ += tk_take('bearbets', 'Lions +2.5 (−106)', 'Bear Bets', body='x')
         s_ += tk_sec('Florida at Florida State', 'NCAAF · Fri 3:30 PM')
@@ -377,7 +384,7 @@ class Component extends DCLogic {{
 </html>
 """
     return s_
-open(os.path.join(OUT, 'JTakes.dc.html'), 'w').write(takes_page('Pulse, Takes', 1760))
+open(os.path.join(OUT, 'JTakes.dc.html'), 'w').write(takes_page('Pulse, Takes', 2100))
 open(os.path.join(OUT, 'JTakesOpen.dc.html'), 'w').write(takes_page('Pulse, Takes, One Opened', 844, opened=True, only_first=True))
 open(os.path.join(OUT, 'JTakesCoach.dc.html'), 'w').write(takes_page('Pulse, Takes, First Visit', 844, coach=True))
 print('takes v3 written')
