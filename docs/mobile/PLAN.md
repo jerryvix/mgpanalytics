@@ -80,7 +80,7 @@ Today is Fri Nov 20, 2026. Target: **submit to App Review around Dec 16, live be
 - **Data:** `@supabase/supabase-js` against the same project as the web app; TanStack Query for caching (same as web). Session stored in the device keychain.
 - **Auth:** Supabase Auth. Guests get an anonymous session on first launch (D-014); signing up links it to Sign in with Apple, Google, or email. The existing website accounts work unchanged. The Analyst requires a full account.
 - **Push alerts:** `expo-notifications` with the Expo push service. New tables: device push tokens, alert preferences, alert inbox. A new edge function evaluates alert rules after each sync and sends pushes.
-- **Paywall-ready:** an entitlement hook that returns "everything unlocked" at launch, so a subscription can be switched on in v1.1 without restructuring screens.
+- **Paywall-ready:** an entitlement hook that returns "everything unlocked" at launch, so a subscription can be switched on in v1.1 without restructuring screens. Checkout offers Apple Pay everywhere (D-084).
 - **Releases:** EAS Build (cloud), EAS Submit (TestFlight and App Store), EAS Update for over-the-air JavaScript fixes between store releases.
 
 ## Design

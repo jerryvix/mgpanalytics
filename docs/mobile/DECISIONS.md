@@ -468,3 +468,11 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Push notifications:** not set up yet. Apple's API can't create an APNs key, so alerts will need one owner step later (OWNER_ACTIONS).
 **Renewal:** the certificate needs replacing by Nov 2027; Expo flags it before it expires.
 **Done Nov 24:** the owner created the App Store Connect record "MGP Analytics" (Apple ID 6838568637, SKU `mgpanalytics-ios`), now `ascAppId` in `eas.json`. The stored key is assigned on Expo for uploads, which run on Expo's servers. Build 3 (1.0.0) uploaded to TestFlight; Expo created the internal group "Team (Expo)" with access to all builds and every App Store Connect admin in it. TestFlight builds take over-the-air updates on the `production` channel.
+
+### D-084 Apple Pay at checkout, on the website and in the app
+**Date:** 2026-11-24 · **By:** Owner (shared a Stripe checkout with Apple Pay: "Make sure this is also an option for me")
+**Applies when the paywall turns on (D-002); nothing is charged at launch.**
+**Website:** subscriptions go through Stripe's hosted Checkout, the same page type as the example. Apple Pay shows on it with no extra setup (Google Pay too), at Stripe's standard card rate with no Apple Pay surcharge. Cancel and card changes go through Stripe's customer portal. If checkout is ever embedded on mgp-analytics.com instead of hosted by Stripe, register the domain under Payment method domains in the Stripe Dashboard first.
+**iPhone app:** a subscription bought inside the app has to use Apple's in-app purchase (App Store guideline 3.1.1). Its sheet is Apple's own one-tap flow: Face ID or a side-button double-click, charged to the card on the person's Apple account, which is the same feel as Apple Pay. Apple keeps 15% under the App Store Small Business Program (enroll before charging) or 30% without it.
+**US link to web checkout (decide at paywall time):** US apps can currently also show a link to web checkout (Stripe with Apple Pay) next to in-app purchase. Apple's fee on those purchases is before the Supreme Court as of Nov 2026, so check the rule and the fee before relying on it. In-app purchase must still be offered alongside it.
+**One account:** a subscription bought on either path unlocks MGP on the website and the app through the same Supabase account (the entitlement hook, D-002).
