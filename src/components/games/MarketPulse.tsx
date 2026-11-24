@@ -17,6 +17,9 @@ import {
   type PulseSideView,
 } from "@/lib/marketPulse";
 import type { MarketPulseState } from "@/hooks/useMarketPulse";
+import { MarketNoteList } from "@/components/MarketNoteList";
+import { useMarketNotes } from "@/hooks/useMarketNotes";
+import { noteForTeams } from "@/lib/marketNotes";
 
 // Market Pulse - Game Insights' market section: DraftKings' number for each
 // market with its move since DK opened it, where the bets and the money sit,
@@ -75,6 +78,8 @@ const MARKERS: MarkerDef[] = [
 
 export function MarketPulse({ sport, awayName, homeName, spreadLabel, state }: MarketPulseProps) {
   const { pulse, isLoading, isError, refetch } = state;
+  const notesQ = useMarketNotes(sport);
+  const notes = noteForTeams(notesQ.data ?? [], homeName, awayName);
   const available = pulse ? PULSE_MARKETS.filter((m) => pulse[m]) : [];
   const [picked, setPicked] = useState<PulseMarket | null>(null);
   const market = picked && pulse?.[picked] ? picked : available[0] ?? null;
@@ -146,6 +151,7 @@ export function MarketPulse({ sport, awayName, homeName, spreadLabel, state }: M
           />
         </div>
       )}
+      <MarketNoteList notes={notes} />
     </section>
   );
 }

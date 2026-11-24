@@ -16,6 +16,9 @@ export interface TakeRow {
   legs: string[] | null;
   why: string | null;
   risks: string | null;
+  /** Link to the original post, when the take came from X */
+  url?: string | null;
+  units?: number | null;
 }
 
 export interface TakeSource {
@@ -24,6 +27,8 @@ export interface TakeSource {
   person: string | null;
   why: string | null;
   risks: string | null;
+  url?: string | null;
+  units?: number | null;
 }
 
 export interface GroupedTake {
@@ -62,7 +67,10 @@ export function groupTakes(rows: TakeRow[], now: Date = new Date()): TakesGame[]
       g.order.set(key, MARKET_ORDER[r.market] ?? 9);
     }
     if (!t.sources.some((s) => s.show === r.show && s.person === r.person)) {
-      t.sources.push({ show: r.show, showName: r.show_name, person: r.person, why: r.why, risks: r.risks });
+      t.sources.push({
+        show: r.show, showName: r.show_name, person: r.person, why: r.why, risks: r.risks,
+        url: r.url ?? null, units: r.units ?? null,
+      });
     }
   }
   return [...games.values()]
@@ -80,6 +88,27 @@ export function creditLine(sources: TakeSource[]): string {
     return s.person ? `${s.person} · ${s.showName}` : s.showName;
   }
   return [...new Set(sources.map((s) => s.showName))].join(", ");
+}
+
+/** "5u" or "2.5u". Empty when there is no stake. */
+export function unitsSuffix(units: number | null | undefined): string | null {
+  if (units == null || !Number.isFinite(Number(units))) return null;
+  const n = Math.round(Number(units) * 10) / 10;
+  if (n <= 0 || n > 100) return null;
+  return `${Number.isInteger(n) ? n.toFixed(0) : String(n)}u`;
+}
+
+/** Stake shown on the pick when every source that shares it names the same size. */
+export function sharedUnits(sources: { units?: number | null }[]): number | null {
+  if (!sources.length) return null;
+  const first = sources[0].units;
+  if (first == null || !sources.every((s) => s.units === first)) return null;
+  return first;
+}
+
+export function withUnits(label: string, units: number | null | undefined): string {
+  const u = unitsSuffix(units);
+  return u ? `${label} · ${u}` : label;
 }
 
 /** "Same Game Parlay +400 (4 Legs)" or "Bengals -6 (-113)". */

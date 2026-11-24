@@ -52,10 +52,25 @@ export type Take = {
   legs: string[] | null;
   why: string | null;
   risks: string | null;
+  /** Stake, when the post named one ("5u") */
+  units?: number | null;
+  /** Original post, for X picks */
+  url?: string | null;
+  source?: string | null;
   /** D-093: picks stay up all day; graded once the game is final */
   state?: 'pre' | 'in' | 'post';
   result?: 'hit' | 'miss' | 'push' | null;
   final?: string | null;
+};
+
+/** A credited public post beside Betting Splits. Not a pick. */
+export type MarketNote = {
+  id: string;
+  credit: string;
+  body: string;
+  url: string;
+  market?: string | null;
+  handle?: string;
 };
 
 export type Game = {
@@ -79,6 +94,7 @@ export type Game = {
   oneLine?: OneLine;
   takesCount?: number;
   takes?: Take[];
+  notes?: MarketNote[];
 };
 
 export type BoardSide = {

@@ -3,7 +3,7 @@
  * bold, the credit in the detail font, Why and Risks Flagged collapsed.
  */
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 
 import { Icon, Logo, Mono, T } from '@/components/night';
 import { useTheme } from '@/hooks/use-theme';
@@ -15,10 +15,20 @@ const LOGOS: Record<string, string> = {
   'hold-the-phone': 'https://www.mgp-analytics.com/takes/hold-the-phone.png',
 };
 
+function unitsSuffix(units: number | null | undefined): string | null {
+  if (units == null || !Number.isFinite(Number(units))) return null;
+  const n = Math.round(Number(units) * 10) / 10;
+  if (n <= 0 || n > 100) return null;
+  return `${Number.isInteger(n) ? n.toFixed(0) : String(n)}u`;
+}
+
 export function pickLabel(t: Take): string {
   const legs = t.legs ?? [];
-  if (legs.length > 1) return `${t.pick}${t.price ? ` ${t.price}` : ''} (${legs.length} Legs)`;
-  return t.price ? `${t.pick} (${t.price})` : t.pick;
+  const base = legs.length > 1
+    ? `${t.pick}${t.price ? ` ${t.price}` : ''} (${legs.length} Legs)`
+    : t.price ? `${t.pick} (${t.price})` : t.pick;
+  const u = unitsSuffix(t.units);
+  return u ? `${base} · ${u}` : base;
 }
 
 /** Live while the game is on, then Hit, Miss or Push once it's graded (D-093). */
@@ -41,12 +51,16 @@ export function TakeRow({ take: t }: { take: Take }) {
         accessibilityRole={details ? 'button' : undefined} accessibilityState={{ expanded: open }}>
         {LOGOS[t.show] ? <Logo uri={LOGOS[t.show]} size={38} /> : (
           <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
-            <T size={13} weight="semibold">{t.show_name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()}</T>
+            <T size={13} weight="semibold">{(t.person ?? t.show_name).split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()}</T>
           </View>
         )}
         <View style={{ flex: 1, gap: 4 }}>
           <T size={17} weight="bold">{pickLabel(t)}</T>
-          <Mono>{credit}</Mono>
+          {t.url ? (
+            <Pressable onPress={() => Linking.openURL(t.url!).catch(() => undefined)} accessibilityRole="link" accessibilityLabel={`Open the post from ${credit}`}>
+              <Mono>{credit}</Mono>
+            </Pressable>
+          ) : <Mono>{credit}</Mono>}
         </View>
         <Outcome take={t} />
         {details ? <Icon name={open ? 'chevron.up' : 'chevron.down'} size={16} /> : null}

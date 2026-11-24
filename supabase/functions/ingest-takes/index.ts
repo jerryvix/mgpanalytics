@@ -172,6 +172,8 @@ serve(async (req) => {
       episode_guid: ep.guid,
       episode_title: ep.title ?? null,
       episode_published_at: publishedAt,
+      source: body.show === "daft-previews" ? "youtube" : "podcast",
+      external_id: ep.guid,
     });
   }
 

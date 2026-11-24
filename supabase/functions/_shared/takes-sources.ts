@@ -1,7 +1,11 @@
-// Takes sources (DECISIONS D-059, D-060): outside shows and personalities the
+// Takes sources (DECISIONS D-059, D-060, D-102): outside shows and personalities the
 // owner picked (Bookit Blitz dropped Nov 23: video only; Daft Previews added Nov 24,
 // read from its video descriptions, which list its picks). They are not MGP's insiders; their picks are theirs, shown
 // credited by name with a link to the original. MGP itself gives no picks.
+//
+// X accounts (D-102) have no YouTube channel and no paid API. An assistant reads the
+// public posts and POSTs structured items to ingest-x-takes. BookitWithTrent files
+// picks. johnewing files market notes, which are not picks.
 //
 // Feed: YouTube's free public per-channel feed (no API key), which returns the
 // 15 latest uploads with title, link, published date and description:
@@ -102,3 +106,43 @@ export const TAKES_SOURCES: readonly TakesSource[] = [
 
 export const youtubeFeedUrl = (channelId: string) =>
   `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+
+/** An X account the assistant may file. Credit always comes from here, not from the payload. */
+export interface XTakesAccount {
+  /** Handle without @ */
+  handle: string;
+  /** Key in `takes.show` when this account files a pick */
+  show: string;
+  showName: string;
+  /** One person's name. Notes sources still have one, shown inside `noteCredit`. */
+  person: string;
+  /** What a market note displays, affiliation included */
+  noteCredit: string;
+  /** picks: may file takes. notes: a pick from this account is refused. */
+  kind: "picks" | "notes";
+}
+
+export const X_TAKES_ACCOUNTS: readonly XTakesAccount[] = [
+  {
+    handle: "BookitWithTrent",
+    show: "bookit-with-trent",
+    showName: "BookitWithTrent",
+    person: "Trent Attyah",
+    noteCredit: "Trent Attyah",
+    kind: "picks",
+  },
+  {
+    handle: "johnewing",
+    show: "john-ewing",
+    showName: "BetMGM",
+    person: "John Ewing",
+    noteCredit: "John Ewing, BetMGM",
+    kind: "notes",
+  },
+];
+
+export function xAccount(handle: string): XTakesAccount | null {
+  const key = handle.trim().replace(/^@/, "").toLowerCase();
+  if (!key) return null;
+  return X_TAKES_ACCOUNTS.find((a) => a.handle.toLowerCase() === key) ?? null;
+}

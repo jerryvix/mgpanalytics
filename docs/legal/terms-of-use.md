@@ -24,9 +24,10 @@ MGP shows sports data for leagues like the NFL, NBA, college football, college b
 
 ## Expert Picks Are Other People's Opinions
 
-- Expert Picks come from public podcasts and YouTube video descriptions by outside shows and hosts. We use AI to find the picks and summarize them, and we credit the show or person.
+- Expert Picks come from public podcasts, YouTube video descriptions, and credited public posts on X by outside shows and hosts. We credit the show or person and link to the original. Podcast and YouTube picks are found with AI. Posts on X are sent to us already read from the public post.
 - They're the opinions of those shows and hosts, not MGP's. We don't endorse them, and we're not affiliated with those shows.
-- A summary can miss a pick, get a detail wrong or match a pick to the wrong game. Results we show, like Hit, Miss or Push, are graded automatically from final scores and box scores and can be wrong. Check the original show if a pick matters to you.
+- Some public X posts are market notes, such as where the tickets and the money are. We show those next to betting splits, with credit and a link to the post. A market note is not an Expert Pick.
+- A summary can miss a pick, get a detail wrong or match a pick to the wrong game. Results we show, like Hit, Miss or Push, are graded automatically from final scores and box scores and can be wrong. Check the original show or post if a pick matters to you.
 
 ## Data Can Be Delayed or Wrong
 

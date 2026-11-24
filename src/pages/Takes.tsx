@@ -4,11 +4,11 @@ import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { creditLine, groupTakes, pickLabel, SHOW_LOGOS, whenLabel, type GroupedTake, type TakeRow } from "@/lib/takes";
+import { creditLine, groupTakes, pickLabel, sharedUnits, SHOW_LOGOS, whenLabel, withUnits, type GroupedTake, type TakeRow, type TakeSource } from "@/lib/takes";
 
-// Takes (DECISIONS D-060, D-065, D-066, D-074): real picks from outside betting shows,
-// pulled from their newest episodes twice a day. Upcoming games only; a pick leaves at
-// kickoff, and no records are shown. MGP itself gives no picks.
+// Takes (DECISIONS D-060, D-065, D-066, D-074, D-102): real picks from outside betting
+// shows and credited public posts. Upcoming games only; a pick leaves at kickoff, and
+// no records are shown. MGP itself gives no picks.
 
 const SPORTS = ["NFL", "NBA", "NCAAF", "NCAAB"] as const;
 
@@ -17,38 +17,86 @@ async function fetchTakes(): Promise<TakeRow[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("takes")
-    .select("id, show, show_name, person, sport, espn_event_id, matchup, starts_at, market, pick, price, legs, why, risks")
+    .select("id, show, show_name, person, sport, espn_event_id, matchup, starts_at, market, pick, price, units, legs, why, risks, url")
     .gt("starts_at", new Date().toISOString())
     .order("starts_at", { ascending: true })
     .limit(500);
   if (error) throw error;
-  return (data ?? []) as TakeRow[];
+  return ((data ?? []) as TakeRow[]).map((r) => {
+    const raw = r.units as unknown;
+    const n = typeof raw === "number" ? raw : Number(raw);
+    return { ...r, units: raw == null || raw === "" || !Number.isFinite(n) ? null : n };
+  });
 }
 
-function ShowLogos({ shows }: { shows: string[] }) {
-  const unique = [...new Set(shows)].slice(0, 2);
-  if (unique.length === 2) {
+function initials(name: string): string {
+  const parts = name.replace(/[^A-Za-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return (parts[0] ?? "X").slice(0, 2).toUpperCase();
+}
+
+function Avatar({ show, name, className }: { show: string; name: string; className?: string }) {
+  const src = SHOW_LOGOS[show];
+  if (!src) {
     return (
-      <span aria-hidden="true" className="relative h-10 w-10 shrink-0">
-        <img src={SHOW_LOGOS[unique[0]]} alt="" className="absolute left-0 top-0 h-7 w-7 rounded-full border-2 border-background object-cover" />
-        <img src={SHOW_LOGOS[unique[1]]} alt="" className="absolute bottom-0 right-0 h-7 w-7 rounded-full border-2 border-background object-cover" />
+      <span aria-hidden="true" className={cn("flex items-center justify-center rounded-full bg-muted font-mono text-[11px] text-foreground", className)}>
+        {initials(name)}
       </span>
     );
   }
-  return <img src={SHOW_LOGOS[unique[0]]} alt="" aria-hidden="true" className="h-10 w-10 shrink-0 rounded-full object-cover" />;
+  return <img src={src} alt="" aria-hidden="true" className={cn("rounded-full object-cover", className)} />;
+}
+
+function ShowLogos({ sources }: { sources: TakeSource[] }) {
+  const unique = sources.filter((s, i) => sources.findIndex((x) => x.show === s.show) === i).slice(0, 2);
+  const nameOf = (s: TakeSource) => s.person ?? s.showName;
+  if (unique.length === 2) {
+    return (
+      <span aria-hidden="true" className="relative h-10 w-10 shrink-0">
+        <Avatar show={unique[0].show} name={nameOf(unique[0])} className="absolute left-0 top-0 h-7 w-7 border-2 border-background" />
+        <Avatar show={unique[1].show} name={nameOf(unique[1])} className="absolute bottom-0 right-0 h-7 w-7 border-2 border-background" />
+      </span>
+    );
+  }
+  const one = unique[0];
+  return <Avatar show={one.show} name={nameOf(one)} className="h-10 w-10 shrink-0" />;
+}
+
+function Credit({ sources }: { sources: TakeSource[] }) {
+  if (sources.length === 1) {
+    const label = creditLine(sources);
+    const url = sources[0].url;
+    return url ? (
+      <a href={url} target="_blank" rel="noreferrer" className="underline underline-offset-2">{label}</a>
+    ) : (
+      <span>{label}</span>
+    );
+  }
+  return (
+    <span>
+      {sources.map((s, i) => {
+        const label = s.person ? `${s.person} · ${s.showName}` : s.showName;
+        const node = s.url ? (
+          <a key={`${s.show}-${s.person ?? ""}`} href={s.url} target="_blank" rel="noreferrer" className="underline underline-offset-2">{label}</a>
+        ) : (
+          <span key={`${s.show}-${s.person ?? ""}`}>{label}</span>
+        );
+        return i === 0 ? node : <span key={`sep-${s.show}-${i}`}>, {node}</span>;
+      })}
+    </span>
+  );
 }
 
 function TakeRowView({ take }: { take: GroupedTake }) {
   const [open, setOpen] = useState(false);
   const details = take.sources.filter((s) => s.why || s.risks);
-  const credit = creditLine(take.sources);
   return (
     <li className="border-b border-border/60 py-3 last:border-b-0">
       <div className="flex items-center gap-3">
-        <ShowLogos shows={take.sources.map((s) => s.show)} />
+        <ShowLogos sources={take.sources} />
         <div className="min-w-0 flex-1">
-          <p className="font-semibold tabular-nums text-foreground">{pickLabel(take)}</p>
-          <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider text-foreground">{credit}</p>
+          <p className="font-semibold tabular-nums text-foreground">{withUnits(pickLabel(take), sharedUnits(take.sources))}</p>
+          <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider text-foreground"><Credit sources={take.sources} /></p>
         </div>
         {details.length > 0 && (
           <button
@@ -138,7 +186,7 @@ export default function Takes() {
       {isError && <p className="mt-8 text-sm text-foreground">Takes couldn't load. Try again in a minute</p>}
 
       {!isLoading && !isError && shown.length === 0 && (
-        <p className="mt-8 text-sm text-foreground">New picks from the shows land here around noon and 6 PM Eastern</p>
+        <p className="mt-8 text-sm text-foreground">New picks land here around noon and 6 PM Eastern</p>
       )}
 
       <div className="mt-4 space-y-2">
@@ -157,7 +205,7 @@ export default function Takes() {
 
       {shown.length > 0 && (
         <p className="mt-8 font-mono text-[11px] uppercase tracking-wider text-foreground">
-          From each show's newest episodes · A pick leaves at kickoff
+          From betting shows and public posts · A pick leaves at kickoff
         </p>
       )}
     </div>

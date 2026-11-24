@@ -579,3 +579,11 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-101 Only main writes production picks and game lines
 **Date:** 2026-11-24 · **By:** builder (audit S5)
 **What:** the GitHub OIDC check in `ingest-takes` and `ingest-game-lines` accepts only `refs/heads/main` (it still verifies signature, issuer, audience, repo and workflow path). The two workflows no longer run on pushes to the working branch; they run on their schedules from main and by manual dispatch. Unreviewed branch code can't write `takes` or `game_lines` anymore.
+
+### D-102 X takes via external assistant, no paid API
+**Date:** 2026-11-24 · **By:** Owner (X posts as a Takes source, no X API spend)
+**What:** Public posts on X are a free source for Takes. There is no paid X API (D-021 and D-023 stay on hold for a general insider feed). An external assistant reads public posts twice a day with its own X access, extracts the structured items, and POSTs them to the `ingest-x-takes` edge function.
+**Auth:** the function accepts a call only when the header `x-takes-ingest-secret` matches the Supabase secret `X_TAKES_INGEST_SECRET`. The value is never stored in the repo. `verify_jwt` is off because the function checks that header itself.
+**Two kinds of item:** a pick (BookitWithTrent, Trent Attyah) is stored in `takes` with `source = x`, the post id, the post url, units when named, and a match confidence, and it shows in Takes like any other show. A market note (johnewing, John Ewing at BetMGM: ticket and handle share, open-to-now lines) is stored in `market_notes` and shown beside Betting Splits on the game page and on the website splits. A note is not a pick. A pick sent from the notes account is refused. Credit on screen comes from the registry in `takes-sources.ts`, and every item links to the post.
+**Matching:** the same ESPN game list and matcher as `ingest-takes` (`games.ts`). Upcoming games, plus games in progress. A post that does not match one of those is returned as unmatched and not stored. Sending the same post id and pick (or the same post id and note text) again updates the row.
+**Contract:** `docs/mobile/X_TAKES.md`. The owner sets the secret, runs migration `20261124180000_x_takes.sql`, and deploys the function. The builder does not.
