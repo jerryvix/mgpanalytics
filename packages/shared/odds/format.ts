@@ -2,22 +2,21 @@
  * Sportsbook-standard odds notation for every MGP screen (owner rule, docs/mobile/DECISIONS.md D-039).
  * New UI formats odds only through these helpers so the app and the website read the same way.
  *
- *   formatAmerican(-110)            -> "−110"     formatAmerican(200) -> "+200"
- *   formatSpread(-6.5)              -> "−6.5"     formatSpread(0)     -> "PK"
- *   formatSpreadWithPrice(-6.5,-110)-> "−6.5 (−110)"
- *   formatTeamSpread("Oregon",-6.5) -> "Oregon −6.5"
+ *   formatAmerican(-110)            -> "-110"     formatAmerican(200) -> "+200"
+ *   formatSpread(-6.5)              -> "-6.5"     formatSpread(0)     -> "PK"
+ *   formatSpreadWithPrice(-6.5,-110)-> "-6.5 (-110)"
+ *   formatTeamSpread("Oregon",-6.5) -> "Oregon -6.5"
  *   formatTotal("over", 52.5)       -> "O 52.5"   formatTotalLine(52.5) -> "O/U 52.5"
- *   formatMovement(-4.5, -6.5)      -> "−4.5 → −6.5"
+ *   formatMovement(-4.5, -6.5)      -> "-4.5 → -6.5"
  *   formatRecord(5, 4, 1)           -> "5-4-1"    formatAts(5, 5) -> "5-5 ATS"
  *
- * Minus is the typographic minus (U+2212) so numbers line up with tabular figures.
+ * Minus is the plain ASCII hyphen-minus "-" (owner rule, Nov 2026: no em dashes, en dashes or
+ * typographic minus signs anywhere on the site). This replaced D-039's U+2212.
  */
-
-export const MINUS = "−";
 
 function signed(n: number): string {
   if (n > 0) return `+${trim(n)}`;
-  if (n < 0) return `${MINUS}${trim(Math.abs(n))}`;
+  if (n < 0) return `-${trim(Math.abs(n))}`;
   return "0";
 }
 
@@ -26,19 +25,19 @@ function trim(n: number): string {
   return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10);
 }
 
-/** American odds: -110 -> "−110", 200 -> "+200", 100 -> "+100". */
+/** American odds: -110 -> "-110", 200 -> "+200", 100 -> "+100". */
 export function formatAmerican(price: number | null | undefined): string {
   if (price == null || !Number.isFinite(price)) return "";
   return signed(Math.round(price));
 }
 
-/** Spread line: -6.5 -> "−6.5", 6.5 -> "+6.5", 0 -> "PK" (pick'em). */
+/** Spread line: -6.5 -> "-6.5", 6.5 -> "+6.5", 0 -> "PK" (pick'em). */
 export function formatSpread(line: number | null | undefined): string {
   if (line == null || !Number.isFinite(line)) return "";
   return line === 0 ? "PK" : signed(line);
 }
 
-/** Spread with its price: "−6.5 (−110)". */
+/** Spread with its price: "-6.5 (-110)". */
 export function formatSpreadWithPrice(line: number | null | undefined, price: number | null | undefined): string {
   const l = formatSpread(line);
   const p = formatAmerican(price);
@@ -46,7 +45,7 @@ export function formatSpreadWithPrice(line: number | null | undefined, price: nu
   return p ? `${l} (${p})` : l;
 }
 
-/** "Oregon −6.5", "Michigan State +6.5", "Oregon PK". */
+/** "Oregon -6.5", "Michigan State +6.5", "Oregon PK". */
 export function formatTeamSpread(team: string, line: number | null | undefined): string {
   const l = formatSpread(line);
   return l ? `${team} ${l}` : "";
@@ -64,7 +63,7 @@ export function formatTotalLine(line: number | null | undefined): string {
   return `O/U ${trim(line)}`;
 }
 
-/** Spread movement from open to now: "−4.5 → −6.5". */
+/** Spread movement from open to now: "-4.5 → -6.5". */
 export function formatMovement(open: number | null | undefined, now: number | null | undefined): string {
   const o = formatSpread(open);
   const n = formatSpread(now);

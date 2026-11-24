@@ -88,7 +88,7 @@ describe("FantasyTrajectoryTab", () => {
     });
     render(<FantasyTrajectoryTab playerName="Second Year Guy" position="RB" />);
     expect(screen.getByText(/Not enough history for a trajectory/)).toBeInTheDocument();
-    expect(screen.getByText(/No weeks 10–18 data/)).toBeInTheDocument();
+    expect(screen.getByText(/No weeks 10-18 data/)).toBeInTheDocument();
   });
 
   it("colors ranks green only for top-10 finishes (Jonathan Taylor 2025 case)", () => {

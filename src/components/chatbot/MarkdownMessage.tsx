@@ -1,6 +1,8 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+import { plainDashes } from "@/lib/plainDashes";
+
 // The one chat-message renderer, used by every MGP Analyst surface.
 //
 // Design intent (owner spec, Jul 2026): responses read like a modern chat
@@ -9,6 +11,9 @@ import remarkGfm from "remark-gfm";
 // bordered tables (react-markdown alone doesn't parse them - remark-gfm is
 // required). Terminal-green stays as the accent color: that's the app's
 // intentional brand, applied with hierarchy instead of everywhere.
+//
+// Model text goes through plainDashes first: no em dashes, en dashes or
+// typographic minus signs on screen (owner rule, Nov 2026).
 
 export function MarkdownMessage({ content }: { content: string }) {
   return (
@@ -51,7 +56,7 @@ export function MarkdownMessage({ content }: { content: string }) {
           ),
         }}
       >
-        {content}
+        {plainDashes(content)}
       </ReactMarkdown>
     </div>
   );

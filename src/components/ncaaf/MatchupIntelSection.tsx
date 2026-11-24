@@ -142,7 +142,7 @@ export function MatchupIntelSection({
             </div>
             <p className="font-mono text-sm">
               {home} <b className="tabular-nums">{h2h.summary.team1Wins}</b>
-              <span className="text-muted-foreground mx-1">–</span>
+              <span className="text-muted-foreground mx-1">-</span>
               <b className="tabular-nums">{h2h.summary.team2Wins}</b> {away}
               {h2h.summary.streak && (
                 <span className="block text-[11px] text-terminal-amber mt-0.5">

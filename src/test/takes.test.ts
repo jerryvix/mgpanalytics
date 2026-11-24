@@ -35,7 +35,8 @@ describe("labels", () => {
   it("formats picks with a plain hyphen and parlay legs", () => {
     expect(pickLabel({ pick: "Bengals -6", price: "-113", legs: [] })).toBe("Bengals -6 (-113)");
     expect(pickLabel({ pick: "Same Game Parlay", price: "+400", legs: ["a", "b", "c", "d"] })).toBe("Same Game Parlay +400 (4 Legs)");
-    expect(pickLabel({ pick: "Bengals -6", price: "-113", legs: [] })).not.toMatch(/[−–—]/);
+    const dashes = new RegExp(`[${String.fromCharCode(0x2212, 0x2013, 0x2014)}]`);
+    expect(pickLabel({ pick: "Bengals -6", price: "-113", legs: [] })).not.toMatch(dashes);
   });
   it("labels tonight, tomorrow and later games", () => {
     const tz = "America/New_York";

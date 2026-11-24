@@ -204,8 +204,8 @@ export function BacktestSyncCard() {
         {actionButton("Refresh Player Crosswalk (nflverse)", <Users className="w-3 h-3 mr-2" />, () =>
           invoke("Refresh Player Crosswalk (nflverse)", "sync-nfl-player-ids")
         )}
-        {actionButton(`Backfill Fantasy Weekly (${BACKFILL_START}–${lastCompleted})`, <History className="w-3 h-3 mr-2" />, backfillFantasy)}
-        {actionButton(`Backfill Lines + ADP (${BACKFILL_START}–${lastCompleted})`, <Trophy className="w-3 h-3 mr-2" />, backfillHistory)}
+        {actionButton(`Backfill Fantasy Weekly (${BACKFILL_START}-${lastCompleted})`, <History className="w-3 h-3 mr-2" />, backfillFantasy)}
+        {actionButton(`Backfill Lines + ADP (${BACKFILL_START}-${lastCompleted})`, <Trophy className="w-3 h-3 mr-2" />, backfillHistory)}
         {actionButton("Ingest Prop Captures (2025 + 2026)", <Target className="w-3 h-3 mr-2" />, ingestProps)}
         {actionButton("Sync Current Season (win totals + ADP)", <ListOrdered className="w-3 h-3 mr-2" />, async () => {
           await invoke("Sync Current Season (win totals + ADP)", "sync-win-totals");
