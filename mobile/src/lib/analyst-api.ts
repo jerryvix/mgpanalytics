@@ -2,13 +2,15 @@
  * One call to The Analyst (`gemini-chat`, D-080), made with a plain fetch so every step
  * reports what went wrong (D-090). A failed call is logged to `api_request_log`
  * (provider `mgp-app`, the person's own row) so it can be looked into without a screenshot.
+ * A 429 is either the 10 a minute burst limit (`busy`) or the 50 a day cap (`daily`, body
+ * { error: "Daily limit reached" }, resets at midnight Eastern; D-099).
  */
 import { PUBLISHABLE_KEY, SUPABASE_URL, supabase } from '@/lib/supabase';
 
 export type Source = { title: string; url: string };
 export type AnalystReply =
   | { ok: true; content: string; sources: Source[] }
-  | { ok: false; busy: boolean; reason: string };
+  | { ok: false; busy: boolean; daily: boolean; reason: string };
 
 const TIMEOUT_MS = 120_000; // a web search answer can take a while
 
@@ -25,9 +27,9 @@ export async function askAnalyst(messages: OutMsg[]): Promise<AnalystReply> {
   const started = Date.now();
   let status: number | null = null;
   let userId: string | undefined;
-  const fail = async (reason: string, busy = false): Promise<AnalystReply> => {
+  const fail = async (reason: string, busy = false, daily = false): Promise<AnalystReply> => {
     await logFailure(userId, status, Date.now() - started, reason);
-    return { ok: false, busy, reason };
+    return { ok: false, busy, daily, reason };
   };
   try {
     const { data } = await supabase.auth.getSession();
@@ -49,7 +51,16 @@ export async function askAnalyst(messages: OutMsg[]): Promise<AnalystReply> {
     } finally {
       clearTimeout(timer);
     }
-    if (status === 429) return fail('rate limited', true);
+    if (status === 429) {
+      let error = '';
+      try {
+        const body = JSON.parse(raw) as { error?: unknown };
+        error = typeof body.error === 'string' ? body.error : '';
+      } catch {
+        // Not JSON: treat it as the burst limit
+      }
+      return /daily limit/i.test(error) ? fail('daily limit', false, true) : fail('rate limited', true);
+    }
     if (status === null || status < 200 || status >= 300) return fail(`http ${status}`);
     let body: { content?: unknown; sources?: unknown };
     try {

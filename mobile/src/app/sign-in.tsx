@@ -26,7 +26,8 @@ function friendly(e: AuthErr): string {
   if (code === 'invalid_credentials' || msg.includes('invalid login')) return "That email and password don't match. Try again or reset your password";
   if (notConfirmed(e)) return 'Confirm your email to sign in. Check your inbox for the link';
   if (code.startsWith('over_') || e.status === 429 || msg.includes('rate limit') || msg.includes('security purposes')) return 'Too many tries for now. Wait a minute and try again';
-  if (code === 'weak_password' || msg.includes('password should') || msg.includes('weak password')) return 'Pick a stronger password with 6 or more characters';
+  // Passwords need 8 characters and can't be on a list of leaked passwords (D-099)
+  if (code === 'weak_password' || /password should|weak|pwned|leaked|easy to guess/.test(msg)) return "Pick a password with at least 8 characters that you haven't used elsewhere";
   if (code === 'user_already_exists' || code === 'email_exists' || msg.includes('already registered')) return 'You already have an account with that email. Sign in instead';
   if (code === 'email_address_invalid' || msg.includes('invalid email') || msg.includes('validate email')) return 'Check that your email is typed right';
   if (msg.includes('network') || msg.includes('fetch')) return "Couldn't reach MGP. Check your connection and try again";
@@ -112,7 +113,8 @@ export default function SignInScreen() {
   });
 
   const input = { color: c.text, fontFamily: Font.regular, fontSize: 17, paddingVertical: 14, paddingHorizontal: 16, borderRadius: 14, backgroundColor: c.surface };
-  const canSubmit = email.includes('@') && password.length >= 6 && !busy;
+  // New passwords need 8 characters (D-099); older accounts can still sign in with 6
+  const canSubmit = email.includes('@') && password.length >= (mode === 'up' ? 8 : 6) && !busy;
   const link = { alignItems: 'center' as const, paddingVertical: 10 };
   return (
     <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: c.bg }}>
@@ -144,7 +146,7 @@ export default function SignInScreen() {
         <Pressable onPress={() => { setMode(mode === 'in' ? 'up' : 'in'); setMessage(null); setResendable(false); }} style={link}>
           <T size={15}>{mode === 'in' ? 'New to MGP? ' : 'Have an account? '}<T size={15} weight="semibold">{mode === 'in' ? 'Create Account' : 'Sign In'}</T></T>
         </Pressable>
-        {mode === 'up' ? <Mono style={{ textAlign: 'center' }}>Passwords need 6 or more characters</Mono> : null}
+        {mode === 'up' ? <Mono style={{ textAlign: 'center' }}>Passwords need 8 or more characters</Mono> : null}
         {mode === 'in' ? (
           <T size={14} style={{ lineHeight: 20, textAlign: 'center' }}>Signed up on the website with Google? Use Forgot Password to set a password for the app</T>
         ) : null}

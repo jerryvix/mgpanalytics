@@ -38,6 +38,10 @@ const CONSENT_KEY = 'analyst-ai-notice-v2'; // v2: D-085 wording, shown again on
 const MAX_IMAGES = 4;
 /** Images go with the latest 2 questions only; older questions send their text (D-097). */
 const IMAGE_TURNS = 2;
+/** Messages sent per question: the server reads the latest 20 and refuses more than 200 (D-099). */
+const MAX_SENT = 40;
+/** The server refuses a question longer than this. */
+const MAX_QUESTION = 4000;
 
 /** Links in answers and sources: https opens in the in-app browser, anything else is ignored. */
 function openLink(url: string): boolean {
@@ -230,7 +234,8 @@ export default function AnalystScreen() {
     setBusy(true);
     setOpenFailed(false);
     // Only real exchanges go back as context; failed replies stay on screen but not in the chat history.
-    const real = next.filter((m) => !m.failed);
+    const real = next.filter((m) => !m.failed).slice(-MAX_SENT);
+    while (real.length > 1 && real[0].role !== 'user') real.shift();
     const withImages = new Set(real.flatMap((m, i) => (m.role === 'user' ? [i] : [])).slice(-IMAGE_TURNS));
     const history = real.map(({ role, content, images: imgs }, i) => ({
       role, content, ...(imgs?.length && withImages.has(i) ? { images: imgs.map(({ mediaType, data }) => ({ mediaType, data })) } : {}),
@@ -242,6 +247,11 @@ export default function AnalystScreen() {
     setBusy(false);
     stickToEnd.current = true;
     if (!reply.ok) {
+      if (reply.daily) {
+        // The 50 a day cap: a plain note, no failure code
+        setMessages([...next, { role: 'assistant', content: "You've reached today's 50 questions. Ask again after midnight Eastern", failed: true }]);
+        return;
+      }
       const msg = reply.busy ? 'Lots of questions at once. Give it a minute and ask again' : "That one didn't go through. Try asking again";
       setMessages([...next, { role: 'assistant', content: msg, failed: true, reason: reply.reason }]);
       return;
@@ -422,7 +432,7 @@ export default function AnalystScreen() {
               <Icon name="plus.circle" size={24} />
             </Pressable>
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'flex-end', borderRadius: 20, backgroundColor: c.surface }}>
-              <TextInput ref={input} value={draft} onChangeText={setDraft} placeholder="What can I dig into for you?" placeholderTextColor={c.textTertiary} multiline
+              <TextInput ref={input} value={draft} onChangeText={setDraft} placeholder="What can I dig into for you?" placeholderTextColor={c.textTertiary} multiline maxLength={MAX_QUESTION}
                 style={{ flex: 1, maxHeight: 140, color: c.text, fontFamily: Font.regular, fontSize: 16, paddingLeft: 14, paddingRight: draft ? 4 : 14, paddingVertical: 10 }} />
               {draft ? (
                 <Pressable onPress={() => { setDraft(''); input.current?.focus(); }} hitSlop={8} accessibilityRole="button" accessibilityLabel="Clear"
