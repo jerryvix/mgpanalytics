@@ -159,16 +159,16 @@ MARKET_SHORT = {
 # (sacks, blitz rate, pace); otherwise rank 1 is the fewest allowed. top = the league's first 10 that way.
 # Each names tonight's opponent's exact rank in a ticker ("CHI DEF 7th in Rush YPG Allowed").
 DEF_FEATURES = {
-    "pass":   {"top": "top-10 pass defenses", "bottom": "bottom-10 pass defenses", "ticker": "Pass YPG Allowed"},
-    "rush":   {"top": "top-10 run defenses", "bottom": "bottom-10 run defenses", "ticker": "Rush YPG Allowed"},
-    "pts":    {"top": "top-10 scoring defenses", "bottom": "bottom-10 scoring defenses", "ticker": "PPG Allowed"},
-    "rec_WR": {"top": "top-10 defenses against WRs", "bottom": "bottom-10 defenses against WRs", "ticker": "Rec YPG Allowed to WRs"},
-    "rec_TE": {"top": "top-10 defenses against TEs", "bottom": "bottom-10 defenses against TEs", "ticker": "Rec YPG Allowed to TEs"},
-    "rec_RB": {"top": "top-10 defenses against RBs", "bottom": "bottom-10 defenses against RBs", "ticker": "Rec YPG Allowed to RBs"},
-    "sacks":  {"more": True, "top": "the 10 defenses with the most sacks", "bottom": "the 10 defenses with the fewest sacks", "ticker": "Sacks"},
-    "blitz":  {"more": True, "top": "the 10 defenses that blitz the most", "bottom": "the 10 defenses that blitz the least", "ticker": "Blitz Rate"},
-    "pa":     {"top": "top-10 scoring defenses", "bottom": "bottom-10 scoring defenses", "ticker": "Pts Allowed"},
-    "fg3a":   {"top": "the 10 teams that allow the fewest threes", "bottom": "the 10 teams that allow the most threes", "ticker": "3PM Allowed"},
+    "pass":   {"top": "Top-10 pass defenses", "bottom": "Bottom-10 pass defenses", "ticker": "Pass YPG Allowed"},
+    "rush":   {"top": "Top-10 run defenses", "bottom": "Bottom-10 run defenses", "ticker": "Rush YPG Allowed"},
+    "pts":    {"top": "Top-10 scoring defenses", "bottom": "Bottom-10 scoring defenses", "ticker": "PPG Allowed"},
+    "rec_WR": {"top": "Top-10 defenses against WRs", "bottom": "Bottom-10 defenses against WRs", "ticker": "Rec YPG Allowed to WRs"},
+    "rec_TE": {"top": "Top-10 defenses against TEs", "bottom": "Bottom-10 defenses against TEs", "ticker": "Rec YPG Allowed to TEs"},
+    "rec_RB": {"top": "Top-10 defenses against RBs", "bottom": "Bottom-10 defenses against RBs", "ticker": "Rec YPG Allowed to RBs"},
+    "sacks":  {"more": True, "top": "Top-10 pass rushes", "bottom": "Bottom-10 pass rushes", "ticker": "Sacks"},
+    "blitz":  {"more": True, "top": "blitz-heavy defenses", "bottom": "defenses that rarely blitz", "ticker": "Blitz Rate"},
+    "pa":     {"top": "Top-10 scoring defenses", "bottom": "Bottom-10 scoring defenses", "ticker": "Pts Allowed"},
+    "fg3a":   {"top": "Top-10 three-point defenses", "bottom": "Bottom-10 three-point defenses", "ticker": "3PM Allowed"},
     "pace":   {"more": True, "top": "fast-paced teams", "bottom": "slow-paced teams", "ticker": "Pace"},
 }
 # which defense features speak to which markets ("rec_POS" = yards allowed to his position; "@RB" = only for backs)
@@ -200,8 +200,8 @@ FAMILY = {"defense": "defense", "special": "special", "out": "teammates", "qbout
 TIER = {"defense": 1, "special": 1, "teammates": 2, "coach": 3, "opponent": 4, "setting": 5, "form": 6, "plain": 7, "none": 8}
 BOOST = {"defense": 1.5, "special": 1.5, "teammates": 1.5, "coach": 1.4, "opponent": 1.0, "setting": 0.7, "form": 0.5, "plain": 0.0}
 MATCHUP = {"defense", "coach", "former", "out", "qbout", "qb", "cold", "wind", "opp"}   # one of a pair must be one of these
-# ...and the other one of these, so a pair still reads as one plain idea ("road games vs top-10 pass defenses",
-# "as a favorite vs top-10 pass defenses"); "after a win" and form clauses only stand alone (owner, Nov 24:
+# ...and the other one of these, so a pair still reads as one plain idea ("road games vs Top-10 pass defenses",
+# "as a favorite vs Top-10 pass defenses"); "after a win" and form clauses only stand alone (owner, Nov 24:
 # "against the 10 defenses with the fewest missed tackles after a win" is word garbage)
 PAIR_PARTNER = MATCHUP | {"role", "roof", "div", "prime", "tv", "fd", "bigline", "rest"}
 # The players a game's line can be about: the starting quarterback, the lead back and the top three
@@ -1107,7 +1107,7 @@ def phrase(conds: tuple, team_name: str = "", team_only_sample: bool = False) ->
             s = s.replace("a win", f"a {team_name} win").replace("a loss", f"a {team_name} loss")
         sufs.append(s)
     merged = []
-    for sfx in sufs:   # "vs top-10 pass defenses and ...", "without A and B"
+    for sfx in sufs:   # "vs Top-10 pass defenses and ...", "without A and B"
         word = sfx.split(" ", 1)[0]
         if merged and word in ("vs", "without") and merged[-1].startswith(word + " "):
             merged[-1] += " and " + sfx[len(word) + 1:]
@@ -1525,7 +1525,7 @@ def main() -> None:
 def self_test() -> None:
     """Synthetic history: wording, pushes, thresholds, the tautology filter, special dates, tickers, ranking, the check pass."""
     rows = []
-    # 30 games over three seasons: 30 points at home, 18 on the road; the home games came against top-10 scoring defenses
+    # 30 games over three seasons: 30 points at home, 18 on the road; the home games came against Top-10 scoring defenses
     for i in range(30):
         s = 2025 + i // 10
         home = i % 2 == 0
@@ -1570,7 +1570,7 @@ def self_test() -> None:
     assert a.text.startswith("Test Player has ") and a.text.endswith(" 24.5 Pts in 15 straight home games"), a.text
     assert a.record == "15 straight" and a.strong and verify(a, data, u) is None
     top = sorted(angles, key=lambda x: x.order, reverse=True)[0]
-    assert top.family == "defense" and top.text.endswith("in 15 straight games vs top-10 scoring defenses"), top.text
+    assert top.family == "defense" and top.text.endswith("in 15 straight games vs Top-10 scoring defenses"), top.text
     assert top.ticker == "TWO 4th in Pts Allowed", top.ticker
     assert verify(Angle(**{**a.__dict__, "hits": 14}), data, u) is not None
     assert verify(Angle(**{**a.__dict__, "text": a.text.replace(" has ", " should have ")}), data, u) is not None
@@ -1602,8 +1602,8 @@ def self_test() -> None:
     t, rec = sentence("A B", NBA_MARKETS["Total Points"], 27.5, "over", 9, 11, "team", (), "Heat")
     assert t.endswith("27.5 Pts in 9 of his 11 games since joining the Heat") and rec == "9 of his 11", t
     t, rec = sentence("A B", NFL_MARKETS["Anytime Touchdown Scorer"], 0.5, "over", 10, 11, "recent",
-                      (Cond("defense", "", "vs top-10 run defenses", None),), "Lions")
-    assert t == "A B has scored in 10 of his last 11 games vs top-10 run defenses", t
+                      (Cond("defense", "", "vs Top-10 run defenses", None),), "Lions")
+    assert t == "A B has scored in 10 of his last 11 games vs Top-10 run defenses", t
     verbs = {sentence("A B", NFL_MARKETS["Total Receiving Yards (incl. overtime)"], 60.5, "over", 9, 12, "recent", (), "X", seed=str(i))[0].split(" 60.5")[0]
              for i in range(40)}
     assert len(verbs) >= 3, verbs

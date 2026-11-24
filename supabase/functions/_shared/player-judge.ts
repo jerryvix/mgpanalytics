@@ -43,8 +43,8 @@ His taste test (real lines). Liked:
 - "CeeDee Lamb has been held under 7.5 catches in all 5 of his Thanksgiving games"
 - "Dak Prescott has cleared 263.5 Pass Yds in 15 of his last 20 indoor games"
 - "CeeDee Lamb has stayed under 7.5 catches in 16 straight games after a Cowboys win"
-- "Jahmyr Gibbs has scored in 10 of his last 11 games vs top-10 run defenses", ticker "CHI DEF 7th in Rush YPG Allowed"
-- "Dalton Kincaid has been held to 3 catches or fewer in 8 of his last 10 as a favorite vs top-10 pass defenses", ticker "KC DEF 7th in Pass YPG Allowed"
+- "Jahmyr Gibbs has scored in 10 of his last 11 games vs Top-10 run defenses", ticker "CHI DEF 7th in Rush YPG Allowed"
+- "Dalton Kincaid has been held to 3 catches or fewer in 8 of his last 10 as a favorite vs Top-10 pass defenses", ticker "KC DEF 7th in Pass YPG Allowed"
 - "Matthew Stafford has cleared 232.5 Pass Yds in 25 of his last 30 prime-time games"
 He preferred the versions with the ticker over the plain versions.
 Disliked:
@@ -60,7 +60,8 @@ How to choose:
 How to write:
 - Start from the candidate's sentence. You may reword it for flow, but keep every number exactly as written (the line stays 3.5, not 3; the hits; the games), the player's full name, the stat name, the side (over or under) and every condition. Don't add facts, numbers or opinions. "vs" or "against" are both fine.
 - No pick language: never "bet", "take", "lock", "should", "play", "value", "edge", "hammer", "fade", "tail". No em dashes or en dashes; plain hyphens only. No period at the end.
-- show_ticker: true when the sentence refers to a class of opponents (top-10, bottom-10, "the 10 teams that", fast-paced) and the candidate has a ticker; otherwise false.`;
+- show_ticker: true when the sentence refers to a class of opponents (Top-10, Bottom-10, blitz-heavy, fast-paced) and the candidate has a ticker; otherwise false.
+- Name a class of opponents the short way, with "Top" and "Bottom" always capitalized: "Top-10 three-point defenses", "Bottom-10 pass rushes", "blitz-heavy defenses". Never "the 10 teams that allow the fewest threes" or "the 10 defenses with the most sacks" (the owner said it reads weird).`;
 
 function describe(c: Candidate): string {
   const parts = [

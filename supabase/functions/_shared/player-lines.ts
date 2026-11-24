@@ -136,7 +136,7 @@ export function finalLine(c: Candidate, choice: JudgeChoice | null): { text: str
   const useJudge = choice !== null && why === null;
   const text = useJudge ? choice!.sentence.trim().replace(/\.+$/, "") : c.sentence;
   const record = (useJudge ? recordRun(text, c.hits, c.games) : null) ?? c.record;
-  // a class of opponents ("vs top-10 run defenses") always carries tonight's opponent's rank
+  // a class of opponents ("vs Top-10 run defenses") always carries tonight's opponent's rank
   const ticker = c.ticker && (c.family === "defense" || (choice?.show_ticker ?? false)) ? c.ticker : null;
   return { text, record, ticker, by: useJudge ? "judge" : "engine", why };
 }

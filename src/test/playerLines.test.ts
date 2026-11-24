@@ -13,14 +13,14 @@ const dak: Candidate = {
 const gibbs: Candidate = {
   ...dak, id: "c1", player_name: "Jahmyr Gibbs", short_name: "J. Gibbs", team: "DET", market: "anytime_td", market_short: "Anytime TD",
   stat: "touchdowns", stat_terms: ["scored", "touchdown", "TD"], line: 0.5, hits: 10, games: 11, record: "10 of his last 11",
-  sentence: "Jahmyr Gibbs has scored in 10 of his last 11 games vs top-10 run defenses", conditions: ["defense"], family: "defense",
+  sentence: "Jahmyr Gibbs has scored in 10 of his last 11 games vs Top-10 run defenses", conditions: ["defense"], family: "defense",
   angle_type: "defense:rush", ticker: "CHI DEF 7th in Rush YPG Allowed",
 };
 
 describe("player line judge checks (D-106)", () => {
   it("accepts a reworded sentence that keeps every fact", () => {
     expect(checkSentence(dak, "Dak Prescott has gone over 263.5 Pass Yds in 5 of his last 6 Thanksgiving games")).toBeNull();
-    expect(checkSentence(gibbs, "Jahmyr Gibbs has scored in 10 of his last 11 games against top-10 run defenses")).toBeNull();
+    expect(checkSentence(gibbs, "Jahmyr Gibbs has scored in 10 of his last 11 games against Top-10 run defenses")).toBeNull();
   });
 
   it("rejects changed numbers, rounded lines, flipped sides and dropped conditions", () => {
