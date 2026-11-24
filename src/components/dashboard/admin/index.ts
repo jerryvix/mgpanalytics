@@ -11,3 +11,4 @@ export { PropsSyncCard } from "./PropsSyncCard";
 export { NBASyncCard } from "./NBASyncCard";
 export { SyncScheduleDashboard } from "./SyncScheduleDashboard";
 export { BacktestSyncCard } from "./BacktestSyncCard";
+export { TractionCard } from "./TractionCard";

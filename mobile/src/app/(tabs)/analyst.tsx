@@ -62,8 +62,9 @@ function CopyButton({ text }: { text: string }) {
 
 export default function AnalystScreen() {
   const c = useTheme();
-  const { session, ready } = useAuth();
-  const uid = session?.user.id ?? null;
+  const { user, signedIn, ready } = useAuth();
+  // Guests have a session too (auth.tsx); only an account can chat, so a guest counts as no one here
+  const uid = signedIn && user ? user.id : null;
   const { c: openId } = useLocalSearchParams<{ c?: string }>();
   const [consented, setConsented] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -289,7 +290,7 @@ export default function AnalystScreen() {
       <TopBar />
       <View style={{ paddingHorizontal: 16, paddingTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <T size={34} weight="medium" style={{ letterSpacing: -0.8 }}>The Analyst</T>
-        {session && consented ? (
+        {signedIn && consented ? (
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <Pressable onPress={() => router.push('/analyst-history')} disabled={busy} accessibilityRole="button" accessibilityLabel="Chat history"
               accessibilityState={{ disabled: busy }}
@@ -309,7 +310,7 @@ export default function AnalystScreen() {
 
   if (!ready || consented === null) return <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>{header}</SafeAreaView>;
 
-  if (!session) {
+  if (!signedIn) {
     return (
       <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
         {header}

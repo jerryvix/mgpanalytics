@@ -52,7 +52,7 @@ If you email us, we keep your email address and what you send so we can help you
 
 ### What's Stored on Your Device
 
-- **In the app:** your sign-in session, so you stay signed in, and a note that you've seen the Analyst notice. Images you attach may sit briefly in the app's temporary cache on your phone.
+- **In the app:** your sign-in session, so you stay signed in, and a note that you've seen the Analyst notice. If you use the app without an account, it signs you in as a private guest: a random ID with no name or email, used to count installs and the days the app is opened. If you create an account later, that guest becomes your account. Images you attach may sit briefly in the app's temporary cache on your phone.
 - **On the website:** your sign-in session and display settings (like whether the chat panel is open and how wide it is, and whether you've seen the walkthrough) in your browser's local storage, a small cookie that remembers whether the sidebar is open, and short-lived copies of public sports data so pages load faster.
 
 These stay on your device. We don't use them to track you across other websites or apps.

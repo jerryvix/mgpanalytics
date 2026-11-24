@@ -32,7 +32,7 @@ const openPage = (url: string) => WebBrowser.openBrowserAsync(url).catch(() => u
 
 export default function ProfileScreen() {
   const c = useTheme();
-  const { session } = useAuth();
+  const { user, signedIn } = useAuth();
   const [deleting, setDeleting] = useState(false);
   const deletingNow = useRef(false);
 
@@ -51,13 +51,14 @@ export default function ProfileScreen() {
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
-      if (!token) throw new Error('no session');
+      // Only an account can be deleted, never a guest session
+      if (!token || data.session?.user.is_anonymous) throw new Error('no account session');
       const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-account`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, apikey: PUBLISHABLE_KEY },
       });
       if (res.status !== 200) throw new Error(`http ${res.status}`);
-      // The account is gone on the server; clear it from this phone
+      // The account is gone on the server; clear it from this phone (a fresh guest session follows)
       await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
       Alert.alert('Your account was deleted');
     } catch {
@@ -95,17 +96,17 @@ export default function ProfileScreen() {
         <View style={{ marginTop: 14, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: c.border }}>
           <View style={{ flex: 1, gap: 3 }}>
             <T size={17} weight="semibold">Account</T>
-            <T size={14}>{session?.user.email ?? 'Sign in to ask The Analyst'}</T>
+            <T size={14}>{signedIn ? user?.email ?? '' : 'Sign in to ask The Analyst'}</T>
           </View>
-          <Pressable onPress={() => (session ? supabase.auth.signOut() : router.push('/sign-in'))} disabled={deleting} accessibilityRole="button"
+          <Pressable onPress={() => (signedIn ? supabase.auth.signOut() : router.push('/sign-in'))} disabled={deleting} accessibilityRole="button"
             style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, backgroundColor: c.surfaceRaised }}>
-            <T size={15} weight="semibold">{session ? 'Sign Out' : 'Sign In'}</T>
+            <T size={15} weight="semibold">{signedIn ? 'Sign Out' : 'Sign In'}</T>
           </Pressable>
         </View>
         <Row label="Contact Support" desc={SUPPORT_EMAIL} icon="arrow.up.right" onPress={contactSupport} />
         <Row label="Privacy Policy" icon="arrow.up.right" onPress={() => openPage(PRIVACY_URL)} />
         <Row label="Terms of Use" icon="arrow.up.right" onPress={() => openPage(TERMS_URL)} />
-        {session ? <Row label="Delete Account" icon="chevron.right" onPress={confirmDelete} busy={deleting} /> : null}
+        {signedIn ? <Row label="Delete Account" icon="chevron.right" onPress={confirmDelete} busy={deleting} /> : null}
         <T size={14} style={{ marginTop: 22, lineHeight: 20 }}>{"MGP shows data and what betting shows are saying, never its own picks"}</T>
         <Pressable onPress={callHelpline} accessibilityRole="link" accessibilityLabel={`Gambling problem? Call ${GAMBLER_LABEL}`} style={{ marginTop: 10, alignSelf: 'flex-start' }}>
           <T size={14} style={{ lineHeight: 20 }}>Gambling problem? Call <T size={14} weight="semibold" style={{ textDecorationLine: 'underline' }}>{GAMBLER_LABEL}</T></T>

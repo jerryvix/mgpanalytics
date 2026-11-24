@@ -86,10 +86,12 @@ export function AuthCard() {
         }
         case "signup": {
           const redirectUrl = `${window.location.origin}/auth/callback`;
+          // signup_source tags where the account was made, for the admin panel's Traction
+          // numbers (admin_traction); the app sends 'app'
           const { data, error } = await supabase.auth.signUp({
             email,
             password,
-            options: { emailRedirectTo: redirectUrl },
+            options: { emailRedirectTo: redirectUrl, data: { signup_source: "web" } },
           });
           if (error) throw error;
 
@@ -107,6 +109,12 @@ export function AuthCard() {
             return;
           }
 
+          // Email confirmation is off (Nov 24), so sign-up returns a session and the
+          // landing page's auth listener opens the dashboard
+          if (data.session) {
+            toast.success("ACCOUNT CREATED", { description: "Redirecting to dashboard..." });
+            break;
+          }
           toast.success("ACCOUNT CREATED", {
             description: "Check your email to verify your account, then sign in.",
           });

@@ -122,4 +122,30 @@ describe("AuthCard", () => {
       expect(mockToastError).toHaveBeenCalledWith("INVALID CREDENTIALS");
     });
   });
+
+  // Traction (admin_traction): web sign-ups are tagged so the admin panel can split app and web
+  function signUp(password = "longenough1") {
+    render(<AuthCard />);
+    fireEvent.click(screen.getByText(/new user\? create account/i));
+    fireEvent.change(screen.getByLabelText(/email/i), { target: { value: "new@test.com" } });
+    fireEvent.change(screen.getByLabelText(/password/i), { target: { value: password } });
+    fireEvent.submit(screen.getByRole("button", { name: /register/i }));
+  }
+
+  it("tags a website sign-up with signup_source web", async () => {
+    mockSignUp.mockResolvedValue({ data: { user: { identities: [{}] }, session: null }, error: null });
+    signUp();
+    await waitFor(() => expect(mockSignUp).toHaveBeenCalled());
+    const arg = mockSignUp.mock.calls[0][0];
+    expect(arg.options.data).toEqual({ signup_source: "web" });
+    expect(arg.options.emailRedirectTo).toMatch(/\/auth\/callback$/);
+  });
+
+  it("says it's redirecting when sign-up returns a session (email confirmation off)", async () => {
+    mockSignUp.mockResolvedValue({ data: { user: { identities: [{}] }, session: { access_token: "t" } }, error: null });
+    signUp();
+    await waitFor(() =>
+      expect(mockToastSuccess).toHaveBeenCalledWith("ACCOUNT CREATED", { description: "Redirecting to dashboard..." }),
+    );
+  });
 });

@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Divider, Empty, Icon, Mono, T } from '@/components/night';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/lib/auth';
 import { deleteConversation, listConversations, type Conversation } from '@/lib/chat-store';
 import { clock, daysAgo, toDate } from '@/lib/time';
 
@@ -26,6 +27,8 @@ function when(iso: string): string {
 
 export default function AnalystHistory() {
   const c = useTheme();
+  // History is for accounts; a guest reaching this screen sees a note instead
+  const { signedIn, ready } = useAuth();
   const [items, setItems] = useState<Conversation[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,10 +40,11 @@ export default function AnalystHistory() {
     ), []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (signedIn) load();
+  }, [load, signedIn]);
 
   const refresh = async () => {
+    if (!signedIn) return;
     setRefreshing(true);
     await load();
     setRefreshing(false);
@@ -73,10 +77,11 @@ export default function AnalystHistory() {
       </View>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.text} />}>
-        {items === null && !failed ? <View style={{ padding: 24 }}><ActivityIndicator color={c.text} /></View> : null}
-        {failed ? <Empty>{"Couldn't load your chats. Pull down to try again"}</Empty> : null}
-        {!failed && items && !items.length ? <Empty>Your chats with the Analyst show up here, on the app and on mgp-analytics.com</Empty> : null}
-        {(items ?? []).map((conv, i) => (
+        {ready && !signedIn ? <Empty>Sign in to see your chats with the Analyst, on the app and on mgp-analytics.com</Empty> : null}
+        {signedIn && items === null && !failed ? <View style={{ padding: 24 }}><ActivityIndicator color={c.text} /></View> : null}
+        {signedIn && failed ? <Empty>{"Couldn't load your chats. Pull down to try again"}</Empty> : null}
+        {signedIn && !failed && items && !items.length ? <Empty>Your chats with the Analyst show up here, on the app and on mgp-analytics.com</Empty> : null}
+        {(signedIn ? items ?? [] : []).map((conv, i) => (
           <View key={conv.id}>
             {i > 0 ? <Divider /> : null}
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 }}>
