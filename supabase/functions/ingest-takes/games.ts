@@ -12,6 +12,7 @@ export interface UpcomingGame {
   startsAt: string; // ISO
   matchup: string; // "Cavaliers at Bulls", "VCU vs Providence"
   teams: string[]; // display, short, location, name, abbreviation for both sides (lowercase)
+  teamIds: string[]; // ESPN team ids, away then home, for roster lookups
   line: string; // one line for the prompt
 }
 
@@ -69,6 +70,7 @@ export async function upcomingGames(sports: TakesSport[], days = 4, now = new Da
         startsAt: new Date(e.date).toISOString(),
         matchup,
         teams: [...teamWords(away), ...teamWords(home)],
+        teamIds: [String(away.id), String(home.id)],
         line: `${e.id} | ${sport} | ${etLabel(e.date)} | ${away.displayName} ${sep} ${home.displayName}`,
       });
     }
@@ -87,4 +89,57 @@ export function candidatesFor(games: UpcomingGame[], transcript: string): Upcomi
     if (g.sport === "NFL" || g.sport === "NBA") return true;
     return g.teams.some((w) => w.length >= 4 && text.includes(` ${w.replace(/[^a-z0-9&' ]+/g, " ")} `));
   });
+}
+
+/** Every player name on both teams' ESPN rosters, for correcting transcription misspellings. */
+export async function rosterNames(game: UpcomingGame): Promise<string[]> {
+  const { path } = PATHS[game.sport];
+  const names: string[] = [];
+  await Promise.all(game.teamIds.map(async (id) => {
+    const res = await espnFetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/teams/${id}/roster`);
+    if (!res.ok) return;
+    const body = await res.json();
+    // NFL rosters come grouped by position; basketball rosters as a flat list.
+    const groups = Array.isArray(body.athletes) ? body.athletes : [];
+    for (const g of groups) {
+      const items = Array.isArray(g?.items) ? g.items : [g];
+      for (const a of items) if (typeof a?.fullName === "string") names.push(a.fullName);
+    }
+  }));
+  return names;
+}
+
+function lev(a: string, b: string): number {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+  }
+  return d[a.length][b.length];
+}
+
+const norm = (s: string) => s.toLowerCase().replace(/[^a-z]/g, "");
+
+/**
+ * Fix a misspelled player name at the start of a pick ("Jaden Daniels Anytime TD" ->
+ * "Jayden Daniels Anytime TD") by matching its first two or three words to the two
+ * teams' rosters. Only a close match is applied; anything else is left as written.
+ */
+export function correctName(pick: string, roster: string[]): string {
+  const words = pick.split(/\s+/);
+  let best: { name: string; take: number; score: number } | null = null;
+  for (const take of [2, 3]) {
+    if (words.length < take) continue;
+    const said = norm(words.slice(0, take).join(" "));
+    if (said.length < 5) continue;
+    for (const name of roster) {
+      const n = norm(name);
+      const score = 1 - lev(said, n) / Math.max(said.length, n.length);
+      if (!best || score > best.score) best = { name, take, score };
+    }
+  }
+  if (!best || best.score < 0.8 || best.score === 1) return pick;
+  return [best.name, ...words.slice(best.take)].join(" ");
 }

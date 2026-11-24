@@ -17,7 +17,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { createRemoteJWKSet, jwtVerify } from "npm:jose@5.9.6";
-import { candidatesFor, upcomingGames, type TakesSport } from "./games.ts";
+import { candidatesFor, correctName, rosterNames, upcomingGames, type TakesSport } from "./games.ts";
 import { extractPicks, plainDashes, TAKES_MODEL } from "./extract.ts";
 
 const REPO = "jerryvix/mgpanalytics";
@@ -105,10 +105,23 @@ serve(async (req) => {
     publishedAt, transcript, candidates,
   });
 
+  // The show's newer episodes already stored, per game and bet type: an older episode never overrides them (D-069).
+  const { data: newer } = await supabase.from("takes").select("espn_event_id, market")
+    .eq("show", body.show).neq("episode_guid", ep.guid).gt("episode_published_at", publishedAt);
+  const covered = new Set((newer ?? []).map((r: { espn_event_id: string; market: string }) => `${r.espn_event_id}|${r.market}`));
+  const rosters = new Map<string, string[]>();
+
   const rows = [];
   for (const p of picks) {
     const g = byId.get(String(p.event_id));
     if (!g || !p.pick.trim()) continue; // unknown or already started: never stored
+    if (CORE_MARKETS.has(p.market) && covered.has(`${g.id}|${p.market}`)) continue;
+    if (p.market === "prop" || p.market === "parlay") {
+      if (!rosters.has(g.id)) rosters.set(g.id, await rosterNames(g).catch(() => []));
+      const roster = rosters.get(g.id)!;
+      p.pick = correctName(p.pick, roster);
+      p.legs = p.legs.map((leg) => correctName(leg, roster));
+    }
     rows.push({
       show: body.show,
       show_name: show.name,
