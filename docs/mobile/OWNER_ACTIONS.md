@@ -69,12 +69,13 @@ Apple enrollment confirmed approved by the owner on Nov 23.
 - [x] Insiders channels sent Nov 23: Bear Bets, Hold The Phone, Bookit Blitz. Send more anytime.
 - [ ] Merge jerryvix/mgpanalytics#23 on GitHub (approved in principle Nov 23): Title Case labels, plain #12 ranks, and the chat guard that lets basketball splits turn on.
 
-## X takes (after the branch is merged)
+## X takes
 
-- [ ] **Set up X takes ingest (D-102).** No paid X API. Do this only after `grokbot/x-takes-ingest` is merged, and never paste the secret into chat or the repo.
-  1. Run the migration `supabase/migrations/20261124180000_x_takes.sql` on the MGP Supabase project.
-  2. Set the secret: `supabase secrets set X_TAKES_INGEST_SECRET=...` (the name is `X_TAKES_INGEST_SECRET`; you choose the value).
-  3. Deploy `ingest-x-takes`, and redeploy `ingest-takes` and `app-feed`, the same way other functions are deployed (`docs/mobile/RUNBOOK.md`). Migration first, then the functions.
+- [x] **Set up X takes ingest (D-102).** Done Nov 24. #28 merged, endpoint live and locked (a call without the secret header gets the function's own `401 unauthorized`).
+  1. [x] Migration `20261124180000_x_takes.sql` run in the SQL editor and recorded in `supabase_migrations.schema_migrations`.
+  2. [x] `X_TAKES_INGEST_SECRET` set in the dashboard (Edge Functions → Secrets). The value lives only in the owner's password manager and Grok Bot's secure form.
+  3. [x] `ingest-x-takes` deployed from the dashboard editor as one bundled file built from main, with JWT verification off. The next CLI deploy replaces it with the normal multi-file build.
+- [ ] Redeploy `ingest-takes` and `app-feed` with the CLI (`docs/mobile/RUNBOOK.md`). Until then X picks and notes are stored, but units, post links and market notes don't show in the app (`app-feed`), and Daft Previews rows are tagged `podcast` instead of `youtube`.
 
 ## Recommended (5 minutes)
 
