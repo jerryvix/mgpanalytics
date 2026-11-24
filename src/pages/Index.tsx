@@ -147,6 +147,18 @@ const Index = () => {
             © 2026 MGP ANALYTICS • ALL RIGHTS RESERVED •{" "}
             <Link to="/why" className="hover:text-terminal-green transition-colors">
               WHY MGP
+            </Link>{" "}
+            •{" "}
+            <Link to="/privacy" className="hover:text-terminal-green transition-colors">
+              PRIVACY
+            </Link>{" "}
+            •{" "}
+            <Link to="/terms" className="hover:text-terminal-green transition-colors">
+              TERMS
+            </Link>{" "}
+            •{" "}
+            <Link to="/support" className="hover:text-terminal-green transition-colors">
+              SUPPORT
             </Link>
           </p>
         </motion.footer>

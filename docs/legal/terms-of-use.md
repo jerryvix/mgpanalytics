@@ -1,14 +1,8 @@
 # MGP Analytics Terms of Use
 
-> **Notes for the owner (delete this block before publishing)**
-> 1. Assumes MGP is free, offered in the US and run by [LLC LEGAL NAME]. The Subscriptions section is a placeholder: add prices, trial and the web refund policy before the paywall turns on (D-002, D-084).
-> 2. The daily limit line assumes the uncommitted 50 per day cap (`ANALYST_DAILY_LIMIT`) ships; the 10 per minute limit is live. The Profile > Delete Account button must ship in the app before these go live.
-> 3. For a lawyer: gambling-adjacent content (no picks, not a sportsbook, Expert Picks are third-party opinions summarized by AI and graded automatically), state age rules (18 vs 21), the AI disclosure and accuracy disclaimers, the $100 liability cap, whether to add arbitration and a class action waiver, a DMCA agent, and Apple's minimum app terms.
-> 4. Before charging money, confirm data licenses (ESPN, DraftKings splits, MLB StatsAPI) and team logo use (see `docs/mobile/APP_STORE_COMPLIANCE.md`).
+**Effective date:** November 24, 2026
 
-**Effective date:** [EFFECTIVE DATE]
-
-These Terms are an agreement between you and [LLC LEGAL NAME], a [STATE] limited liability company ("MGP," "we," "us"). They cover the MGP Analytics website at mgp-analytics.com and the MGP Analytics iPhone app (together, "MGP"). By using MGP, you agree to these Terms and to our Privacy Policy (mgp-analytics.com/privacy). If you don't agree, please don't use MGP.
+These Terms are an agreement between you and MGP Analytics ("MGP," "we," "us"). They cover the MGP Analytics website at mgp-analytics.com and the MGP Analytics iPhone app (together, "MGP"). By using MGP, you agree to these Terms and to our Privacy Policy (mgp-analytics.com/privacy). If you don't agree, please don't use MGP.
 
 ## What MGP Is
 
@@ -62,8 +56,8 @@ MGP shows sports data for leagues like the NFL, NBA, college football, college b
 - Give us accurate information and keep it up to date.
 - Keep your password private. You're responsible for what happens on your account.
 - One person per account. Don't share, sell or transfer your account.
-- If you think someone else is using your account, email [SUPPORT EMAIL] right away.
-- You can delete your account anytime: in the app, go to Profile > Delete Account; for the website, email [SUPPORT EMAIL].
+- If you think someone else is using your account, email support@mgp-analytics.com right away.
+- You can delete your account anytime: in the app, go to Profile > Delete Account; for the website, email support@mgp-analytics.com.
 - We can suspend or close an account that breaks these Terms.
 
 ## Rules for Using MGP
@@ -87,12 +81,12 @@ Please don't:
 
 ## Our Content and Other Trademarks
 
-- MGP's software, design, features and original content belong to [LLC LEGAL NAME]. We give you a personal, non-commercial, non-transferable right to use MGP under these Terms.
+- MGP's software, design, features and original content belong to MGP. We give you a personal, non-commercial, non-transferable right to use MGP under these Terms.
 - The MGP name and logo are ours. Please don't use them without our written permission.
 - Team and league names, logos and trademarks belong to their owners. So do the names and content of outside shows, sportsbooks and data providers. We use them only to identify teams, games and sources.
 - MGP isn't affiliated with, sponsored by or endorsed by any league, team, player, sportsbook or show, including the NFL, NBA, NCAA, MLB, ESPN and DraftKings.
 - Posts from X and other sites belong to the people who wrote them.
-- If you think something on MGP infringes your copyright, email [SUPPORT EMAIL] with the details and we'll look into it.
+- If you think something on MGP infringes your copyright, email support@mgp-analytics.com with the details and we'll look into it.
 
 ## Other Sites and Services
 
@@ -104,7 +98,7 @@ MGP is free today. If we launch paid plans:
 
 - We'll show you the price, what's included and any free trial before you buy, and we'll update these Terms first.
 - **In the iPhone app,** you'll pay through Apple's in-app purchase. Apple bills you and Apple's rules apply. You can cancel anytime in your iPhone's Settings, under your name, then Subscriptions. Apple handles refunds.
-- **On the website,** you'll pay through Stripe. You can cancel anytime from your account page. [WEBSITE REFUND POLICY]
+- **On the website,** you'll pay through Stripe. You can cancel anytime from your account page. We'll post the refund policy before paid plans start.
 - Subscriptions renew automatically until you cancel. When you cancel, you keep access until the end of the period you've paid for.
 - Deleting your account or the app doesn't cancel a subscription.
 
@@ -134,11 +128,10 @@ Some states don't allow these limits, so they may not fully apply to you.
 
 If someone makes a claim against MGP because you broke these Terms or the law while using MGP, you agree to defend MGP and cover our reasonable costs, including legal fees.
 
-## Governing Law and Disputes
+## Disputes
 
-- These Terms are governed by the laws of [STATE], without regard to its conflict of law rules.
-- Before you file a claim, please email [SUPPORT EMAIL] and give us 30 days to try to resolve it with you.
-- Any dispute will be handled in the state or federal courts located in [STATE], and you and MGP agree to those courts' jurisdiction. Either of us may bring a claim in small claims court if it qualifies.
+- Before you file a claim, please email support@mgp-analytics.com and give us 30 days to try to resolve it with you.
+- Either of us may bring a claim in small claims court if it qualifies.
 
 ## If You Use the iPhone App
 
@@ -159,14 +152,11 @@ We may update these Terms. We'll change the effective date at the top. For impor
 ## General
 
 - These Terms and the Privacy Policy are the whole agreement between you and MGP about MGP.
+- If we form a company to run MGP, these Terms move to that company, and we'll update the name here.
 - If part of these Terms can't be enforced, the rest still applies.
 - If we wait to enforce a right, we haven't given it up.
 - You can't transfer these Terms to someone else. We can, for example if MGP is sold.
 
 ## Contact Us
 
-Questions about these Terms? Reach us at:
-
-[LLC LEGAL NAME]\
-[MAILING ADDRESS]\
-[SUPPORT EMAIL]
+Questions about these Terms? Email us at support@mgp-analytics.com.

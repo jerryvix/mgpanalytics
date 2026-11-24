@@ -2,15 +2,16 @@
  * One call to The Analyst (`gemini-chat`, D-080), made with a plain fetch so every step
  * reports what went wrong (D-090). A failed call is logged to `api_request_log`
  * (provider `mgp-app`, the person's own row) so it can be looked into without a screenshot.
- * A 429 is either the 10 a minute burst limit (`busy`) or the 50 a day cap (`daily`, body
- * { error: "Daily limit reached" }, resets at midnight Eastern; D-099).
+ * A 429 is the 10 a minute burst limit (`busy`), the 50 a day cap (`daily`, body
+ * { error: "Daily limit reached" }, resets at midnight Eastern; D-099), or the overall
+ * daily ceiling for everyone together (`paused`, body { error: "Analyst paused for today" }; D-109).
  */
 import { PUBLISHABLE_KEY, SUPABASE_URL, supabase } from '@/lib/supabase';
 
 export type Source = { title: string; url: string };
 export type AnalystReply =
   | { ok: true; content: string; sources: Source[] }
-  | { ok: false; busy: boolean; daily: boolean; reason: string };
+  | { ok: false; busy: boolean; daily: boolean; paused?: boolean; reason: string };
 
 const TIMEOUT_MS = 120_000; // a web search answer can take a while
 
@@ -60,6 +61,10 @@ export async function askAnalyst(messages: OutMsg[]): Promise<AnalystReply> {
         error = typeof body.error === 'string' ? body.error : '';
       } catch {
         // Not JSON: treat it as the burst limit
+      }
+      if (/paused/i.test(error)) {
+        await logFailure(userId, status, Date.now() - started, 'paused for today');
+        return { ok: false, busy: false, daily: false, paused: true, reason: 'paused for today' };
       }
       return /daily limit/i.test(error) ? fail('daily limit', false, true) : fail('rate limited', true);
     }

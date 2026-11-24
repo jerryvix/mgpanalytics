@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 import AuthCallback from "./pages/AuthCallback";
 import WhyMGP from "./pages/WhyMGP";
+import { PrivacyPolicy, Support, TermsOfUse } from "./pages/Legal";
 import { ChatProvider } from "./contexts/ChatContext";
 
 const queryClient = new QueryClient({
@@ -41,6 +42,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/why" element={<WhyMGP />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfUse />} />
+            <Route path="/support" element={<Support />} />
             <Route path="/dashboard/*" element={<Dashboard />} />
             {/* Redirect old /community/* paths to /dashboard/community/* */}
             <Route path="/community/*" element={<Navigate to="/dashboard/community/cappers" replace />} />
