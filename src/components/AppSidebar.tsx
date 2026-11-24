@@ -40,6 +40,7 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  Mic,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -72,6 +73,7 @@ interface AppSidebarProps {
 // Market - cross-sport tools. Some of these are still being built; they route
 // to a ComingSoon page rather than a dead link until the real feature ships.
 const marketMenuItems = [
+  { title: "Takes", url: "/dashboard/takes", icon: Mic },
   { title: "Live Edges", url: "/dashboard/market/live-edges", icon: Zap },
   { title: "Game Finder", url: "/dashboard/market/game-finder", icon: Search },
   { title: "Line Movement", url: "/dashboard/market/line-movement", icon: TrendingUp },
