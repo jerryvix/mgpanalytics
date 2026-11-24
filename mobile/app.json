@@ -8,7 +8,6 @@
     "scheme": "mgp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.mgpanalytics.app",
       "supportsTablet": false,
       "infoPlist": {
@@ -17,7 +16,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0E1015",
+        "backgroundColor": "#121317",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -34,11 +33,11 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F6F7F9",
+          "backgroundColor": "#121317",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76,
+          "imageWidth": 200,
           "dark": {
-            "backgroundColor": "#0E1015"
+            "backgroundColor": "#121317"
           }
         }
       ]
