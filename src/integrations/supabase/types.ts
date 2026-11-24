@@ -86,6 +86,27 @@ export type Database = {
         }
         Relationships: []
       }
+      app_activity: {
+        Row: {
+          day: string
+          first_seen: string
+          source: string
+          user_id: string
+        }
+        Insert: {
+          day: string
+          first_seen?: string
+          source: string
+          user_id?: string
+        }
+        Update: {
+          day?: string
+          first_seen?: string
+          source?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       betting_lines: {
         Row: {
           captured_at: string
@@ -2831,6 +2852,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_traction: { Args: { days?: number }; Returns: Json }
       cleanup_expired_cache: { Args: never; Returns: undefined }
       cleanup_expired_oauth_states: { Args: never; Returns: undefined }
       get_my_x_connections: {

@@ -41,7 +41,8 @@ import {
   NBASyncCard,
   MLBSyncCard,
   SyncScheduleDashboard,
-  BacktestSyncCard
+  BacktestSyncCard,
+  TractionCard
 } from "./admin";
 
 // Types for sync schedule
@@ -776,6 +777,11 @@ export function AdminPanel() {
           </div>
           <span>Moves: <span className="text-terminal-cyan">{lineMovementsTodayCount ?? 0}</span></span>
         </div>
+      </motion.div>
+
+      {/* Traction: accounts, guests, daily active people and Analyst use (admin_traction) */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}>
+        <TractionCard />
       </motion.div>
 
       {/* Main Grid */}

@@ -18,11 +18,16 @@
 // { ok: true } (the token's signature is still checked), and every delete is a no-op
 // on rows that no longer exist.
 //
-// Answers { ok: true }, or { error } with 401 (no or bad token), 405 (not POST) or 500.
+// A guest (the app's anonymous sign-in for every install) has a valid token but no
+// account, so it gets 403 and nothing is deleted.
+//
+// Answers { ok: true }, or { error } with 401 (no or bad token), 403 (guest),
+// 405 (not POST) or 500.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { getCorsHeaders } from "../_shared/cors.ts";
+import { bearerToken, isGuest } from "../_shared/guest.ts";
 
 // User-owned tables without ON DELETE CASCADE to auth.users, plus the two that have it
 const USER_TABLES = ["conversations", "api_request_log", "analyst_feedback", "analyst_usage"] as const;
@@ -46,9 +51,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  const authHeader = req.headers.get("Authorization") ?? "";
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  const token = bearerToken(req.headers.get("Authorization"));
   if (!token) return json({ error: "Missing authorization" }, 401);
+  const guestRefusal = () => json({ error: "Sign in to delete your account" }, 403);
 
   const url = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -67,6 +72,7 @@ serve(async (req) => {
       // that id and answer ok. Anything else is a bad token.
       const { data: claimsData } = await admin.auth.getClaims(token).catch(() => ({ data: null }));
       const sub = claimsData?.claims?.sub;
+      if (claimsData?.claims && isGuest(null, token)) return guestRefusal();
       if (typeof sub === "string" && sub) {
         const { data: existing, error: lookupError } = await admin.auth.admin.getUserById(sub);
         if (lookupError && !notFound(lookupError)) {
@@ -85,6 +91,8 @@ serve(async (req) => {
       }
       return json({ error: "Unauthorized" }, 401);
     }
+
+    if (isGuest(user, token)) return guestRefusal();
 
     const failed = await deleteUserRows(admin, user.id);
     if (failed) {

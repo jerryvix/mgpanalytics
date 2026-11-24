@@ -22,6 +22,8 @@ import { recentFormBlock } from "./recent-form.ts";
 import { isCalledOffStatus } from "../_shared/game-status.ts";
 // Input checks before any model call (audit S1): shapes, sizes, the 20-message window
 import { validateChatRequest } from "./validate.ts";
+// Guests (anonymous installs) can't ask the Analyst
+import { bearerToken, isGuest } from "../_shared/guest.ts";
 
 // Daily cap per person (audit S2), counted per US Eastern day in analyst_usage
 // (migration 20261124070000_analyst_usage.sql). Set ANALYST_DAILY_LIMIT to change it.
@@ -1581,6 +1583,15 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // A guest (anonymous install) has a valid token but no account: refused before the
+    // burst limit, the daily count and any model call
+    if (isGuest(user, bearerToken(authHeader))) {
+      return new Response(
+        JSON.stringify({ error: "Sign in to ask the Analyst" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

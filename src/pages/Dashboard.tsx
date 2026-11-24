@@ -12,6 +12,7 @@ import { useTrialStatus } from "@/hooks/useTrialStatus";
 import { OnboardingModal } from "@/components/onboarding";
 import { GuidedWalkthrough } from "@/components/onboarding/GuidedWalkthrough";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useWebActivity } from "@/hooks/useWebActivity";
 import { toast } from "sonner";
 
 // TEMPORARY DEV-ONLY BYPASS: lets the dashboard render without a real Supabase
@@ -38,6 +39,8 @@ const Dashboard = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [walkthroughReady, setWalkthroughReady] = useState(false);
   const isMobile = useIsMobile();
+  // Daily active count for the admin panel's Traction section (once per Eastern day)
+  useWebActivity(DEV_BYPASS_AUTH ? null : user);
 
   const handleTogglePreview = useCallback(() => {
     setIsPreviewingAsUser(prev => {
