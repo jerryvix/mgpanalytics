@@ -33,6 +33,20 @@ Apple enrollment confirmed approved by the owner on Nov 23.
   5. On the new app's page, open **App Information** (left side). Under **General Information**, copy the **Apple ID** (a number about 10 digits long). It is not a secret.
   6. Send the builder that number. The builder uploads the build to TestFlight and sets up your tester group.
 
+## Now: sign-up emails that actually arrive (15 minutes)
+
+- [ ] **9. Set up Resend so sign-up and password-reset emails reach people.** Supabase's built-in sender is for testing, so new people likely never get their confirmation email. The key goes straight into Supabase, never in chat.
+  1. Sign up at resend.com with the business email.
+  2. Go to **Domains**, click **Add Domain**, enter `mgp-analytics.com`.
+  3. Resend shows a few DNS records (MX, TXT for SPF, TXT for DKIM). Add each one where your domain is managed (GoDaddy, Namecheap, Cloudflare or similar), then click **Verify** in Resend. It can take a few minutes to an hour.
+  4. Go to **API Keys**, click **Create API Key**, name it `Supabase`, permission **Sending access**, domain `mgp-analytics.com`. Copy the key (Resend shows it once).
+  5. Open supabase.com, the MGP project, then **Authentication**, **Emails**, **SMTP Settings**. Turn on **Enable Custom SMTP** and fill in: Sender email `no-reply@mgp-analytics.com`, Sender name `MGP Analytics`, Host `smtp.resend.com`, Port `465`, Username `resend`, Password: the API key. Save.
+  6. Tell the builder "Resend done". The builder raises the email limit and tests a sign-up from an outside address.
+
+- [ ] **10. Set a monthly spend limit on the AI account.** At console.anthropic.com, open **Settings**, then **Limits**, and set a monthly spend limit you're comfortable with (for example $300). It's a backstop on top of the 50 questions per person per day cap.
+
+- [ ] **11. Send the support email address** for the app, the privacy policy and App Store Connect (any inbox you check).
+
 ## Done: one key so builds reach TestFlight
 
 - [x] **7. Done 2026-11-24.** Create an App Store Connect API key and add it to Expo. With the owner's OK, the builder used it once to create the signing certificate and provisioning profile (D-083); uploads to TestFlight use it from Expo's servers. The key never goes in chat.
