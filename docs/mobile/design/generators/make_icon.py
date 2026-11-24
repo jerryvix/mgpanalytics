@@ -34,7 +34,7 @@ def mark(width_px, glow=True, color=GREEN, tracking=0.05):
         return layer, bbox
     alpha = layer.split()[3]
     out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    for radius, strength in ((size * 0.085, 0.62), (size * 0.17, 0.38)):  # the website's 10px / 20px glow, scaled
+    for radius, strength in ((size * 0.03, 0.5), (size * 0.08, 0.2)):  # tight glow so the letters stay crisp (sharpened Nov 24)
         g = alpha.filter(ImageFilter.GaussianBlur(radius)).point(lambda v: int(v * strength))
         out.alpha_composite(Image.merge("RGBA", [Image.new("L", (W, H), c) for c in color] + [g]))
     out.alpha_composite(layer)
@@ -46,22 +46,25 @@ def centered(canvas, layer, bbox):
     canvas.alpha_composite(layer, (int(canvas.width / 2 - cx), int(canvas.height / 2 - cy)))
     return canvas
 
+SS = 4  # draw at 4x and scale down for clean edges
+
 # iOS / store icon: opaque, 1024
-icon = Image.new("RGBA", (1024, 1024), BG + (255,))
-m, bb = mark(700)
-centered(icon, m, bb).convert("RGB").save(f"{OUT}/icon.png")
+icon = Image.new("RGBA", (1024 * SS, 1024 * SS), BG + (255,))
+m, bb = mark(760 * SS)
+centered(icon, m, bb).convert("RGB").resize((1024, 1024), Image.LANCZOS).save(f"{OUT}/icon.png")
 # Android adaptive: transparent foreground inside the safe zone, solid background, monochrome
-fg = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
-m, bb = mark(520)
-centered(fg, m, bb).save(f"{OUT}/android-icon-foreground.png")
+fg = Image.new("RGBA", (1024 * SS, 1024 * SS), (0, 0, 0, 0))
+m, bb = mark(540 * SS)
+centered(fg, m, bb).resize((1024, 1024), Image.LANCZOS).save(f"{OUT}/android-icon-foreground.png")
 Image.new("RGBA", (1024, 1024), BG + (255,)).save(f"{OUT}/android-icon-background.png")
-mono = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
-m, bb = mark(520, glow=False, color=(255, 255, 255))
-centered(mono, m, bb).save(f"{OUT}/android-icon-monochrome.png")
+mono = Image.new("RGBA", (1024 * SS, 1024 * SS), (0, 0, 0, 0))
+m, bb = mark(540 * SS, glow=False, color=(255, 255, 255))
+centered(mono, m, bb).resize((1024, 1024), Image.LANCZOS).save(f"{OUT}/android-icon-monochrome.png")
 # Splash: the wordmark with its glow on transparent, trimmed with a little room
-m, bb = mark(600)
-pad = 90
+m, bb = mark(600 * SS)
+pad = 60 * SS
 splash = m.crop((bb[0] - pad, bb[1] - pad, bb[2] + pad, bb[3] + pad))
+splash = splash.resize((splash.width // SS, splash.height // SS), Image.LANCZOS)
 splash.save(f"{OUT}/splash-icon.png")
 # Web favicon
 fav = Image.new("RGBA", (192, 192), BG + (255,))
