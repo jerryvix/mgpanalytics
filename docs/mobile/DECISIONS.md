@@ -476,3 +476,10 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **iPhone app:** a subscription bought inside the app has to use Apple's in-app purchase (App Store guideline 3.1.1). Its sheet is Apple's own one-tap flow: Face ID or a side-button double-click, charged to the card on the person's Apple account, which is the same feel as Apple Pay. Apple keeps 15% under the App Store Small Business Program (enroll before charging) or 30% without it.
 **US link to web checkout (decide at paywall time):** US apps can currently also show a link to web checkout (Stripe with Apple Pay) next to in-app purchase. Apple's fee on those purchases is before the Supreme Court as of Nov 2026, so check the rule and the fee before relying on it. In-app purchase must still be offered alongside it.
 **One account:** a subscription bought on either path unlocks MGP on the website and the app through the same Supabase account (the entitlement hook, D-002).
+
+### D-085 The Analyst doesn't name what powers it
+**Date:** 2026-11-24 · **By:** Owner ("Don't tell it what's powering it... It almost takes away from the magic of it")
+**Notice (app, shown once before the first question):** title "Meet Your Analyst"; "Your AI-powered analyst, here to answer your questions on games, odds, splits and trends"; then, smaller, "Your questions go to our AI partner to answer, so leave out personal info"; button "Got It". The notice key moved to v2, so everyone sees the new wording once.
+**Why one line stays:** App Store guideline 5.1.2(i) requires telling people before their data goes to a third-party AI and getting their OK. It doesn't require naming the company, so the notice says "our AI partner" and the privacy policy names Anthropic.
+**In answers:** the Analyst's instructions now say it's MGP's AI analyst and it doesn't name the model or company; asked what powers it, it says it doesn't share the details of the technology behind it. It never claims to be human.
+**Replaces:** D-080's notice wording ("answers come from Anthropic's Claude").

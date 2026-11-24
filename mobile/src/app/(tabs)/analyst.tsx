@@ -1,7 +1,8 @@
 /**
- * The Analyst (D-030, D-080): Claude Sonnet answering like the Claude app, MGP's data first
- * and live web search for the rest, no picks. Needs an account; a one-time notice says
- * questions go to Anthropic's AI (App Store guideline 5.1.2).
+ * The Analyst (D-030, D-080): an AI model answering like a general assistant, MGP's data first
+ * and live web search for the rest, no picks. Needs an account. A one-time notice says questions
+ * go to an outside AI partner (App Store guideline 5.1.2) without naming it (D-085); the
+ * privacy policy names the provider.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
@@ -22,7 +23,7 @@ import { supabase } from '@/lib/supabase';
 type Msg = { role: 'user' | 'assistant'; content: string; sources?: { title: string; url: string }[]; failed?: boolean };
 
 const STARTERS = ["Where's the money tonight?", 'Any injuries to know for tonight?', 'How are the Bills ATS this season?'];
-const CONSENT_KEY = 'analyst-ai-notice-v1';
+const CONSENT_KEY = 'analyst-ai-notice-v2'; // v2: D-085 wording, shown again once
 
 export default function AnalystScreen() {
   const c = useTheme();
@@ -104,8 +105,9 @@ export default function AnalystScreen() {
       <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
         {header}
         <View style={{ margin: 16, padding: 16, borderRadius: 16, backgroundColor: c.surface, gap: 12 }}>
-          <T size={17} weight="semibold">Before You Ask</T>
-          <T size={15} style={{ lineHeight: 22 }}>{"Your questions are answered by Claude, an AI model made by Anthropic. MGP sends Anthropic your question and the chat so far, nothing else. Don't include personal information. AI can make mistakes, so check anything important"}</T>
+          <T size={17} weight="semibold">Meet Your Analyst</T>
+          <T size={15} style={{ lineHeight: 22 }}>Your AI-powered analyst, here to answer your questions on games, odds, splits and trends</T>
+          <T size={13} style={{ lineHeight: 18 }}>{"Your questions go to our AI partner to answer, so leave out personal info"}</T>
           <Pressable onPress={() => { AsyncStorage.setItem(CONSENT_KEY, 'yes').catch(() => undefined); setConsented(true); }} accessibilityRole="button"
             style={{ alignSelf: 'flex-start', paddingHorizontal: 18, height: 44, borderRadius: 999, backgroundColor: c.brand, alignItems: 'center', justifyContent: 'center' }}>
             <T size={15} weight="bold" style={{ color: c.onBrand }}>Got It</T>
