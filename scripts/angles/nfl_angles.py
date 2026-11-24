@@ -15,6 +15,8 @@ import argparse
 import csv
 import json
 import math
+from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -29,6 +31,7 @@ TEAM_NAMES = {
     "OAK": "Raiders", "SD": "Chargers", "STL": "Rams",
 }
 FRANCHISE = {"OAK": "LV", "SD": "LAC", "STL": "LA"}
+ET = ZoneInfo("America/New_York")
 
 MIN_GAMES = 10          # decided games (pushes excluded) an angle needs
 MIN_RATE = 0.65         # strong tier: at least 65% (or at most 35%)
@@ -308,18 +311,26 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--games", required=True)
     ap.add_argument("--season", type=int, default=2026)
-    ap.add_argument("--week", type=int, required=True)
+    ap.add_argument("--week", type=int, default=0, help="default: every unplayed game in the next 8 days")
     ap.add_argument("--json", default="")
     args = ap.parse_args()
     games, rows = load(args.games)
-    week = [g for g in games if int(g["season"]) == args.season and int(g["week"]) == args.week and g["result"] == "" and g["spread_line"]]
+    if args.week:
+        week = [g for g in games if int(g["season"]) == args.season and int(g["week"]) == args.week and g["result"] == "" and g["spread_line"]]
+    else:
+        today = datetime.now(ET).date()
+        week = [g for g in games if g["result"] == "" and g["spread_line"] and g["gameday"]
+                and today <= date.fromisoformat(g["gameday"]) <= today + timedelta(days=8)]
     results = []
     for g in week:
         angles = sorted(build_angles(g, rows, args.season), key=lambda a: (a.strong, a.score), reverse=True)
         angles = [a for a in angles if verify(a, games)]          # nothing unverified moves up
         best = angles[0] if angles else season_fallback(g, rows, args.season)
         tier = "strong" if angles and angles[0].strong else ("fallback" if angles else "season")
+        kickoff = datetime.fromisoformat(f"{g['gameday']}T{g['gametime'] or '13:00'}").replace(tzinfo=ET)
         results.append({
+            "espn_event_id": g["espn"], "sport": "NFL", "starts_at": kickoff.astimezone(timezone.utc).isoformat(),
+            "matchup": f"{TEAM_NAMES[franchise(g['away_team'])]} {'vs' if g['location'] == 'Neutral' else 'at'} {TEAM_NAMES[franchise(g['home_team'])]}",
             "game": f"{g['away_team']} at {g['home_team']}", "gameday": g["gameday"], "gametime": g["gametime"],
             "line": f"{g['home_team']} {fmt_line(-float(g['spread_line']))}", "total": g["total_line"],
             "best": best and {"text": best.text, "supports": best.supports, "market": best.market, "record": best.record,
