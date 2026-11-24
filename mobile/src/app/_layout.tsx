@@ -14,6 +14,7 @@ import { Pressable, useColorScheme, View } from 'react-native';
 
 import { Icon, T } from '@/components/night';
 import { useTheme } from '@/hooks/use-theme';
+import { useAppUpdates } from '@/lib/app-updates';
 import { AuthProvider } from '@/lib/auth';
 import { hasSeenWelcome, rememberWelcome, WelcomeContext } from '@/lib/welcome';
 
@@ -42,6 +43,7 @@ export function ErrorBoundary({ retry }: ErrorBoundaryProps) {
 }
 
 export default function RootLayout() {
+  useAppUpdates();
   const colorScheme = useColorScheme();
   const [fontsLoaded, fontError] = useFonts({
     Geist_400Regular,

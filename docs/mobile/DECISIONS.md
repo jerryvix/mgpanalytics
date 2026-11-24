@@ -643,3 +643,16 @@ It returns `{candidate_id, sentence, show_ticker, reason}`.
 - The workflow now downloads only the PFR pass file of the advanced stats.
 **Cost:** about 30,000 input and 3,700 output tokens for 11 games, $0.005 a run at Haiku 5.5 prices (twice a day: about a cent a day for a full slate).
 **Seed (Nov 24):** today's 11 games with props were judged and stored through a one-off function with the same code, gated by a one-time token; the function and its secret were deleted right after. All 11 were the judge's wording, no fallbacks. Two of the three Thanksgiving games show a Thanksgiving line (Goff, Lamb).
+
+### D-107 Player lines: short class names, "Top" and "Bottom" capitalized
+**Date:** 2026-11-24 · **By:** Owner ("vs the 10 teams that allow the fewest threes" reads weird, same for the most threes; "Capitalize Top and Bottom always"). Revises D-106's wording for a class of opponents.
+- A class of opponents is named the short way: "Top-10 three-point defenses", "Bottom-10 pass defenses", "Top-10 run defenses", "Top-10 scoring defenses", "Bottom-10 defenses against RBs", "Top-10 pass rushes" (most sacks). Without a number: "blitz-heavy defenses", "defenses that rarely blitz", "fast-paced teams", "slow-paced teams".
+- "Top" and "Bottom" are always capitalized. The engine writes them that way, the judge's rubric says so, and the code check (every capitalized word in the draft must appear in the judge's sentence) holds the judge to it.
+- The ticker still names tonight's opponent's exact rank ("WSH 8th in 3PM Allowed"), so the sentence doesn't need to.
+- The lines already stored for Nov 24 to 27 were rewritten in place.
+
+### D-108 App updates apply on the first open
+**Date:** 2026-11-24 · **By:** Owner ("make the updates through to the app so I can see"), builder design.
+- Left alone, expo-updates downloads an update at launch and applies it only on the launch after that, so every change took two restarts to show.
+- Now (`mobile/src/lib/app-updates.ts`, used in the root layout): an update that finishes downloading within 10 seconds of opening the app reloads it right away, before there's anything on screen to lose. Coming back after a minute or more in the background counts as opening again: a waiting update applies, or the app checks and a quick one applies the same way. An update that lands later, while the app is in use, waits for the next return. Off in development and on the web preview.
+- This change itself arrives the old way (two restarts). Every update after it shows on the first open.
