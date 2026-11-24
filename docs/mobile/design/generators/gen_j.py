@@ -20,15 +20,15 @@ import re as _re
 NB = lambda t: _re.sub(r'(\d+-\d+(?:-\d+)?)', r'<span style="white-space: nowrap">\1</span>', t)
 
 def tabbar(active):
-    items = [('Today','today','JToday.dc.html'),('Games','games','#t'),('Pulse','pulse','JPulse.dc.html'),('Alerts','bell','#t'),('The Analyst','analyst','#t')]
+    items = [('Today','today','JToday.dc.html'),('Games','games','#t'),('Pulse','pulse','JPulse.dc.html'),('The Analyst','analyst','#t')]  # no Alerts tab: bells on each game (D-071)
     out = []
     for label, ic, href in items:
         if label == active:
             out.append(f'<a href="{href}" style="height: 52px; border-radius: 999px; background: {C["tabOn"]}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: {C["tx"]}; text-decoration: none; font-size: 10.5px; font-weight: 600">{icon(ic, stroke=GREEN, sw=1.9)}{label}</a>')
         else:
             out.append(f'<a href="{href}" style="display: flex; flex-direction: column; align-items: center; gap: 2px; color: {C["t2"]}; text-decoration: none; font-size: 10.5px; font-weight: 500">{icon(ic)}{label}</a>')
-    fade = f'<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 130px; background: linear-gradient(to bottom, rgba(0,0,0,0), {C["bg"]} 55%); pointer-events: none"></div>'
-    return fade + f'''  <nav aria-label="Tabs" style="position: absolute; left: 14px; right: 14px; bottom: 22px; height: 64px; border-radius: 999px; background: {C["tab"]}; border: 1px solid {C["tabBorder"]}; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding: 0 6px; box-shadow: {C["shadow"]}">
+    fade = f'<div aria-hidden="true" style="position: absolute; z-index: 9; left: 0; right: 0; bottom: 0; height: 130px; background: linear-gradient(to bottom, rgba(0,0,0,0), {C["bg"]} 55%); pointer-events: none"></div>'
+    return fade + f'''  <nav aria-label="Tabs" style="position: absolute; z-index: 10; left: 14px; right: 14px; bottom: 22px; height: 64px; border-radius: 999px; background: {C["tab"]}; border: 1px solid {C["tabBorder"]}; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center; padding: 0 6px; box-shadow: {C["shadow"]}">
     {"".join(out)}
   </nav>
 '''
@@ -65,31 +65,55 @@ def pulse_title(sub, sport='NFL'):
 def source(t, top=10):
     return f'  <span style="padding: {top}px 16px 0; font-size: 13px; color: {C["t3"]}">{t}</span>\n'
 
-# ---------- 1) Today
-def today_row(a, h, title_, time_, line, total, split_html, flag=None):
-    f = f'<span style="margin-top: 2px; font-size: 14px">{tag(flag)}</span>' if flag else ''
-    return f'''  <a href="JGame.dc.html" style="display: flex; align-items: flex-start; gap: 12px; padding: 10px 16px; text-decoration: none; color: {C["tx"]}">
+# ---------- 1) Today: owner's Option 2 (default) and Option 1 as a Tweak, team records toggle (D-070)
+# Splits: DraftKings, captured Nov 23 3:05 PM ET. Records and ATS: ESPN schedules plus DraftKings closing lines
+# on every completed game before tonight (scratchpad today_ats.py; checked against ESPN's own W-L).
+B = lambda x: f'<span style="font-weight: 600">{x}</span>'
+REC = lambda r: f'<span style="display: {{{{rec}}}}; margin-left: 5px; {MONO}">{r}</span>'
+def today_row(a, h, an, ar, hn, hr, time_, line, total, bs, bp, ms, mp, at, ats, venue, vword):
+    if bs == ms:
+        two = f'{bs}: {B(str(bp) + "%")} of Public Bets · {B(str(mp) + "%")} of Public Money'
+    else:
+        two = f'<span style="display: flex; flex-direction: column; gap: 3px"><span>{bs}: {B(str(bp) + "%")} of Public Bets</span><span>{ms}: {B(str(mp) + "%")} of Public Money</span></span>'  # different teams: one line each
+    one = (f'<span>{B(str(mp) + "%")} of Public Money on {ms}</span><span>{B(str(bp) + "%")} of Public Bets on {bs}</span>')
+    return f'''  <a href="JGame.dc.html" style="display: flex; align-items: flex-start; gap: 12px; padding: 11px 16px; text-decoration: none; color: {C["tx"]}">
     {pair(a, h)}
-    <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px">
-      <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 16.5px; letter-spacing: -0.2px"><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{title_}</span><span style="flex: 0 0 auto; font-weight: 500; font-variant-numeric: tabular-nums">{line}</span></span>
-      <span style="display: flex; justify-content: space-between; font-size: 14px; color: {C["t2"]}; font-variant-numeric: tabular-nums"><span>{time_}</span><span style="color: {C["t3"]}">{total}</span></span>
-      <span style="font-size: 14px; color: {C["t2"]}; font-variant-numeric: tabular-nums">{split_html}</span>
-      {f}
+    <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-variant-numeric: tabular-nums">
+      <span style="font-size: 16.5px; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{an}{REC(ar)} at {hn}{REC(hr)}</span>
+      <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px"><span>{time_}</span><span><span style="font-weight: 600">{line}</span> · {total}</span></span>
+      <span style="display: {{{{o2}}}}; font-size: 14px; line-height: 1.35">{two}</span>
+      <span style="display: {{{{o1}}}}; font-size: 14px; line-height: 1.35"><span style="display: flex; flex-direction: column; gap: 3px">{one}</span></span>
+      <span style="font-size: 14px; line-height: 1.35">{at} {B(ats)} ATS this season, {B(venue)} {vword}</span>
     </span>
   </a>
 '''
-W = lambda x: f'<span style="color: {C["tx"]}; font-weight: 500">{x}</span>'
-s = head('Today, Splits First') + frame_open(C) + topbar(C)
-s += title(C, 'Today', 'Monday, November 23 · 11 games in your sports')
-s += section(C, 'NFL', 18)
-s += today_row('cin', 'wsh', 'Bengals at Commanders', '8:15 PM · ESPN', 'CIN −6', 'O/U 54.5', f'{W("78%")} of Money · {W("85%")} of Bets on CIN')
-s += section(C, 'NBA', 14)
-s += today_row('por', 'p76', 'Trail Blazers at 76ers', '7:10 PM', 'PHI −3.5', 'O/U 231.5', f'{W("78%")} of Money · {W("64%")} of Bets on PHI')
-s += today_row('mem', 'cha', 'Grizzlies at Hornets', '7:10 PM', 'MEM −3.5', 'O/U 216.5', f'{W("93%")} of Money on CHA · {W("62%")} of Bets on MEM')
-s += today_row('lac', 'hou', 'Clippers at Rockets', '8:40 PM', 'HOU −12.5', 'O/U 225.5', f'{W("73%")} of Money on LAC · {W("83%")} of Bets on HOU')
-s += today_row('uta', 'lal', 'Jazz at Lakers', '10:10 PM', 'LAL −13.5', 'O/U 228.5', f'{W("99%")} of Money · {W("75%")} of Bets on LAL')
-s += source('Betting Splits from DraftKings · Updated 3:05 PM', 6)
-s += tabbar('Today') + '</div>\n' + tail(C['accents'])
+TODAY = [
+ ('cin', 'wsh', 'Bengals', '7-2', 'Commanders', '3-5-1', '8:15 PM · ESPN', 'CIN −6', 'O/U 54.5', 'CIN', 85, 'CIN', 78, 'CIN', '5-4', '3-2', 'on the Road'),
+ ('por', 'p76', 'Trail Blazers', '10-6', '76ers', '14-3', '7:10 PM', 'PHI −3.5', 'O/U 231.5', 'PHI', 64, 'PHI', 78, 'PHI', '9-8', '4-5', 'at Home'),
+ ('mem', 'cha', 'Grizzlies', '12-5', 'Hornets', '4-11', '7:10 PM', 'MEM −3.5', 'O/U 216.5', 'MEM', 62, 'CHA', 93, 'CHA', '6-9', '3-4', 'at Home'),
+ ('lac', 'hou', 'Clippers', '4-11', 'Rockets', '12-5', '8:40 PM', 'HOU −12.5', 'O/U 225.5', 'HOU', 83, 'LAC', 73, 'LAC', '8-7', '3-4', 'on the Road'),
+ ('uta', 'lal', 'Jazz', '3-15', 'Lakers', '14-3', '10:10 PM', 'LAL −13.5', 'O/U 228.5', 'LAL', 75, 'LAL', 99, 'LAL', '10-7', '4-5', 'at Home'),
+]
+def today_tail():
+    props = '{"layout":{"editor":"enum","options":["Option 2 (Two Lines)","Option 1 (Stacked)"],"default":"Option 2 (Two Lines)","section":"Rows"},"records":{"editor":"enum","options":["Show","Hide"],"default":"Show","section":"Rows"},"$preview":{"width":390,"height":844}}'
+    return f"""</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{props}'>
+class Component extends DCLogic {{
+  renderVals() {{
+    const one = (this.props.layout ?? '').startsWith('Option 1');
+    return {{ ff: "'Geist', system-ui, sans-serif", accent: '{C["accents"][0]}', o1: one ? 'block' : 'none', o2: one ? 'none' : 'block', rec: (this.props.records ?? 'Show') === 'Hide' ? 'none' : 'inline' }};
+  }}
+}}
+</script>
+</body>
+</html>
+"""
+s = head('Today, Splits First').replace('family=Geist:wght@400..700&', 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&') + frame_open(C) + topbar(C)
+s += title(C, 'Today', 'Monday, November 23')
+s += section(C, 'NFL', 18) + today_row(*TODAY[0])
+s += section(C, 'NBA', 14) + ''.join(today_row(*r) for r in TODAY[1:])
+s += source('Betting Splits and lines from DraftKings · Updated 3:05 PM', 6)
+s += tabbar('Today') + '</div>\n' + today_tail()
 open(os.path.join(OUT, 'JToday.dc.html'), 'w').write(s)
 
 # ---------- 2) Pulse: Betting Splits
@@ -267,13 +291,13 @@ def tk_take(k, pick, who, body=None, legs=None, opened=False):
 def tk_sec(label, sub):
     return f'  <div style="display: flex; flex-direction: column; gap: 5px; padding: 20px 16px 2px"><span style="{DF}">{sub}</span><span style="font-size: 19px; font-weight: 600; letter-spacing: -0.3px">{label}</span></div>\n'
 def tk_tabbar():
-    items = [('Today','today'),('Games','games'),('Pulse','pulse'),('Alerts','bell'),('The Analyst','analyst')]
+    items = [('Today','today'),('Games','games'),('Pulse','pulse'),('The Analyst','analyst')]
     out = []
     for label, ic in items:
         on = label == 'Pulse'
         out.append(f'<a href="#t" style="height: 52px; border-radius: 999px; {"background: " + TK["tabOn"] + ";" if on else ""} display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: {W_}; text-decoration: none; font-size: 10.5px; font-weight: {700 if on else 400}">{icon(ic, stroke=W_, sw=1.9 if on else 1.6)}{label}</a>')
-    fade = f'<div aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 130px; background: linear-gradient(to bottom, rgba(0,0,0,0), {TK["bg"]} 55%); pointer-events: none"></div>'
-    return fade + f"""  <nav aria-label="Tabs" style="position: absolute; left: 14px; right: 14px; bottom: 22px; height: 64px; border-radius: 999px; background: {TK["tab"]}; border: 1px solid {TK["tabBorder"]}; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding: 0 6px; box-shadow: {TK["shadow"]}">{"".join(out)}</nav>
+    fade = f'<div aria-hidden="true" style="position: absolute; z-index: 9; left: 0; right: 0; bottom: 0; height: 130px; background: linear-gradient(to bottom, rgba(0,0,0,0), {TK["bg"]} 55%); pointer-events: none"></div>'
+    return fade + f"""  <nav aria-label="Tabs" style="position: absolute; z-index: 10; left: 14px; right: 14px; bottom: 22px; height: 64px; border-radius: 999px; background: {TK["tab"]}; border: 1px solid {TK["tabBorder"]}; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center; padding: 0 6px; box-shadow: {TK["shadow"]}">{"".join(out)}</nav>
 """
 WHY = f"""<span><span style="display: block; margin-bottom: 3px; {DF}">Why</span>Washington is due after hanging with the Rams at home, and Jayden Daniels plays his best in prime time. Bear Bets calls it a sell-high spot on the Bengals: the look-ahead line was 3 to 3.5, and Washington is rested and desperate</span>
       <span><span style="display: block; margin-bottom: 3px; {DF}">Risks Flagged</span>Washington's defense is bad. Ja'Marr Chase is hot, 230 yards last week</span>
@@ -303,12 +327,12 @@ def takes_page(title, height, opened=False, coach=False, only_first=False):
     s_ += '  </div>\n'
     s_ += tk_sec('Bengals at Commanders', 'NFL · Tonight 8:15 PM')
     s_ += tk_take(('htp', 'bearbets'), 'Commanders +6 (−107)', 'Hold The Phone, Bear Bets', body=WHY, opened=opened)
-    s_ += tk_take('sportsline', 'Bengals −6 (−113)', 'McClure, Hartstein · The Early Edge', body='x')
-    s_ += tk_take('sportsline', 'Under 54.5 (−103)', 'Hartstein, McClure · The Early Edge', body='x')
+    s_ += tk_take('sportsline', 'Bengals −6 (−113)', 'SportsLine', body='x')
+    s_ += tk_take('sportsline', 'Under 54.5 (−103)', 'SportsLine', body='x')
     s_ += tk_take('htp', 'Same Game Parlay +400 (4 Legs)', 'Hold The Phone', legs=["Ja'Marr Chase 75+ Receiving Yards", 'Jayden Daniels 25+ Rushing Yards', 'Stefon Diggs 50+ Receiving Yards', 'Chase Brown Anytime TD'])
     s_ += tk_take('htp', 'Chig Okonkwo Anytime TD', 'Danny · Hold The Phone')
-    s_ += tk_take('sportsline', 'Joe Burrow O 7.5 Rushing Yards', 'Mike McClure · The Early Edge', body='x')
-    s_ += tk_take('sportsline', 'Stefon Diggs Anytime TD +180', 'Sia Nejad · The Early Edge', body='x')
+    s_ += tk_take('sportsline', 'Joe Burrow O 7.5 Rushing Yards', 'Mike McClure · SportsLine', body='x')
+    s_ += tk_take('sportsline', 'Stefon Diggs Anytime TD +180', 'Sia Nejad · SportsLine', body='x')
     if not only_first:
         s_ += tk_sec('Bears at Lions', 'NFL · Thu 1:00 PM')
         s_ += tk_take('bearbets', 'Lions +2.5 (−106)', 'Bear Bets', body='x')
