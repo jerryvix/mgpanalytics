@@ -1,4 +1,4 @@
-/** The game page (D-055, D-075, D-076): Betting Splits first, the one line, the shows' Takes. */
+/** The game page (D-055, D-075, D-076, D-105): Betting Splits first, the one line and the player line, the shows' Takes. */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
@@ -11,7 +11,8 @@ import { MarketNotes } from '@/components/market-notes';
 import { TakeRow } from '@/components/take-row';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { useFeed, type Game } from '@/lib/feed';
+import { useFeed, type Game, type PlayerLine } from '@/lib/feed';
+import { formatPropBet } from '@shared/odds/format';
 import { whenLabel } from '@/lib/time';
 
 export default function GameScreen() {
@@ -61,6 +62,11 @@ export default function GameScreen() {
             </View>
             <SplitsBlock game={g} />
             {g.oneLine ? <View style={{ paddingHorizontal: 16, paddingTop: 14 }}><OneLineText line={g.oneLine} size={18} /></View> : null}
+            {g.playerLine ? (
+              <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+                <OneLineText line={g.playerLine} size={18} note={propBet(g.playerLine)} />
+              </View>
+            ) : null}
             {g.splits && !g.splitsPending ? <SourceNote /> : null}
             <MarketNotes notes={g.notes} />
             {g.takes && g.takes.length ? (
@@ -74,4 +80,9 @@ export default function GameScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+/** The prop a player line is measured against: "J. Allen O 240.5 Pass Yds -110" (price dropped when missing). */
+function propBet(l: PlayerLine): string {
+  return formatPropBet({ shortName: l.short_name, side: l.side, line: l.line, market: l.market_short, price: l.price });
 }

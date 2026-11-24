@@ -74,8 +74,12 @@ export function Logo({ uri, size = 34 }: { uri?: string; size?: number }) {
   );
 }
 
-/** The one line per game (D-075), marked with the green pulse. Bolds the record. */
-export function OneLineText({ line, size = 14 }: { line: OneLine; size?: number }) {
+/**
+ * The one line per game (D-075), marked with the green pulse. Bolds the record. The player line
+ * (D-105) uses it too, with `note` naming the prop after the sentence in small gray mono:
+ * "(J. Allen O 240.5 Pass Yds -110)".
+ */
+export function OneLineText({ line, size = 14, note }: { line: Pick<OneLine, 'text' | 'record'>; size?: number; note?: string }) {
   const c = useTheme();
   const i = line.text.indexOf(line.record);
   const parts = i >= 0 ? [line.text.slice(0, i), line.record, line.text.slice(i + line.record.length)] : [line.text, '', ''];
@@ -89,6 +93,7 @@ export function OneLineText({ line, size = 14 }: { line: OneLine; size?: number 
         {parts[0]}
         <B>{parts[1] + ats}</B>
         {parts[2].slice(ats.length)}
+        {note ? <Text style={{ color: c.textTertiary, fontFamily: Font.mono, fontSize: 12 }}>{` (${note})`}</Text> : null}
       </T>
     </View>
   );

@@ -3,11 +3,12 @@
 // Joins, per game: ESPN's schedule, status and DraftKings line; the latest DraftKings
 // Betting Splits (betting_splits, synced every 4 hours); the one line per game
 // (game_lines, D-075); the shows' picks (takes, D-074); and, on the game view,
-// credited market notes from public X posts (market_notes, D-102). Public data only,
-// so it runs without a user token and is cached briefly at the edge.
+// credited market notes from public X posts (market_notes, D-102) and the game's
+// strongest player line (player_lines, D-105). Public data only, so it runs without a
+// user token and is cached briefly at the edge.
 //
 // GET ?view=day&date=YYYY-MM-DD&sports=NFL,NCAAF,NBA   games on one Eastern date
-// GET ?view=game&id=<ESPN event id>&sport=NBA           one game with every market's splits and its Takes
+// GET ?view=game&id=<ESPN event id>&sport=NBA           one game with every market's splits, its Takes and its player line
 // GET ?view=pulse&sports=NFL,NCAAF,NBA                  boards across the next 3 days, Takes, the day's strongest lines
 //
 // Expert Picks (D-093): a show's pick stays up for 12 hours after its game starts. Each
@@ -268,6 +269,19 @@ async function attachNotes(supabase: any, games: any[]) {
   for (const g of open) g.notes = shaped.filter((n: { espn_event_id: string }) => n.espn_event_id === g.id);
 }
 
+// The game's strongest player line (D-105), rank 1 of the up to 3 stored: a fact measured against the
+// game's DraftKings prop number, shown under the one line. Not on final games (the number is settled).
+// deno-lint-ignore no-explicit-any
+async function attachPlayerLine(supabase: any, g: any) {
+  if (g.state === "post" || (g.sport !== "NFL" && g.sport !== "NBA")) return;
+  const { data, error } = await supabase.from("player_lines")
+    .select("text, record, player_name, short_name, espn_athlete_id, team, market, market_short, line, side, price, hits, games, tier")
+    .eq("espn_event_id", g.id).order("rank").limit(1);
+  const l = error ? null : data?.[0];
+  if (!l) return;
+  g.playerLine = { ...l, line: Number(l.line), sport: g.sport };
+}
+
 function json(body: unknown, maxAge = 120): Response {
   return new Response(JSON.stringify(body), {
     headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": `public, max-age=${maxAge}` },
@@ -317,6 +331,7 @@ serve(async (req) => {
         await attachSplits(supabase, [g]);
         await attachLinesAndTakes(supabase, [g], true);
         await attachNotes(supabase, [g]);
+        await attachPlayerLine(supabase, g);
         return json({ game: g });
       }
     }

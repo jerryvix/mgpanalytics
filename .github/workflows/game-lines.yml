@@ -1,7 +1,8 @@
-# The one line per game (DECISIONS D-075, D-078). Every morning: refresh this season's
-# results and lines (ESPN, nflverse; free), compute each upcoming game's strongest
-# fact-checked angle for the NFL, college football and the NBA, and store it through the
-# ingest-game-lines function. No AI and no stored secret (GitHub OIDC auth).
+# The one line per game (DECISIONS D-075, D-078) and the player lines (D-105). Twice a day:
+# refresh this season's results and lines (ESPN, nflverse; free), compute each upcoming
+# game's strongest fact-checked angle for the NFL, college football and the NBA and store it
+# through ingest-game-lines, then the top 3 player facts against each NFL and NBA game's
+# DraftKings props through ingest-player-lines. No AI and no stored secret (GitHub OIDC auth).
 name: Game lines
 
 on:
@@ -35,8 +36,33 @@ jobs:
           path: ~/.cache/espn-history
           key: espn-history-${{ github.run_id }}
           restore-keys: espn-history-
-      - name: nflverse games
-        run: curl -sSfL -o games.csv https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv
+      - name: Restore nflverse player history (completed seasons)
+        uses: actions/cache@v4
+        with:
+          path: nflverse
+          key: nflverse-players-v1-${{ github.run_id }}
+          restore-keys: nflverse-players-v1-
+      - name: nflverse games and player files
+        run: |
+          mkdir -p nflverse
+          curl -sSfL -o games.csv https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv
+          cp games.csv nflverse/games.csv
+          R=https://github.com/nflverse/nflverse-data/releases/download
+          curl -sSfL -o nflverse/players.csv $R/players/players.csv
+          M=$(date -u +%m); Y=$(date -u +%Y)
+          if [ "$M" -le 6 ]; then NFL=$((Y-1)); else NFL=$Y; fi
+          # Weekly stats, snap counts and PFR advanced stats since 2018 (D-105). Completed seasons come
+          # from the cache when it has them; this season is fetched fresh every run.
+          for s in $(seq 2018 "$NFL"); do
+            for f in stats_player/stats_player_week_$s snap_counts/snap_counts_$s pfr_advstats/advstats_week_pass_$s \
+                     pfr_advstats/advstats_week_rush_$s pfr_advstats/advstats_week_def_$s; do
+              out="nflverse/$(basename "$f").csv"
+              if [ "$s" -lt "$NFL" ] && [ -s "$out" ]; then continue; fi
+              curl -sSfL --retry 3 -o "$out" "$R/$f.csv"
+            done
+          done
+      - name: Engine self-test
+        run: python -I scripts/angles/player_angles.py --self-test
       - name: Compute and store the lines
         run: |
           # College football and NFL seasons are named by their start year, the NBA by its end year.
@@ -44,4 +70,6 @@ jobs:
           if [ "$M" -le 6 ]; then CFB=$((Y-1)); else CFB=$Y; fi
           if [ "$M" -ge 8 ]; then NBA=$((Y+1)); else NBA=$Y; fi
           python -I scripts/angles/run_daily.py --nflverse games.csv --cfb-season "$CFB" --nba-season "$NBA" \
-            --ingest-url https://vwezujtftfccamoduglp.supabase.co/functions/v1/ingest-game-lines
+            --ingest-url https://vwezujtftfccamoduglp.supabase.co/functions/v1/ingest-game-lines \
+            --nflverse-dir nflverse \
+            --player-ingest-url https://vwezujtftfccamoduglp.supabase.co/functions/v1/ingest-player-lines

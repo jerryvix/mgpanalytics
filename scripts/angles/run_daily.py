@@ -1,10 +1,13 @@
-"""The daily game-lines job (DECISIONS D-075, D-078), run by .github/workflows/game-lines.yml.
+"""The daily game-lines job (DECISIONS D-075, D-078, D-105), run by .github/workflows/game-lines.yml.
 
 1. Refresh this season's ESPN history for college football and the NBA (completed seasons
    are committed under data/history/).
 2. Run the three engines: NFL (nflverse), college football and NBA (ESPN).
 3. Post the one line per game to the ingest-game-lines function with the run's GitHub
    OIDC token. With --dry-run, print instead of posting.
+4. Player lines (D-105): refresh this season's NBA box scores, run player_angles.py for the
+   NFL (next 7 days) and the NBA (next 2 days), and post the top 3 per game to
+   ingest-player-lines the same way. A failure here doesn't undo the game lines already stored.
 """
 import argparse
 import json
@@ -39,6 +42,8 @@ def main() -> None:
     ap.add_argument("--cfb-season", type=int, required=True)
     ap.add_argument("--nba-season", type=int, required=True, help="the year the NBA season ends, ESPN style")
     ap.add_argument("--ingest-url", default="")
+    ap.add_argument("--nflverse-dir", default="", help="directory with nflverse player files for the player lines (D-105)")
+    ap.add_argument("--player-ingest-url", default="")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     os.makedirs(args.work, exist_ok=True)
@@ -69,12 +74,48 @@ def main() -> None:
     if args.dry_run or not args.ingest_url:
         for l in lines:
             print(f"  {l['sport']:5} {l['matchup']}: {l['line_text']}  ->  {l['supports']}")
+    else:
+        post(args.ingest_url, "mgp-ingest-game-lines", {"lines": lines})
+
+    if args.nflverse_dir:
+        try:
+            player_lines(args, w, hist)
+        except (subprocess.CalledProcessError, OSError, ValueError, RuntimeError) as e:
+            print("player lines failed:", e, flush=True)
+            sys.exit(1)
+
+
+def player_lines(args, w, hist: str) -> None:
+    """D-105: the top 3 player lines per upcoming NFL and NBA game."""
+    run([os.path.join(HERE, "nba_boxes.py"), "--games", w("nba_current.csv"), "--out", w("nba_players_current.csv"),
+         "--teams-out", w("nba_team_games_current.csv"), "--cache", args.cache])
+    run([os.path.join(HERE, "player_angles.py"), "--league", "nfl", "--nflverse", args.nflverse_dir, "--season", str(args.cfb_season),
+         "--days", "7", "--json", w("nfl_players.json")])
+    run([os.path.join(HERE, "player_angles.py"), "--league", "nba",
+         "--history", os.path.join(hist, "nba_espn.csv"), w("nba_current.csv"),
+         "--boxes", os.path.join(hist, "nba_players_espn.csv"), w("nba_players_current.csv"),
+         "--teams", os.path.join(hist, "nba_team_games_espn.csv"), w("nba_team_games_current.csv"),
+         "--season", str(args.nba_season), "--days", "2", "--json", w("nba_players.json")])
+    games = []
+    for name in ("nfl_players.json", "nba_players.json"):
+        for g in json.load(open(w(name))):
+            if g.get("props"):   # a game with no props posted yet keeps whatever it had
+                games.append({"espn_event_id": g["espn_event_id"], "sport": g["sport"], "starts_at": g["starts_at"], "lines": g["lines"]})
+    print(f"{sum(len(g['lines']) for g in games)} player lines for {len(games)} games", flush=True)
+    if args.dry_run or not args.player_ingest_url:
+        for g in games:
+            for l in g["lines"]:
+                print(f"  {g['sport']:4} {g['espn_event_id']} #{l['rank']}: {l['text']}  ({l['short_name']} {l['side'][0].upper()} {l['line']:g} {l['market_short']})")
         return
-    req = urllib.request.Request(args.ingest_url, data=json.dumps({"lines": lines}).encode(), method="POST", headers={
-        "Content-Type": "application/json", "Authorization": "Bearer " + oidc("mgp-ingest-game-lines")})
+    post(args.player_ingest_url, "mgp-ingest-player-lines", {"games": games})
+
+
+def post(url: str, audience: str, payload: dict) -> None:
+    req = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST", headers={
+        "Content-Type": "application/json", "Authorization": "Bearer " + oidc(audience)})
     try:
         with urllib.request.urlopen(req, timeout=120) as r:
-            print("ingest:", r.read().decode())
+            print("ingest:", r.read().decode(), flush=True)
     except urllib.error.HTTPError as e:
         print("ingest failed:", e.code, e.read().decode()[:300])
         sys.exit(1)
