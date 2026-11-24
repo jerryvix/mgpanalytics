@@ -656,3 +656,27 @@ It returns `{candidate_id, sentence, show_ticker, reason}`.
 - Left alone, expo-updates downloads an update at launch and applies it only on the launch after that, so every change took two restarts to show.
 - Now (`mobile/src/lib/app-updates.ts`, used in the root layout): an update that finishes downloading within 10 seconds of opening the app reloads it right away, before there's anything on screen to lose. Coming back after a minute or more in the background counts as opening again: a waiting update applies, or the app checks and a quick one applies the same way. An update that lands later, while the app is in use, waits for the next return. Off in development and on the web preview.
 - This change itself arrives the old way (two restarts). Every update after it shows on the first open.
+
+### D-109 Spend backstop: an overall daily cap on Analyst questions
+**Date:** 2026-11-24 · **By:** Owner (asked the builder to handle the spend limit item), builder design.
+- **Why:** email confirmation is off until Resend is set up (OWNER_ACTIONS 9), so anyone can make many accounts and ask 50 questions on each. The per-person cap (D-099) doesn't bound the total.
+- **What:** `gemini-chat` reads `analyst_usage_total_today()` (everyone's questions today, US Eastern day) before counting a new question. At 300 (`ANALYST_GLOBAL_DAILY_LIMIT` changes it), it answers 429 `{ error: "Analyst paused for today" }` until midnight Eastern. The check runs before the person's own count, so a paused day doesn't use up anyone's 50. If the total can't be read, the question goes through and the error is logged.
+- **Cost:** Sonnet 5.5 is $2 / $10 per million input / output tokens; an answer with web search runs about 10 to 20 cents, so 300 a day is about $30 to $60 at most. The Anthropic console's monthly limit (OWNER_ACTIONS 10, start at $150) is the hard stop behind it.
+- **App:** "The Analyst is taking a break for the rest of today. Ask again after midnight Eastern", with no failure code. The website shows its usual failure message.
+- Revisit when email confirmation is back on and real usage is known.
+
+### D-110 Privacy Policy, Terms of Use and Support published on the website
+**Date:** 2026-11-24 · **By:** Owner (approved publishing the drafts: "I give you permission to handle all these"; the LLC isn't filed yet; support@mgp-analytics.com forwarded to an inbox; email only, no mailing address), builder design.
+- `/privacy`, `/terms` and `/support` render straight from `docs/legal/*.md` (`src/pages/Legal.tsx`, react-markdown), so the repo and the live pages can't drift. The landing page footer links all three. The app's Profile links (`mobile/src/constants/links.ts`) pointed at these paths and showed Not Found until now.
+- **Until the LLC is filed:** the operator is named "MGP Analytics", with no entity type, state, governing law clause or court venue. The terms say they move to a company if one is formed; the policy's business-change line covers moving data to it. When the owner sends the legal name and state (OWNER_ACTIONS 12), add them, restore a governing law and venue clause, and bump the effective date.
+- **Updated for what's live:** first-party counting of days used (`app_activity`) and where you signed up (`signup_source`), Resend and ImprovMX as providers, X profile pictures in the app, the welcome screen flag on the device, retention stated as what actually happens (server logs kept by the hosts, usually no more than 90 days; usage and error rows until the account is deleted; email deletion requests within 30 days). Effective November 24, 2026.
+- **For a lawyer before charging money or a wide launch** (moved here from the drafts' owner notes): gambling-adjacent content and state age rules (18 vs 21, new app store age verification laws); the AI disclosure (questions and images go to Anthropic) and Anthropic's current terms on training and retention; whether X's website script counts as "sharing" under California law (or load it only on pages that show X posts); the $100 liability cap; arbitration and a class action waiver; a DMCA agent; Apple's minimum app terms; data licenses (ESPN, DraftKings splits, MLB StatsAPI) and team logo use (APP_STORE_COMPLIANCE.md). The web refund policy goes in before paid plans.
+- App Store Connect needs these too: Privacy Policy URL `https://mgp-analytics.com/privacy`, Support URL `https://mgp-analytics.com/support`. The App Privacy answers must match the policy (Grok Bot's lane, AGENTS.md).
+
+### D-111 Agent lanes: Grok Bot's AGENTS.md, adjusted
+**Date:** 2026-11-24 · **By:** Owner (delegated the decision on jerryvix/mgpanalytics#27), builder.
+- Adopted Grok Bot's lane file with its commit kept, plus three changes to match how work runs:
+  - Claude Code runs in cloud sessions, not on Jerry's computer.
+  - Each agent merges its own pull request once checks pass (D-078 and the owner's "merge everything through"), not "Jerry merges".
+  - Over-the-air updates ship with the product change that needs them (Claude Code's lane), since every app change reaches phones that way. Native builds and `app.json` / `eas.json` are shared: whoever needs a new build makes it, with an In progress line first. Grok Bot keeps App Store Connect (listing, screenshots, App Privacy answers, review notes), TestFlight groups and the release docs.
+- `CLAUDE.md` now points to `AGENTS.md`. jerryvix/mgpanalytics#27 is closed in favor of this version.

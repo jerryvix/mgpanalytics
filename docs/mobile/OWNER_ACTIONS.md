@@ -33,29 +33,32 @@ Apple enrollment confirmed approved by the owner on Nov 23.
   5. On the new app's page, open **App Information** (left side). Under **General Information**, copy the **Apple ID** (a number about 10 digits long). It is not a secret.
   6. Send the builder that number. The builder uploads the build to TestFlight and sets up your tester group.
 
-## Now: sign-up emails that actually arrive (15 minutes)
+## Now: email that works (about 20 minutes, all free)
 
-- [ ] **9. Set up Resend so sign-up and password-reset emails reach people.** Supabase's built-in sender is for testing, so new people likely never get their confirmation email. The key goes straight into Supabase, never in chat.
-  1. Sign up at resend.com with the business email.
-  2. Go to **Domains**, click **Add Domain**, enter `mgp-analytics.com`.
-  3. Resend shows a few DNS records (MX, TXT for SPF, TXT for DKIM). Add each one where your domain is managed (GoDaddy, Namecheap, Cloudflare or similar), then click **Verify** in Resend. It can take a few minutes to an hour.
-  4. Go to **API Keys**, click **Create API Key**, name it `Supabase`, permission **Sending access**, domain `mgp-analytics.com`. Copy the key (Resend shows it once).
-  5. Open supabase.com, the MGP project, then **Authentication**, **Emails**, **SMTP Settings**. Turn on **Enable Custom SMTP** and fill in: Sender email `no-reply@mgp-analytics.com`, Sender name `MGP Analytics`, Host `smtp.resend.com`, Port `465`, Username `resend`, Password: the API key. Save.
-  6. Tell the builder "Resend done". The builder raises the email limit and tests a sign-up from an outside address.
+Why: Supabase's built-in sender only mails the project's own team, so a friend who taps Forgot Password gets nothing. Sign-up confirmation is off until this is done. Do 9 and 11 together: both add records in the same DNS screen.
 
-- [ ] **10. Set a monthly spend limit on the AI account.** At console.anthropic.com, open **Settings**, then **Limits**, and set a monthly spend limit you're comfortable with (for example $300). It's a backstop on top of the 50 questions per person per day cap.
+- [ ] **9. Resend: account emails (sign-up confirmation, password reset).** Free: 3,000 emails a month, 100 a day.
+  1. Sign up at resend.com.
+  2. Go to **Domains**, click **Add Domain**, enter `mgp-analytics.com`. Resend shows a few DNS records.
+  3. Add each record where your domain's DNS lives (the company you bought the domain from, or Vercel if you bought it there; Vercel's **Domains** page shows which). Then click **Verify** in Resend. It can take a few minutes to an hour.
+  4. In Resend, open **Settings**, then **Integrations**, click **Connect to Supabase** and sign in to Supabase. Pick the MGP project, click **Add API Key**, set the sender name to `MGP Analytics` and the sender address to `no-reply@mgp-analytics.com`, then click **Configure SMTP Integration**. No key to copy or paste.
+  5. Tell the builder "Resend done". The builder turns sign-up confirmation back on, raises the email limit and tests a reset from an outside address.
 
-- [ ] **11. Send the support email address** for the app, the privacy policy and App Store Connect (any inbox you check).
+- [ ] **11. support@mgp-analytics.com: forward it to your inbox.** It's already in the app, the website and the policies.
+  - **If your domain already has email** (for example, you made `apps@mgp-analytics.com` for the Apple ID): add `support` as an alias in that email service. Skip the steps below; they would replace your current mail setup.
+  - **If it doesn't:**
+    1. Sign up at improvmx.com (free), add `mgp-analytics.com`, and set `support` to forward to the inbox you check.
+    2. In the same DNS screen as step 9, add: MX `@` `mx1.improvmx.com` priority 10; MX `@` `mx2.improvmx.com` priority 20; TXT `@` `v=spf1 include:spf.improvmx.com ~all`. If an SPF record (`v=spf1 ...`) already exists on `@`, merge them into one. Resend's records sit on `send.` and `resend._domainkey`, so they don't clash.
+    3. Email support@mgp-analytics.com from another address and check it arrives. DNS changes can take a few hours.
 
-## Done: one key so builds reach TestFlight
+## Now: a hard cap on AI spend (1 minute)
 
-- [x] **7. Done 2026-11-24.** Create an App Store Connect API key and add it to Expo. With the owner's OK, the builder used it once to create the signing certificate and provisioning profile (D-083); uploads to TestFlight use it from Expo's servers. The key never goes in chat.
-  1. Sign in at appstoreconnect.apple.com with the business Apple ID.
-  2. Go to **Users and Access**, then the **Integrations** tab, then **App Store Connect API** (Team Keys). If asked, click **Request Access** and accept.
-  3. Click **+** (Generate API Key). Name it `Expo EAS`. Access: **Admin**. Click **Generate**.
-  4. Note the **Issuer ID** (top of the page) and the key's **Key ID**. Click **Download** to get the `.p8` file (Apple lets you download it once; keep it in your password manager).
-  5. Go to expo.dev, sign in as `jerryvix`, open **Account settings**, then **Credentials**, then **App Store Connect API Keys**, and click **Add**. Upload the `.p8` file, enter the Key ID and Issuer ID, and save.
-  6. Tell the builder "ASC key added". Nothing else to send.
+- [ ] **10. Set a monthly spend limit on the AI account.** At console.anthropic.com, open **Settings**, then **Limits**, and set a monthly spend limit. Start at **$150**. The app also stops the Analyst for the day after 300 questions from everyone together (D-109), about $30 to $60 a day at most, so this limit is the backstop behind it. An Analyst answer costs about 10 to 20 cents; a player line check is under a cent.
+
+## When you're ready: the LLC
+
+- [ ] **12. File the LLC, then send the builder its exact legal name and state.** The privacy policy and terms say "MGP Analytics" for now and leave out the state and court clause (D-110). With the name and state, the builder updates both in a few minutes. Filing fees and yearly fees vary by state; ask your advisor which state fits.
+  - Also check your Apple account: at developer.apple.com/account, open **Membership details** and look at **Entity Type**. If it says **Individual**, the App Store shows your personal name as the seller. Once the LLC exists, Apple Developer Support can move the membership to the company (D-001).
 
 ## This week (5 minutes each)
 
@@ -102,6 +105,10 @@ Apple enrollment confirmed approved by the owner on Nov 23.
 |---|---|---|
 | Apple Developer Program | $99/year | Now |
 | Expo (EAS builds) | Free tier should cover v1 | Now |
+| Resend (account emails) | Free (3,000 a month, 100 a day) | Now |
+| ImprovMX (support forwarding) | Free | Now |
+| Anthropic (Analyst, player line checks) | Pay as you go, capped by your monthly limit | Now |
+| LLC filing | Varies by state | When you file |
 | Figma | Free tier | Now |
 | Google Play (Android, later) | $25 one-time | After iOS launch |
 | Faster odds polling for real-time alerts | Exact quote coming | Before alerts go live |

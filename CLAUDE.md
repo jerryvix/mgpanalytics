@@ -7,6 +7,7 @@ Sports betting analytics (NFL, NBA, NCAAB, NCAAF, MLB): odds and line movement, 
 - **iPhone app work:** `docs/mobile/PLAN.md`, then `docs/mobile/STATUS.md` and `docs/mobile/DECISIONS.md`.
 - **Any user-facing copy or claims:** `docs/positioning.md`. It lists what MGP may and may not claim. Consumer copy must trace to it.
 - **Curated insight content:** `docs/nugget-grading.md`.
+- **Working alongside Grok Bot:** `AGENTS.md` (lanes, branch names, the In progress list).
 
 ## Layout
 
