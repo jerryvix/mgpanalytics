@@ -8,6 +8,7 @@ import { Pressable, TextInput, View } from 'react-native';
 import { Icon, Mono, T } from '@/components/night';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
 const REASONS: { key: string; label: string }[] = [
@@ -22,6 +23,7 @@ type Props = { question: string; answer: string; sources?: { title: string; url:
 
 export function AnswerFeedback({ question, answer, sources }: Props) {
   const c = useTheme();
+  const { signedIn } = useAuth();
   const [rating, setRating] = useState<'up' | 'down' | null>(null);
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState('');
@@ -67,6 +69,9 @@ export function AnswerFeedback({ question, answer, sources }: Props) {
     save('down', reason, note);
     setSent(true);
   };
+
+  // Feedback comes from accounts only (answers are for accounts too)
+  if (!signedIn) return null;
 
   const chip = (on: boolean) => ({ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: on ? c.surfaceRaised : c.surface });
 

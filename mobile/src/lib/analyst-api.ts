@@ -36,6 +36,8 @@ export async function askAnalyst(messages: OutMsg[]): Promise<AnalystReply> {
     const token = data.session?.access_token;
     userId = data.session?.user.id;
     if (!token) return fail('no session');
+    // Guests (anonymous sessions) sign in first; the screen never sends for them
+    if (data.session?.user.is_anonymous) return fail('guest session');
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     let raw = '';
