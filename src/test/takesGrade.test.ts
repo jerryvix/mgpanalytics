@@ -17,12 +17,15 @@ const fixture = (name: string) => JSON.parse(readFileSync(resolve(__dirname, "fi
 const nfl = fixture("espn-summary-nfl-401873078.json");
 const nba = fixture("espn-summary-nba-401910041.json");
 
-// deno-lint-ignore no-explicit-any
-function gameFrom(summary: any): GradeGame {
-  // deno-lint-ignore no-explicit-any
-  const side = (s: string) => summary.header.competitions[0].competitors.find((c: any) => c.homeAway === s);
-  // deno-lint-ignore no-explicit-any
-  const team = (c: any) => ({
+interface Competitor {
+  homeAway: string;
+  score: string;
+  team: { abbreviation: string; shortDisplayName: string; location: string; displayName: string };
+}
+
+function gameFrom(summary: { header: { competitions: { competitors: Competitor[] }[] } }): GradeGame {
+  const side = (s: string) => summary.header.competitions[0].competitors.find((c) => c.homeAway === s)!;
+  const team = (c: Competitor) => ({
     abbr: c.team.abbreviation, name: c.team.shortDisplayName, location: c.team.location,
     displayName: c.team.displayName, score: c.score,
   });

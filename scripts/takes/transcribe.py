@@ -7,6 +7,11 @@ service, no API key. Output: one JSON per episode with timestamped segments,
 kept private; the app shows only short credited quotes and summaries.
 
 Usage: python scripts/takes/transcribe.py --per-show 1 --out takes-out
+
+With --ingest-url (the workflow), every episode published in the last --max-age-days
+that ingest-takes hasn't processed yet is transcribed, newest first, up to --max-new
+per show per run. Taking only each show's N newest episodes (the old --per-show
+behavior) skipped a picks episode whenever a show posted more than N between runs.
 """
 import argparse
 import json
@@ -26,10 +31,24 @@ FEEDS = {
 }
 # Episodes whose titles suggest picks; others (news talk) are skipped
 PICK_TITLE = re.compile(r"\b(bets?|picks?|parlay|best bets|plays?)\b", re.I)
+# Takes carries football and basketball: an episode whose title names only other sports
+# (SportsLine's feed also has hockey, soccer and more) isn't worth transcribing
+OTHER_SPORTS = re.compile(r"\b(NHL|hockey|soccer|Premier League|EPL|MLS|Champions League|UFC|MMA|boxing|golf|PGA|LIV|tennis|F1|NASCAR|MLB|baseball|WNBA)\b", re.I)
+TAKES_SPORTS = re.compile(r"\b(NFL|NBA|college|CFB|CBB|NCAA|football|basketball|hoops|MNF|TNF|SNF|Thanksgiving|bowl|playoffs?)\b", re.I)
 UA = {"User-Agent": "MGPAnalytics/1.0 (+https://mgp-analytics.com)"}
 
 
-def newest_pick_episodes(feed_url: str, n: int, any_title: bool = False, title_match: "re.Pattern | None" = None) -> list[dict]:
+def age_days(ep: dict) -> float:
+    try:
+        return (time.time() - parsedate_to_datetime(ep["pubDate"]).timestamp()) / 86400
+    except (TypeError, ValueError):
+        return 0
+
+
+def pick_episodes(feed_url: str, n: int, any_title: bool = False, title_match: "re.Pattern | None" = None,
+                  max_age_days: "float | None" = None) -> list[dict]:
+    """A show's episodes, newest first whatever order the feed lists them in. With
+    max_age_days, every episode published within that many days (n ignored); else the n newest."""
     with urllib.request.urlopen(urllib.request.Request(feed_url, headers=UA), timeout=60) as r:
         root = ET.fromstring(r.read())
     out = []
@@ -40,10 +59,13 @@ def newest_pick_episodes(feed_url: str, n: int, any_title: bool = False, title_m
             continue
         if title_match is not None and not title_match.search(title):
             continue
+        if OTHER_SPORTS.search(title) and not TAKES_SPORTS.search(title):
+            continue
         out.append({"title": title, "pubDate": item.findtext("pubDate"), "guid": item.findtext("guid"), "audio": enc.get("url")})
-        if len(out) >= n:
-            break
-    return out
+    out.sort(key=age_days)  # stable: undated items keep their feed order
+    if max_age_days is None:
+        return out[:n]
+    return [ep for ep in out if age_days(ep) <= max_age_days]
 
 
 def github_oidc_token(audience: str) -> str:
@@ -72,7 +94,8 @@ def fmt(sec: float) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--per-show", type=int, default=1)
+    ap.add_argument("--per-show", type=int, default=1,
+                    help="without --ingest-url: how many of each show's newest episodes to transcribe")
     ap.add_argument("--out", default="takes-out")
     ap.add_argument("--model", default=os.environ.get("WHISPER_MODEL", "small.en"))
     ap.add_argument("--any-title", action="store_true",
@@ -82,7 +105,10 @@ def main() -> None:
     ap.add_argument("--ingest-url", default="",
                     help="post each new transcript to the ingest-takes function (GitHub Actions only) and skip episodes it already has")
     ap.add_argument("--max-age-days", type=float, default=3,
-                    help="with --ingest-url, skip episodes published longer ago than this (their games are over)")
+                    help="with --ingest-url, transcribe every unprocessed episode published within this many days")
+    ap.add_argument("--max-new", type=int, default=6,
+                    help="with --ingest-url, the most new episodes to transcribe per show in one run, newest first "
+                         "(the rest wait for the next run while they are still recent)")
     ap.add_argument("--title-match", default="",
                     help="regex an episode title must match, e.g. NBA team names to pull a multi-sport show's newest basketball episode")
     args = ap.parse_args()
@@ -103,23 +129,34 @@ def main() -> None:
     model = WhisperModel(args.model, device="cpu", compute_type="int8")
     for show in shows:
         feed = FEEDS[show]
-        for ep in newest_pick_episodes(feed, args.per_show, args.any_title, title_match):
+        try:
             if args.ingest_url:
+                recent = pick_episodes(feed, 0, args.any_title, title_match, max_age_days=args.max_age_days)
+            else:
+                recent = pick_episodes(feed, args.per_show, args.any_title, title_match)
+        except (urllib.error.URLError, ET.ParseError, TimeoutError) as e:
+            print(f"feed error: {show}: {e}", flush=True)
+            continue
+        todo = recent
+        if args.ingest_url:
+            for ep in recent:
                 if ep["guid"] in known:
                     print(f"skip (already processed): {show} | {ep['title']}", flush=True)
-                    continue
-                try:
-                    age_days = (time.time() - parsedate_to_datetime(ep["pubDate"]).timestamp()) / 86400
-                except (TypeError, ValueError):
-                    age_days = 0
-                if age_days > args.max_age_days:
-                    print(f"skip (older than {args.max_age_days:g} days): {show} | {ep['title']}", flush=True)
-                    continue
+            todo = [ep for ep in recent if ep["guid"] not in known]
+            for ep in todo[args.max_new:]:
+                print(f"next run (over --max-new {args.max_new}): {show} | {ep['title']}", flush=True)
+            todo = todo[:args.max_new]
+            print(f"{show}: {len(recent)} episodes in the last {args.max_age_days:g} days, {len(todo)} to transcribe", flush=True)
+        for ep in todo:
             slug = re.sub(r"[^a-z0-9]+", "-", ep["title"].lower()).strip("-")[:60]
             audio_path = os.path.join(args.out, f"{show}-{slug}.mp3")
             t0 = time.time()
-            with urllib.request.urlopen(urllib.request.Request(ep["audio"], headers=UA), timeout=300) as r, open(audio_path, "wb") as f:
-                f.write(r.read())
+            try:
+                with urllib.request.urlopen(urllib.request.Request(ep["audio"], headers=UA), timeout=300) as r, open(audio_path, "wb") as f:
+                    f.write(r.read())
+            except (urllib.error.URLError, TimeoutError) as e:
+                print(f"download error (next run tries again): {show} | {ep['title']}: {e}", flush=True)
+                continue
             t1 = time.time()
             segments, info = model.transcribe(audio_path, beam_size=1, vad_filter=True)
             segs = [{"start": round(s.start, 1), "end": round(s.end, 1), "text": s.text.strip()} for s in segments]

@@ -39,7 +39,11 @@ export function TakeRow({ take: t }: { take: Take }) {
     <View style={{ marginHorizontal: 16, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: c.border, gap: 10 }}>
       <Pressable onPress={() => details && setOpen(!open)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
         accessibilityRole={details ? 'button' : undefined} accessibilityState={{ expanded: open }}>
-        <Logo uri={LOGOS[t.show]} size={38} />
+        {LOGOS[t.show] ? <Logo uri={LOGOS[t.show]} size={38} /> : (
+          <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
+            <T size={13} weight="semibold">{t.show_name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase()}</T>
+          </View>
+        )}
         <View style={{ flex: 1, gap: 4 }}>
           <T size={17} weight="bold">{pickLabel(t)}</T>
           <Mono>{credit}</Mono>

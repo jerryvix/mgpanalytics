@@ -1,5 +1,6 @@
 // Takes sources (DECISIONS D-059, D-060): outside shows and personalities the
-// owner picked (Bookit Blitz dropped Nov 23: video only). They are not MGP's insiders; their picks are theirs, shown
+// owner picked (Bookit Blitz dropped Nov 23: video only; Daft Previews added Nov 24,
+// read from its video descriptions, which list its picks). They are not MGP's insiders; their picks are theirs, shown
 // credited by name with a link to the original. MGP itself gives no picks.
 //
 // Feed: YouTube's free public per-channel feed (no API key), which returns the
@@ -31,6 +32,12 @@ export interface TakesSource {
   people: TakesPerson[];
   /** Official podcast feed, when the show publishes audio (lets us find spoken picks) */
   podcast?: { applePodcastsId: string; feed: string };
+  /**
+   * The show's key in `takes` when its picks are read from each video's title and
+   * description alone (scripts/takes/youtube_text.py); only for shows whose
+   * descriptions list the picks themselves
+   */
+  descriptionPicks?: string;
 }
 
 export const TAKES_SOURCES: readonly TakesSource[] = [
@@ -75,6 +82,22 @@ export const TAKES_SOURCES: readonly TakesSource[] = [
     ],
     podcast: { applePodcastsId: "1543098312", feed: "https://rss.amperwave.net/v2/feed/audacynetwork/earlyedge" },
   },
+  {
+    // YouTube only (Nov 24 2026). Daily NBA player props: each description lists the picks
+    // ("Pick 1: Devin Booker over 5.5 assists") and chapters, with no prices and no host
+    // named. Instagram: daftpreviews; site daftpreviews.com. The X handle comes from a web
+    // search, not the descriptions, so it is unverified.
+    channelId: "UCwvzzWorj_-_d792FUo3gmg",
+    handle: "@daftpreviews",
+    name: "Daft Previews",
+    x: "daft_previews",
+    people: [],
+    descriptionPicks: "daft-previews",
+  },
+  // Final Round Sports (@Final_Round_Sports, UCyHwy6GwBufcf84tqNXj86w) was checked the same
+  // day and left out: its descriptions name the matchups and say the plays are in a pinned
+  // comment, which the public feed doesn't carry. Socials there: X thefinalround11, a
+  // Discord, Cash App and Venmo finalround11, promo code FRS; no host named.
 ];
 
 export const youtubeFeedUrl = (channelId: string) =>
