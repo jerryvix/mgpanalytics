@@ -13,12 +13,21 @@
 //   { action: "known" }  -> { guids: string[] } episodes already processed (last 30 days)
 //   { action: "ingest", show, episode: { guid, title, pubDate, audio_seconds }, segments: [{ start, text }] }
 //     -> { stored, picks }
+//   { action: "ingest_text", show, episode: { guid, title, pubDate }, text }
+//     -> { stored, picks }  a YouTube video's title and description, for shows whose
+//        descriptions list their picks (scripts/takes/youtube_text.py). No audio or captions.
+//
+// Guard: a pick is dropped when either team in its matched game played a game that
+// started after the episode came out. That earlier game is no longer a candidate, so
+// the pick was most likely about it and got matched to the team's next game (Hold The
+// Phone's Week 11 parlay legs landed on Week 12 games this way, Nov 24).
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { createRemoteJWKSet, jwtVerify } from "npm:jose@5.9.6";
-import { candidatesFor, correctName, rosterNames, upcomingGames, type TakesSport } from "./games.ts";
+import { candidatesFor, correctName, rosterNames, teamsPlayedSince, upcomingGames, type TakesSport } from "./games.ts";
 import { extractPicks, plainDashes, TAKES_MODEL } from "./extract.ts";
+import { creditedPerson } from "../_shared/takes-grade.ts";
 
 const REPO = "jerryvix/mgpanalytics";
 const WORKFLOW = `${REPO}/.github/workflows/takes-transcribe.yml@`;
@@ -26,9 +35,11 @@ const AUDIENCE = "mgp-ingest-takes";
 const ALLOWED_REFS = new Set(["refs/heads/main", "refs/heads/claude/exciting-euler-w6d8uw"]);
 const JWKS = createRemoteJWKSet(new URL("https://token.actions.githubusercontent.com/.well-known/jwks"));
 
-// Display credit and hosts per feed key (mirrors scripts/takes/transcribe.py FEEDS and
-// _shared/takes-sources.ts). SportsLine is the credit people know (D-071).
-const SHOWS: Record<string, { name: string; hosts: string[]; sports: TakesSport[] }> = {
+// Display credit and hosts per feed key (mirrors scripts/takes/transcribe.py FEEDS,
+// scripts/takes/youtube_text.py CHANNELS and _shared/takes-sources.ts). SportsLine is
+// the credit people know (D-071). `windowHours`: only games starting this soon after
+// the episode are candidates (a daily show's "today" picks).
+const SHOWS: Record<string, { name: string; hosts: string[]; sports: TakesSport[]; windowHours?: number }> = {
   "early-edge": {
     name: "SportsLine",
     hosts: ["Sia Nejad", "Larry Hartstein", "Mike McClure", "Brady Kannon", "Bob Konarski", "Martin Green", "Mike Barner"],
@@ -40,6 +51,8 @@ const SHOWS: Record<string, { name: string; hosts: string[]; sports: TakesSport[
     sports: ["NFL", "NCAAF", "NBA", "NCAAB"],
   },
   "hold-the-phone": { name: "Hold The Phone", hosts: [], sports: ["NFL", "NCAAF", "NBA", "NCAAB"] },
+  // YouTube only, read from titles and descriptions (no host is named in them)
+  "daft-previews": { name: "Daft Previews", hosts: [], sports: ["NBA"], windowHours: 36 },
 };
 
 const CORE_MARKETS = new Set(["spread", "total", "moneyline"]);
@@ -84,25 +97,33 @@ serve(async (req) => {
     return json({ guids: (data ?? []).map((r: { guid: string }) => r.guid) });
   }
 
-  if (body.action !== "ingest") return json({ error: "unknown action" }, 400);
+  const isText = body.action === "ingest_text";
+  if (body.action !== "ingest" && !isText) return json({ error: "unknown action" }, 400);
   const show = SHOWS[body.show];
   const ep = body.episode ?? {};
   const segments: { start: number; text: string }[] = Array.isArray(body.segments) ? body.segments : [];
-  if (!show || !ep.guid || segments.length === 0) return json({ error: "show, episode.guid and segments required" }, 400);
+  const text = typeof body.text === "string" ? body.text.slice(0, 20_000) : "";
+  if (!show || !ep.guid || (isText ? !text.trim() : segments.length === 0)) {
+    return json({ error: isText ? "show, episode.guid and text required" : "show, episode.guid and segments required" }, 400);
+  }
 
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!apiKey) return json({ error: "ANTHROPIC_API_KEY not set" }, 500);
 
-  const transcript = segments.map((s) => `[${fmt(s.start)}] ${s.text}`).join("\n");
+  const transcript = isText ? text : segments.map((s) => `[${fmt(s.start)}] ${s.text}`).join("\n");
   const publishedAt = ep.pubDate ? new Date(ep.pubDate).toISOString() : new Date().toISOString();
   // A week ahead: football shows make Saturday picks on Monday.
-  const games = await upcomingGames(show.sports, 8);
+  const upcoming = await upcomingGames(show.sports, 8);
+  const games = show.windowHours
+    ? upcoming.filter((g) => Date.parse(g.startsAt) <= Date.parse(publishedAt) + show.windowHours! * 3600_000)
+    : upcoming;
   const candidates = candidatesFor(games, transcript);
   const byId = new Map(games.map((g) => [g.id, g]));
+  const playedSince = await teamsPlayedSince(show.sports, new Date(publishedAt)).catch(() => new Set<string>());
 
   const { picks, usage } = await extractPicks({
     apiKey, showName: show.name, hosts: show.hosts, episodeTitle: ep.title ?? "",
-    publishedAt, transcript, candidates,
+    publishedAt, transcript, candidates, source: isText ? "description" : "transcript",
   });
 
   // The show's newer episodes already stored, per game and bet type: an older episode never overrides them (D-069).
@@ -112,26 +133,36 @@ serve(async (req) => {
   const rosters = new Map<string, string[]>();
 
   const rows = [];
+  const dropped: string[] = [];
+  const seen = new Set<string>();
   for (const p of picks) {
     const g = byId.get(String(p.event_id));
     if (!g || !p.pick.trim()) continue; // unknown or already started: never stored
     if (CORE_MARKETS.has(p.market) && covered.has(`${g.id}|${p.market}`)) continue;
+    if (g.teamIds.some((id) => playedSince.has(`${g.sport}|${id}`))) {
+      dropped.push(`${g.matchup}: ${p.pick} (a team played since the episode came out)`);
+      continue;
+    }
     if (p.market === "prop" || p.market === "parlay") {
       if (!rosters.has(g.id)) rosters.set(g.id, await rosterNames(g).catch(() => []));
       const roster = rosters.get(g.id)!;
       p.pick = correctName(p.pick, roster);
       p.legs = p.legs.map((leg) => correctName(leg, roster));
     }
+    const pick = plainDashes(p.pick);
+    // The same pick twice in one episode (a recap) would fail the upsert below
+    if (seen.has(`${g.id}|${pick}`)) continue;
+    seen.add(`${g.id}|${pick}`);
     rows.push({
       show: body.show,
       show_name: show.name,
-      person: p.person.trim() || null,
+      person: creditedPerson(p.person),
       sport: g.sport,
       espn_event_id: g.id,
       matchup: g.matchup,
       starts_at: g.startsAt,
       market: p.market,
-      pick: plainDashes(p.pick),
+      pick,
       price: plainDashes(p.price) || null,
       legs: p.legs.map(plainDashes).filter(Boolean),
       why: plainDashes(p.why) || null,
@@ -167,5 +198,6 @@ serve(async (req) => {
     candidates: candidates.length,
     usage: { input: usage.input_tokens, output: usage.output_tokens },
     picks: rows.map((r) => `${r.sport} ${r.matchup}: ${r.pick}${r.price ? ` (${r.price})` : ""} · ${r.person ?? r.show_name}`),
+    ...(dropped.length ? { dropped } : {}),
   });
 });
