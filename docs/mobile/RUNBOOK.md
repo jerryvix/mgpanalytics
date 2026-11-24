@@ -39,7 +39,7 @@ cd mobile
 EXPO_TOKEN=proxy-injected EXPO_APPLE_TEAM_ID=4939734628 npx -y eas-cli@latest build -p ios --profile production --non-interactive --no-wait --auto-submit
 ```
 
-The build takes about 5 to 20 minutes, the upload runs on Expo's servers when it finishes, and Apple processes the build in about 5 to 15 minutes more. Everyone with the Admin role in App Store Connect is in the internal TestFlight group "Team (Expo)", which gets every build.
+The build takes about 5 to 20 minutes, the upload runs on Expo's servers when it finishes, and Apple processes the build in about 5 to 15 minutes more. The internal TestFlight group "Team (Expo)" gets every build. Expo is meant to add every App Store Connect admin to it, but on the first run it added no one; the owner was added by hand on Nov 24. When someone new joins App Store Connect, add them in TestFlight > Team (Expo) > Testers.
 
 If a build fails: `eas build:view <id> --json` gives `logFiles`; download with `curl --compressed` (the file is newline-delimited JSON with a `phase` per line).
 
