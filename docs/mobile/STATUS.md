@@ -11,7 +11,7 @@
 
 - Website: Takes page (D-074), no dashes anywhere (D-073); merged in jerryvix/mgpanalytics#24.
 - Takes pipeline twice daily (12:17 PM and 5:47 PM ET) and the one line per game twice daily (9:23 AM and 3:23 PM ET) for NFL, college football and NBA (D-075); merged in jerryvix/mgpanalytics#25. Claude merges its own PRs once checks are green (D-078).
-- Player lines (D-105): one fact against the game's DraftKings player prop under the one line on the game page, NFL and NBA. Table, `ingest-player-lines` and `app-feed` deployed and today's rows seeded Nov 24; the twice-daily run takes over once the PR is merged to main.
+- Player lines (D-105, D-106): one fact against the game's DraftKings player prop under the one line on the game page, NFL and NBA, picked and polished by a Haiku judge calibrated to the owner's taste test, with a gray ticker (tonight's opponent's rank) and the prop under it. v2 deployed and today's rows seeded Nov 24; the twice-daily run on main takes over once merged.
 
 ## Done
 

@@ -269,13 +269,14 @@ async function attachNotes(supabase: any, games: any[]) {
   for (const g of open) g.notes = shaped.filter((n: { espn_event_id: string }) => n.espn_event_id === g.id);
 }
 
-// The game's strongest player line (D-105), rank 1 of the up to 3 stored: a fact measured against the
-// game's DraftKings prop number, shown under the one line. Not on final games (the number is settled).
+// The game's player line (D-105, D-106), rank 1 of the up to 3 stored: the judge's pick of the verified
+// facts measured against the game's DraftKings prop number, shown under the one line, with `ticker`
+// (tonight's opponent's rank, "CHI DEF 7th in Rush YPG Allowed") when the line needs it. Not on final games.
 // deno-lint-ignore no-explicit-any
 async function attachPlayerLine(supabase: any, g: any) {
   if (g.state === "post" || (g.sport !== "NFL" && g.sport !== "NBA")) return;
   const { data, error } = await supabase.from("player_lines")
-    .select("text, record, player_name, short_name, espn_athlete_id, team, market, market_short, line, side, price, hits, games, tier")
+    .select("text, record, player_name, short_name, espn_athlete_id, team, market, market_short, line, side, price, hits, games, tier, ticker")
     .eq("espn_event_id", g.id).order("rank").limit(1);
   const l = error ? null : data?.[0];
   if (!l) return;

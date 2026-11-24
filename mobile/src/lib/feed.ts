@@ -40,9 +40,10 @@ export type OneLine = { text: string; record: string; supports: string; market: 
 
 /**
  * The game's strongest player line (D-105): a fact measured against the game's DraftKings prop,
- * "Travis Kelce has topped 43.5 receiving yards in 40 of his last 48 prime-time games". `record` is
- * the run of `text` that's bolded; the prop (`short_name`, `side`, `line`, `market_short`, `price`)
- * is named after the sentence. `price` is null when the feed has none.
+ * "Dak Prescott has gone over 263.5 Pass Yds in 5 of his last 6 Thanksgiving games". `record` is the
+ * run of `text` that's bolded; under it, `ticker` (tonight's opponent's rank, when the line needs it)
+ * and the prop (`short_name`, `side`, `line`, `market_short`, `price`). `price` is null when the feed
+ * has none (D-106).
  */
 export type PlayerLine = {
   text: string;
@@ -60,6 +61,7 @@ export type PlayerLine = {
   hits: number;
   games: number;
   tier: 'strong' | 'fallback';
+  ticker?: string | null;
 };
 
 export type Take = {
