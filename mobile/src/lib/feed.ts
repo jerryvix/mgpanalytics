@@ -1,7 +1,8 @@
 /**
  * The app's data: one read-only endpoint, `app-feed` (supabase/functions/app-feed),
  * which joins ESPN's schedule and DraftKings line, the latest DraftKings Betting Splits,
- * the one line per game (D-075) and the shows' Takes (D-074). Public data, no sign-in.
+ * the one line per game (D-075), the game page's player line (D-105) and the shows' Takes
+ * (D-074). Public data, no sign-in.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
@@ -36,6 +37,30 @@ export type Splits = {
 };
 
 export type OneLine = { text: string; record: string; supports: string; market: 'spread' | 'total'; tier: string };
+
+/**
+ * The game's strongest player line (D-105): a fact measured against the game's DraftKings prop,
+ * "Travis Kelce has topped 43.5 receiving yards in 40 of his last 48 prime-time games". `record` is
+ * the run of `text` that's bolded; the prop (`short_name`, `side`, `line`, `market_short`, `price`)
+ * is named after the sentence. `price` is null when the feed has none.
+ */
+export type PlayerLine = {
+  text: string;
+  record: string;
+  player_name: string;
+  short_name: string;
+  espn_athlete_id: string;
+  team: string;
+  sport: Sport;
+  market: string;
+  market_short: string;
+  line: number;
+  side: 'over' | 'under';
+  price: string | null;
+  hits: number;
+  games: number;
+  tier: 'strong' | 'fallback';
+};
 
 export type Take = {
   id?: string;
@@ -97,6 +122,8 @@ export type Game = {
   publicBets?: { pct: number; team: string };
   publicMoney?: { pct: number; team: string };
   oneLine?: OneLine;
+  /** Game view only (D-105) */
+  playerLine?: PlayerLine;
   takesCount?: number;
   takes?: Take[];
   notes?: MarketNote[];

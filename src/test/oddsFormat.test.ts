@@ -4,6 +4,7 @@ import {
   formatAmerican,
   formatAts,
   formatMovement,
+  formatPropBet,
   formatRecord,
   formatSpread,
   formatSpreadWithPrice,
@@ -68,5 +69,14 @@ describe("odds formatting", () => {
     expect(formatRecord(5, 5)).toBe("5-5");
     expect(formatRecord(5, 4, 1)).toBe("5-4-1");
     expect(formatAts(5, 5)).toBe("5-5 ATS");
+  });
+
+  it("names a player line's prop: short name, side, line, market, price (D-105)", () => {
+    expect(formatPropBet({ shortName: "J. Allen", side: "over", line: 240.5, market: "Pass Yds", price: "-110" })).toBe("J. Allen O 240.5 Pass Yds -110");
+    expect(formatPropBet({ shortName: "T. Kelce", side: "under", line: 5.5, market: "Rec", price: 105 })).toBe("T. Kelce U 5.5 Rec +105");
+    expect(formatPropBet({ shortName: "N. Jokic", side: "over", line: 48.5, market: "PRA", price: null })).toBe("N. Jokic O 48.5 PRA");
+    expect(formatPropBet({ shortName: "J. Gibbs", side: "over", line: 0.5, market: "Anytime TD", price: "+120" })).toBe("J. Gibbs Anytime TD +120");
+    expect(formatPropBet({ shortName: "M. Harrison Jr.", side: "under", line: 4, market: "Rec", price: "" })).toBe("M. Harrison Jr. U 4 Rec");
+    expect(NOT_ASCII_MINUS.test(formatPropBet({ shortName: "A", side: "under", line: 1.5, market: "Stl", price: "-140" }))).toBe(false);
   });
 });

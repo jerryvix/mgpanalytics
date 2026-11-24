@@ -118,6 +118,10 @@ verify_jwt = false
 [functions.ingest-game-lines]
 verify_jwt = false
 
+# GitHub OIDC token from the game-lines workflow on main, not a user JWT (D-101, D-105)
+[functions.ingest-player-lines]
+verify_jwt = false
+
 [functions.app-feed]
 verify_jwt = false
 

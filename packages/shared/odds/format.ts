@@ -9,6 +9,8 @@
  *   formatTotal("over", 52.5)       -> "O 52.5"   formatTotalLine(52.5) -> "O/U 52.5"
  *   formatMovement(-4.5, -6.5)      -> "-4.5 → -6.5"
  *   formatRecord(5, 4, 1)           -> "5-4-1"    formatAts(5, 5) -> "5-5 ATS"
+ *   formatPropBet({ shortName: "J. Allen", side: "over", line: 240.5, market: "Pass Yds", price: "-110" })
+ *                                   -> "J. Allen O 240.5 Pass Yds -110"
  *
  * Minus is the plain ASCII hyphen-minus "-" (owner rule, Nov 2026: no em dashes, en dashes or
  * typographic minus signs anywhere on the site). This replaced D-039's U+2212.
@@ -79,4 +81,22 @@ export function formatRecord(wins: number, losses: number, pushes = 0): string {
 /** Against-the-spread record: "5-5 ATS", "5-4-1 ATS". */
 export function formatAts(wins: number, losses: number, pushes = 0): string {
   return `${formatRecord(wins, losses, pushes)} ATS`;
+}
+
+/**
+ * The prop a player line is measured against, as the app names it after the sentence (D-105):
+ * short name, O or U, the exact line, the short market, then that side's price when there is one.
+ * "J. Allen O 240.5 Pass Yds -110", "T. Kelce U 5.5 Rec +105", "N. Jokic O 48.5 PRA". Anytime TD is a
+ * yes/no market with no number: "J. Gibbs Anytime TD +120".
+ */
+export function formatPropBet(p: {
+  shortName: string;
+  side: "over" | "under";
+  line: number | null | undefined;
+  market: string;
+  price?: string | number | null;
+}): string {
+  const price = p.price == null || p.price === "" ? "" : formatAmerican(Number(p.price));
+  const bet = p.market === "Anytime TD" ? p.market : [formatTotal(p.side, p.line), p.market].filter(Boolean).join(" ");
+  return [p.shortName, bet, price].filter(Boolean).join(" ");
 }
