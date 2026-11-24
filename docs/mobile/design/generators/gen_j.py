@@ -70,6 +70,9 @@ def source(t, top=10):
 # on every completed game before tonight (scratchpad today_ats.py; checked against ESPN's own W-L).
 B = lambda x: f'<span style="font-weight: 600">{x}</span>'
 REC = lambda r: f'<span style="display: {{{{rec}}}}; margin-left: 5px; {MONO}">{r}</span>'
+def angle_line(k):
+    return f'<span style="display: flex; gap: 6px; align-items: flex-start; font-size: 14px; line-height: 1.35"><span style="flex: 0 0 auto; margin-top: 1px; color: {GREEN}">{beat(16)}</span><span>{ANGLES[k]}</span></span>'
+ANGLES = {'cin': f"Joe Burrow is {B('33-15-1 ATS')} on the road in his career"}  # scripts/angles/nfl_angles.py, Week 11 (D-075)
 def today_row(a, h, an, ar, hn, hr, time_, line, total, bs, bp, ms, mp, at, ats, venue, vword):
     if bs == ms:
         two = f'{bs}: {B(str(bp) + "%")} of Public Bets · {B(str(mp) + "%")} of Public Money'
@@ -83,16 +86,16 @@ def today_row(a, h, an, ar, hn, hr, time_, line, total, bs, bp, ms, mp, at, ats,
       <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px"><span>{time_}</span><span><span style="display: {{{{lb}}}}"><span style="font-weight: 600">{line}</span> · </span>{total}</span></span>
       <span style="display: {{{{o2}}}}; font-size: 14px; line-height: 1.35">{two}</span>
       <span style="display: {{{{o1}}}}; font-size: 14px; line-height: 1.35"><span style="display: flex; flex-direction: column; gap: 3px">{one}</span></span>
-      <span style="font-size: 14px; line-height: 1.35">{at} {B(ats)} ATS this season, {B(venue)} {vword}</span>
+      {angle_line(a) if a in ANGLES else f'<span style="font-size: 14px; line-height: 1.35">{at} {B(ats)} ATS this season, {B(venue)} {vword}</span>'}
     </span>
   </a>
 '''
 TODAY = [
- ('cin', 'wsh', 'Bengals', '7-2', 'Commanders', '3-5-1', '8:15 PM · ESPN', 'CIN −6', 'O/U 54.5', 'CIN', 85, 'CIN', 78, 'CIN', '5-4', '3-2', 'on the Road'),
- ('por', 'p76', 'Trail Blazers', '10-6', '76ers', '14-3', '7:10 PM', 'PHI −3.5', 'O/U 231.5', 'PHI', 64, 'PHI', 78, 'PHI', '9-8', '4-5', 'at Home'),
- ('mem', 'cha', 'Grizzlies', '12-5', 'Hornets', '4-11', '7:10 PM', 'MEM −3.5', 'O/U 216.5', 'MEM', 62, 'CHA', 93, 'CHA', '6-9', '3-4', 'at Home'),
- ('lac', 'hou', 'Clippers', '4-11', 'Rockets', '12-5', '8:40 PM', 'HOU −12.5', 'O/U 225.5', 'HOU', 83, 'LAC', 73, 'LAC', '8-7', '3-4', 'on the Road'),
- ('uta', 'lal', 'Jazz', '3-15', 'Lakers', '14-3', '10:10 PM', 'LAL −13.5', 'O/U 228.5', 'LAL', 75, 'LAL', 99, 'LAL', '10-7', '4-5', 'at Home'),
+ ('cin', 'wsh', 'Bengals', '7-2', 'Commanders', '3-5-1', '8:15 PM · ESPN', 'CIN -6', 'O/U 54.5', 'CIN', 85, 'CIN', 78, 'CIN', '5-4', '3-2', 'on the Road'),
+ ('por', 'p76', 'Trail Blazers', '10-6', '76ers', '14-3', '7:10 PM', 'PHI -3.5', 'O/U 231.5', 'PHI', 64, 'PHI', 78, 'PHI', '9-8', '4-5', 'at Home'),
+ ('mem', 'cha', 'Grizzlies', '12-5', 'Hornets', '4-11', '7:10 PM', 'MEM -3.5', 'O/U 216.5', 'MEM', 62, 'CHA', 93, 'CHA', '6-9', '3-4', 'at Home'),
+ ('lac', 'hou', 'Clippers', '4-11', 'Rockets', '12-5', '8:40 PM', 'HOU -12.5', 'O/U 225.5', 'HOU', 83, 'LAC', 73, 'LAC', '8-7', '3-4', 'on the Road'),
+ ('uta', 'lal', 'Jazz', '3-15', 'Lakers', '14-3', '10:10 PM', 'LAL -13.5', 'O/U 228.5', 'LAL', 75, 'LAL', 99, 'LAL', '10-7', '4-5', 'at Home'),
 ]
 def today_tail():
     props = '{"layout":{"editor":"enum","options":["Option 2 (Two Lines)","Option 1 (Stacked)"],"default":"Option 2 (Two Lines)","section":"Rows"},"records":{"editor":"enum","options":["Hide","Show"],"default":"Hide","section":"Rows"},"$preview":{"width":390,"height":844}}'
@@ -136,11 +139,11 @@ def board_row(n, k, pick, ctx, big, small):
 s = head('Pulse, Betting Splits') + frame_open(C) + topbar(C)
 s += pulse_title('Week 12 · Thanksgiving Week') + segs('Betting Splits')
 s += board_section('Most Money', 'Share of money on each spread')
-s += board_row(1, 'den', 'Broncos −3', 'at Steelers · Fri', '82%', 'of money') + board_row(2, 'buf', 'Bills −3', 'vs Chiefs · Thu', '78%', 'of money') + board_row(3, 'cin', 'Bengals −6', 'at Commanders · Tonight', '78%', 'of money')
+s += board_row(1, 'den', 'Broncos -3', 'at Steelers · Fri', '82%', 'of money') + board_row(2, 'buf', 'Bills -3', 'vs Chiefs · Thu', '78%', 'of money') + board_row(3, 'cin', 'Bengals -6', 'at Commanders · Tonight', '78%', 'of money')
 s += board_section('Biggest Splits')
 s += board_row(1, 'lar', 'Under 44.5', 'Packers at Rams · 23% of bets', '71%', 'of money') + board_row(2, 'gb', 'Packers +123', 'at Rams · 58% of bets', '96%', 'of money') + board_row(3, 'phi', 'Eagles +8.5', 'at Cowboys · 29% of bets', '65%', 'of money')
 s += board_section('Most Bets', 'Share of bets on each spread')
-s += board_row(1, 'den', 'Broncos −3', 'at Steelers · Fri', '91%', 'of bets') + board_row(2, 'cin', 'Bengals −6', 'at Commanders · Tonight', '85%', 'of bets')
+s += board_row(1, 'den', 'Broncos -3', 'at Steelers · Fri', '91%', 'of bets') + board_row(2, 'cin', 'Bengals -6', 'at Commanders · Tonight', '85%', 'of bets')
 s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JPulse.dc.html'), 'w').write(s)
 
@@ -159,9 +162,9 @@ def trend(kind, statement, ctx, k=None, league=False):
 s = head('Pulse, Trends') + frame_open(C) + topbar(C)
 s += pulse_title('Week 12 · Thanksgiving Week') + segs('Trends')
 s += trend('NFL · Since Week 8', 'Favorites are 35-20 ATS', 'Home teams are 68-88 ATS this season')
-s += trend('Eagles at Cowboys · Thu 4:30 PM', 'Cowboys are 5-11 ATS on Thanksgiving since 2010', 'Cowboys −8.5 · 65% of money on the Eagles', 'dal')
+s += trend('Eagles at Cowboys · Thu 4:30 PM', 'Cowboys are 5-11 ATS on Thanksgiving since 2010', 'Cowboys -8.5 · 65% of money on the Eagles', 'dal')
 s += trend('Chiefs at Bills · Thu 8:20 PM', 'Patrick Mahomes is 13-5-1 ATS as an underdog', 'Chiefs +3 · 78% of money on the Bills', 'kc')
-s += trend('Broncos at Steelers · Fri 3:00 PM', 'Broncos are 8-2 ATS this season', 'Broncos −3 · 82% of money on the Broncos', 'den')
+s += trend('Broncos at Steelers · Fri 3:00 PM', 'Broncos are 8-2 ATS this season', 'Broncos -3 · 82% of money on the Broncos', 'den')
 s += tabbar('Pulse') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JTrends.dc.html'), 'w').write(s)
 
@@ -198,7 +201,7 @@ s += f'''  <div style="display: flex; align-items: center; justify-content: spac
 '''
 for k, nm, r in [('phi', 'Eagles', rec('PHI')), ('dal', 'Cowboys', rec('DAL'))]:
     s += f'    <div style="display: flex; align-items: center; gap: 12px">{logo(k, 38, 24)}<span style="flex: 1 1 auto; font-size: 28px; font-weight: 500; letter-spacing: -0.6px">{nm}</span><span style="font-size: 15px; color: {C["t3"]}; font-variant-numeric: tabular-nums">{r}</span></div>\n'
-s += f'''    <span style="font-size: 15px; color: {C["t2"]}">Thanksgiving · Thu 4:30 PM · DAL −8.5 · O/U 47.5</span>
+s += f'''    <span style="font-size: 15px; color: {C["t2"]}">Thanksgiving · Thu 4:30 PM · DAL -8.5 · O/U 47.5</span>
   </div>
   <div style="display: flex; gap: 4px; padding: 14px 12px 0; white-space: nowrap; overflow: hidden">
 '''
@@ -206,16 +209,116 @@ for t, on in [('Betting Splits', True), ('Trends', False), ('What to Know', Fals
     st = f'background: {C["surf2"]}; color: {C["tx"]}; font-weight: 600' if on else f'color: {C["tx"]}'
     s += f'    <a href="#s" style="flex: 0 0 auto; padding: 9px 15px; border-radius: 999px; font-size: 15px; text-decoration: none; {st}">{t}</a>\n'
 s += '  </div>\n  <div style="padding: 2px 16px 0">\n'
-s += split_market('Spread', 'PHI +8.5', 'DAL −8.5', 29, 65)
-s += split_market('Moneyline', 'PHI +324', 'DAL −411', 24, 57)
+s += split_market('Spread', 'PHI +8.5', 'DAL -8.5', 29, 65)
+s += split_market('Moneyline', 'PHI +324', 'DAL -411', 24, 57)
 s += f'''  </div>
+  <div style="margin: 14px 16px 0; display: flex; gap: 10px; align-items: flex-start"><span style="flex: 0 0 auto; margin-top: 2px; color: {GREEN}">{beat(20)}</span><span style="font-size: 18px; line-height: 1.35; letter-spacing: -0.2px">Dak Prescott is <span style="font-weight: 600">12-3 ATS</span> against the Eagles in his career</span></div>
 '''
 s += section(C, 'Trends', 16)
 for txt in ['Cowboys are 5-11 ATS on Thanksgiving since 2010', 'Cowboys are 6-15 ATS as a favorite since 2024', 'Eagles are 2-8 ATS this season']:
     s += f'  <div style="display: flex; align-items: center; gap: 12px; margin: 0 16px; padding: 10px 0; border-bottom: 1px solid {C["line"]}">{icon("arrow", 17, stroke=GREEN, sw=2.2)}<span style="font-size: 16px">{NB(txt)}</span></div>\n'
+GAME_BODY = s
 s += tabbar('Today') + '</div>\n' + tail(C['accents'])
 open(os.path.join(OUT, 'JGame.dc.html'), 'w').write(s)
 print('J written')
+
+# ---------- 5b) Game page: Alerts sheet (D-071: no Alerts tab; the bell on each game)
+def switch(on=True):
+    bg = GREEN if on else C['surf2']
+    return (f'<span aria-hidden="true" style="flex: 0 0 auto; position: relative; width: 51px; height: 31px; border-radius: 999px; background: {bg}">'
+            f'<span style="position: absolute; top: 2px; {"right" if on else "left"}: 2px; width: 27px; height: 27px; border-radius: 999px; background: #FFFFFF"></span></span>')
+def alert_row(label, desc, last=False):
+    border = '' if last else f'border-bottom: 1px solid {C["line"]};'
+    return f'''    <div role="switch" aria-checked="true" aria-label="{label}" style="display: flex; align-items: center; gap: 14px; padding: 13px 0; {border}">
+      <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16.5px; font-weight: 600">{label}</span><span style="font-size: 14px; line-height: 1.35">{desc}</span></span>
+      {switch()}
+    </div>
+'''
+bell_off = f'<button aria-label="Get alerts for this game" style="{circ}; color: {C["tx"]}">{icon("bell", 21, sw=1.6)}</button>'
+bell_on = f'<button aria-label="Alerts on for this game" style="{circ}; color: {GREEN}">{icon("bell", 21, fill="currentColor", sw=1.6)}</button>'
+assert GAME_BODY.count(bell_off) == 1
+sa = GAME_BODY.replace(bell_off, bell_on).replace("head('Game Page, Splits First')", "head('Game Page, Alerts')")
+sa = sa.replace('<title>Game Page, Splits First</title>', '<title>Game Page, Alerts</title>')
+sa = sa.replace('family=Geist:wght@400..700&', 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&', 1)
+sa += f'''  <div aria-hidden="true" style="position: absolute; inset: 0; z-index: 20; background: rgba(0,0,0,.62)"></div>
+  <div role="dialog" aria-label="Alerts for this game" style="position: absolute; z-index: 21; left: 0; right: 0; bottom: 0; padding: 8px 20px 30px; border-radius: 26px 26px 0 0; background: {C["surf"]}; display: flex; flex-direction: column">
+    <span aria-hidden="true" style="align-self: center; width: 38px; height: 5px; border-radius: 999px; background: {C["surf2"]}"></span>
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-top: 14px">
+      <span style="display: flex; flex-direction: column; gap: 5px"><span style="font-size: 22px; font-weight: 600; letter-spacing: -0.4px">Alerts for This Game</span><span style="{MONO}">Eagles at Cowboys · Thu 4:30 PM</span></span>
+      <span style="flex: 0 0 auto; padding: 8px 14px; border-radius: 999px; background: {C["surf2"]}; font-size: 15px; font-weight: 600">Done</span>
+    </div>
+    <span style="margin-top: 12px; font-size: 15px; line-height: 1.4">You're following this game with your alert settings. Change them here for this game only</span>
+    <div style="display: {{{{off}}}}; margin-top: 14px; padding: 14px; border-radius: 16px; background: {C["surf2"]}">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 15px; line-height: 1.4">Turn on notifications so these reach your lock screen</span>
+        <span style="align-self: flex-start; padding: 10px 16px; border-radius: 999px; background: {GREEN}; color: #04140B; font-size: 15px; font-weight: 700">Turn On Notifications</span>
+      </div>
+    </div>
+    <div style="margin-top: 6px">
+{alert_row('Before Kickoff', 'An hour before, with the latest Betting Splits')}{alert_row('Money Moves', 'When most of the money moves to the other side')}{alert_row('New Takes', 'When a show in Takes picks this game')}{alert_row('Final Score', 'The score and who covered', last=True)}    </div>
+    <div style="margin-top: 10px; display: flex; justify-content: space-between; gap: 12px">
+      <a href="JAlertSettings.dc.html" style="padding: 11px 16px; border-radius: 999px; background: {C["surf2"]}; color: {C["tx"]}; text-decoration: none; font-size: 15px; font-weight: 600">Change for All Games</a>
+      <span style="padding: 11px 4px; font-size: 15px; font-weight: 600">Unfollow</span>
+    </div>
+  </div>
+'''
+props_a = '{"notifications":{"editor":"enum","options":["Off","On"],"default":"Off","section":"State"},"$preview":{"width":390,"height":844}}'
+sa += f"""</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{props_a}'>
+class Component extends DCLogic {{
+  renderVals() {{
+    return {{ ff: "'Geist', system-ui, sans-serif", accent: '{C["accents"][0]}', off: (this.props.notifications ?? 'Off') === 'On' ? 'none' : 'block' }};
+  }}
+}}
+</script>
+</body>
+</html>
+"""
+open(os.path.join(OUT, 'JGameAlerts.dc.html'), 'w').write(sa)
+
+# ---------- 5c) Alerts settings (Profile > Alerts): set once, applies to every game you get alerts for (D-076)
+def scope_row(label, desc, on, last=False):
+    border = '' if last else f'border-bottom: 1px solid {C["line"]};'
+    return f"""    <div role="switch" aria-checked="{'true' if on else 'false'}" aria-label="{label}" style="display: flex; align-items: center; gap: 14px; padding: 13px 0; {border}">
+      <span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16.5px; font-weight: 600">{label}</span><span style="font-size: 14px; line-height: 1.35">{desc}</span></span>
+      {switch(on)}
+    </div>
+"""
+sx = head('Alerts Settings').replace('family=Geist:wght@400..700&', 'family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&', 1).replace('<title>Alerts Settings</title>', '<title>Alerts Settings</title>')
+sx += frame_open(C)
+sx += f"""  <div style="display: flex; align-items: center; padding: 10px 16px 0">
+    <a href="JGameAlerts.dc.html" aria-label="Back" style="{circ}; color: {C["tx"]}">{icon("back", 22)}</a>
+  </div>
+  <div style="padding: 10px 20px 0; display: flex; flex-direction: column; gap: 6px">
+    <h1 style="margin: 0; font-size: 34px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.05">Alerts</h1>
+    <span style="font-size: 15px; line-height: 1.4">Set these once. They apply to every game below</span>
+  </div>
+  <div style="display: {{{{off}}}}; margin: 16px 20px 0; padding: 14px; border-radius: 16px; background: {C["surf"]}">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 15px; line-height: 1.4">Notifications are off for MGP. Turn them on so these reach your lock screen</span>
+      <span style="align-self: flex-start; padding: 10px 16px; border-radius: 999px; background: {GREEN}; color: #04140B; font-size: 15px; font-weight: 700">Turn On Notifications</span>
+    </div>
+  </div>
+  <span style="padding: 22px 20px 0; {MONO}">Alert Me About</span>
+  <div style="margin: 0 20px">
+{alert_row('Before Kickoff', 'An hour before, with the latest Betting Splits')}{alert_row('Money Moves', 'When most of the money moves to the other side')}{alert_row('New Takes', 'When a show in Takes picks the game')}{alert_row('Final Score', 'The score and who covered', last=True)}  </div>
+  <span style="padding: 20px 20px 0; {MONO}">For These Games</span>
+  <div style="margin: 0 20px">
+{scope_row('Your Teams', 'Eagles, Lakers', True)}{scope_row('Games You Follow', 'Tap the bell on any game', True)}{scope_row('Every NFL Game', 'Games that start together come in one alert', False)}{scope_row('Every NBA Game', 'Games that start together come in one alert', False, last=True)}  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{props_a}'>
+class Component extends DCLogic {{
+  renderVals() {{
+    return {{ ff: "'Geist', system-ui, sans-serif", accent: '{C["accents"][0]}', off: (this.props.notifications ?? 'Off') === 'On' ? 'none' : 'block' }};
+  }}
+}}
+</script>
+</body>
+</html>
+"""
+open(os.path.join(OUT, 'JAlertSettings.dc.html'), 'w').write(sx)
 
 # ---------- 6) Pulse: Team Records (college football, full season)
 import json as _json
@@ -327,32 +430,32 @@ def takes_page(title, height, opened=False, coach=False, only_first=False):
     s_ += '  </div>\n'
     if not only_first:  # Early Edge, Nov 23 morning show (D-069 sport mix); soonest first (D-066)
         s_ += tk_sec('Cavaliers at Bulls', 'NBA · Tonight 8:00 PM')
-        s_ += tk_take('sportsline', 'Jarrett Allen U 15.5 Points (−120)', 'SportsLine', body='x')
+        s_ += tk_take('sportsline', 'Jarrett Allen U 15.5 Points (-120)', 'SportsLine', body='x')
     s_ += tk_sec('Bengals at Commanders', 'NFL · Tonight 8:15 PM')
-    s_ += tk_take(('htp', 'bearbets'), 'Commanders +6 (−107)', 'Hold The Phone, Bear Bets', body=WHY, opened=opened)
-    s_ += tk_take('sportsline', 'Bengals −6 (−113)', 'SportsLine', body='x')
-    s_ += tk_take('sportsline', 'Under 54.5 (−103)', 'SportsLine', body='x')
+    s_ += tk_take(('htp', 'bearbets'), 'Commanders +6 (-107)', 'Hold The Phone, Bear Bets', body=WHY, opened=opened)
+    s_ += tk_take('sportsline', 'Bengals -6 (-113)', 'SportsLine', body='x')
+    s_ += tk_take('sportsline', 'Under 54.5 (-103)', 'SportsLine', body='x')
     s_ += tk_take('htp', 'Same Game Parlay +400 (4 Legs)', 'Hold The Phone', legs=["Ja'Marr Chase 75+ Receiving Yards", 'Jayden Daniels 25+ Rushing Yards', 'Stefon Diggs 50+ Receiving Yards', 'Chase Brown Anytime TD'])
     s_ += tk_take('htp', 'Chig Okonkwo Anytime TD', 'Danny · Hold The Phone')
     s_ += tk_take('sportsline', 'Joe Burrow O 7.5 Rushing Yards', 'Mike McClure · SportsLine', body='x')
     s_ += tk_take('sportsline', 'Stefon Diggs Anytime TD +180', 'Sia Nejad · SportsLine', body='x')
     if not only_first:
         s_ += tk_sec('VCU vs Providence', 'NCAAB · Tonight 9:00 PM')
-        s_ += tk_take('sportsline', 'Under 154.5 (−105)', 'SportsLine', body='x')
+        s_ += tk_take('sportsline', 'Under 154.5 (-105)', 'SportsLine', body='x')
         s_ += tk_sec('Colorado State vs Arizona', 'NCAAB · Tonight 11:30 PM')
         s_ += tk_take('sportsline', 'Under 159.5 (Now 158.5)', 'SportsLine', body='x')
         s_ += tk_sec('Bears at Lions', 'NFL · Thu 1:00 PM')
-        s_ += tk_take('bearbets', 'Lions +2.5 (−106)', 'Bear Bets', body='x')
+        s_ += tk_take('bearbets', 'Lions +2.5 (-106)', 'Bear Bets', body='x')
         s_ += tk_sec('Florida at Florida State', 'NCAAF · Fri 3:30 PM')
-        s_ += tk_take('bearbets', 'Florida State +6 (−110)', 'Bear Bets', body='x')
+        s_ += tk_take('bearbets', 'Florida State +6 (-110)', 'Bear Bets', body='x')
         s_ += tk_sec('Minnesota at Wisconsin', 'NCAAF · Fri 7:30 PM')
-        s_ += tk_take('bearbets', 'Minnesota +7.5 (−112)', 'Bear Bets', body='x')
+        s_ += tk_take('bearbets', 'Minnesota +7.5 (-112)', 'Bear Bets', body='x')
         s_ += tk_sec('LSU at Arkansas', 'NCAAF · Sat 12:45 PM')
         s_ += tk_take('bearbets', 'Arkansas +12.5 (Now +14.5)', 'Bear Bets', body='x')
         s_ += tk_sec('Southern Miss at Old Dominion', 'NCAAF · Sat 1:00 PM')
-        s_ += tk_take('bearbets', 'Southern Miss +5.5 (−105)', 'Bear Bets', body='x')
+        s_ += tk_take('bearbets', 'Southern Miss +5.5 (-105)', 'Bear Bets', body='x')
         s_ += tk_sec('Georgia Tech at Georgia', 'NCAAF · Sat 3:30 PM')
-        s_ += tk_take('bearbets', 'Georgia Tech +35.5 (−110)', 'Bear Bets', body='x')
+        s_ += tk_take('bearbets', 'Georgia Tech +35.5 (-110)', 'Bear Bets', body='x')
     if coach:
         # first-visit pointer (D-037 style): dim the page, light up the Takes tab, one short note
         s_ += f"""  <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(0, 0, 0, 0.74); z-index: 5"></div>
