@@ -19,6 +19,7 @@ export type Team = {
   displayName: string;
   logo?: string;
   color?: string | null;
+  altColor?: string | null;
   record?: string | null;
   rank?: number | null;
   score?: string | null;

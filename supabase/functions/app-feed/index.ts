@@ -44,7 +44,7 @@ function shapeTeam(c: any) {
   const t = c.team ?? {};
   return {
     id: String(t.id), abbr: t.abbreviation, name: t.shortDisplayName, location: t.location, displayName: t.displayName,
-    logo: t.logo, color: t.color ? `#${t.color}` : null, record: c.records?.[0]?.summary ?? null,
+    logo: t.logo, color: t.color ? `#${t.color}` : null, altColor: t.alternateColor ? `#${t.alternateColor}` : null, record: c.records?.[0]?.summary ?? null,
     rank: c.curatedRank?.current && c.curatedRank.current <= 25 ? c.curatedRank.current : null,
     score: c.score ?? null,
   };
@@ -66,7 +66,8 @@ async function espnEvents(sport: Sport, date: string): Promise<any[]> {
     return {
       id: String(e.id), sport, start: e.date, state: c.status?.type?.state ?? "pre", status: c.status?.type?.shortDetail ?? "",
       neutral: Boolean(c.neutralSite), venue: c.venue?.fullName ?? null,
-      tv: (c.broadcasts ?? []).flatMap((b: { names?: string[] }) => b.names ?? [])[0] ?? null,
+      // National channels only (D-092): local and team streams ("DAZN MEM", "BlazerVision") mean little to most people
+      tv: (c.broadcasts ?? []).filter((b: { market?: string }) => b.market === "national").flatMap((b: { names?: string[] }) => b.names ?? [])[0] ?? null,
       home: shapeTeam(home ?? {}), away: shapeTeam(away ?? {}),
       espnLine: odds.details ?? null, espnTotal: odds.overUnder ?? null,
     };

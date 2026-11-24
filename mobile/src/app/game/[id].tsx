@@ -47,7 +47,7 @@ export default function GameScreen() {
                   </View>
                 );
               })}
-              <T size={15}>{[g.state === 'pre' ? whenLabel(g.start) : g.status, g.tv, g.line, g.total ? `O/U ${g.total}` : null].filter(Boolean).join(' · ')}</T>
+              <T size={15}>{[g.state === 'pre' ? whenLabel(g.start) : g.status, g.state === 'post' ? null : g.tv, g.line, g.total ? `O/U ${g.total}` : null].filter(Boolean).join(' · ')}</T>
             </View>
             <SplitsBlock game={g} />
             {g.oneLine ? <View style={{ paddingHorizontal: 16, paddingTop: 14 }}><OneLineText line={g.oneLine} size={18} /></View> : null}
