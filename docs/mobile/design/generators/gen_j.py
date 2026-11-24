@@ -79,8 +79,8 @@ def today_row(a, h, an, ar, hn, hr, time_, line, total, bs, bp, ms, mp, at, ats,
     return f'''  <a href="JGame.dc.html" style="display: flex; align-items: flex-start; gap: 12px; padding: 11px 16px; text-decoration: none; color: {C["tx"]}">
     {pair(a, h)}
     <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-variant-numeric: tabular-nums">
-      <span style="font-size: 16.5px; letter-spacing: -0.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{an}{REC(ar)} at {hn}{REC(hr)}</span>
-      <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px"><span>{time_}</span><span><span style="font-weight: 600">{line}</span> · {total}</span></span>
+      <span style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 16.5px; letter-spacing: -0.2px"><span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{an}{REC(ar)} at {hn}{REC(hr)}</span><span style="display: {{{{lt}}}}; flex: 0 0 auto; font-weight: 500">{line}</span></span>
+      <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 14px"><span>{time_}</span><span><span style="display: {{{{lb}}}}"><span style="font-weight: 600">{line}</span> · </span>{total}</span></span>
       <span style="display: {{{{o2}}}}; font-size: 14px; line-height: 1.35">{two}</span>
       <span style="display: {{{{o1}}}}; font-size: 14px; line-height: 1.35"><span style="display: flex; flex-direction: column; gap: 3px">{one}</span></span>
       <span style="font-size: 14px; line-height: 1.35">{at} {B(ats)} ATS this season, {B(venue)} {vword}</span>
@@ -95,13 +95,15 @@ TODAY = [
  ('uta', 'lal', 'Jazz', '3-15', 'Lakers', '14-3', '10:10 PM', 'LAL −13.5', 'O/U 228.5', 'LAL', 75, 'LAL', 99, 'LAL', '10-7', '4-5', 'at Home'),
 ]
 def today_tail():
-    props = '{"layout":{"editor":"enum","options":["Option 2 (Two Lines)","Option 1 (Stacked)"],"default":"Option 2 (Two Lines)","section":"Rows"},"records":{"editor":"enum","options":["Show","Hide"],"default":"Show","section":"Rows"},"$preview":{"width":390,"height":844}}'
+    props = '{"layout":{"editor":"enum","options":["Option 2 (Two Lines)","Option 1 (Stacked)"],"default":"Option 2 (Two Lines)","section":"Rows"},"records":{"editor":"enum","options":["Hide","Show"],"default":"Hide","section":"Rows"},"$preview":{"width":390,"height":844}}'
     return f"""</x-dc>
 <script type="text/x-dc" data-dc-script data-props='{props}'>
 class Component extends DCLogic {{
   renderVals() {{
     const one = (this.props.layout ?? '').startsWith('Option 1');
-    return {{ ff: "'Geist', system-ui, sans-serif", accent: '{C["accents"][0]}', o1: one ? 'block' : 'none', o2: one ? 'none' : 'block', rec: (this.props.records ?? 'Show') === 'Hide' ? 'none' : 'inline' }};
+    const rec = (this.props.records ?? 'Hide') === 'Show';
+    // records shown: line moves to row two so names fit; hidden: line back beside the matchup (owner, Nov 24)
+    return {{ ff: "'Geist', system-ui, sans-serif", accent: '{C["accents"][0]}', o1: one ? 'block' : 'none', o2: one ? 'none' : 'block', rec: rec ? 'inline' : 'none', lt: rec ? 'none' : 'inline', lb: rec ? 'inline' : 'none' }};
   }}
 }}
 </script>
