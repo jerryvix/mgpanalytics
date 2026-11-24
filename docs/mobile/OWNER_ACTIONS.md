@@ -23,6 +23,16 @@ Apple enrollment confirmed approved by the owner on Nov 23.
   - Apple may phone you to verify. Answer unknown numbers that week.
   - Tell the builder when the approval email arrives.
 
+## Now: one key so builds reach TestFlight (10 minutes)
+
+- [ ] **7. Create an App Store Connect API key and add it to Expo.** This lets the builder create the app record and upload builds to TestFlight, with no Apple password shared. The key never goes in chat.
+  1. Sign in at appstoreconnect.apple.com with the business Apple ID.
+  2. Go to **Users and Access**, then the **Integrations** tab, then **App Store Connect API** (Team Keys). If asked, click **Request Access** and accept.
+  3. Click **+** (Generate API Key). Name it `Expo EAS`. Access: **Admin**. Click **Generate**.
+  4. Note the **Issuer ID** (top of the page) and the key's **Key ID**. Click **Download** to get the `.p8` file (Apple lets you download it once; keep it in your password manager).
+  5. Go to expo.dev, sign in as `jerryvix`, open **Account settings**, then **Credentials**, then **App Store Connect API Keys**, and click **Add**. Upload the `.p8` file, enter the Key ID and Issuer ID, and save.
+  6. Tell the builder "ASC key added". Nothing else to send.
+
 ## This week (5 minutes each)
 
 - [x] **4. Create a free Expo account** at expo.dev, ideally with the same business email. The builder will then send a secure form for an access token.

@@ -1,14 +1,15 @@
 # Status
 
-**Updated:** 2026-11-23 · **Phase:** Week 1 (setup) · **Target submit:** ~2026-12-16 · **On track:** yes, pending Apple enrollment
+**Updated:** 2026-11-24 · **Phase:** Building the app (D-079: downloadable first) · **Target:** first TestFlight build ~Dec 2, App Store submit ~Dec 9
 
 ## Blocked on owner
 
-- Merge jerryvix/mgpanalytics#23 (website changes). After it is live: flip `BASKETBALL_SPLITS_LIVE`, deploy `sync-betting-splits` and `gemini-chat` (D-058).
+- App Store Connect API key added to Expo (lets EAS create the app record and upload builds to TestFlight without an Apple password). Steps in `OWNER_ACTIONS.md`.
 
+## Live (Nov 24)
 
-- Apple enrollment (D-U-N-S + organization). Critical path; gates the first TestFlight build. See `OWNER_ACTIONS.md` items 1 to 3.
-- Review board notes answered (8 Insiders, 12 alerts + game bell, 23 bankroll v1.1, 25 guest browsing). Note 4 decided after a simulated survey of 1,000: headline "Bet Smarter, Not Harder.", your teams first on Home (D-026, `research/`).
+- Website: Takes page (D-074), no dashes anywhere (D-073); merged in jerryvix/mgpanalytics#24.
+- Takes pipeline twice daily (12:17 PM and 5:47 PM ET) and the one line per game twice daily (9:23 AM and 3:23 PM ET) for NFL, college football and NBA (D-075); merged in jerryvix/mgpanalytics#25. Claude merges its own PRs once checks are green (D-078).
 
 ## Done
 

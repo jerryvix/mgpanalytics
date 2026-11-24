@@ -435,3 +435,7 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-078 Claude merges its own PRs once checks are green
 **Date:** 2026-11-24 · **By:** Owner ("I give you permission to merge so I don't have to manually do it and I don't slow us down")
 **Standing permission:** Claude may merge pull requests it opens on `jerryvix/mgpanalytics` into `main` without asking, once every check is green (the Vercel preview build at minimum), there is no merge conflict, and nothing in review comments is unresolved. Claude says in chat what went in. Anything that needs the owner (money, accounts, legal, taste calls) is still raised before the PR, not decided by merging it. This holds for future sessions until the owner revokes it.
+
+### D-079 Ship a downloadable app first; college basketball waits
+**Date:** 2026-11-24 · **By:** Owner ("Hold off on college basketball for now... I just want a product out there that's downloadable")
+**What:** v1 of the iPhone app covers the NFL, college football and the NBA. College basketball (its one line per game and its place in the app) waits until after launch; the existing college basketball splits sync keeps running at no cost, and MLB comes in spring. All build time goes to the app itself: Today, Games, the game page, Pulse, The Analyst and Profile with alerts, in Direction I, from the data already live (splits, Takes, the one line per game, trends). First TestFlight build as soon as the core screens work, then App Store review.
