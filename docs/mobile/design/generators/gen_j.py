@@ -137,7 +137,7 @@ s = head('Pulse, Betting Splits') + frame_open(C) + topbar(C)
 s += pulse_title('Week 12 · Thanksgiving Week') + segs('Betting Splits')
 s += board_section('Most Money', 'Share of money on each spread')
 s += board_row(1, 'den', 'Broncos −3', 'at Steelers · Fri', '82%', 'of money') + board_row(2, 'buf', 'Bills −3', 'vs Chiefs · Thu', '78%', 'of money') + board_row(3, 'cin', 'Bengals −6', 'at Commanders · Tonight', '78%', 'of money')
-s += board_section('Biggest Splits', 'Sides like these are 5-12 ATS this season')
+s += board_section('Biggest Splits')
 s += board_row(1, 'lar', 'Under 44.5', 'Packers at Rams · 23% of bets', '71%', 'of money') + board_row(2, 'gb', 'Packers +123', 'at Rams · 58% of bets', '96%', 'of money') + board_row(3, 'phi', 'Eagles +8.5', 'at Cowboys · 29% of bets', '65%', 'of money')
 s += board_section('Most Bets', 'Share of bets on each spread')
 s += board_row(1, 'den', 'Broncos −3', 'at Steelers · Fri', '91%', 'of bets') + board_row(2, 'cin', 'Bengals −6', 'at Commanders · Tonight', '85%', 'of bets')
@@ -159,7 +159,6 @@ def trend(kind, statement, ctx, k=None, league=False):
 s = head('Pulse, Trends') + frame_open(C) + topbar(C)
 s += pulse_title('Week 12 · Thanksgiving Week') + segs('Trends')
 s += trend('NFL · Since Week 8', 'Favorites are 35-20 ATS', 'Home teams are 68-88 ATS this season')
-s += trend('NFL · This Season', 'Sides with 70%+ of the money are 17-29-3 ATS', 'Weeks 3 to 9 · Side with the most money: 42-54-5')
 s += trend('Eagles at Cowboys · Thu 4:30 PM', 'Cowboys are 5-11 ATS on Thanksgiving since 2010', 'Cowboys −8.5 · 65% of money on the Eagles', 'dal')
 s += trend('Chiefs at Bills · Thu 8:20 PM', 'Patrick Mahomes is 13-5-1 ATS as an underdog', 'Chiefs +3 · 78% of money on the Bills', 'kc')
 s += trend('Broncos at Steelers · Fri 3:00 PM', 'Broncos are 8-2 ATS this season', 'Broncos −3 · 82% of money on the Broncos', 'den')
@@ -210,7 +209,6 @@ s += '  </div>\n  <div style="padding: 2px 16px 0">\n'
 s += split_market('Spread', 'PHI +8.5', 'DAL −8.5', 29, 65)
 s += split_market('Moneyline', 'PHI +324', 'DAL −411', 24, 57)
 s += f'''  </div>
-  <div style="margin: 12px 16px 0; display: flex; gap: 8px; font-size: 15px; line-height: 1.4; color: {C["tx"]}"><span style="flex: 0 0 auto; margin-top: 1px; color: {GREEN}">{beat(18)}</span><span>Sides with 20+ points more money than bets are <span style="font-weight: 600">5-12 ATS</span> in the NFL this season (Weeks 3 to 9)</span></div>
 '''
 s += section(C, 'Trends', 16)
 for txt in ['Cowboys are 5-11 ATS on Thanksgiving since 2010', 'Cowboys are 6-15 ATS as a favorite since 2024', 'Eagles are 2-8 ATS this season']:

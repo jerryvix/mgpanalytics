@@ -88,7 +88,7 @@ s += f'  <span style="padding: 14px 20px 0; font-size: 13px; color: {C["t3"]}">D
 s += bottom('Open Game') + '</div>\n' + tail(C['accents'])
 write('SMove1.dc.html', s)
 
-# 2) Betting Splits: every line carries a number the bars don't already show (owner, Nov 23: "so what?")
+# 2) Betting Splits: every line carries a number the bars don't already show (owner, Nov 23: "so what?"); context is full-season team ATS (D-072)
 MONO = "font-family: 'Geist Mono', ui-monospace, monospace; font-size: 11.5px; letter-spacing: 0.7px; text-transform: uppercase"
 def bar(label, ore, msu):
     return f'''  <div style="padding: 24px 20px 0; display: flex; flex-direction: column; gap: 10px; font-variant-numeric: tabular-nums">
@@ -107,10 +107,10 @@ s = head('Story, Betting Splits') + frame_open(C) + segs([100, 45, 0]) + game_he
 s += eyebrow('Betting Splits')
 s += f'  <span style="padding: 8px 20px 0; font-size: 34px; font-weight: 500; letter-spacing: -0.8px; line-height: 1.12">74% of the money on Oregon −6.5</span>\n'
 s += bar('Bets', 54, 46) + bar('Money', 74, 26)
-s += f'  <span style="padding: 30px 20px 0; font-size: 15px; font-weight: 600">How Sides Like This Have Done</span>\n'
-s += f'  <span style="padding: 6px 20px 2px; {MONO}">ATS · College football, Sep 24 to Nov 2</span>\n'
-s += fact('118-116-3', '70%+ of the money')
-s += fact('51-60-3', 'Money 20+ points ahead of bets')
+s += f'  <span style="padding: 30px 20px 2px; font-size: 15px; font-weight: 600">This Season</span>\n'
+# Full-season ATS from DraftKings closing lines via CollegeFootballData (owner, Nov 24: no partial windows)
+s += fact('6-5 ATS', f'<span style="display: flex; flex-direction: column; gap: 4px"><span>Oregon</span><span style="{MONO}">3-3 at Home</span></span>')
+s += fact('5-5-1 ATS', f'<span style="display: flex; flex-direction: column; gap: 4px"><span>Michigan St</span><span style="{MONO}">2-2 on the Road</span></span>')
 s += f'  <span style="padding: 14px 20px 0; {MONO}">DraftKings · Updated 2:10 PM</span>\n'
 s += bottom('Open Game') + '</div>\n' + tail(C['accents'])
 write('SMove2.dc.html', s)
