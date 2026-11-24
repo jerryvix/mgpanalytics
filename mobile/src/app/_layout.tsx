@@ -11,6 +11,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
+import { AuthProvider } from '@/lib/auth';
+
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,12 +37,15 @@ export default function RootLayout() {
   if (!ready) return null;
 
   return (
+    <AuthProvider>
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="game/[id]" />
         <Stack.Screen name="profile" options={{ presentation: 'card' }} />
+        <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
+    </AuthProvider>
   );
 }
