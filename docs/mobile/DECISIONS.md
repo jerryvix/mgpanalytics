@@ -453,3 +453,9 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Date:** 2026-11-24 · **By:** Owner, in the first Expo Go preview ("change the team abbreviations here to logos"; "What does 'biggest split' mean?")
 **Splits line:** each side's team logo (16 points) replaces its abbreviation: "[logo] 77% Public Bets · [logo] 75% Public Money".
 **Board:** "Biggest Splits" becomes "Money Ahead of Bets", the sides where the share of money is furthest above the share of bets (fewer bets, bigger ones), each row showing both numbers ("80% Money", "46% Of Bets"). Revises D-067's board name.
+
+### D-082 The Analyst learns from thumbs up and down
+**Date:** 2026-11-24 · **By:** Owner ("there needs to be some type of feedback loop... thumbs up if it's a good response so the site can get better"), builder design
+**Capture (built):** every Analyst answer has a thumbs up and a thumbs down. A thumbs down asks "What was off?" with one-tap reasons (Wrong Number, Out of Date, Didn't Answer, Too Long, Something Else) and an optional note. Each rating is saved in `analyst_feedback` with the question, the answer and its sources (people write and read only their own rows; review uses the service role). App first; the website chat gets the same thumbs next.
+**Review (next):** a weekly summary: thumbs-up rate, thumbs-down grouped by reason, the worst answers with their questions. Shown in the web-only admin panel, free to run; a Claude Haiku write-up of the patterns costs cents a week if wanted.
+**Fix and re-test:** each pattern becomes a change (a prompt rule, a missing data source, a formatting fix). Thumbs-down questions become a test set re-run before any Analyst change ships, so a fix doesn't break other answers.

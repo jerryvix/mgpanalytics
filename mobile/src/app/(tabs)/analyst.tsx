@@ -11,6 +11,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AnswerFeedback } from '@/components/answer-feedback';
 import { Icon, Mono, T, TopBar } from '@/components/night';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -18,7 +19,7 @@ import { useAuth } from '@/lib/auth';
 import { plainDashes } from '@/lib/plain-dashes';
 import { supabase } from '@/lib/supabase';
 
-type Msg = { role: 'user' | 'assistant'; content: string; sources?: { title: string; url: string }[] };
+type Msg = { role: 'user' | 'assistant'; content: string; sources?: { title: string; url: string }[]; failed?: boolean };
 
 const STARTERS = ["Where's the money tonight?", 'Any injuries to know for tonight?', 'How are the Bills ATS this season?'];
 const CONSENT_KEY = 'analyst-ai-notice-v1';
@@ -50,7 +51,7 @@ export default function AnalystScreen() {
     if (error || !data?.content) {
       const status = (error as { context?: { status?: number } } | null)?.context?.status;
       const msg = status === 429 ? 'Lots of questions at once. Give it a minute and ask again' : "That one didn't go through. Try asking again";
-      setMessages([...next, { role: 'assistant', content: msg }]);
+      setMessages([...next, { role: 'assistant', content: msg, failed: true }]);
       return;
     }
     setMessages([...next, { role: 'assistant', content: plainDashes(data.content), sources: data.sources ?? [] }]);
@@ -145,6 +146,7 @@ export default function AnalystScreen() {
                   ))}
                 </View>
               ) : null}
+              {!m.failed ? <AnswerFeedback question={messages[i - 1]?.content ?? ''} answer={m.content} sources={m.sources} /> : null}
             </View>
           ))}
           {busy ? (
