@@ -30,11 +30,34 @@ npx expo export --platform ios   # bundles the JS for iOS; a quick check that ev
 
 The web app's lint and tests ignore `mobile/`. The app has its own `eslint.config.js`.
 
-## Build and ship to TestFlight (pending)
+## Build and ship to TestFlight
 
-## Over-the-air update (EAS Update) (pending)
+Signing is set up (D-083): Expo holds the distribution certificate and provisioning profile, and the App Store Connect key on Expo is assigned to this app for uploads. Build numbers auto-increment on Expo.
+
+```sh
+cd mobile
+EXPO_TOKEN=proxy-injected EXPO_APPLE_TEAM_ID=4939734628 npx -y eas-cli@latest build -p ios --profile production --non-interactive --no-wait --auto-submit
+```
+
+The build takes about 5 to 20 minutes, the upload runs on Expo's servers when it finishes, and Apple processes the build in about 5 to 15 minutes more. The internal TestFlight group "Team (Expo)" gets every build. Expo is meant to add every App Store Connect admin to it, but on the first run it added no one; the owner was added by hand on Nov 24. When someone new joins App Store Connect, add them in TestFlight > Team (Expo) > Testers.
+
+If a build fails: `eas build:view <id> --json` gives `logFiles`; download with `curl --compressed` (the file is newline-delimited JSON with a `phase` per line).
+
+- The release bundle step (`EAGER_BUNDLE`) runs `npx expo export:embed --eager --platform ios --dev false`. Run that locally first to catch bundle errors in seconds.
+- Keep `web.output` at `single`. `server` makes that step load the app in Node, where the Supabase client's storage crashes.
+
+## Over-the-air update (EAS Update)
 
 When to use: JavaScript-only fixes that don't change native code or the app's purpose. Anything touching native modules, permissions or app.json native config needs a new store build.
+
+TestFlight and App Store builds listen on the `production` channel (runtime `exposdk:58.0.0`); Expo Go previews use `preview`.
+
+```sh
+cd mobile
+EXPO_TOKEN=proxy-injected npx -y eas-cli@latest update --channel production --environment production --message "<what changed>" --non-interactive
+```
+
+Testers get the update the second time they open the app (the first launch downloads it).
 
 ## App Store submission (pending)
 
@@ -56,3 +79,13 @@ SUPABASE_ACCESS_TOKEN="sbp_$(printf '0%.0s' $(seq 40))" npx supabase functions d
 ```
 
 On your own machine, run `npx supabase login` once instead and drop the placeholder. Deploy only from a branch whose tests pass; the functions serve the live website.
+
+## Preview the app on a phone (Expo Go)
+
+The app runs in Expo Go (free on the App Store) before any TestFlight build. Each `eas update` to the `preview` channel shows up the next time Expo Go opens the app.
+
+```bash
+cd mobile && EXPO_TOKEN=proxy-injected npx -y eas-cli@latest update --channel preview --environment preview --platform ios --message "what changed" --non-interactive
+```
+
+Open on the phone: install Expo Go, then scan `docs/mobile/preview-qr.png` with the iPhone camera, or open `exp://u.expo.dev/e2931e03-8ca1-450e-a95e-82cafa55c651?channel-name=preview&runtime-version=exposdk:58.0.0`. The runtime version is `exposdk:58.0.0` because `app.json` uses the `sdkVersion` runtime policy, which is what Expo Go loads. Switch to the `fingerprint` policy once TestFlight builds replace Expo Go.

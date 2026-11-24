@@ -41,19 +41,18 @@ docs/mobile/          this folder
 
 ## v1 scope (ship before Christmas)
 
-The rule for v1: only what a brand-new user needs in the first week. Everything else goes to v1.1.
+The rule for v1: only what a brand-new user needs in the first week. Everything else goes to v1.1. **Revised Nov 24 (D-079):** the owner wants a downloadable product first. v1 covers the NFL, college football and the NBA; college basketball and MLB come later. Tabs: Today, Games, Pulse, The Analyst (D-059, D-071). Design: Direction I, Night List (D-050), as mocked on the canvas page "Splits First · Pulse".
 
 | # | Screen / feature | Notes |
 |---|---|---|
-| 1 | First launch | Welcome screen headed "Bet Smarter, Not Harder" (D-026), then "What do you bet on?" (pick sports), optional favorite teams, then turn on alerts (D-028, D-029). No account needed (D-014) |
-| 2 | Sign in / sign up | Bottom sheet shown when a guest follows, sets an alert, or opens the Analyst. Sign in with Apple, Google, email. Same accounts as the website; guest data carries over |
-| 3 | Notifications | On from the start: quiet (provisional) alerts from first launch, full permission asked in onboarding, every alert type on by default with a daily cap; soft "Turn On Alerts" bar for anyone who said no (D-029) |
-| 4 | Today (home) | Sport bar (your sports first) over modules: Today in Your Sports (games, current line, move since open, favorite teams pinned), See Where the Lines Are Moving, Hot Streaks with sample sizes (in season), Insiders, Games This Week (D-015, D-028) |
-| 5 | Games | Day strip with game counts, sport chips, slate list. Game detail: header with bell, star, share; current line large with change since open and "odds as of"; section bar (Odds, Line movement, Matchup, Streaks, Props, Analyst); disclaimer block at the bottom |
-| 6 | Alerts | Revised Nov 24 (D-071): no Alerts tab. Follow any game with its bell (game page, Games list); onboarding asks to turn on notifications. Alerts, tied to Betting Splits (D-053): kickoff soon with the latest splits, money moving to the other side on a game you follow (checked about every 4 hours, never called live), new Takes on your games, finals for your teams. No line-move alerts. Notification settings and followed games live under your profile |
-| 7 | Insiders | Sharps, insiders, analysts and media with category chips, follow, and "Open on X". Posts shown in the app wait for X API approval (D-023) |
-| 8 | The Analyst (D-030) | The grounded AI chat, with a one-time consent screen for third-party AI |
-| 9 | Profile | Sports and teams, notification settings, legal pages, responsible gaming, sign out, **delete account** |
+| 1 | First launch | "Bet Smarter, Not Harder" (D-026), pick your sports and teams, turn on notifications (D-028, D-029, D-076). No account needed (D-014) |
+| 2 | Today | Your sports' games today: matchup and line, time and total, Public Bets and Public Money on one line, then the game's one line (D-070, D-075, D-077). Profile from the JV button (D-077) |
+| 3 | Games | Day strip and sport chips over the same rows, with a bell on each game (D-071) |
+| 4 | Game page | Betting Splits first (spread, total, moneyline), the one line, Trends, the shows' Takes on this game, odds detail; bell opens Alerts for This Game (D-055, D-075, D-076) |
+| 5 | Pulse | Betting Splits boards, Takes, Trends, Team Records (D-067, D-068) |
+| 6 | The Analyst | Claude Sonnet 5.5 answering like the Claude app: MGP's data first, live web search for the rest, sources named, no picks (D-080); account required; one-time consent screen for third-party AI (D-030); per-user limit later |
+| 7 | Profile | Alerts, Your Teams, Your Sports, Appearance, Account (sign in with Apple or email, sign out, **delete account**), Help and Feedback, legal and responsible gaming (D-077) |
+| 8 | Alerts | Set once (D-076): Before Kickoff with the latest splits, Money Moves, New Takes, Final Score, for your teams and the games you follow; Expo push (free) |
 
 **Not in v1 (v1.1 or later):** player status alerts (Out, Questionable, Active; the sports version of trading-halt alerts), "most talked-about games" from X mentions, practice bankroll (fake-money "simulator"), home screen widgets, Live Activities for live games, community feed, fantasy tools, draft board, player pages beyond what game detail needs, paywall (built behind a switch, off at launch).
 
@@ -81,7 +80,7 @@ Today is Fri Nov 20, 2026. Target: **submit to App Review around Dec 16, live be
 - **Data:** `@supabase/supabase-js` against the same project as the web app; TanStack Query for caching (same as web). Session stored in the device keychain.
 - **Auth:** Supabase Auth. Guests get an anonymous session on first launch (D-014); signing up links it to Sign in with Apple, Google, or email. The existing website accounts work unchanged. The Analyst requires a full account.
 - **Push alerts:** `expo-notifications` with the Expo push service. New tables: device push tokens, alert preferences, alert inbox. A new edge function evaluates alert rules after each sync and sends pushes.
-- **Paywall-ready:** an entitlement hook that returns "everything unlocked" at launch, so a subscription can be switched on in v1.1 without restructuring screens.
+- **Paywall-ready:** an entitlement hook that returns "everything unlocked" at launch, so a subscription can be switched on in v1.1 without restructuring screens. Checkout offers Apple Pay everywhere (D-084).
 - **Releases:** EAS Build (cloud), EAS Submit (TestFlight and App Store), EAS Update for over-the-air JavaScript fixes between store releases.
 
 ## Design

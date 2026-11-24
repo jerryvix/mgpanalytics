@@ -64,27 +64,39 @@ Rules:
 - said_at_seconds: where in the episode the pick is made (from the [mm:ss] marks).
 - If there are no qualifying picks, return an empty list.`;
 
+// For shows read from their YouTube title and description only (no audio or captions)
+const DESCRIPTION_NOTE = [
+  "Source: this is the video's title and description from YouTube, not a transcript.",
+  "The picks are the bets the description lists as the host's picks (\"Pick 1: ...\", \"my picks for tonight\").",
+  "Leans mentioned only as video chapters on other games are not picks. Chapter marks (1:57) give said_at_seconds.",
+  "Use the player's full name as the chapters or description spell it.",
+].join(" ");
+
 export async function extractPicks(opts: {
   apiKey: string;
   showName: string;
   hosts: string[];
   episodeTitle: string;
   publishedAt: string;
-  transcript: string; // "[mm:ss] text" lines
+  transcript: string; // "[mm:ss] text" lines, or a video's title and description
   candidates: UpcomingGame[];
+  /** "description": a YouTube video's title and description stand in for the transcript */
+  source?: "transcript" | "description";
 }): Promise<{ picks: ExtractedPick[]; usage: Anthropic.Usage }> {
   const client = new Anthropic({ apiKey: opts.apiKey });
+  const description = opts.source === "description";
   const user = [
     `Show: ${opts.showName}`,
     opts.hosts.length ? `Known hosts: ${opts.hosts.join(", ")}` : "",
     `Episode: ${opts.episodeTitle} (published ${opts.publishedAt})`,
+    description ? DESCRIPTION_NOTE : "",
     "",
     "Candidate games (id | league | start | matchup):",
     ...opts.candidates.map((g) => g.line),
     "",
-    "Transcript:",
+    description ? "Title and description:" : "Transcript:",
     opts.transcript,
-  ].filter((l, i) => l !== "" || i > 2).join("\n");
+  ].filter((l, i) => l !== "" || i > 3).join("\n");
 
   const response = await client.messages.create({
     model: TAKES_MODEL,

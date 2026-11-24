@@ -60,9 +60,6 @@ verify_jwt = false
 [functions.sync-nba-game-logs]
 verify_jwt = false
 
-[functions.test-bdl]
-verify_jwt = false
-
 [functions.grade-player-props]
 verify_jwt = false
 
@@ -115,4 +112,11 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.ingest-game-lines]
+verify_jwt = false
+
+[functions.app-feed]
+verify_jwt = false
+
+[functions.delete-account]
+# The function checks the user's token itself (auth.getUser); the gateway check is off so ES256 user tokens always reach it
 verify_jwt = false

@@ -9,6 +9,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
@@ -60,9 +61,10 @@ def main() -> None:
             b = g.get("best")
             if not b or not g.get("espn_event_id"):
                 continue
+            shown = re.search(r"\d+-\d+(?:-\d+)?", b["text"])  # the record as the sentence states it (unders flip it)
             lines.append({"espn_event_id": str(g["espn_event_id"]), "sport": g["sport"], "matchup": g["matchup"],
                           "starts_at": g["starts_at"], "line_text": b["text"], "supports": b["supports"],
-                          "market": b["market"], "record": b["record"], "tier": b.get("tier", "strong")})
+                          "market": b["market"], "record": shown.group(0) if shown else b["record"], "tier": b.get("tier", "strong")})
     print(f"{len(lines)} lines", flush=True)
     if args.dry_run or not args.ingest_url:
         for l in lines:

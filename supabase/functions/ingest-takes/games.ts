@@ -79,6 +79,35 @@ export async function upcomingGames(sports: TakesSport[], days = 4, now = new Da
 }
 
 /**
+ * The teams ("NFL|28": league and ESPN id, since ids repeat across leagues) whose game
+ * started between `from` (the episode's publish time) and `now`. An episode that came out before such a game most likely talked about it,
+ * and that game is no longer a candidate, so a pick on one of these teams may have
+ * been matched to the team's next game instead. Empty when ESPN can't be read.
+ */
+export async function teamsPlayedSince(sports: TakesSport[], from: Date, now = new Date()): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (!(from.getTime() < now.getTime())) return out;
+  const dates: string[] = [];
+  for (let t = from.getTime(); dates.length < 6; t += 86_400_000) {
+    const d = ymd(new Date(Math.min(t, now.getTime())));
+    if (!dates.includes(d)) dates.push(d);
+    if (t >= now.getTime()) break;
+  }
+  await Promise.all(sports.flatMap((sport) => dates.map(async (date) => {
+    const { path, query } = PATHS[sport];
+    const res = await espnFetch(`https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard?dates=${date}${query}`).catch(() => null);
+    if (!res?.ok) return;
+    const body = await res.json().catch(() => ({}));
+    for (const e of body.events ?? []) {
+      const start = Date.parse(e.date);
+      if (!(start >= from.getTime() && start <= now.getTime())) continue;
+      for (const c of e.competitions?.[0]?.competitors ?? []) if (c?.team?.id) out.add(`${sport}|${c.team.id}`);
+    }
+  })));
+  return out;
+}
+
+/**
  * Pro leagues are short lists, so every game goes to the model. College lists run to
  * hundreds of games, so a college game goes only when the transcript names one of
  * its teams, which keeps the prompt small without missing a pick.

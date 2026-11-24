@@ -76,7 +76,13 @@ B = lambda x: f'<span style="font-weight: 600">{x}</span>'
 REC = lambda r: f'<span style="display: {{{{rec}}}}; margin-left: 5px; {MONO}">{r}</span>'
 def angle_line(k):
     return f'<span style="display: flex; gap: 6px; align-items: flex-start; font-size: 14px; line-height: 1.35"><span style="flex: 0 0 auto; margin-top: 1px; color: {GREEN}">{beat(16)}</span><span>{ANGLES[k]}</span></span>'
-ANGLES = {'cin': f"Joe Burrow is {B('33-15-1 ATS')} on the road in his career"}  # scripts/angles/nfl_angles.py, Week 11 (D-075)
+ANGLES = {  # the one line per game (D-075): scripts/angles, run Nov 23 on these games' 3:05 PM DraftKings lines
+    'cin': f"Joe Burrow is {B('33-15-1 ATS')} on the road in his career",
+    'por': f"The 76ers are {B('18-30 ATS')} as a home favorite since 2024-25",
+    'mem': f"The Grizzlies are {B('9-2 ATS')} as a favorite this season",
+    'lac': f"The Rockets are {B('23-43 ATS')} as a favorite of 7 or more since 2024-25",
+    'uta': f"The Lakers are {B('9-22 ATS')} as a favorite with two or more days of rest since 2024-25",
+}
 def today_row(a, h, an, ar, hn, hr, time_, line, total, bs, bp, ms, mp, at, ats, venue, vword):
     if bs == ms:
         two = f'{bs} {B(str(bp) + "%")} Public Bets · {B(str(mp) + "%")} Public Money'

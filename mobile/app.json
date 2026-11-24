@@ -8,13 +8,15 @@
     "scheme": "mgp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.mgpanalytics.app",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0E1015",
+        "backgroundColor": "#121317",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -23,7 +25,7 @@
       "package": "com.mgpanalytics.app"
     },
     "web": {
-      "output": "server",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -31,12 +33,20 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F6F7F9",
+          "backgroundColor": "#121317",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76,
+          "imageWidth": 200,
           "dark": {
-            "backgroundColor": "#0E1015"
+            "backgroundColor": "#121317"
           }
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attach a screenshot, like a bet slip or an odds board, for the Analyst to read",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ]
     ],
@@ -54,6 +64,12 @@
         "projectId": "e2931e03-8ca1-450e-a95e-82cafa55c651"
       }
     },
-    "owner": "jerryvix"
+    "owner": "jerryvix",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e2931e03-8ca1-450e-a95e-82cafa55c651"
+    }
   }
 }

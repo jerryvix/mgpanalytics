@@ -66,7 +66,11 @@ export const Spacing = {
  */
 export const Font = {
   regular: 'Geist_400Regular',
+  italic: 'Geist_400Regular_Italic',
   medium: 'Geist_500Medium',
   semibold: 'Geist_600SemiBold',
   bold: 'Geist_700Bold',
+  /** The detail font (D-064): small uppercase labels, sources, time lines. */
+  mono: 'GeistMono_400Regular',
+  monoMedium: 'GeistMono_500Medium',
 } as const;

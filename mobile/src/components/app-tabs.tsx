@@ -4,7 +4,7 @@ import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
- * The five v1 tabs (docs/mobile/PLAN.md). Labels are Title Case (D-027); the Analyst tab is named "The Analyst" (D-030). Profile is reached from the avatar in
+ * The four v1 tabs (docs/mobile/PLAN.md, D-059, D-071, D-079): Today, Games, Pulse, The Analyst. Labels are Title Case (D-027); the Analyst tab is named "The Analyst" (D-030). Profile is reached from the avatar in
  * each screen's header, not a tab. Icons: SF Symbols on iOS, Material on Android.
  */
 export default function AppTabs() {
@@ -28,14 +28,9 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf={{ default: 'sportscourt', selected: 'sportscourt.fill' }} md="sports" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="alerts">
-        <NativeTabs.Trigger.Label>Alerts</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'bell', selected: 'bell.fill' }} md="notifications" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="insiders">
-        <NativeTabs.Trigger.Label>Insiders</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} md="group" />
+      <NativeTabs.Trigger name="pulse">
+        <NativeTabs.Trigger.Label>Pulse</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf={{ default: 'waveform.path.ecg', selected: 'waveform.path.ecg' }} md="monitor_heart" />
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="analyst">

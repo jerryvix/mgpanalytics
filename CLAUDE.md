@@ -35,7 +35,7 @@ Set `VITE_DEV_BYPASS_AUTH=true` in `.env` to preview the dashboard locally with 
 ## Rules
 
 - **No mock or random data on user-facing surfaces.** Some legacy components still use `Math.random()`; they are listed in `docs/positioning.md` and must not be ported to the app or extended.
-- **The analyst never gives picks.** It is descriptive only: no "should bet", "lock", or recommendations. Market numbers come only from synced data.
+- **The analyst never gives picks.** It is descriptive only: no "should bet", "lock", or recommendations. It answers like the Claude app (Claude Sonnet): MGP's synced data first, live web search for anything MGP doesn't have, with the source and time named for any number from the web. (DECISIONS D-080)
 - **Odds math lives in `src/lib/odds.ts`:** consensus is computed in probability space; never average American odds directly.
 - **Labels are Title Case** (titles, buttons, tabs, chips, badges, menu items): "Player Props", "Browse by Sport". Sentences, empty states, tooltips and screen-reader labels stay sentence case. Use `titleCase()` from `packages/shared/text/title-case.ts` for labels built from data. (DECISIONS D-027)
 - **Odds notation is sportsbook standard** ("Oregon -6.5 (-110)", "O 52.5", "-245 / +200", "5-5 ATS", "PK"), with the plain hyphen "-" for minus signs and ranges, and no em or en dashes anywhere. Format through `packages/shared/odds/format.ts`. (DECISIONS D-039)

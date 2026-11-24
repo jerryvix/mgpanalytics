@@ -14,9 +14,15 @@ const emailSchema = z.object({
   email: z.string().email("Invalid email address"),
 });
 
-const authSchema = z.object({
+// Existing accounts may have 6 or 7 character passwords, so sign-in keeps accepting them;
+// new accounts need 8 (D-099, Supabase password_min_length)
+const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+});
+const signupSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 const MODE_LABELS: Record<AuthMode, { title: string; description: string; button: string }> = {
@@ -41,7 +47,7 @@ export function AuthCard() {
 
     // Validate input
     if (needsPassword) {
-      const result = authSchema.safeParse({ email, password });
+      const result = (mode === "signup" ? signupSchema : loginSchema).safeParse({ email, password });
       if (!result.success) {
         const errors = result.error.flatten().fieldErrors;
         toast.error(errors.email?.[0] || errors.password?.[0] || "Invalid input");

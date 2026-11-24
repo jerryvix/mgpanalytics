@@ -15,7 +15,7 @@
 
 ### 1. The grounded analyst: an AI that is architecturally blocked from inventing numbers
 **Where:** `supabase/functions/gemini-chat/index.ts` (runs Claude Sonnet 4.6, not Gemini — the name is legacy).
-**What's real:** market questions are classified (`MARKET_SPECIFIC` / `CONTEXTUAL` / `FACTUAL`) and market numbers may only come from synced Supabase data injected as `[MGP DATA]`; LLM memory and web search are forbidden for lines. Stat leaderboards and MLB hit streaks are marked AUTHORITATIVE in-prompt so the model cannot contradict the dashboard. Odds older than 6h trigger a staleness disclosure. Guardrails prohibit pick-selling language ("should bet", "lock").
+**What's real:** market questions are classified (`MARKET_SPECIFIC` / `CONTEXTUAL` / `FACTUAL`) and market numbers may only come from synced Supabase data injected as `[MGP DATA]`; LLM memory is forbidden for lines. Since D-080 (Nov 24, 2026) the Analyst may search the web live for anything MGP does not have synced, naming the source and time of any number it finds; synced data still comes first. Stat leaderboards and MLB hit streaks are marked AUTHORITATIVE in-prompt so the model cannot contradict the dashboard. Odds older than 6h trigger a staleness disclosure. Guardrails prohibit pick-selling language ("should bet", "lock").
 **Why defensible:** this is prompt-plus-retrieval *architecture with teeth* (prohibited-phrase lists, mode gating, authoritative blocks), not a marketing wrapper. Competitors bolt chatbots onto content; an analyst whose market numbers provably match the product's own boards is rare, and trust compounds. Hard to fake, easy to demo ("ask it for a line, check it against the board").
 
 ### 2. The verified-insight integrity process

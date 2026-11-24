@@ -15,7 +15,7 @@ Status: `todo` / `in progress` / `done`.
 | Privacy policy URL (in app and in listing) | 5.1.1(i) | None exists | Draft, owner approves, host at `mgp-analytics.com/privacy` | todo |
 | Support URL | 1.5 | None exists | `mgp-analytics.com/support` with contact email | todo |
 | Demo account for App Review | 2.1 | n/a | Dedicated reviewer account with onboarding completed; credentials go only into App Store Connect | todo |
-| Disclose and get consent before sending personal data to a third-party AI | 5.1.2(i) | Chat sends questions to Anthropic with no notice | One-time consent screen before first Analyst use; named in privacy policy | todo |
+| Disclose and get consent before sending personal data to a third-party AI | 5.1.2(i) | Chat sends questions to Anthropic with no notice | One-time notice before first Analyst use: "Your questions go to our AI partner to answer" with Got It (D-085, built); Anthropic named in the privacy policy | privacy policy todo |
 | No placeholder or "coming soon" screens | 2.1 | Web has four "Coming Very Soon" pages (Line Movement, Trends, Player Props, Live Edges) | App ships only finished screens; unbuilt features are absent, not teased | todo |
 | Accurate metadata, no claims the app can't back | 2.3.1 | Landing page mentions Kalshi and "real time" | Store listing copy must trace to `docs/positioning.md`; no Kalshi, no "real time" for odds | todo |
 | Privacy nutrition labels match actual collection | 5.1.2 | n/a | Fill from the SDK list at submission time | todo |

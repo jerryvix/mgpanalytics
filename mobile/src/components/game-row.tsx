@@ -1,0 +1,77 @@
+/**
+ * One game on Today and Games (D-070, D-077): matchup and line, time and total,
+ * skinny Bets and Money bars for the spread (D-093), then the game's one line (D-075).
+ */
+import { Link } from 'expo-router';
+import { Pressable, Text, View, type TextStyle } from 'react-native';
+
+import { OneLineText, T, TeamPair } from '@/components/night';
+import { RowSplits } from '@/components/splits';
+import { Font } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { gameHref, type Game } from '@/lib/feed';
+import { clock } from '@/lib/time';
+
+/** Final games (D-087): which side won, or null while live, before the start, or on a tie. */
+export function winnerOf(g: Game): 'away' | 'home' | null {
+  if (g.state !== 'post') return null;
+  const a = Number(g.away.score), h = Number(g.home.score);
+  if (!Number.isFinite(a) || !Number.isFinite(h) || a === h) return null;
+  return a > h ? 'away' : 'home';
+}
+
+/** Bold for the winner, gray for the loser, plain otherwise (D-087). */
+export function useResultStyle(g: Game) {
+  const c = useTheme();
+  const w = winnerOf(g);
+  return (side: 'away' | 'home'): TextStyle | undefined =>
+    !w ? undefined : side === w ? { fontFamily: Font.semibold } : { color: c.textTertiary };
+}
+
+export function matchupLabel(g: Game) {
+  return `${teamLabel(g.away)} ${g.neutral ? 'vs' : 'at'} ${teamLabel(g.home)}`;
+}
+
+function teamLabel(t: Game['home']) {
+  return t.rank ? `#${t.rank} ${t.name}` : t.name;
+}
+
+function StatusLine({ g }: { g: Game }) {
+  const style = useResultStyle(g);
+  if (g.state === 'pre') return <T size={14}>{[clock(g.start), g.tv].filter(Boolean).join(' · ')}</T>;
+  return (
+    <T size={14}>
+      {g.state === 'in' ? 'Live · ' : 'Final · '}
+      <Text style={style('away')}>{`${g.away.abbr} ${g.away.score ?? 0}`}</Text>
+      {', '}
+      <Text style={style('home')}>{`${g.home.abbr} ${g.home.score ?? 0}`}</Text>
+    </T>
+  );
+}
+
+export function GameRow({ game: g }: { game: Game }) {
+  const style = useResultStyle(g);
+  return (
+    <Link href={gameHref(g.id, g.sport, g.start)} asChild>
+      <Pressable style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingVertical: 11 }} accessibilityRole="button" accessibilityLabel={matchupLabel(g)}>
+        <TeamPair away={g.away.logo} home={g.home.logo} />
+        <View style={{ flex: 1, gap: 4 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+            <T size={16.5} numberOfLines={1} style={{ flex: 1, letterSpacing: -0.2 }}>
+              <Text style={style('away')}>{teamLabel(g.away)}</Text>
+              {g.neutral ? ' vs ' : ' at '}
+              <Text style={style('home')}>{teamLabel(g.home)}</Text>
+            </T>
+            {g.line ? <T size={16.5} weight="medium">{g.line}</T> : null}
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
+            <StatusLine g={g} />
+            {g.total ? <T size={14}>O/U {g.total}</T> : null}
+          </View>
+          <RowSplits game={g} />
+          {g.oneLine ? <OneLineText line={g.oneLine} /> : null}
+        </View>
+      </Pressable>
+    </Link>
+  );
+}

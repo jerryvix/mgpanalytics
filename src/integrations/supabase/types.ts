@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      analyst_usage: {
+        Row: {
+          count: number
+          day: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          day: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       api_cache: {
         Row: {
           cache_key: string
@@ -429,6 +447,7 @@ export type Database = {
           created_at: string
           id: string
           role: string
+          sources: Json | null
         }
         Insert: {
           content: string
@@ -436,6 +455,7 @@ export type Database = {
           created_at?: string
           id?: string
           role: string
+          sources?: Json | null
         }
         Update: {
           content?: string
@@ -443,6 +463,7 @@ export type Database = {
           created_at?: string
           id?: string
           role?: string
+          sources?: Json | null
         }
         Relationships: [
           {
@@ -2848,6 +2869,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_analyst_usage: { Args: { p_user_id: string }; Returns: number }
       is_admin: { Args: never; Returns: boolean }
       record_daily_visit: {
         Args: never
