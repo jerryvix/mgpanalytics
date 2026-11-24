@@ -447,3 +447,8 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Later:** a per-user daily question limit (owner will set it); not at launch, because getting users on the platform comes first.
 **Cost to watch:** Claude Sonnet 5.5 is $2 / $10 per million tokens plus about $10 per 1,000 web searches. A typical answer runs about one to three cents, a few cents more when it searches; 1,000 questions a day is roughly $20 to $50 a day. The question limit is the control.
 **Replaces:** the earlier rule that market numbers come only from synced data (CLAUDE.md, positioning.md updated).
+
+### D-081 Logos on the splits line; "Money Ahead of Bets"
+**Date:** 2026-11-24 · **By:** Owner, in the first Expo Go preview ("change the team abbreviations here to logos"; "What does 'biggest split' mean?")
+**Splits line:** each side's team logo (16 points) replaces its abbreviation: "[logo] 77% Public Bets · [logo] 75% Public Money".
+**Board:** "Biggest Splits" becomes "Money Ahead of Bets", the sides where the share of money is furthest above the share of bets (fewer bets, bigger ones), each row showing both numbers ("80% Money", "46% Of Bets"). Revises D-067's board name.

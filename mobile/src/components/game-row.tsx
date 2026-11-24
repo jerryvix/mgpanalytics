@@ -2,12 +2,18 @@
  * One game on Today and Games (D-070, D-077): matchup and line, time and total,
  * Public Bets and Public Money on one line, then the game's one line (D-075).
  */
+import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { B, Mono, OneLineText, T, TeamPair } from '@/components/night';
 import type { Game } from '@/lib/feed';
 import { clock } from '@/lib/time';
+
+/** Team logos stand in for abbreviations on the splits line (owner, Nov 24). */
+function logoFor(g: Game, abbr: string) {
+  return abbr === g.home.abbr ? g.home.logo : g.away.logo;
+}
 
 export function matchupLabel(g: Game) {
   const away = g.away.rank ? `#${g.away.rank} ${g.away.name}` : g.away.name;
@@ -38,9 +44,12 @@ export function GameRow({ game: g }: { game: Game }) {
             {g.total ? <T size={14}>O/U {g.total}</T> : null}
           </View>
           {bets && money ? (
-            <T size={13.5} numberOfLines={1}>
-              {bets.team} <B>{bets.pct}%</B> Public Bets · {money.team} <B>{money.pct}%</B> Public Money
-            </T>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Image source={logoFor(g, bets.team)} style={{ width: 16, height: 16 }} contentFit="contain" accessibilityLabel={bets.team} />
+              <T size={13.5}><B>{bets.pct}%</B> Public Bets · </T>
+              <Image source={logoFor(g, money.team)} style={{ width: 16, height: 16 }} contentFit="contain" accessibilityLabel={money.team} />
+              <T size={13.5}><B>{money.pct}%</B> Public Money</T>
+            </View>
           ) : g.splitsPending ? (
             <Mono>Betting Splits once the public weighs in</Mono>
           ) : null}

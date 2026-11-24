@@ -80,7 +80,7 @@ export default function PulseScreen() {
         {data && view === 'splits' ? (
           <>
             <Board title="Most Money" rows={data.mostMoney} big={(s) => `${s.money}%`} small={() => 'Of Money'} />
-            <Board title="Biggest Splits" rows={data.biggestSplits} big={(s) => `${s.money}%`} small={(s) => `${s.bets}% Of Bets`} />
+            <Board title="Money Ahead of Bets" rows={data.biggestSplits} big={(s) => `${s.money}% Money`} small={(s) => `${s.bets}% Of Bets`} />
             <Board title="Most Bets" rows={data.mostBets} big={(s) => `${s.bets}%`} small={() => 'Of Bets'} />
             <Mono style={{ paddingHorizontal: 16, paddingTop: 16 }}>Betting Splits from DraftKings, spread</Mono>
           </>
