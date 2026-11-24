@@ -188,12 +188,19 @@ BIG_GAMES = {   # (stat, threshold, phrase) for "after a big game", by market fa
     "rec": ("receiving_yards", 100, "after a 100-yard receiving game"),
     "nba_pts": ("pts", 30, "after a 30-point game"),
 }
-# What makes an angle interesting: matchup, defense, coach, teammates and weather first, then the setting
-# and his form; plain splits (PLAIN) rank behind every angle that has something more specific.
+# Within a preference tier (TIER below), what makes one angle stronger than another: the score weighs these.
 BOOST = {"defense": 1.5, "coach": 1.5, "former": 1.5, "out": 1.5, "qbout": 1.5, "cold": 1.3, "wind": 1.3,
          "opp": 1.0, "qb": 0.3, "prime": 0.8, "tv": 0.4, "div": 0.6, "rest": 0.8, "big": 0.9, "own": 0.4, "mins": 0.6,
          "roof": 0.4, "role": 0.0, "fd": 0.0, "bigline": 0.2, "prev": 0.2}
-PLAIN = {"role", "fd", "bigline", "prev"}   # vanilla splits: they lead only when nothing else passes
+# The order the shown line prefers, among angles that pass the bar (owner, Nov 24: "how many times a player
+# gets blitzed vs. the defense... success against a certain coach... how a team ranks in the league"):
+# 1 the opponent's defense this season (ranks, blitz and pressure), 2 teammates and his quarterback,
+# 3 this head coach or his former team, 4 this opponent, 5 the setting, 6 his own form, 7 plain splits,
+# 8 no condition at all. An angle takes the best tier among its conditions.
+TIER = {"defense": 1, "out": 2, "qbout": 2, "qb": 2, "coach": 3, "former": 3, "opp": 4,
+        "prime": 5, "tv": 5, "div": 5, "roof": 5, "cold": 5, "wind": 5, "rest": 5,
+        "own": 6, "big": 6, "mins": 6, "role": 7, "fd": 7, "bigline": 7, "prev": 7}
+FRESH_SHARE = 0.5           # at least half the sample from this season and the two before, or it ranks last
 
 
 def short_name(full: str, first: str = "", last: str = "", suffix: str = "") -> str:
@@ -286,6 +293,7 @@ class Angle:
     sample: list = field(default_factory=list)   # [(game key, value)] newest first
     relevance: float = 0.0
     prominence: float = 0.0
+    recent_share: float = 1.0   # share of the sample from this season and the two before
 
     @property
     def rate(self) -> float:
@@ -296,11 +304,6 @@ class Angle:
         return self.rate >= STRONG_RATE and self.z >= STRONG_Z and self.zbase >= STRONG_ZBASE
 
     @property
-    def specific(self) -> bool:
-        """Not a plain split: at least one situational or matchup condition, or his games with a new team."""
-        return bool(set(self.conds) - PLAIN) or self.window == "team"
-
-    @property
     def score(self) -> float:
         credibility = min(1.0, 0.4 * math.log2(self.games / CFG[self.sport]["min_games"]))
         words = len(self.text.split())
@@ -308,8 +311,19 @@ class Angle:
                 - PAIR_PENALTY * max(0, len(self.conds) - 1) - 0.06 * max(0, words - 20))
 
     @property
+    def tier(self) -> int:
+        if self.window == "team" and not self.conds:
+            return 6   # his games since joining a new team: about him, like his form
+        return min((TIER.get(k, 7) for k in self.conds), default=8)
+
+    @property
+    def fresh(self) -> bool:
+        """Mostly recent games: a 48-game career span never tops a game that has a recent angle."""
+        return self.recent_share >= FRESH_SHARE
+
+    @property
     def order(self):
-        return (self.specific, self.strong, self.score)
+        return (self.fresh, -self.tier, self.strong, self.score)
 
 
 def zscore(h: int, n: int, p: float = 0.5) -> float:
@@ -1140,7 +1154,8 @@ def evaluate(sport: str, u: Upcoming, team: str, pid: str, prop: str, line: floa
                 if not combo and window == "season":
                     rel -= 0.6     # "this season" alone is the obvious one
                 out.append(Angle(sport, pid, name, team, m, prop, line, side, hits, n, z, zb, base[side], window,
-                                 tuple(c.kind for c in combo), text, record, [(g.key, g.vals[m.key]) for g in sel], rel, prominence))
+                                 tuple(c.kind for c in combo), text, record, [(g.key, g.vals[m.key]) for g in sel], rel, prominence,
+                                 sum(1 for g in sel if g.season >= season - (WINDOW_SEASONS - 1)) / n))
     return out
 
 
@@ -1339,7 +1354,7 @@ def main() -> None:
         total_failed += dropped
         print(f"\n{u.matchup} ({u.t}, {len(u.props)} props): {n} candidates, {checked} checked, {dropped} failed, {len(picks)} kept", flush=True)
         for i, a in enumerate(picks, 1):
-            print(f"  {i}. [{'specific ' if a.specific else 'plain '}{'strong' if a.strong else 'fallback'} {a.score:.2f} z{a.z:.1f}/{a.zbase:.1f} "
+            print(f"  {i}. [{'' if a.fresh else 'stale '}t{a.tier} {'strong' if a.strong else 'fallback'} {a.score:.2f} z{a.z:.1f}/{a.zbase:.1f} "
                   f"base {a.base:.0%}] {a.text}", flush=True)
         lines = []
         for i, a in enumerate(picks, 1):
@@ -1407,7 +1422,7 @@ def self_test() -> None:
     assert verify(a, data, u) is None
     # the defense angle (the same games here) is rich, so it outranks the plain home split
     top = sorted(angles, key=lambda x: x.order, reverse=True)[0]
-    assert top.specific and top.conds == ("defense",), top.text
+    assert top.tier == 1 and top.conds == ("defense",), top.text
     assert top.text == "Test Player has topped 24.5 points in 15 of his last 15 games against top-10 defenses", top.text
     assert verify(top, data, u) is None
     # tampering is caught
@@ -1444,6 +1459,14 @@ def self_test() -> None:
     picks = choose([mk("a", pts, 4), mk("b", pts, 3.8), mk("c", pts, 3.7), mk("d", reb, 2.5)])
     assert {p.market.key for p in picks} == {"pts", "reb"} and len(picks) == 3
     assert choose([mk("a", pts, 4), mk("b", reb, 2.0, ("defense",))])[0].player == "b"
+    # the preference order: defense, then teammates, coach, opponent, setting, form, plain
+    tiers = [mk(p, pts if i % 2 else reb, 3.0, (k,)) for i, (p, k) in enumerate(
+        [("g", "role"), ("f", "own"), ("e", "prime"), ("d", "opp"), ("c", "coach"), ("b", "out"), ("a", "defense")])]
+    assert [x.player for x in sorted(tiers, key=lambda x: x.order, reverse=True)] == list("abcdefg")
+    # a stale career span (mostly older seasons) ranks behind a fresh angle of any tier
+    stale = mk("s", pts, 4.0, ("defense",))
+    stale.recent_share = 0.3
+    assert choose([stale, mk("t", reb, 2.0, ("role",))])[0].player == "t"
     # gaps: a game with no box score stops the history there
     g = [PG(key=str(i), season=2027, t=f"2027-01-{20 - i:02d}T19:00", player="p", team="T", opp="O", home=True, neutral=False, vals={}) for i in range(5)]
     assert len(cut_at_gaps(g, {"T": ["2027-01-17T12:00"]})) == 4
