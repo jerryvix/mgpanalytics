@@ -75,7 +75,7 @@ Apple enrollment confirmed approved by the owner on Nov 23.
   1. [x] Migration `20261124180000_x_takes.sql` run in the SQL editor and recorded in `supabase_migrations.schema_migrations`.
   2. [x] `X_TAKES_INGEST_SECRET` set in the dashboard (Edge Functions → Secrets). The value lives only in the owner's password manager and Grok Bot's secure form.
   3. [x] `ingest-x-takes` deployed from the dashboard editor as one bundled file built from main, with JWT verification off. The next CLI deploy replaces it with the normal multi-file build.
-- [ ] Redeploy `ingest-takes` and `app-feed` with the CLI (`docs/mobile/RUNBOOK.md`). Until then X picks and notes are stored, but units, post links and market notes don't show in the app (`app-feed`), and Daft Previews rows are tagged `podcast` instead of `youtube`.
+- [x] **Done Nov 24 by the builder:** `ingest-takes`, `app-feed` and `ingest-x-takes` redeployed with the CLI from main. Redeploy `ingest-takes` and `app-feed` with the CLI (`docs/mobile/RUNBOOK.md`). Until then X picks and notes are stored, but units, post links and market notes don't show in the app (`app-feed`), and Daft Previews rows are tagged `podcast` instead of `youtube`.
 
 ## Recommended (5 minutes)
 
