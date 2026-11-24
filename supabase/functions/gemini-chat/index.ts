@@ -121,7 +121,7 @@ IDENTITY & APPROACH (TEACHER-STUDENT MODEL)
 1. You are a research tool, not an advisor. Frame information as tools for the user's own analysis, never as conclusions or recommendations.
 2. Ask clarifying questions when a query is ambiguous: "Are you looking at season averages or recent games?" "Do you want DraftKings or all books?"
 3. End responses with exploration, not calls to action: "If you'd like, we can dig into his road splits" or "Want to compare this with another player?"
-4. Do NOT name databases, APIs, providers, or cite specific data sources. Present information naturally.
+4. Do NOT name MGP's own databases, APIs or providers. When a number comes from web search, say where and when in a few words ("per ESPN, Tuesday"), since lines and injury news move.
 
 ═══════════════════════════════════════════════════════════
 RESPONSE STYLE (applies to EVERY response)
@@ -1621,28 +1621,35 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
       content: msg.content,
     }));
 
-    // Auto-enable web search for FACTUAL and CONTEXTUAL questions so Claude can fetch
-    // current stats, weather, real-time matchup data, and other live information
-    const useSearch = webSearchEnabled || answerType === "FACTUAL" || answerType === "CONTEXTUAL";
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    // D-080: Claude Sonnet answering like the Claude app. Web search is always
+    // available; the prompt has it use MGP's data first and search only for what MGP
+    // doesn't have. (webSearchEnabled is kept for older web clients and has no effect.)
+    void webSearchEnabled;
+    const useSearch = true;
+    const requestBody = (msgs: unknown[]) => JSON.stringify({
+      model: "claude-sonnet-5-5",
+      max_tokens: 8192,
+      // Sonnet 5.5 rejects temperature; effort sets depth (medium keeps chat quick).
+      output_config: { effort: "medium" },
+      system: fullSystemInstruction,
+      messages: msgs,
+      tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 5 }],
+      // If a safety classifier declines, the API re-runs on its fallback model in the same call.
+      fallbacks: "default",
+    });
+    const callClaude = (msgs: unknown[]) => fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "server-side-fallback-2026-07-01",
       },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
-        temperature: 0.4,
-        system: fullSystemInstruction,
-        messages: anthropicMessages,
-        ...(useSearch
-          ? { tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 5 }] }
-          : {}),
-      }),
+      body: requestBody(msgs),
     });
+
+    let turnMessages: unknown[] = anthropicMessages;
+    let response = await callClaude(turnMessages);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -1661,7 +1668,20 @@ REMEMBER: ALWAYS lead with whatever data IS available. If the exact answer is mi
       );
     }
 
-    const data = await response.json();
+    let data = await response.json();
+    // A long web search can pause the turn; send it back to let Claude finish (at most twice).
+    const pausedContent: unknown[] = [];
+    for (let i = 0; i < 2 && data.stop_reason === "pause_turn"; i++) {
+      pausedContent.push(...(data.content ?? []));
+      turnMessages = [...anthropicMessages, { role: "assistant", content: pausedContent }];
+      response = await callClaude(turnMessages);
+      if (!response.ok) break;
+      data = await response.json();
+    }
+    if (pausedContent.length) data = { ...data, content: [...pausedContent, ...(data.content ?? [])] };
+    if (data.stop_reason === "refusal") {
+      console.warn("[gemini-chat] Refused", data.stop_details?.category ?? "");
+    }
     const contentBlocks: Array<{ type: string; text?: string; name?: string; citations?: Array<{ type: string; url?: string; title?: string }> }> = data.content || [];
 
     const textBlocks = contentBlocks.filter((block) => block.type === "text");
