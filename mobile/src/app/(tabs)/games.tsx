@@ -1,18 +1,20 @@
 /** Games (PLAN v1 #3): any day this week, by sport. */
 import { useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GameRow } from '@/components/game-row';
 import { Divider, Empty, Footer, Mono, SectionTitle, T, TopBar, SourceNote } from '@/components/night';
 import { TAB_BAR_SPACE } from '@/constants/layout';
 import { useTheme } from '@/hooks/use-theme';
+import { useToday } from '@/hooks/use-today';
 import { SPORT_LABEL, SPORTS, useFeed, type Game, type Sport } from '@/lib/feed';
 import { ymd } from '@/lib/time';
 
 export default function GamesScreen() {
   const c = useTheme();
-  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
+  const today = useToday();
+  const days = Array.from({ length: 7 }, (_, i) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + i));
   const [day, setDay] = useState(0);
   const [sport, setSport] = useState<Sport | 'ALL'>('ALL');
   const { data, loading, error, reload } = useFeed<{ games: Game[] }>({ view: 'day', date: ymd(days[day]), ...(sport === 'ALL' ? {} : { sports: sport }) });
@@ -47,7 +49,8 @@ export default function GamesScreen() {
             );
           })}
         </ScrollView>
-        {error ? <Empty>{"Games couldn't load. Pull down to try again"}</Empty> : null}
+        {loading && !data ? <ActivityIndicator color={c.text} style={{ paddingVertical: 32 }} /> : null}
+        {error && !loading ? <Empty>{"Games couldn't load. Pull down to try again"}</Empty> : null}
         {!loading && !error && games.length === 0 ? <Empty>No games that day</Empty> : null}
         {SPORTS.map((s) => {
           const list = games.filter((g) => g.sport === s);

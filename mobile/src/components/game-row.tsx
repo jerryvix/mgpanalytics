@@ -9,7 +9,7 @@ import { OneLineText, T, TeamPair } from '@/components/night';
 import { RowSplits } from '@/components/splits';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { Game } from '@/lib/feed';
+import { gameHref, type Game } from '@/lib/feed';
 import { clock } from '@/lib/time';
 
 /** Final games (D-087): which side won, or null while live, before the start, or on a tie. */
@@ -52,7 +52,7 @@ function StatusLine({ g }: { g: Game }) {
 export function GameRow({ game: g }: { game: Game }) {
   const style = useResultStyle(g);
   return (
-    <Link href={{ pathname: '/game/[id]', params: { id: g.id, sport: g.sport } }} asChild>
+    <Link href={gameHref(g.id, g.sport, g.start)} asChild>
       <Pressable style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingVertical: 11 }} accessibilityRole="button" accessibilityLabel={matchupLabel(g)}>
         <TeamPair away={g.away.logo} home={g.home.logo} />
         <View style={{ flex: 1, gap: 4 }}>

@@ -1,6 +1,7 @@
 /** The game page (D-055, D-075, D-076): Betting Splits first, the one line, the shows' Takes. */
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { matchupLabel, winnerOf } from '@/components/game-row';
@@ -14,8 +15,15 @@ import { whenLabel } from '@/lib/time';
 
 export default function GameScreen() {
   const c = useTheme();
-  const { id, sport } = useLocalSearchParams<{ id: string; sport: string }>();
-  const { data, loading, error, reload } = useFeed<{ game?: Game }>({ view: 'game', id: id ?? '', sport: sport ?? 'NFL' });
+  const { id, sport, date } = useLocalSearchParams<{ id: string; sport: string; date?: string }>();
+  // The game's Eastern date (from the link) lets the feed read one scoreboard instead of nine
+  const dated = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const [anyDate, setAnyDate] = useState(false);
+  const { data, loading, error, reload } = useFeed<{ game?: Game }>({
+    view: 'game', id: id ?? '', sport: sport ?? 'NFL', ...(dated && !anyDate ? { date } : {}),
+  });
+  // A late game can sit on ESPN's previous day: if the dated lookup misses, look across the week
+  if (dated && !anyDate && data && !data.game) setAnyDate(true);
   const g = data?.game;
   const w = g ? winnerOf(g) : null;
   // D-087: final games bold the winner's name and score and gray the loser's
@@ -32,7 +40,8 @@ export default function GameScreen() {
         </View>
       </View>
       <ScrollView refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={c.text} />} contentContainerStyle={{ paddingBottom: 48 }}>
-        {error || (data && !g) ? <Empty>{"This game couldn't load. Pull down to try again"}</Empty> : null}
+        {loading && !data ? <ActivityIndicator color={c.text} style={{ paddingVertical: 32 }} /> : null}
+        {!loading && (error || (data && !g)) ? <Empty>{"This game couldn't load. Pull down to try again"}</Empty> : null}
         {g ? (
           <>
             <View style={{ paddingHorizontal: 16, paddingTop: 14, gap: 8 }}>
@@ -40,7 +49,7 @@ export default function GameScreen() {
                 const t = g[side];
                 const r = result(side);
                 return (
-                  <View key={t.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View key={side} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                     <Logo uri={t.logo} size={38} />
                     <T size={28} weight="medium" style={[{ flex: 1, letterSpacing: -0.6 }, r ?? {}]}>{t.rank ? `#${t.rank} ` : ''}{t.name}</T>
                     <T size={15} style={r ?? {}}>{g.state === 'pre' ? t.record ?? '' : t.score ?? ''}</T>
@@ -55,7 +64,7 @@ export default function GameScreen() {
             {g.takes && g.takes.length ? (
               <>
                 <SectionTitle sub="Real Picks from Betting Experts">Takes</SectionTitle>
-                {g.takes.map((t) => <TakeRow key={`${t.show}-${t.pick}`} take={t} />)}
+                {g.takes.map((t, i) => <TakeRow key={t.id ?? `${i}-${t.show}-${t.pick}`} take={t} />)}
               </>
             ) : null}
           </>

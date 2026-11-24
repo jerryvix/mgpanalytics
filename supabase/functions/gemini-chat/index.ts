@@ -20,6 +20,16 @@ import { type ChatImage, toAnthropicMessages } from "./images.ts";
 import { recentFormBlock } from "./recent-form.ts";
 // Postponed and canceled games are not upcoming games (the app hides them too)
 import { isCalledOffStatus } from "../_shared/game-status.ts";
+// Input checks before any model call (audit S1): shapes, sizes, the 20-message window
+import { validateChatRequest } from "./validate.ts";
+
+// Daily cap per person (audit S2), counted per US Eastern day in analyst_usage
+// (migration 20261124070000_analyst_usage.sql). Set ANALYST_DAILY_LIMIT to change it.
+const DEFAULT_DAILY_LIMIT = 50;
+function dailyLimit(): number {
+  const n = Number.parseInt(Deno.env.get("ANALYST_DAILY_LIMIT") ?? "", 10);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_DAILY_LIMIT;
+}
 
 // Rate limit: max requests per user per window
 const RATE_LIMIT_MAX = 10;
@@ -1585,14 +1595,52 @@ serve(async (req) => {
 
     console.log(`[gemini-chat] Authenticated user: ${user.id}`);
 
-    const { messages, activeSports: clientActiveSports, webSearchEnabled = false } = await req.json() as {
-      messages: ChatMessage[];
-      activeSports?: string[];
-      webSearchEnabled?: boolean;
-    };
-    // League, intent and question type read the text alone; images ride along (images.ts)
-    const lastUserContent = messages.filter(m => m.role === "user").pop()?.content;
-    const lastUserMessage = typeof lastUserContent === "string" ? lastUserContent : "";
+    // Input checks (validate.ts): anything malformed or oversized is a 400 before the
+    // quota is counted or the model is called. `messages` is the window the model sees:
+    // the latest 20, at most 30,000 characters, starting on a user message.
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: "Request body must be JSON" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const checked = validateChatRequest(body);
+    if (!checked.ok) {
+      return new Response(
+        JSON.stringify({ error: checked.error }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const { activeSports: clientActiveSports, webSearchEnabled = false } = checked.value;
+    const messages: ChatMessage[] = checked.value.messages;
+
+    // Daily cap: one count per accepted question, per US Eastern day, with the service
+    // role (analyst_usage has no user policies). If the count can't be read, the
+    // question goes through and the error is logged; the burst limit above still holds.
+    const limit = dailyLimit();
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (serviceKey) {
+      const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: usedToday, error: usageError } = await admin.rpc("increment_analyst_usage", { p_user_id: user.id });
+      if (usageError) {
+        console.error("[gemini-chat] Daily usage count failed:", usageError.message);
+      } else if (typeof usedToday === "number" && usedToday > limit) {
+        console.warn(`[gemini-chat] Daily limit (${limit}) reached for user ${user.id}`);
+        return new Response(
+          JSON.stringify({ error: "Daily limit reached" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      console.error("[gemini-chat] SUPABASE_SERVICE_ROLE_KEY missing: daily limit not counted");
+    }
+
+    // League, intent and question type read the text alone; images ride along (images.ts).
+    // The last message is the user's question (validate.ts).
+    const lastUserMessage = messages[messages.length - 1].content;
 
     const imageCount = messages.reduce((n, m) => n + (Array.isArray(m.images) ? m.images.length : 0), 0);
     console.log("Processing chat request with", messages.length, "messages", imageCount ? `and ${imageCount} images` : "");
@@ -1713,12 +1761,11 @@ ${dataPrompt}
 
 REMEMBER: Answer what was asked first, from whatever data IS available. If the exact answer is missing but related data exists, share that and note the gap. Then add up to two verified angles and, only if it helps, one follow-up question.`;
 
-    // Build conversation for Claude: trim to last 20 messages to balance context vs cost
-    const recentMessages = messages.length > 20 ? messages.slice(-20) : messages;
-    // Text-only messages map exactly as before ({ role, content }); images go
-    // in as image blocks ahead of the text, on the latest two user messages
-    // only, at most four each, HEIC skipped with a note (images.ts).
-    const anthropicMessages = toAnthropicMessages(recentMessages);
+    // Conversation for Claude: `messages` is already the latest 20 within 30,000
+    // characters (validate.ts). Text-only messages map exactly as before
+    // ({ role, content }); images go in as image blocks ahead of the text, on the
+    // latest two user messages only, at most four each, HEIC skipped with a note (images.ts).
+    const anthropicMessages = toAnthropicMessages(messages);
 
     // D-080: Claude Sonnet answering like the Claude app. Web search is always
     // available; the prompt has it use MGP's data first and search only for what MGP

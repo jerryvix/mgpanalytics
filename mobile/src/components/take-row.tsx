@@ -54,7 +54,7 @@ export function TakeRow({ take: t }: { take: Take }) {
       {(t.legs ?? []).length > 1 ? (
         <View style={{ marginLeft: 50, gap: 7 }}>
           {(t.legs ?? []).map((leg, i) => (
-            <View key={leg} style={{ flexDirection: 'row', gap: 12 }}>
+            <View key={`${i}-${leg}`} style={{ flexDirection: 'row', gap: 12 }}>
               <Mono style={{ width: 14 }}>{String(i + 1)}</Mono>
               <T size={15} weight="medium">{leg}</T>
             </View>

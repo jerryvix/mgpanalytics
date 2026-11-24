@@ -5,14 +5,18 @@
  * guideline 5.1.2) without naming it (D-085). Works like a normal iOS chat: selectable and
  * copyable answers, swipe the keyboard away, attach or paste images, New Chat and History
  * (saved to the same tables as the website).
+ *
+ * Each chat on screen has a token. New Chat, opening a chat from History and a change of
+ * account move to a new token, so a reply or save still on its way never lands in the wrong
+ * chat, and message keys change with it so nothing (like an answer's feedback) carries over.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { ActionSheetIOS, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
+import { ActionSheetIOS, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -32,6 +36,15 @@ type Msg = { role: 'user' | 'assistant'; content: string; sources?: { title: str
 const STARTERS = ["Where's the money tonight?", 'Any injuries to know for tonight?', 'How are the Bills ATS this season?'];
 const CONSENT_KEY = 'analyst-ai-notice-v2'; // v2: D-085 wording, shown again once
 const MAX_IMAGES = 4;
+/** Images go with the latest 2 questions only; older questions send their text (D-097). */
+const IMAGE_TURNS = 2;
+
+/** Links in answers and sources: https opens in the in-app browser, anything else is ignored. */
+function openLink(url: string): boolean {
+  const u = url.trim();
+  if (/^https:\/\//i.test(u)) WebBrowser.openBrowserAsync(u).catch(() => undefined);
+  return false; // never let the Markdown view open it on its own
+}
 
 function CopyButton({ text }: { text: string }) {
   const [done, setDone] = useState(false);
@@ -46,6 +59,7 @@ function CopyButton({ text }: { text: string }) {
 export default function AnalystScreen() {
   const c = useTheme();
   const { session, ready } = useAuth();
+  const uid = session?.user.id ?? null;
   const { c: openId } = useLocalSearchParams<{ c?: string }>();
   const [consented, setConsented] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -53,8 +67,41 @@ export default function AnalystScreen() {
   const [draft, setDraft] = useState('');
   const [images, setImages] = useState<Attachment[]>([]);
   const [busy, setBusy] = useState(false);
+  const [openFailed, setOpenFailed] = useState(false);
+  // New with every chat on screen; message keys start with it
+  const [chatKey, setChatKey] = useState(0);
+  const [owner, setOwner] = useState(uid);
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const input = useRef<ComponentRef<typeof TextInput>>(null);
+  const chatToken = useRef(0);
+  // The saved conversation behind each chat token
+  const savedIds = useRef(new Map<number, string>());
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const sending = useRef(false);
+  const stickToEnd = useRef(false);
+  const lastUid = useRef(uid);
+
+  // Signed out, or another account signed in: the chat on screen isn't theirs
+  if (uid !== owner) {
+    setOwner(uid);
+    if (owner !== null) {
+      setMessages([]);
+      setConversationId(null);
+      setDraft('');
+      setImages([]);
+      setBusy(false);
+      setOpenFailed(false);
+      setChatKey((k) => k + 1);
+    }
+  }
+  useEffect(() => {
+    if (lastUid.current === uid) return;
+    const had = lastUid.current;
+    lastUid.current = uid;
+    chatToken.current += 1;
+    sending.current = false;
+    if (had !== null) router.setParams({ c: undefined });
+  }, [uid]);
 
   useEffect(() => {
     AsyncStorage.getItem(CONSENT_KEY).then((v) => setConsented(v === 'yes')).catch(() => setConsented(false));
@@ -62,21 +109,51 @@ export default function AnalystScreen() {
 
   // Opening a chat from History
   useEffect(() => {
-    if (!openId || openId === conversationId) return;
+    if (!uid || !openId || openId === conversationId) return;
+    // Already on screen: the chat this screen just saved
+    if (savedIds.current.get(chatToken.current) === openId) return;
+    const startToken = chatToken.current;
     let live = true;
-    loadMessages(openId).then((rows) => {
-      if (!live) return;
-      setConversationId(openId);
-      setMessages(rows.map((r) => ({ ...r, content: r.role === 'assistant' ? plainDashes(r.content) : r.content })));
-    });
+    loadMessages(openId).then(
+      (rows) => {
+        // Dropped if New Chat or another chat came first
+        if (!live || chatToken.current !== startToken) return;
+        const token = (chatToken.current += 1);
+        sending.current = false;
+        savedIds.current.set(token, openId);
+        stickToEnd.current = true;
+        setConversationId(openId);
+        setMessages(rows.map((r) => ({ ...r, content: r.role === 'assistant' ? plainDashes(r.content) : r.content })));
+        setBusy(false);
+        setOpenFailed(false);
+        setChatKey((k) => k + 1);
+      },
+      () => {
+        if (!live || chatToken.current !== startToken) return;
+        // Not tied to the chat that didn't load: questions from here start a new one
+        chatToken.current += 1;
+        sending.current = false;
+        setConversationId(null);
+        setMessages([]);
+        setBusy(false);
+        setOpenFailed(true);
+        setChatKey((k) => k + 1);
+        router.setParams({ c: undefined });
+      },
+    );
     return () => { live = false; };
-  }, [openId, conversationId]);
+  }, [openId, conversationId, uid]);
 
   const newChat = () => {
+    chatToken.current += 1;
+    sending.current = false;
     setMessages([]);
     setConversationId(null);
     setDraft('');
     setImages([]);
+    setBusy(false);
+    setOpenFailed(false);
+    setChatKey((k) => k + 1);
     router.setParams({ c: undefined });
   };
 
@@ -84,32 +161,86 @@ export default function AnalystScreen() {
     const room = MAX_IMAGES - images.length;
     if (room <= 0) return;
     const add = (more: Attachment[]) => setImages((cur) => [...cur, ...more].slice(0, MAX_IMAGES));
+    const failed = () => Alert.alert("Couldn't attach that image");
+    const fromPhotos = async () => {
+      try {
+        const got = await pickImages(room);
+        add(got.images);
+        if (got.failed) failed();
+      } catch {
+        failed();
+      }
+    };
+    const fromClipboard = async () => {
+      try {
+        add([await pasteImage()]);
+      } catch {
+        failed();
+      }
+    };
     const canPaste = await clipboardHasImage();
-    if (Platform.OS !== 'ios') return add(await pickImages(room));
+    if (Platform.OS !== 'ios') return fromPhotos();
     ActionSheetIOS.showActionSheetWithOptions(
       { options: canPaste ? ['Photo Library', 'Paste Image', 'Cancel'] : ['Photo Library', 'Cancel'], cancelButtonIndex: canPaste ? 2 : 1 },
-      async (i) => {
-        if (i === 0) add(await pickImages(room));
-        if (canPaste && i === 1) { const img = await pasteImage(); if (img) add([img]); }
+      (i) => {
+        if (i === 0) fromPhotos();
+        if (canPaste && i === 1) fromClipboard();
       },
     );
   };
 
+  /** Save one exchange to History (same tables as the website); a failure here never blocks the chat. */
+  const saveExchange = (token: number, userId: string, q: string, sent: Msg, answer: Msg) => {
+    const userRow = { role: 'user' as const, content: sent.images?.length ? `${q} [image]` : q };
+    const answerRow = { role: 'assistant' as const, content: answer.content, sources: answer.sources };
+    // One exchange at a time, in order, so a quick second question never starts a second saved chat
+    saveQueue.current = saveQueue.current.then(async () => {
+      const start = async () => {
+        const id = await createConversation(userId, q);
+        if (!id) return null;
+        savedIds.current.set(token, id);
+        if (chatToken.current === token) {
+          setConversationId(id);
+          router.setParams({ c: id });
+        }
+        return id;
+      };
+      let id = savedIds.current.get(token) ?? (await start());
+      if (!id) return;
+      if (!(await addMessage(id, userRow))) {
+        // The saved chat is gone (deleted from History, say): keep this exchange in a new one
+        id = await start();
+        if (!id || !(await addMessage(id, userRow))) return;
+      }
+      await addMessage(id, answerRow);
+    }).catch(() => undefined);
+  };
+
   const ask = async (text: string) => {
     const q = text.trim() || (images.length ? 'Take a look at this' : '');
-    if (!q || busy) return;
+    if (!q || busy || sending.current) return;
+    sending.current = true;
+    const token = chatToken.current;
     const sent: Msg = { role: 'user', content: q, images: images.length ? images : undefined };
     const next: Msg[] = [...messages, sent];
+    stickToEnd.current = true;
     setMessages(next);
     setDraft('');
     setImages([]);
     setBusy(true);
+    setOpenFailed(false);
     // Only real exchanges go back as context; failed replies stay on screen but not in the chat history.
-    const history = next.filter((m) => !m.failed).map(({ role, content, images: imgs }) => ({
-      role, content, ...(imgs?.length ? { images: imgs.map(({ mediaType, data }) => ({ mediaType, data })) } : {}),
+    const real = next.filter((m) => !m.failed);
+    const withImages = new Set(real.flatMap((m, i) => (m.role === 'user' ? [i] : [])).slice(-IMAGE_TURNS));
+    const history = real.map(({ role, content, images: imgs }, i) => ({
+      role, content, ...(imgs?.length && withImages.has(i) ? { images: imgs.map(({ mediaType, data }) => ({ mediaType, data })) } : {}),
     }));
     const reply = await askAnalyst(history);
+    // The chat changed while this was on its way (New Chat, History, another account): drop it
+    if (chatToken.current !== token) return;
+    sending.current = false;
     setBusy(false);
+    stickToEnd.current = true;
     if (!reply.ok) {
       const msg = reply.busy ? 'Lots of questions at once. Give it a minute and ask again' : "That one didn't go through. Try asking again";
       setMessages([...next, { role: 'assistant', content: msg, failed: true, reason: reply.reason }]);
@@ -117,18 +248,7 @@ export default function AnalystScreen() {
     }
     const answer: Msg = { role: 'assistant', content: plainDashes(reply.content), sources: reply.sources };
     setMessages([...next, answer]);
-    // Save to History (same tables as the website); a failure here never blocks the chat
-    const uid = session?.user.id;
-    if (!uid) return;
-    let id = conversationId;
-    if (!id) {
-      id = await createConversation(uid, q);
-      if (id) { setConversationId(id); router.setParams({ c: id }); }
-    }
-    if (id) {
-      await addMessage(id, { role: 'user', content: sent.images?.length ? `${q} [image]` : q });
-      await addMessage(id, { role: 'assistant', content: answer.content, sources: answer.sources });
-    }
+    if (uid) saveExchange(token, uid, q, sent, answer);
   };
 
   const md = {
@@ -147,10 +267,12 @@ export default function AnalystScreen() {
   };
   // Answers select and copy like any iOS text
   const mdRules = {
-    textgroup: (node: { key: string }, children: React.ReactNode, _parent: unknown, styles: { textgroup: object }) => (
+    textgroup: (node: { key: string }, children: ReactNode, _parent: unknown, styles: { textgroup: object }) => (
       <Text key={node.key} style={styles.textgroup} selectable>{children}</Text>
     ),
   };
+
+  const canStartOver = !busy && (messages.length > 0 || !!draft || images.length > 0 || openFailed);
 
   const header = (
     <>
@@ -159,12 +281,14 @@ export default function AnalystScreen() {
         <T size={34} weight="medium" style={{ letterSpacing: -0.8 }}>The Analyst</T>
         {session && consented ? (
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <Pressable onPress={() => router.push('/analyst-history')} accessibilityRole="button" accessibilityLabel="Chat history"
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center' }}>
+            <Pressable onPress={() => router.push('/analyst-history')} disabled={busy} accessibilityRole="button" accessibilityLabel="Chat history"
+              accessibilityState={{ disabled: busy }}
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', opacity: busy ? 0.4 : 1 }}>
               <Icon name="clock.arrow.circlepath" size={18} />
             </Pressable>
-            <Pressable onPress={newChat} disabled={!messages.length && !draft && !images.length} accessibilityRole="button" accessibilityLabel="New chat"
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', opacity: messages.length || draft || images.length ? 1 : 0.4 }}>
+            <Pressable onPress={newChat} disabled={!canStartOver} accessibilityRole="button" accessibilityLabel="New chat"
+              accessibilityState={{ disabled: !canStartOver }}
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: c.surface, alignItems: 'center', justifyContent: 'center', opacity: canStartOver ? 1 : 0.4 }}>
               <Icon name="square.and.pencil" size={18} />
             </Pressable>
           </View>
@@ -214,9 +338,21 @@ export default function AnalystScreen() {
       {/* The composer keeps TAB_BAR_SPACE below it so it clears the floating tab bar; the negative
           offset lets it sit right on the keyboard when typing (D-090). */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={-TAB_BAR_SPACE}>
-        <ScrollView ref={scroll} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })} contentContainerStyle={{ paddingBottom: 16 }}
+        {/* Follows the conversation only when a message lands or while a reply is on its way, so
+            opening an answer's feedback form never jumps the page */}
+        <ScrollView ref={scroll} contentContainerStyle={{ paddingBottom: 16 }}
+          onContentSizeChange={() => {
+            if (!stickToEnd.current && !busy) return;
+            stickToEnd.current = false;
+            scroll.current?.scrollToEnd({ animated: true });
+          }}
           keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive">
           {header}
+          {openFailed ? (
+            <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+              <T size={15} style={{ lineHeight: 21 }}>{"Couldn't open that chat. Try again from History"}</T>
+            </View>
+          ) : null}
           {messages.length === 0 ? (
             <View style={{ padding: 16, gap: 10 }}>
               {STARTERS.map((s) => (
@@ -227,10 +363,10 @@ export default function AnalystScreen() {
             </View>
           ) : null}
           {messages.map((m, i) => m.role === 'user' ? (
-            <View key={i} style={{ alignSelf: 'flex-end', maxWidth: '85%', marginHorizontal: 16, marginTop: 14, gap: 6, alignItems: 'flex-end' }}>
+            <View key={`${chatKey}-${i}`} style={{ alignSelf: 'flex-end', maxWidth: '85%', marginHorizontal: 16, marginTop: 14, gap: 6, alignItems: 'flex-end' }}>
               {m.images?.length ? (
                 <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                  {m.images.map((img) => <Image key={img.uri} source={img.uri} style={{ width: 96, height: 96, borderRadius: 12 }} contentFit="cover" />)}
+                  {m.images.map((img, j) => <Image key={`${j}-${img.uri}`} source={img.uri} style={{ width: 96, height: 96, borderRadius: 12 }} contentFit="cover" />)}
                 </View>
               ) : null}
               <View style={{ padding: 12, borderRadius: 18, backgroundColor: c.surfaceRaised }}>
@@ -238,13 +374,13 @@ export default function AnalystScreen() {
               </View>
             </View>
           ) : (
-            <View key={i} style={{ marginHorizontal: 16, marginTop: 14, gap: 8 }}>
-              <Markdown style={md} rules={mdRules as never}>{m.content}</Markdown>
+            <View key={`${chatKey}-${i}`} style={{ marginHorizontal: 16, marginTop: 14, gap: 8 }}>
+              <Markdown style={md} rules={mdRules as never} onLinkPress={openLink}>{m.content}</Markdown>
               {m.sources && m.sources.length ? (
                 <View style={{ gap: 6 }}>
                   <Mono>Sources</Mono>
-                  {m.sources.slice(0, 5).map((s) => (
-                    <Pressable key={s.url} onPress={() => WebBrowser.openBrowserAsync(s.url)}>
+                  {m.sources.slice(0, 5).map((s, j) => (
+                    <Pressable key={`${j}-${s.url}`} onPress={() => openLink(s.url)} accessibilityRole="link">
                       <T size={14} numberOfLines={1} style={{ textDecorationLine: 'underline' }}>{s.title}</T>
                     </Pressable>
                   ))}
@@ -270,7 +406,7 @@ export default function AnalystScreen() {
           {images.length ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingLeft: 44 }}>
               {images.map((img, i) => (
-                <View key={img.uri}>
+                <View key={`${i}-${img.uri}`}>
                   <Image source={img.uri} style={{ width: 64, height: 64, borderRadius: 10 }} contentFit="cover" />
                   <Pressable onPress={() => setImages(images.filter((_, j) => j !== i))} hitSlop={8} accessibilityLabel="Remove image"
                     style={{ position: 'absolute', top: -6, right: -6, width: 22, height: 22, borderRadius: 11, backgroundColor: c.surfaceRaised, alignItems: 'center', justifyContent: 'center' }}>

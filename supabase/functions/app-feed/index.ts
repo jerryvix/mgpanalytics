@@ -239,6 +239,17 @@ function json(body: unknown, maxAge = 120): Response {
   });
 }
 
+// Query checks (audit S8, A11): a date is YYYY-MM-DD and an ESPN event id is digits,
+// so neither reaches an ESPN URL or a query as anything else
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const EVENT_ID_RE = /^\d{1,20}$/;
+function badRequest(error: string): Response {
+  return new Response(JSON.stringify({ error }), {
+    status: 400,
+    headers: { ...CORS, "Content-Type": "application/json", "Cache-Control": "no-store" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   const url = new URL(req.url);
@@ -249,6 +260,7 @@ serve(async (req) => {
 
   if (view === "day") {
     const date = url.searchParams.get("date") ?? etDate(new Date());
+    if (!DATE_RE.test(date)) return badRequest("date must be YYYY-MM-DD");
     const lists = await Promise.all(want.map((s) => espnEvents(s, date)));
     const games = lists.flat().sort((a, b) => a.start.localeCompare(b.start));
     await attachSplits(supabase, games);
@@ -260,6 +272,8 @@ serve(async (req) => {
     const id = url.searchParams.get("id") ?? "";
     const sport = (url.searchParams.get("sport") ?? "NFL") as Sport;
     const date = url.searchParams.get("date") ?? "";
+    if (!EVENT_ID_RE.test(id)) return badRequest("id must be an ESPN event id (digits only)");
+    if (date && !DATE_RE.test(date)) return badRequest("date must be YYYY-MM-DD");
     // The game is on its own date; look a week either side if the caller didn't say.
     const dates = date ? [date] : Array.from({ length: 9 }, (_, i) => etDate(new Date(Date.now() + (i - 1) * 86_400_000)));
     for (const d of dates) {

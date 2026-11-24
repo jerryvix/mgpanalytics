@@ -60,9 +60,6 @@ verify_jwt = false
 [functions.sync-nba-game-logs]
 verify_jwt = false
 
-[functions.test-bdl]
-verify_jwt = false
-
 [functions.grade-player-props]
 verify_jwt = false
 
@@ -119,3 +116,6 @@ verify_jwt = false
 
 [functions.app-feed]
 verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true

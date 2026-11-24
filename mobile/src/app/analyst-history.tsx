@@ -3,34 +3,54 @@
  * reopen; swipe-free delete from the row's menu button so nothing deletes by accident.
  */
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, ScrollView, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Divider, Empty, Icon, Mono, T } from '@/components/night';
 import { useTheme } from '@/hooks/use-theme';
 import { deleteConversation, listConversations, type Conversation } from '@/lib/chat-store';
+import { clock, daysAgo, toDate } from '@/lib/time';
 
+/** By calendar day: the time today, "Yesterday", the weekday this past week, else "Nov 20". */
 function when(iso: string): string {
-  const d = new Date(iso);
-  const days = Math.floor((Date.now() - d.getTime()) / 86_400_000);
-  if (days < 1) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  if (days < 7) return d.toLocaleDateString([], { weekday: 'long' });
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  const d = toDate(iso);
+  if (!d) return '';
+  const now = new Date();
+  const days = daysAgo(d, now);
+  if (days <= 0) return clock(iso);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return d.toLocaleDateString('en-US', { weekday: 'long' });
+  return d.toLocaleDateString('en-US', d.getFullYear() === now.getFullYear() ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export default function AnalystHistory() {
   const c = useTheme();
   const [items, setItems] = useState<Conversation[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const load = useCallback(() =>
+    listConversations().then(
+      (rows) => { setItems(rows); setFailed(false); },
+      () => setFailed(true),
+    ), []);
 
   useEffect(() => {
-    listConversations().then(setItems);
-  }, []);
+    load();
+  }, [load]);
+
+  const refresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   const confirmDelete = (conv: Conversation) => {
     const go = async () => {
-      await deleteConversation(conv.id);
-      setItems((cur) => (cur ?? []).filter((x) => x.id !== conv.id));
+      // The row stays until the delete goes through
+      if (await deleteConversation(conv.id)) setItems((cur) => (cur ?? []).filter((x) => x.id !== conv.id));
+      else Alert.alert("Couldn't delete that chat", 'Check your connection and try again');
     };
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -51,9 +71,11 @@ export default function AnalystHistory() {
           <Icon name="xmark" size={15} weight="semibold" />
         </Pressable>
       </View>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        {items === null ? <View style={{ padding: 24 }}><ActivityIndicator color={c.text} /></View> : null}
-        {items && !items.length ? <Empty>Your chats with the Analyst show up here, on the app and on mgp-analytics.com</Empty> : null}
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={c.text} />}>
+        {items === null && !failed ? <View style={{ padding: 24 }}><ActivityIndicator color={c.text} /></View> : null}
+        {failed ? <Empty>{"Couldn't load your chats. Pull down to try again"}</Empty> : null}
+        {!failed && items && !items.length ? <Empty>Your chats with the Analyst show up here, on the app and on mgp-analytics.com</Empty> : null}
         {(items ?? []).map((conv, i) => (
           <View key={conv.id}>
             {i > 0 ? <Divider /> : null}
