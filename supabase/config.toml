@@ -113,3 +113,6 @@ verify_jwt = false
 
 [functions.ingest-takes]
 verify_jwt = false
+
+[functions.ingest-game-lines]
+verify_jwt = false
