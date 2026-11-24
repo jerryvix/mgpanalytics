@@ -11,7 +11,7 @@ const RELEASED = ALL_BETS.filter((b) => b.verified);
 // Wording that signals an unverified or hedged claim - never ship these.
 const HEDGE_TELLS = /\b(probably|reportedly|some say|believed to|rumored|might have|allegedly)\b/i;
 // Year ranges must use the compact apostrophe style ('YY-'YY), not (2020-2021).
-const FULL_YEAR_RANGE = /\(\s*(19|20)\d{2}\s*[-–]\s*(19|20)\d{2}\s*\)/;
+const FULL_YEAR_RANGE = new RegExp(`\\(\\s*(19|20)\\d{2}\\s*[-${String.fromCharCode(0x2013)}]\\s*(19|20)\\d{2}\\s*\\)`);
 const PLACEHOLDER_SOURCE = /^(tbd|unknown|n\/a|todo|)$/i;
 
 describe("Trending Bets structural integrity (release gate 1)", () => {

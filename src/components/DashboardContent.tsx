@@ -13,6 +13,7 @@ import { TrendingBets } from "@/components/dashboard/TrendingBets";
 import { AdminPanel } from "@/components/dashboard/AdminPanel";
 import SyncObservatory from "@/pages/SyncObservatory";
 import Analyst from "@/pages/Analyst";
+import Takes from "@/pages/Takes";
 import NFLPlayers from "@/pages/NFLPlayers";
 import NFLPlayerDetail from "@/pages/NFLPlayerDetail";
 import NBAPlayers from "@/pages/NBAPlayers";
@@ -72,6 +73,7 @@ export function DashboardContent({ isAdmin }: DashboardContentProps) {
       <Routes>
         <Route index element={<DashboardHome />} />
         <Route path="analyst" element={<Analyst />} />
+        <Route path="takes" element={<Takes />} />
         <Route path="watchlist" element={<Watchlist />} />
         <Route path="chats" element={<SavedChats />} />
         <Route path="market/live-edges" element={<ComingSoon sport="Live Edges" emoji="⚡" />} />

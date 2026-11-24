@@ -56,7 +56,7 @@ interface Message {
   questionType?: QuestionType;
 }
 
-const WELCOME_MESSAGE = "Welcome to the MGP Analyst. Think of me as your research assistant - I surface the data, you draw the conclusions.\n\nAsk me about games, odds, player stats, or matchups across NFL, NBA, NCAAB, and more. I'll share what I find and help you dig deeper.\n\nWhat would you like to explore?";
+const WELCOME_MESSAGE = "Welcome to the MGP Analyst. Think of me as your research assistant. I surface the data, you draw the conclusions.\n\nAsk me about games, odds, player stats, or matchups across NFL, NBA, NCAAB, and more. I'll share what I find and help you dig deeper.\n\nWhat would you like to explore?";
 
 function getQuestionTypeFooter(questionType?: QuestionType): string | null {
   switch (questionType) {

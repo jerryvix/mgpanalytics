@@ -117,7 +117,7 @@ describe("parseDkSplitsPage", () => {
 
 describe("parseAmericanPrice", () => {
   it("reads DK's typographic minus, plus signs and EVEN", () => {
-    expect(parseAmericanPrice("−135")).toBe(-135);
+    expect(parseAmericanPrice(`${String.fromCharCode(0x2212)}135`)).toBe(-135);
     expect(parseAmericanPrice(" +114 ")).toBe(114);
     expect(parseAmericanPrice("EVEN")).toBe(100);
     expect(parseAmericanPrice("")).toBeNull();

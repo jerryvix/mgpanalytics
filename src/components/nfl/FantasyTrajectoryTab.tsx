@@ -265,8 +265,8 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
               {latestSeason} Closing Stretch
             </h2>
             <p className="text-[11px] text-muted-foreground mb-3">
-              Weeks 10–18 positional rank vs. the full-season finish - a strong close is a leading
-              indicator for the following year.
+              Weeks 10-18 positional rank vs. the full-season finish. A strong close is a leading
+              indicator for the following year
             </p>
             {secondHalf ? (
               <div className="grid grid-cols-3 gap-2">
@@ -280,7 +280,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
                 </div>
                 <div className="bg-muted/30 rounded-lg p-2 text-center">
                   <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-                    Weeks 10–18
+                    Weeks 10-18
                   </div>
                   <div className={`text-lg font-bold font-mono tabular-nums ${rankTone(secondHalf.second_half_rank)}`}>
                     {fmtRank(posGroup, secondHalf.second_half_rank)}
@@ -300,7 +300,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
               </div>
             ) : (
               <p className="text-sm text-muted-foreground font-mono">
-                No weeks 10–18 data for {latestSeason}.
+                No weeks 10-18 data for {latestSeason}
               </p>
             )}
           </CardContent>
@@ -308,7 +308,7 @@ export function FantasyTrajectoryTab({ playerName, position, teamAbbr }: Fantasy
       </motion.div>
 
       <p className="text-[11px] text-muted-foreground">
-        PPR finishes computed from nflverse official scoring, {seasons[0]?.season}–{latestSeason}.
+        PPR finishes computed from nflverse official scoring, {seasons[0]?.season}-{latestSeason}
       </p>
     </div>
   );

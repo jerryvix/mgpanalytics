@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.sync-betting-splits]
 verify_jwt = false
+
+[functions.ingest-takes]
+verify_jwt = false

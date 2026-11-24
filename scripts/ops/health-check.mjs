@@ -165,13 +165,13 @@ const PROBES = [
     sport: "NFL", name: "nfl_splits_captured",
     what: "newest NFL DraftKings split captured",
     query: "betting_splits?select=captured_at&sport=eq.NFL&order=captured_at.desc&limit=1",
-    field: "captured_at", maxAgeHours: 6, // 2h interval, allow two misses
+    field: "captured_at", maxAgeHours: 9, // the external cron ticks every 4h; allow one miss
   },
   {
     sport: "NCAAF", name: "ncaaf_splits_captured",
     what: "newest NCAAF DraftKings split captured",
     query: "betting_splits?select=captured_at&sport=eq.NCAAF&order=captured_at.desc&limit=1",
-    field: "captured_at", maxAgeHours: 6,
+    field: "captured_at", maxAgeHours: 9,
   },
   {
     sport: "ALL", name: "odds_snapshot_latest",

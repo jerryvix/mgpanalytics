@@ -135,7 +135,7 @@ export function ArchetypeBreakdown({ rows }: Props) {
 
   const byDraftCapital: BucketSpec[] = (
     [
-      ["rounds_1_2", "Rounds 1–2"],
+      ["rounds_1_2", "Rounds 1-2"],
       ["round_3", "Round 3"],
       ["day3_udfa", "Day 3 / UDFA"],
     ] as const
@@ -171,10 +171,10 @@ export function ArchetypeBreakdown({ rows }: Props) {
           smaller buckets show raw counts.
         </p>
 
-        {bucketTable("Experience Year", "season − rookie season + 1", byExperience, baseline)}
+        {bucketTable("Experience Year", "season - rookie season + 1", byExperience, baseline)}
         {bucketTable(
           "Draft Capital",
-          "NFL draft round - not ADP. Spec compares Rounds 1–2 vs Day 3/UDFA; Round 3 shown separately.",
+          "NFL draft round, not ADP. Spec compares Rounds 1-2 vs Day 3/UDFA; Round 3 shown separately",
           byDraftCapital,
           baseline
         )}

@@ -100,8 +100,9 @@ function text(html: string): string {
 }
 
 /** DK's typographic minus (U+2212) and stray en dashes become ASCII "-". */
+const DK_SIGNS = new RegExp(`[${String.fromCharCode(0x2212, 0x2013)}]`, "g");
 function asciiSigns(s: string): string {
-  return s.replace(/[−–]/g, "-");
+  return s.replace(DK_SIGNS, "-");
 }
 
 /**

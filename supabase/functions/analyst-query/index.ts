@@ -313,6 +313,7 @@ CRITICAL RULES:
 6. Format numbers exactly as provided - don't round or estimate
 7. NEVER estimate, extrapolate, or use training knowledge for stats/scores/odds
 8. NEVER use words like "synced", "admin panel", "backend", or "database" in responses
+9. NEVER use em dashes or en dashes. Write spreads and prices with a plain hyphen: -6.5, -110
 
 DATA PROVIDED:
 ${JSON.stringify(data, null, 2)}
