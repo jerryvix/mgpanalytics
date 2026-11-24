@@ -4,7 +4,7 @@ import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GameRow } from '@/components/game-row';
-import { Divider, Empty, Mono, SectionTitle, T, TopBar } from '@/components/night';
+import { Divider, Empty, Footer, Mono, SectionTitle, T, TopBar } from '@/components/night';
 import { useTheme } from '@/hooks/use-theme';
 import { SPORT_LABEL, SPORTS, useFeed, type Game, type Sport } from '@/lib/feed';
 import { ymd } from '@/lib/time';
@@ -18,7 +18,7 @@ export default function GamesScreen() {
   const games = data?.games ?? [];
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={c.text} />} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={c.text} />} contentContainerStyle={{ paddingBottom: 8 }}>
         <TopBar />
         <View style={{ paddingHorizontal: 16, paddingTop: 10 }}>
           <T size={34} weight="medium" style={{ letterSpacing: -0.8 }}>Games</T>
@@ -58,6 +58,7 @@ export default function GamesScreen() {
             </View>
           );
         })}
+        <Footer />
       </ScrollView>
     </SafeAreaView>
   );

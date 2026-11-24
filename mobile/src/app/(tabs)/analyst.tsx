@@ -118,7 +118,8 @@ export default function AnalystScreen() {
   }
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+    // Bottom edge: the tab's safe area includes the floating tab bar, so the composer sits above it (D-086).
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: c.bg }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={0}>
         <ScrollView ref={scroll} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
           {header}

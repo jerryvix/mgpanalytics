@@ -483,3 +483,8 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Why one line stays:** App Store guideline 5.1.2(i) requires telling people before their data goes to a third-party AI and getting their OK. It doesn't require naming the company, so the notice says "our AI partner" and the privacy policy names Anthropic.
 **In answers:** the Analyst's instructions now say it's MGP's AI analyst and it doesn't name the model or company; asked what powers it, it says it doesn't share the details of the technology behind it. It never claims to be human.
 **Replaces:** D-080's notice wording ("answers come from Anthropic's Claude").
+
+### D-086 Lists end with the MGP mark and clear the tab bar
+**Date:** 2026-11-24 · **By:** Owner, on the first TestFlight build ("I have to scroll down and hold to read the bottom sentence... maybe a site logo... at the very bottom")
+**Fix:** the floating iOS tab bar covered the last row. Native tabs are meant to inset the first scroll view on their own, but that pass missed our lists, so Today, Games and Pulse set `contentInsetAdjustmentBehavior="automatic"` themselves (UIKit then insets by the tab's safe area, which includes the tab bar). The Analyst's composer sits above the tab bar through the tab's bottom safe area.
+**Footer:** Today, Games and Pulse end with the MGP mark (the green pulse in its tile, as in the top bar) and "MGP Analytics" in the small mono label style. No links or legal text there; those live in Profile.

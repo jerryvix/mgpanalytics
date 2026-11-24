@@ -3,7 +3,7 @@ import { RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GameRow } from '@/components/game-row';
-import { Divider, Empty, Mono, SectionTitle, T, TopBar } from '@/components/night';
+import { Divider, Empty, Footer, Mono, SectionTitle, T, TopBar } from '@/components/night';
 import { useTheme } from '@/hooks/use-theme';
 import { SPORT_LABEL, SPORTS, useFeed, type Game } from '@/lib/feed';
 import { clock, longDate, ymd } from '@/lib/time';
@@ -16,7 +16,7 @@ export default function TodayScreen() {
   const asOf = games.map((g) => g.splitsAsOf).filter(Boolean).sort().pop();
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={c.text} />} contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={c.text} />} contentContainerStyle={{ paddingBottom: 8 }}>
         <TopBar />
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 6 }}>
           <T size={34} weight="medium" style={{ letterSpacing: -0.8 }}>Today</T>
@@ -40,6 +40,7 @@ export default function TodayScreen() {
           );
         })}
         {asOf ? <Mono style={{ paddingHorizontal: 16, paddingTop: 16 }}>Betting Splits from DraftKings · Updated {clock(asOf)}</Mono> : null}
+        <Footer />
       </ScrollView>
     </SafeAreaView>
   );

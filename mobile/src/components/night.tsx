@@ -137,6 +137,19 @@ export function TopBar() {
   );
 }
 
+/** End of a tab's list: the MGP mark and name, so the last row clears the tab bar (D-086). */
+export function Footer() {
+  const c = useTheme();
+  return (
+    <View style={{ alignItems: 'center', gap: 8, paddingTop: 36, paddingBottom: 20 }} accessibilityRole="text" accessibilityLabel="MGP Analytics">
+      <View style={[styles.mark, { backgroundColor: c.surface }]}>
+        <Icon name="waveform.path.ecg" size={18} color={c.brand} weight="bold" />
+      </View>
+      <Mono>MGP Analytics</Mono>
+    </View>
+  );
+}
+
 export function Divider() {
   const c = useTheme();
   return <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginLeft: 16 }} />;
