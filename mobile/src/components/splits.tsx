@@ -165,7 +165,7 @@ export function SplitsBlock({ game: g }: { game: Game }) {
   if (!list.length) return null;
   return (
     <>
-      <SectionTitle>Betting Splits</SectionTitle>
+      <SectionTitle tag="DATA">Betting Splits</SectionTitle>
       <View style={{ paddingHorizontal: 16 }}>
         {list.map((p) => (
           <View key={p.name} style={{ gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: c.border }}>

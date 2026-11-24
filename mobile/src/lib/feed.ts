@@ -63,7 +63,7 @@ export type Take = {
   final?: string | null;
 };
 
-/** A credited public post beside Betting Splits. Not a pick. */
+/** A credited public post beside Betting Splits, shown as a post from an industry insider. Not a pick. */
 export type MarketNote = {
   id: string;
   credit: string;
@@ -71,6 +71,11 @@ export type MarketNote = {
   url: string;
   market?: string | null;
   handle?: string;
+  name?: string;
+  avatar_url?: string | null;
+  verified?: boolean;
+  source?: string | null;
+  posted_at?: string;
 };
 
 export type Game = {

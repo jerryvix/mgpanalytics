@@ -15,7 +15,7 @@ export function useMarketNotes(sport: string) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from("market_notes")
-        .select("id, sport, away_name, home_name, credit, body, url, starts_at")
+        .select("id, sport, away_name, home_name, credit, body, url, starts_at, handle, author_name, posted_at")
         .eq("sport", sport)
         .gte("starts_at", since)
         .order("posted_at", { ascending: false })
