@@ -4,7 +4,8 @@
 
 ## Blocked on owner
 
-- App Store Connect API key added to Expo (lets EAS create the app record and upload builds to TestFlight without an Apple password). Steps in `OWNER_ACTIONS.md`.
+- App Store Connect API key added to Expo (Nov 24). Signing certificate and profile created (D-083); first production build (1.0.0, build 2) started Nov 24.
+- Waiting on the owner: the App Store Connect app record and its Apple ID (`OWNER_ACTIONS.md` item 8), then upload to TestFlight.
 
 ## Live (Nov 24)
 

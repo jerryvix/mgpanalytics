@@ -23,9 +23,19 @@ Apple enrollment confirmed approved by the owner on Nov 23.
   - Apple may phone you to verify. Answer unknown numbers that week.
   - Tell the builder when the approval email arrives.
 
-## Now: one key so builds reach TestFlight (10 minutes)
+## Now: create the App Store record (5 minutes)
 
-- [ ] **7. Create an App Store Connect API key and add it to Expo.** This lets the builder create the app record and upload builds to TestFlight, with no Apple password shared. The key never goes in chat.
+- [ ] **8. Create the app in App Store Connect and send its Apple ID.** The signing certificate is made and the first build is running; this record is where TestFlight puts it. The App Store name is public, so you pick it.
+  1. Sign in at appstoreconnect.apple.com with the business Apple ID and open **Apps**.
+  2. Click **+**, then **New App**.
+  3. Platforms: **iOS**. Name: **MGP Analytics** (or the name you want on the App Store; 30 characters max, and it must not be taken). Primary Language: **English (U.S.)**.
+  4. Bundle ID: choose **MGP Analytics - com.mgpanalytics.app** (already registered). SKU: `mgpanalytics-ios`. User Access: **Full Access**. Click **Create**.
+  5. On the new app's page, open **App Information** (left side). Under **General Information**, copy the **Apple ID** (a number about 10 digits long). It is not a secret.
+  6. Send the builder that number. The builder uploads the build to TestFlight and sets up your tester group.
+
+## Done: one key so builds reach TestFlight
+
+- [x] **7. Done 2026-11-24.** Create an App Store Connect API key and add it to Expo. With the owner's OK, the builder used it once to create the signing certificate and provisioning profile (D-083); uploads to TestFlight use it from Expo's servers. The key never goes in chat.
   1. Sign in at appstoreconnect.apple.com with the business Apple ID.
   2. Go to **Users and Access**, then the **Integrations** tab, then **App Store Connect API** (Team Keys). If asked, click **Request Access** and accept.
   3. Click **+** (Generate API Key). Name it `Expo EAS`. Access: **Admin**. Click **Generate**.
