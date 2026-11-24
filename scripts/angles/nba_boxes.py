@@ -12,7 +12,8 @@ JSON file per game under <cache>/nba-box/ (the workflow keeps the cache in actio
 A finished game's box score doesn't change, so a cached game is never fetched again.
 
 Usage:
-  python3 -I scripts/angles/nba_boxes.py --games data/history/nba_espn.csv --out data/history/nba_players_espn.csv --cache ~/.cache/espn-history
+  python3 -I scripts/angles/nba_boxes.py --games data/history/nba_espn.csv --out data/history/nba_players_espn.csv --cache ~/.cache/espn-history --no-names
+  python3 -I scripts/angles/nba_boxes.py --games game-lines-out/nba_current.csv --out game-lines-out/nba_players_current.csv --cache ~/.cache/espn-history
 """
 import argparse
 import csv
@@ -97,6 +98,7 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--cache", required=True)
     ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--no-names", action="store_true", help="leave names out (the committed history file; names come from this season's rows)")
     args = ap.parse_args()
     events = []
     for p in args.games:
@@ -117,8 +119,9 @@ def main() -> None:
             if done % 500 == 0:
                 print(f"{done}/{len(events)} games", flush=True)
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+    fields = [f for f in FIELDS if not (args.no_names and f == "name")]
     with open(args.out, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=FIELDS)
+        w = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore")
         w.writeheader()
         w.writerows(out)
     print(f"wrote {len(out)} player rows from {len(events) - len(missing)} games to {args.out}"
