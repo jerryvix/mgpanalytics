@@ -488,3 +488,7 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Date:** 2026-11-24 · **By:** Owner, on the first TestFlight build ("I have to scroll down and hold to read the bottom sentence... maybe a site logo... at the very bottom")
 **Fix:** the floating iOS tab bar covered the last row. Native tabs are meant to inset the first scroll view on their own, but that pass missed our lists, so Today, Games and Pulse set `contentInsetAdjustmentBehavior="automatic"` themselves (UIKit then insets by the tab's safe area, which includes the tab bar). The Analyst's composer sits above the tab bar through the tab's bottom safe area.
 **Footer:** Today, Games and Pulse end with the MGP mark (the green pulse in its tile, as in the top bar) and "MGP Analytics" in the small mono label style. No links or legal text there; those live in Profile.
+
+### D-087 Final games: winner bold, loser gray
+**Date:** 2026-11-24 · **By:** Owner ("If a game is over, bold the winning team and whatever score they had, and then gray out the losing team... If the game hasn't started yet, keep it the way it is now")
+**What:** on game rows (Today, Games) and the game page header, a final game shows the winning team's name and its score in semibold and the losing team's name and score in the tertiary gray. Upcoming and live games, and ties, stay as they were. The one exception to all-white text (D-064).

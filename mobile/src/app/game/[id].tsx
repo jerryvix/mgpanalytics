@@ -3,10 +3,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { matchupLabel } from '@/components/game-row';
+import { matchupLabel, winnerOf } from '@/components/game-row';
 import { Empty, Icon, Logo, Mono, OneLineText, SectionTitle, T } from '@/components/night';
 import { SplitsBlock } from '@/components/splits';
 import { TakeRow } from '@/components/take-row';
+import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useFeed, type Game } from '@/lib/feed';
 import { clock, whenLabel } from '@/lib/time';
@@ -16,6 +17,9 @@ export default function GameScreen() {
   const { id, sport } = useLocalSearchParams<{ id: string; sport: string }>();
   const { data, loading, error, reload } = useFeed<{ game?: Game }>({ view: 'game', id: id ?? '', sport: sport ?? 'NFL' });
   const g = data?.game;
+  const w = g ? winnerOf(g) : null;
+  // D-087: final games bold the winner's name and score and gray the loser's
+  const result = (side: 'away' | 'home') => (!w ? undefined : side === w ? { fontFamily: Font.semibold } : { color: c.textTertiary });
   const circle = { width: 44, height: 44, borderRadius: 22, backgroundColor: c.surface, alignItems: 'center' as const, justifyContent: 'center' as const };
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
@@ -32,13 +36,17 @@ export default function GameScreen() {
         {g ? (
           <>
             <View style={{ paddingHorizontal: 16, paddingTop: 14, gap: 8 }}>
-              {[g.away, g.home].map((t) => (
-                <View key={t.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <Logo uri={t.logo} size={38} />
-                  <T size={28} weight="medium" style={{ flex: 1, letterSpacing: -0.6 }}>{t.rank ? `#${t.rank} ` : ''}{t.name}</T>
-                  <T size={15}>{g.state === 'pre' ? t.record ?? '' : t.score ?? ''}</T>
-                </View>
-              ))}
+              {(['away', 'home'] as const).map((side) => {
+                const t = g[side];
+                const r = result(side);
+                return (
+                  <View key={t.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                    <Logo uri={t.logo} size={38} />
+                    <T size={28} weight="medium" style={[{ flex: 1, letterSpacing: -0.6 }, r ?? {}]}>{t.rank ? `#${t.rank} ` : ''}{t.name}</T>
+                    <T size={15} style={r ?? {}}>{g.state === 'pre' ? t.record ?? '' : t.score ?? ''}</T>
+                  </View>
+                );
+              })}
               <T size={15}>{[g.state === 'pre' ? whenLabel(g.start) : g.status, g.tv, g.line, g.total ? `O/U ${g.total}` : null].filter(Boolean).join(' · ')}</T>
             </View>
             <SectionTitle>Betting Splits</SectionTitle>
