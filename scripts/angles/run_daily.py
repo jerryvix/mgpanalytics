@@ -5,9 +5,10 @@
 2. Run the three engines: NFL (nflverse), college football and NBA (ESPN).
 3. Post the one line per game to the ingest-game-lines function with the run's GitHub
    OIDC token. With --dry-run, print instead of posting.
-4. Player lines (D-105): refresh this season's NBA box scores, run player_angles.py for the
-   NFL (next 7 days) and the NBA (next 2 days), and post the top 3 per game to
-   ingest-player-lines the same way. A failure here doesn't undo the game lines already stored.
+4. Player lines (D-105, D-106): refresh this season's NBA box scores, run player_angles.py for the
+   NFL (next 7 days) and the NBA (next 2 days), and post each game's verified candidates to
+   ingest-player-lines the same way, where the judge picks the line each game shows. A failure
+   here doesn't undo the game lines already stored.
 """
 import argparse
 import json
@@ -86,7 +87,7 @@ def main() -> None:
 
 
 def player_lines(args, w, hist: str) -> None:
-    """D-105: the top 3 player lines per upcoming NFL and NBA game."""
+    """D-105, D-106: each upcoming NFL and NBA game's verified candidates, judged and stored by ingest-player-lines."""
     run([os.path.join(HERE, "nba_boxes.py"), "--games", w("nba_current.csv"), "--out", w("nba_players_current.csv"),
          "--teams-out", w("nba_team_games_current.csv"), "--cache", args.cache])
     run([os.path.join(HERE, "player_angles.py"), "--league", "nfl", "--nflverse", args.nflverse_dir, "--season", str(args.cfb_season),
@@ -100,25 +101,40 @@ def player_lines(args, w, hist: str) -> None:
     for name in ("nfl_players.json", "nba_players.json"):
         for g in json.load(open(w(name))):
             if g.get("props"):   # a game with no props posted yet keeps whatever it had
-                games.append({"espn_event_id": g["espn_event_id"], "sport": g["sport"], "starts_at": g["starts_at"], "lines": g["lines"]})
-    print(f"{sum(len(g['lines']) for g in games)} player lines for {len(games)} games", flush=True)
+                games.append({k: g[k] for k in ("espn_event_id", "sport", "starts_at", "matchup", "context", "candidates")})
+    print(f"{sum(len(g['candidates']) for g in games)} verified candidates for {len(games)} games", flush=True)
     if args.dry_run or not args.player_ingest_url:
         for g in games:
-            for l in g["lines"]:
-                print(f"  {g['sport']:4} {g['espn_event_id']} #{l['rank']}: {l['text']}  ({l['short_name']} {l['side'][0].upper()} {l['line']:g} {l['market_short']})")
+            for c in g["candidates"][:3]:
+                print(f"  {g['sport']:4} {g['espn_event_id']} [{c['family']}] {c['sentence']}" + (f"  | {c['ticker']}" if c["ticker"] else ""))
         return
-    post(args.player_ingest_url, "mgp-ingest-player-lines", {"games": games})
+    # D-106: the judge picks each game's line in ingest-player-lines; a few games per call keeps each call
+    # short, and the angle types already shown travel with the batches so the slate stays varied
+    used, usage = {}, {"input_tokens": 0, "output_tokens": 0, "cost_usd": 0.0}
+    for i in range(0, len(games), 4):
+        out = post(args.player_ingest_url, "mgp-ingest-player-lines", {"games": games[i:i + 4], "angle_types_used": used})
+        used = out.get("angle_types_used", used)
+        for k in usage:
+            usage[k] += out.get("usage", {}).get(k, 0)
+        for c in out.get("chosen", []):
+            print(f"  {c['espn_event_id']} [{c['by']}] {c['text']}" + (f"  | {c['ticker']}" if c.get("ticker") else ""), flush=True)
+    print(f"judge: {usage['input_tokens']} input and {usage['output_tokens']} output tokens, about ${usage['cost_usd']:.4f}", flush=True)
 
 
-def post(url: str, audience: str, payload: dict) -> None:
+def post(url: str, audience: str, payload: dict) -> dict:
     req = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST", headers={
         "Content-Type": "application/json", "Authorization": "Bearer " + oidc(audience)})
     try:
-        with urllib.request.urlopen(req, timeout=120) as r:
-            print("ingest:", r.read().decode(), flush=True)
+        with urllib.request.urlopen(req, timeout=300) as r:
+            body = r.read().decode()
     except urllib.error.HTTPError as e:
         print("ingest failed:", e.code, e.read().decode()[:300])
         sys.exit(1)
+    print("ingest:", body[:300], flush=True)
+    try:
+        return json.loads(body)
+    except ValueError:
+        return {}
 
 
 if __name__ == "__main__":

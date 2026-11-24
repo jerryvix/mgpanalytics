@@ -64,7 +64,7 @@ export default function GameScreen() {
             {g.oneLine ? <View style={{ paddingHorizontal: 16, paddingTop: 14 }}><OneLineText line={g.oneLine} size={18} /></View> : null}
             {g.playerLine ? (
               <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
-                <OneLineText line={g.playerLine} size={18} note={propBet(g.playerLine)} />
+                <OneLineText line={g.playerLine} size={18} sub={playerLineSub(g.playerLine)} />
               </View>
             ) : null}
             {g.splits && !g.splitsPending ? <SourceNote /> : null}
@@ -82,7 +82,11 @@ export default function GameScreen() {
   );
 }
 
-/** The prop a player line is measured against: "J. Allen O 240.5 Pass Yds -110" (price dropped when missing). */
-function propBet(l: PlayerLine): string {
-  return formatPropBet({ shortName: l.short_name, side: l.side, line: l.line, market: l.market_short, price: l.price });
+/**
+ * The gray line under a player line (D-106): tonight's opponent's rank when the line needs it, then the
+ * prop: "CHI DEF 7th in Rush YPG Allowed · J. Gibbs Anytime TD", or just "D. Prescott O 263.5 Pass Yds".
+ */
+function playerLineSub(l: PlayerLine): string {
+  const bet = formatPropBet({ shortName: l.short_name, side: l.side, line: l.line, market: l.market_short, price: l.price });
+  return [l.ticker, bet].filter(Boolean).join(' · ');
 }

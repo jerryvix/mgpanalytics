@@ -76,12 +76,12 @@ export function Logo({ uri, size = 34 }: { uri?: string; size?: number }) {
 
 /**
  * The one line per game (D-075), marked with the green pulse. Bolds the record. The player line
- * (D-105) uses it too, with `note` naming the prop after the sentence in small gray mono:
- * "(J. Allen O 240.5 Pass Yds -110)".
+ * (D-105, D-106) uses it too, with `sub` under the sentence in small gray mono, normal case: the
+ * ticker and the prop, "CHI DEF 7th in Rush YPG Allowed · J. Gibbs Anytime TD".
  */
-export function OneLineText({ line, size = 14, note }: { line: Pick<OneLine, 'text' | 'record'>; size?: number; note?: string }) {
+export function OneLineText({ line, size = 14, sub }: { line: Pick<OneLine, 'text' | 'record'>; size?: number; sub?: string }) {
   const c = useTheme();
-  const i = line.text.indexOf(line.record);
+  const i = line.record ? line.text.indexOf(line.record) : -1;
   const parts = i >= 0 ? [line.text.slice(0, i), line.record, line.text.slice(i + line.record.length)] : [line.text, '', ''];
   const ats = parts[2].startsWith(' ATS') ? ' ATS' : '';
   return (
@@ -89,12 +89,14 @@ export function OneLineText({ line, size = 14, note }: { line: Pick<OneLine, 'te
       <View style={{ marginTop: 2 }}>
         <Icon name="waveform.path.ecg" size={size} color={c.brand} weight="semibold" />
       </View>
-      <T size={size} style={{ flex: 1, lineHeight: size * 1.35 }}>
-        {parts[0]}
-        <B>{parts[1] + ats}</B>
-        {parts[2].slice(ats.length)}
-        {note ? <Text style={{ color: c.textTertiary, fontFamily: Font.mono, fontSize: 12 }}>{` (${note})`}</Text> : null}
-      </T>
+      <View style={{ flex: 1, gap: 4 }}>
+        <T size={size} style={{ lineHeight: size * 1.35 }}>
+          {parts[0]}
+          <B>{parts[1] + ats}</B>
+          {parts[2].slice(ats.length)}
+        </T>
+        {sub ? <Text style={{ color: c.textTertiary, fontFamily: Font.mono, fontSize: 12, lineHeight: 16 }}>{sub}</Text> : null}
+      </View>
     </View>
   );
 }
