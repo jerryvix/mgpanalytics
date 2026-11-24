@@ -118,4 +118,5 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.delete-account]
-verify_jwt = true
+# The function checks the user's token itself (auth.getUser); the gateway check is off so ES256 user tokens always reach it
+verify_jwt = false

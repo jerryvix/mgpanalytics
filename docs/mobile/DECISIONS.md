@@ -558,3 +558,12 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Daft Previews (NBA props):** read from each new video's title and description through YouTube's public channel feed (allowed); its descriptions list the picks. Credited to the show (no host named); initials stand in until it has a logo.
 **Final Round Sports:** not added. Its descriptions say the plays are in a pinned comment, which the public feed doesn't include, and reading comments or captions would mean scraping YouTube.
 **Known gaps:** the Haiku extractor keeps only picks a host clearly endorses, so it can miss softer leans (Bear Bets' CFP episode gave 1 of about 5); college basketball picks stay out of Pulse until NCAAB ships.
+
+### D-099 Pre-submission audit: server and security fixes
+**Date:** 2026-11-24 · **By:** Owner ("do a pass for security, make sure onboarding... smooth"; cap of 50 questions a day), builder audit
+**Account deletion:** new `delete-account` function: checks the person's token itself, deletes their conversations (messages cascade), api_request_log, analyst_feedback and analyst_usage rows, then the auth user (everything else cascades). Safe to call twice. Gateway JWT check off because the function verifies the token (the project signs ES256).
+**The Analyst's limits:** at most 50 questions per person per day, counted in US Eastern time (`analyst_usage` table, service-role-only `increment_analyst_usage`; 429 "Daily limit reached"), on top of the 10 per minute burst limit. Requests are validated (roles, string content, images only through `images`, the newest question at most 4,000 characters); long chats are trimmed to the latest 20 messages and 30,000 characters instead of failing. An Anthropic spend limit is the owner's backstop (OWNER_ACTIONS item 10).
+**Removed:** `test-bdl`, a public test function with no auth that showed part of an API key. Not touched (no source in the repo): `fantasy-trade-grader`, `sync-nfl-odds`, `sync-nba-props`.
+**app-feed:** rejects malformed `date` and game `id` (400).
+**Passwords:** at least 8 characters and checked against known leaked passwords (website copy updated).
+**Open, owner:** custom SMTP (Resend) so confirmation and reset emails arrive (OWNER_ACTIONS 9), support email (11), privacy policy and terms approval (drafts in `docs/legal/`). **Open, builder:** limit the ingest functions' OIDC check to `main` once the branch is merged.
