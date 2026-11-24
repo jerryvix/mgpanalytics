@@ -50,7 +50,7 @@ The rule for v1: only what a brand-new user needs in the first week. Everything 
 | 3 | Games | Day strip and sport chips over the same rows, with a bell on each game (D-071) |
 | 4 | Game page | Betting Splits first (spread, total, moneyline), the one line, Trends, the shows' Takes on this game, odds detail; bell opens Alerts for This Game (D-055, D-075, D-076) |
 | 5 | Pulse | Betting Splits boards, Takes, Trends, Team Records (D-067, D-068) |
-| 6 | The Analyst | The grounded AI chat; account required; one-time consent screen for third-party AI (D-030) |
+| 6 | The Analyst | Claude Sonnet 5.5 answering like the Claude app: MGP's data first, live web search for the rest, sources named, no picks (D-080); account required; one-time consent screen for third-party AI (D-030); per-user limit later |
 | 7 | Profile | Alerts, Your Teams, Your Sports, Appearance, Account (sign in with Apple or email, sign out, **delete account**), Help and Feedback, legal and responsible gaming (D-077) |
 | 8 | Alerts | Set once (D-076): Before Kickoff with the latest splits, Money Moves, New Takes, Final Score, for your teams and the games you follow; Expo push (free) |
 
