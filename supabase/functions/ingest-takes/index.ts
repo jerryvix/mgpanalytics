@@ -95,7 +95,8 @@ serve(async (req) => {
 
   const transcript = segments.map((s) => `[${fmt(s.start)}] ${s.text}`).join("\n");
   const publishedAt = ep.pubDate ? new Date(ep.pubDate).toISOString() : new Date().toISOString();
-  const games = await upcomingGames(show.sports);
+  // A week ahead: football shows make Saturday picks on Monday.
+  const games = await upcomingGames(show.sports, 8);
   const candidates = candidatesFor(games, transcript);
   const byId = new Map(games.map((g) => [g.id, g]));
 
