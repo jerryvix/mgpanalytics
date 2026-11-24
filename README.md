@@ -2,6 +2,8 @@
 
 Sports analytics platform covering NFL, NBA, NCAAB, NCAAF, and MLB. Provides player stats, odds tracking with line-movement detection, and an AI-powered analyst chat.
 
+Agent lanes are in [AGENTS.md](AGENTS.md).
+
 ## Tech Stack
 
 - **Frontend** — React 18 + TypeScript, Vite, Tailwind CSS, shadcn/ui, Recharts

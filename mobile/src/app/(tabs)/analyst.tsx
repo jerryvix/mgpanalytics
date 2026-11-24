@@ -253,6 +253,11 @@ export default function AnalystScreen() {
         setMessages([...next, { role: 'assistant', content: "You've reached today's 50 questions. Ask again after midnight Eastern", failed: true }]);
         return;
       }
+      if (reply.paused) {
+        // The overall daily ceiling (D-109): not this person's doing, so no failure code
+        setMessages([...next, { role: 'assistant', content: 'The Analyst is taking a break for the rest of today. Ask again after midnight Eastern', failed: true }]);
+        return;
+      }
       const msg = reply.busy ? 'Lots of questions at once. Give it a minute and ask again' : "That one didn't go through. Try asking again";
       setMessages([...next, { role: 'assistant', content: msg, failed: true, reason: reply.reason }]);
       return;

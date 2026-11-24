@@ -28,6 +28,12 @@ import { bearerToken, isGuest } from "../_shared/guest.ts";
 // Daily cap per person (audit S2), counted per US Eastern day in analyst_usage
 // (migration 20261124070000_analyst_usage.sql). Set ANALYST_DAILY_LIMIT to change it.
 const DEFAULT_DAILY_LIMIT = 50;
+// Everyone together per US Eastern day (D-109). Set ANALYST_GLOBAL_DAILY_LIMIT to change it.
+const DEFAULT_GLOBAL_DAILY_LIMIT = 300;
+function globalDailyLimit(): number {
+  const n = Number.parseInt(Deno.env.get("ANALYST_GLOBAL_DAILY_LIMIT") ?? "", 10);
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_GLOBAL_DAILY_LIMIT;
+}
 function dailyLimit(): number {
   const n = Number.parseInt(Deno.env.get("ANALYST_DAILY_LIMIT") ?? "", 10);
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_DAILY_LIMIT;
@@ -1635,6 +1641,19 @@ serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (serviceKey) {
       const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+      // Spend backstop (D-109): everyone's questions today, checked first so a paused day
+      // doesn't use up anyone's own 50
+      const globalLimit = globalDailyLimit();
+      const { data: totalToday, error: totalError } = await admin.rpc("analyst_usage_total_today");
+      if (totalError) {
+        console.error("[gemini-chat] Daily total read failed:", totalError.message);
+      } else if (typeof totalToday === "number" && totalToday >= globalLimit) {
+        console.warn(`[gemini-chat] Overall daily limit (${globalLimit}) reached`);
+        return new Response(
+          JSON.stringify({ error: "Analyst paused for today" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const { data: usedToday, error: usageError } = await admin.rpc("increment_analyst_usage", { p_user_id: user.id });
       if (usageError) {
         console.error("[gemini-chat] Daily usage count failed:", usageError.message);
