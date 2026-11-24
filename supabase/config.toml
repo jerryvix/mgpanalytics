@@ -116,3 +116,6 @@ verify_jwt = false
 
 [functions.ingest-game-lines]
 verify_jwt = false
+
+[functions.app-feed]
+verify_jwt = false
