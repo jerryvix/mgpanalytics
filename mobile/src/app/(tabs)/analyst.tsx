@@ -14,13 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnswerFeedback } from '@/components/answer-feedback';
 import { Icon, Mono, T, TopBar } from '@/components/night';
+import { TAB_BAR_SPACE } from '@/constants/layout';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
 import { plainDashes } from '@/lib/plain-dashes';
-import { supabase } from '@/lib/supabase';
+import { askAnalyst } from '@/lib/analyst-api';
 
-type Msg = { role: 'user' | 'assistant'; content: string; sources?: { title: string; url: string }[]; failed?: boolean };
+type Msg = { role: 'user' | 'assistant'; content: string; sources?: { title: string; url: string }[]; failed?: boolean; reason?: string };
 
 const STARTERS = ["Where's the money tonight?", 'Any injuries to know for tonight?', 'How are the Bills ATS this season?'];
 const CONSENT_KEY = 'analyst-ai-notice-v2'; // v2: D-085 wording, shown again once
@@ -45,17 +46,16 @@ export default function AnalystScreen() {
     setMessages(next);
     setDraft('');
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke('gemini-chat', {
-      body: { messages: next.map(({ role, content }) => ({ role, content })) },
-    });
+    // Only real exchanges go back as context; failed replies stay on screen but not in the chat history.
+    const history = next.filter((m) => !m.failed).map(({ role, content }) => ({ role, content }));
+    const reply = await askAnalyst(history);
     setBusy(false);
-    if (error || !data?.content) {
-      const status = (error as { context?: { status?: number } } | null)?.context?.status;
-      const msg = status === 429 ? 'Lots of questions at once. Give it a minute and ask again' : "That one didn't go through. Try asking again";
-      setMessages([...next, { role: 'assistant', content: msg, failed: true }]);
+    if (!reply.ok) {
+      const msg = reply.busy ? 'Lots of questions at once. Give it a minute and ask again' : "That one didn't go through. Try asking again";
+      setMessages([...next, { role: 'assistant', content: msg, failed: true, reason: reply.reason }]);
       return;
     }
-    setMessages([...next, { role: 'assistant', content: plainDashes(data.content), sources: data.sources ?? [] }]);
+    setMessages([...next, { role: 'assistant', content: plainDashes(reply.content), sources: reply.sources }]);
   };
 
   const md = {
@@ -118,9 +118,10 @@ export default function AnalystScreen() {
   }
 
   return (
-    // Bottom edge: the tab's safe area includes the floating tab bar, so the composer sits above it (D-086).
-    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: c.bg }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={0}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
+      {/* The composer keeps TAB_BAR_SPACE below it so it clears the floating tab bar; the negative
+          offset lets it sit right on the keyboard when typing (D-090). */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }} keyboardVerticalOffset={-TAB_BAR_SPACE}>
         <ScrollView ref={scroll} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })} contentContainerStyle={{ paddingBottom: 16 }} keyboardShouldPersistTaps="handled">
           {header}
           {messages.length === 0 ? (
@@ -149,6 +150,7 @@ export default function AnalystScreen() {
                   ))}
                 </View>
               ) : null}
+              {m.failed && m.reason ? <Mono>{`Code: ${m.reason}`}</Mono> : null}
               {!m.failed ? <AnswerFeedback question={messages[i - 1]?.content ?? ''} answer={m.content} sources={m.sources} /> : null}
             </View>
           ))}
@@ -159,7 +161,7 @@ export default function AnalystScreen() {
             </View>
           ) : null}
         </ScrollView>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, paddingHorizontal: 12, paddingTop: 8, paddingBottom: TAB_BAR_SPACE + 8, borderTopWidth: 1, borderTopColor: c.border, backgroundColor: c.bg }}>
           <TextInput value={draft} onChangeText={setDraft} placeholder="Ask about any game" placeholderTextColor={c.textTertiary} multiline
             style={{ flex: 1, maxHeight: 120, color: c.text, fontFamily: Font.regular, fontSize: 16, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, backgroundColor: c.surface }} />
           <Pressable onPress={() => ask(draft)} disabled={!draft.trim() || busy} accessibilityLabel="Send"

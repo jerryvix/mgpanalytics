@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Divider, Empty, Footer, Logo, Mono, OneLineText, SectionTitle, Segs, T, TopBar } from '@/components/night';
 import { TakeRow } from '@/components/take-row';
+import { TAB_BAR_SPACE } from '@/constants/layout';
 import { useTheme } from '@/hooks/use-theme';
 import { useFeed, type BoardSide, type Pulse, type Take } from '@/lib/feed';
 import { fmtLine, whenLabel } from '@/lib/time';
@@ -69,7 +70,7 @@ export default function PulseScreen() {
   const { data, loading, error, reload } = useFeed<Pulse>({ view: 'pulse' });
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={c.text} />} contentContainerStyle={{ paddingBottom: 8 }}>
+      <ScrollView refreshControl={<RefreshControl refreshing={loading && !!data} onRefresh={reload} tintColor={c.text} />} contentContainerStyle={{ paddingBottom: TAB_BAR_SPACE }}>
         <TopBar />
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 6 }}>
           <T size={34} weight="medium" style={{ letterSpacing: -0.8 }}>Pulse</T>
