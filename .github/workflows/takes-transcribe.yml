@@ -1,18 +1,22 @@
-# Takes (DECISIONS D-062): free transcription of the Takes shows' newest pick
-# episodes with open-source Whisper. Proof run on push to the working branch;
-# a nightly schedule is added once the pipeline is wired to Supabase.
+# Takes (DECISIONS D-062, D-074): the daily job behind the Takes page.
+# Twice a day it transcribes each show's new podcast episodes with open-source Whisper
+# (free on GitHub's runners), then posts each transcript to the ingest-takes edge
+# function, which pulls the picks out with Claude Haiku 5.5 and stores them for the
+# site. Episodes already processed are skipped, so most runs take a few minutes.
+# Auth is GitHub's OIDC token (id-token: write); there is no stored secret.
 name: Takes transcribe
 
 on:
+  schedule:
+    # 12:17 PM and 5:47 PM Eastern (UTC times; off the hour so GitHub doesn't delay
+    # them). Morning shows post by late morning, game-day episodes by mid-afternoon.
+    - cron: "17 17 * * *"
+    - cron: "47 22 * * *"
   workflow_dispatch:
     inputs:
       per_show:
-        description: Episodes per show
-        default: "1"
-      any_title:
-        description: Take the newest episodes even without a picks word in the title
-        type: boolean
-        default: true
+        description: Newest episodes to check per show
+        default: "2"
   push:
     branches: [claude/exciting-euler-w6d8uw]
     paths:
@@ -21,11 +25,19 @@ on:
 
 permissions:
   contents: read
+  id-token: write
+
+concurrency:
+  group: takes-transcribe
+  cancel-in-progress: false
+
+env:
+  INGEST_URL: https://vwezujtftfccamoduglp.supabase.co/functions/v1/ingest-takes
 
 jobs:
   transcribe:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -37,14 +49,17 @@ jobs:
           path: ~/.cache/huggingface
           key: whisper-small-en-v1
       - run: pip install "faster-whisper>=1.1,<2"
-      - run: python scripts/takes/transcribe.py --per-show "${{ github.event.inputs.per_show || '1' }}" --any-title --out takes-out
+      - name: New episodes from every show
+        run: python scripts/takes/transcribe.py --per-show "${{ github.event.inputs.per_show || '2' }}" --any-title --ingest-url "$INGEST_URL" --out takes-out
       # Multi-sport shows: also take the newest NBA episode, so Takes carries a sport mix (owner, Nov 23)
       - name: Newest NBA episode from multi-sport shows
         env:
           NBA_TITLES: '\b(NBA|basketball|Lakers|Celtics|Knicks|Nets|76ers|Sixers|Raptors|Bulls|Cavaliers|Cavs|Pistons|Pacers|Bucks|Hawks|Hornets|Heat|Magic|Wizards|Nuggets|Timberwolves|Thunder|Blazers|Jazz|Warriors|Clippers|Suns|Mavericks|Mavs|Rockets|Grizzlies|Pelicans|Spurs)\b'
-        run: python scripts/takes/transcribe.py --shows early-edge --title-match "$NBA_TITLES" --per-show 1 --any-title --out takes-out
+        run: python scripts/takes/transcribe.py --shows early-edge --title-match "$NBA_TITLES" --per-show 1 --any-title --ingest-url "$INGEST_URL" --out takes-out
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: takes-transcripts
           path: takes-out
+          if-no-files-found: ignore
           retention-days: 7

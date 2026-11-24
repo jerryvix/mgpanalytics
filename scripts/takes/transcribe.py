@@ -13,8 +13,10 @@ import json
 import os
 import re
 import time
+import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
+from email.utils import parsedate_to_datetime
 
 # Mirrors supabase/functions/_shared/takes-sources.ts (podcast feeds)
 FEEDS = {
@@ -44,6 +46,26 @@ def newest_pick_episodes(feed_url: str, n: int, any_title: bool = False, title_m
     return out
 
 
+def github_oidc_token(audience: str) -> str:
+    """A fresh GitHub Actions OIDC token (needs `permissions: id-token: write`). The
+    ingest function verifies it against GitHub's public keys, so no secret is stored."""
+    url = os.environ["ACTIONS_ID_TOKEN_REQUEST_URL"] + "&audience=" + audience
+    req = urllib.request.Request(url, headers={"Authorization": "bearer " + os.environ["ACTIONS_ID_TOKEN_REQUEST_TOKEN"]})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.load(r)["value"]
+
+
+def ingest(url: str, payload: dict) -> dict:
+    body = json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=body, method="POST", headers={
+        "Content-Type": "application/json", "Authorization": "Bearer " + github_oidc_token("mgp-ingest-takes")})
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        return {"error": f"HTTP {e.code}: {e.read().decode(errors='replace')[:300]}"}
+
+
 def fmt(sec: float) -> str:
     return f"{int(sec // 60):02d}:{int(sec % 60):02d}"
 
@@ -57,6 +79,10 @@ def main() -> None:
                     help="take each show's newest episodes even without a picks word in the title (early-week leans live there too)")
     ap.add_argument("--shows", default="",
                     help="comma-separated show keys from FEEDS (default: all)")
+    ap.add_argument("--ingest-url", default="",
+                    help="post each new transcript to the ingest-takes function (GitHub Actions only) and skip episodes it already has")
+    ap.add_argument("--max-age-days", type=float, default=3,
+                    help="with --ingest-url, skip episodes published longer ago than this (their games are over)")
     ap.add_argument("--title-match", default="",
                     help="regex an episode title must match, e.g. NBA team names to pull a multi-sport show's newest basketball episode")
     args = ap.parse_args()
@@ -69,10 +95,26 @@ def main() -> None:
 
     from faster_whisper import WhisperModel  # imported late so --help works without it
 
+    known: set[str] = set()
+    if args.ingest_url:
+        known = set(ingest(args.ingest_url, {"action": "known"}).get("guids", []))
+        print(f"ingest: {len(known)} episodes already processed", flush=True)
+
     model = WhisperModel(args.model, device="cpu", compute_type="int8")
     for show in shows:
         feed = FEEDS[show]
         for ep in newest_pick_episodes(feed, args.per_show, args.any_title, title_match):
+            if args.ingest_url:
+                if ep["guid"] in known:
+                    print(f"skip (already processed): {show} | {ep['title']}", flush=True)
+                    continue
+                try:
+                    age_days = (time.time() - parsedate_to_datetime(ep["pubDate"]).timestamp()) / 86400
+                except (TypeError, ValueError):
+                    age_days = 0
+                if age_days > args.max_age_days:
+                    print(f"skip (older than {args.max_age_days:g} days): {show} | {ep['title']}", flush=True)
+                    continue
             slug = re.sub(r"[^a-z0-9]+", "-", ep["title"].lower()).strip("-")[:60]
             audio_path = os.path.join(args.out, f"{show}-{slug}.mp3")
             t0 = time.time()
@@ -92,6 +134,13 @@ def main() -> None:
             for s in segs:
                 print(f"[{fmt(s['start'])}] {s['text']}")
             print("### end", flush=True)
+            if args.ingest_url:
+                result = ingest(args.ingest_url, {"action": "ingest", "show": show,
+                                                  "episode": {"guid": ep["guid"], "title": ep["title"], "pubDate": ep["pubDate"],
+                                                              "audio_seconds": round(info.duration)},
+                                                  "segments": [{"start": s["start"], "text": s["text"]} for s in segs]})
+                print("ingest:", json.dumps(result), flush=True)
+                known.add(ep["guid"])
 
 
 if __name__ == "__main__":
