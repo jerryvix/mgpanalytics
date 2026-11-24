@@ -25,7 +25,7 @@ Apple enrollment confirmed approved by the owner on Nov 23.
 
 ## Now: create the App Store record (5 minutes)
 
-- [ ] **8. Create the app in App Store Connect and send its Apple ID.** The signing certificate is made and the first build is running; this record is where TestFlight puts it. The App Store name is public, so you pick it.
+- [x] **8. Done 2026-11-24 (Apple ID 6838568637).** Create the app in App Store Connect and send its Apple ID. The signing certificate is made and the first build is running; this record is where TestFlight puts it. The App Store name is public, so you pick it.
   1. Sign in at appstoreconnect.apple.com with the business Apple ID and open **Apps**.
   2. Click **+**, then **New App**.
   3. Platforms: **iOS**. Name: **MGP Analytics** (or the name you want on the App Store; 30 characters max, and it must not be taken). Primary Language: **English (U.S.)**.

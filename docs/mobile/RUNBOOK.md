@@ -30,11 +30,34 @@ npx expo export --platform ios   # bundles the JS for iOS; a quick check that ev
 
 The web app's lint and tests ignore `mobile/`. The app has its own `eslint.config.js`.
 
-## Build and ship to TestFlight (pending)
+## Build and ship to TestFlight
 
-## Over-the-air update (EAS Update) (pending)
+Signing is set up (D-083): Expo holds the distribution certificate and provisioning profile, and the App Store Connect key on Expo is assigned to this app for uploads. Build numbers auto-increment on Expo.
+
+```sh
+cd mobile
+EXPO_TOKEN=proxy-injected EXPO_APPLE_TEAM_ID=4939734628 npx -y eas-cli@latest build -p ios --profile production --non-interactive --no-wait --auto-submit
+```
+
+The build takes about 5 to 20 minutes, the upload runs on Expo's servers when it finishes, and Apple processes the build in about 5 to 15 minutes more. Everyone with the Admin role in App Store Connect is in the internal TestFlight group "Team (Expo)", which gets every build.
+
+If a build fails: `eas build:view <id> --json` gives `logFiles`; download with `curl --compressed` (the file is newline-delimited JSON with a `phase` per line).
+
+- The release bundle step (`EAGER_BUNDLE`) runs `npx expo export:embed --eager --platform ios --dev false`. Run that locally first to catch bundle errors in seconds.
+- Keep `web.output` at `single`. `server` makes that step load the app in Node, where the Supabase client's storage crashes.
+
+## Over-the-air update (EAS Update)
 
 When to use: JavaScript-only fixes that don't change native code or the app's purpose. Anything touching native modules, permissions or app.json native config needs a new store build.
+
+TestFlight and App Store builds listen on the `production` channel (runtime `exposdk:58.0.0`); Expo Go previews use `preview`.
+
+```sh
+cd mobile
+EXPO_TOKEN=proxy-injected npx -y eas-cli@latest update --channel production --environment production --message "<what changed>" --non-interactive
+```
+
+Testers get the update the second time they open the app (the first launch downloads it).
 
 ## App Store submission (pending)
 

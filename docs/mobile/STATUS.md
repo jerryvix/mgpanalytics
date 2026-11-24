@@ -4,8 +4,8 @@
 
 ## Blocked on owner
 
-- App Store Connect API key added to Expo (Nov 24). Signing certificate and profile created (D-083); first production build (1.0.0, build 2) started Nov 24.
-- Waiting on the owner: the App Store Connect app record and its Apple ID (`OWNER_ACTIONS.md` item 8), then upload to TestFlight.
+- App Store Connect API key added to Expo (Nov 24). Signing certificate and profile created (D-083).
+- **First TestFlight build uploaded Nov 24** (1.0.0, build 3; App Store Connect app 6838568637, internal group "Team (Expo)"). Build 2 failed at the release bundle step (`web.output: server` loaded Supabase storage in Node); fixed. Ahead of the ~Dec 2 target.
 
 ## Live (Nov 24)
 

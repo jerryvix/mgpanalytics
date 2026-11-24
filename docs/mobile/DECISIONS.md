@@ -467,3 +467,4 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 **Owner does:** creates the App Store Connect app record (the public App Store name is the owner's call) and sends its numeric Apple ID, which goes in `eas.json` as `submit.production.ios.ascAppId`.
 **Push notifications:** not set up yet. Apple's API can't create an APNs key, so alerts will need one owner step later (OWNER_ACTIONS).
 **Renewal:** the certificate needs replacing by Nov 2027; Expo flags it before it expires.
+**Done Nov 24:** the owner created the App Store Connect record "MGP Analytics" (Apple ID 6838568637, SKU `mgpanalytics-ios`), now `ascAppId` in `eas.json`. The stored key is assigned on Expo for uploads, which run on Expo's servers. Build 3 (1.0.0) uploaded to TestFlight; Expo created the internal group "Team (Expo)" with access to all builds and every App Store Connect admin in it. TestFlight builds take over-the-air updates on the `production` channel.
