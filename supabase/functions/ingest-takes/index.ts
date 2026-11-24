@@ -32,7 +32,8 @@ import { creditedPerson } from "../_shared/takes-grade.ts";
 const REPO = "jerryvix/mgpanalytics";
 const WORKFLOW = `${REPO}/.github/workflows/takes-transcribe.yml@`;
 const AUDIENCE = "mgp-ingest-takes";
-const ALLOWED_REFS = new Set(["refs/heads/main", "refs/heads/claude/exciting-euler-w6d8uw"]);
+// Only reviewed code on main may write production data (audit S5, D-101)
+const ALLOWED_REFS = new Set(["refs/heads/main"]);
 const JWKS = createRemoteJWKSet(new URL("https://token.actions.githubusercontent.com/.well-known/jwks"));
 
 // Display credit and hosts per feed key (mirrors scripts/takes/transcribe.py FEEDS,

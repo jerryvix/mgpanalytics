@@ -5,7 +5,8 @@ import { createRemoteJWKSet, jwtVerify } from "npm:jose@5.9.6";
 
 const JWKS = createRemoteJWKSet(new URL("https://token.actions.githubusercontent.com/.well-known/jwks"));
 const REPO = "jerryvix/mgpanalytics";
-const ALLOWED_REFS = new Set(["refs/heads/main", "refs/heads/claude/exciting-euler-w6d8uw"]);
+// Only reviewed code on main may write production data (audit S5, D-101)
+const ALLOWED_REFS = new Set(["refs/heads/main"]);
 
 /** null when the caller is the named workflow of this repo; otherwise why not. */
 export async function verifyGithubWorkflow(req: Request, audience: string, workflowFile: string): Promise<string | null> {

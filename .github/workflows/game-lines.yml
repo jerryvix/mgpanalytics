@@ -11,11 +11,6 @@ on:
     - cron: "23 14 * * *"
     - cron: "23 20 * * *"
   workflow_dispatch:
-  push:
-    branches: [claude/exciting-euler-w6d8uw]
-    paths:
-      - .github/workflows/game-lines.yml
-      - scripts/angles/**
 
 permissions:
   contents: read

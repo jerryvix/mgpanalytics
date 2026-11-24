@@ -19,11 +19,6 @@ on:
       max_new:
         description: Most new episodes to transcribe per show (every unprocessed one from the last 3 days, newest first)
         default: "6"
-  push:
-    branches: [claude/exciting-euler-w6d8uw]
-    paths:
-      - .github/workflows/takes-transcribe.yml
-      - scripts/takes/**
 
 permissions:
   contents: read
