@@ -19,6 +19,7 @@
 - Spend backstop: the Analyst pauses for the day after 300 questions from everyone together (D-109).
 - Privacy Policy, Terms of Use and Support live at mgp-analytics.com/privacy, /terms and /support (D-110). Named "MGP Analytics" until the LLC is filed.
 - Agent lanes with Grok Bot in `AGENTS.md` (D-111).
+- Game lines picked per day for variety, with many more NBA and college angles (D-115). The 400-angle catalog (`docs/mobile/research/angle-catalog.json`) is up for the owner's vote at https://claude.ai/artifact/NAirhaX7UN3vWLjAZMU2DF (private; votes in its `votes` collection, Love / Fine / Never per angle id). The votes decide what gets built next and how angles are weighted.
 
 ## Done
 
