@@ -278,12 +278,16 @@ class Context:
     def before(self, team: str, season: int, day: str) -> list[Played]:
         return [p for p in self.tl.get((team, season), []) if p.gameday < day]
 
-    def usual_qb(self, team: str, season: int, day: str) -> str | None:
-        """The team's usual starting QB going into this day: the most starts this season, at least 3, no tie."""
-        top = Counter(p.qb for p in self.before(team, season, day) if p.qb).most_common(2)
-        if not top or top[0][1] < 3 or (len(top) > 1 and top[1][1] == top[0][1]):
+    def usual_qbs(self, team: str, season: int, day: str) -> set[str] | None:
+        """The team's usual starting QBs going into this day: its Week 1 starter, and whoever has the most starts this
+        season (at least 3; a tie keeps both). So a QB who took the job (Penix) and a starter back from injury
+        (Darnold, after Lock's 6 starts) both count as usual. None before the team's fourth game."""
+        tl = [p for p in self.before(team, season, day) if p.qb]
+        if len(tl) < 3:
             return None
-        return top[0][0]
+        starts = Counter(p.qb for p in tl)
+        most = max(starts.values())
+        return {tl[0].qb} | ({q for q, n in starts.items() if n == most} if most >= 3 else set())
 
     def fresh(self, team: str, season: int, day: str) -> bool:
         """No game of this team before this one is still to be played (so last week's result is final)."""
@@ -349,12 +353,12 @@ def situation(ctx: Context, team: str, season: int, day: str) -> dict:
 
 
 def qb_change(ctx: Context, qb: str, team: str, season: int, day: str) -> bool | None:
-    """This game's starter isn't the team's usual starting QB (None when the file has no starter; False when
-    the team has no usual starter yet)."""
+    """This game's starter is neither the team's Week 1 starter nor its starter with the most starts (None when the
+    file has no starter; False before the team's fourth game)."""
     if not qb:
         return None
-    usual = ctx.usual_qb(team, season, day)
-    return usual is not None and qb != usual
+    usual = ctx.usual_qbs(team, season, day)
+    return usual is not None and qb not in usual
 
 
 def game_context(r: dict, side: str, ctx: Context) -> dict:
