@@ -18,7 +18,7 @@ round; 3-point spreads and +200 underdogs; totals of 50 or more and under 40; ag
 over or under .500, last season's playoff teams, Top-10 scoring defenses and division leaders;
 against the other conference; against division rivals that won the first meeting and last
 season's playoff opponents; against the other head coach; a coach against his former teams;
-without the Week 1 starter at QB, for either team; Eastern teams in the Pacific time zone,
+without their usual starting QB, for either team; Eastern teams in the Pacific time zone,
 West Coast teams with a 1 PM ET kickoff, international games; indoors or outdoors and grass
 or turf when it isn't the team's home setting. A condition is only used when the file says
 what it was for every game it could count, and never when it is true for nearly every game.
@@ -56,6 +56,7 @@ MIN_Z = 2.0             # strong tier: distance from a coin flip, in standard de
 FLOOR_RATE = 0.62       # fallback tier, used only when a game has no strong angle
 FLOOR_Z = 1.6
 RECENT_SEASONS = 2      # at least one game in the last two seasons
+MAX_WORDS = 18          # a longer sentence is dropped before picking
 TAUTOLOGY = 0.9         # D-118: a condition true for 90% or more of its games says nothing ("outdoors" for an outdoor team)
 OPP_GAMES = 6           # D-118: an opponent's record (over .500, division leader) counts from its 6th game
 DEF_GAMES = 4           # and its scoring-defense rank from its 4th
@@ -196,6 +197,7 @@ class Played:
     ot: bool
     line: float | None
     pa: float
+    qb: str = ""
 
 
 class Context:
@@ -225,7 +227,7 @@ class Context:
             groups[find(x)].add(x[1])
         self.division = {x: frozenset(groups[find(x)]) for x in parent}
         self.playoff_teams, self.playoff_pairs = defaultdict(set), defaultdict(set)
-        self.wk1, self.lastreg, self.first_unplayed, self.coach_first = {}, {}, {}, {}
+        self.lastreg, self.first_unplayed, self.coach_first = {}, {}, {}
         self.games_of: dict[tuple[str, int], list[dict]] = defaultdict(list)
         latest = max((r["gameday"] for r in played), default="")
         for r in games:
@@ -233,7 +235,6 @@ class Context:
             for side in ("home", "away"):
                 t = franchise(r[f"{side}_team"])
                 self.games_of[(t, s)].append(r)
-                self.wk1.setdefault((t, s), r[f"{side}_qb_name"])
                 if r["game_type"] == "REG":
                     self.lastreg[(t, s)] = max(self.lastreg.get((t, s), ""), r["gameday"])
                 if r["result"] == "" and r["gameday"] >= latest:   # a canceled game in the past never gets a result
@@ -271,11 +272,18 @@ class Context:
             line = (-spread if side == "home" else spread) if spread is not None else None
             outcome = "W" if margin > 0 else ("L" if margin < 0 else "T")
             pa = float(r[f"{other}_score"] or 0)
-            self.tl[(t, s)].append(Played(r["gameday"], outcome, margin, r["overtime"] == "1", line, pa))
+            self.tl[(t, s)].append(Played(r["gameday"], outcome, margin, r["overtime"] == "1", line, pa, r[f"{side}_qb_name"]))
             self.meet[(t, o, s)].append((r["gameday"], outcome))
 
     def before(self, team: str, season: int, day: str) -> list[Played]:
         return [p for p in self.tl.get((team, season), []) if p.gameday < day]
+
+    def usual_qb(self, team: str, season: int, day: str) -> str | None:
+        """The team's usual starting QB going into this day: the most starts this season, at least 3, no tie."""
+        top = Counter(p.qb for p in self.before(team, season, day) if p.qb).most_common(2)
+        if not top or top[0][1] < 3 or (len(top) > 1 and top[1][1] == top[0][1]):
+            return None
+        return top[0][0]
 
     def fresh(self, team: str, season: int, day: str) -> bool:
         """No game of this team before this one is still to be played (so last week's result is final)."""
@@ -340,6 +348,15 @@ def situation(ctx: Context, team: str, season: int, day: str) -> dict:
             "w": w, "l": l, "t": t, "n": len(tl)}
 
 
+def qb_change(ctx: Context, qb: str, team: str, season: int, day: str) -> bool | None:
+    """This game's starter isn't the team's usual starting QB (None when the file has no starter; False when
+    the team has no usual starter yet)."""
+    if not qb:
+        return None
+    usual = ctx.usual_qb(team, season, day)
+    return usual is not None and qb != usual
+
+
 def game_context(r: dict, side: str, ctx: Context) -> dict:
     """D-118: the facts about a game from one team's side that the new conditions test. The same function
     describes past games (for the records) and tonight's game (for which conditions are true)."""
@@ -373,8 +390,8 @@ def game_context(r: dict, side: str, ctx: Context) -> dict:
         intl=intl, site_tz="INTL" if intl else TEAM_TZ.get(tenant or ""),
         indoor={"dome": True, "closed": True, "outdoors": False, "open": False}.get(r["roof"]),
         surface=ctx.surface(r),
-        qb_change=(qb != ctx.wk1.get((team, season))) if qb else None,
-        opp_qb_change=(oqb != ctx.wk1.get((opp, season))) if oqb else None,
+        qb_change=qb_change(ctx, qb, team, season, day),
+        opp_qb_change=qb_change(ctx, oqb, opp, season, day),
         former=first is not None and first < season,
     )
 
@@ -498,6 +515,11 @@ FRAME = r"(in his career|this season|since (19|20)\d\d)"
 SHAPES = (re.compile(r"^(The [A-Z0-9][A-Za-z0-9]* are|[A-Z][A-Za-z.' -]+ is) \d+-\d+(-\d+)? ATS .+ " + FRAME + "$"),
           re.compile(r"^The (over|under) is \d+-\d+(-\d+)? in .+ games\b.* " + FRAME + "$"))
 BANNED = re.compile(r"[\u2013\u2014\u2212%]|points a game|\b(should|lock|bet|pick|have covered|have won|straight up)\b|^(Since|In his career|Under |Teams )", re.I)
+
+
+def short_enough(text: str) -> bool:
+    """A line stays one quick read: MAX_WORDS words at most (a record like 11-0-1 is one word)."""
+    return len(text.split()) <= MAX_WORDS
 
 
 def sentence_ok(text: str) -> bool:
@@ -635,9 +657,9 @@ def build_angles(game: dict, rows: list[Row], season: int, ctx: Context | None =
         elif c and rest - c["opp_rest"] <= -3:
             conds.append(("restadv", "with a rest deficit of 3 or more days", lambda r: r.rest - r.opp_rest <= -3))
         if c and c["qb_change"]:
-            conds.append(("qbchange", "without the Week 1 starter at QB", lambda r: r.qb_change))
+            conds.append(("qbchange", "without their usual starting QB", lambda r: r.qb_change))
         if c and c["opp_qb_change"]:
-            conds.append(("oppqbchange", "against teams without their Week 1 starter at QB", lambda r: r.opp_qb_change))
+            conds.append(("oppqbchange", "against teams without their usual starting QB", lambda r: r.opp_qb_change))
         if c and fresh_opp:
             if c["opp_over"]:
                 conds.append(("oppwin", "against teams over .500" if c["opp_over"] > 0 else "against teams under .500",
@@ -739,6 +761,8 @@ def build_angles(game: dict, rows: list[Row], season: int, ctx: Context | None =
                 if not good:
                     continue
                 parts = phrase_for(combo)
+                if kind == "coach":   # "Mike McCarthy is 12-4 ATS without his usual starting QB"
+                    parts = [ph.replace("without their usual", "without his usual") if ph.startswith("without") else ph for ph in parts]
                 relevance = (0.5 * bool(kinds & {"opp", "oppcoach", "former", "thanks", "xmas"}) + 0.3 * bool(kinds & {"playoff", "round"})
                              + 0.2 * bool(kinds & {"prime", "mnf", "snf", "tnf"}) + 0.1 * ("div" in kinds)
                              - 0.3 * bool(kinds & {"dec", "wk14"}))   # the month is a weak reason on its own (D-115)
@@ -762,6 +786,8 @@ def build_angles(game: dict, rows: list[Row], season: int, ctx: Context | None =
                     sample = [srows[i] for i in range(len(srows)) if sel >> i & 1]
                     last = max(r.season for r in sample)
                     text = render(metric, kind, who, name, parts, frame, w, l, p)
+                    if not short_enough(text):
+                        continue
                     if metric == "ats":
                         supports = side_label if rate > 0.5 else f"{game['away_team' if side == 'home' else 'home_team']} {fmt_line(-line)}"
                     else:
@@ -863,7 +889,7 @@ def self_test(games_path: str = "") -> None:
         (("ou", "team", "The Bengals", "Bengals", ["with a total of 50 or more"], "since 2024", 3, 9, 0), "The under is 9-3 in Bengals games with a total of 50 or more since 2024"),
         (("ats", "qb", "Jared Goff", "Lions", ["against Kevin O'Connell's teams"], "in his career", 6, 1, 0), "Jared Goff is 6-1 ATS against Kevin O'Connell's teams in his career"),
         (("ou", "team", "The Giants", "Giants", ["against division leaders"], "since 2024", 11, 3, 0), "The over is 11-3 in Giants games against division leaders since 2024"),
-        (("ats", "coach", "Mike McCarthy", "Steelers", ["without the Week 1 starter at QB"], "since 2006", 12, 4, 0), "Mike McCarthy is 12-4 ATS without the Week 1 starter at QB since 2006"),
+        (("ats", "coach", "Mike McCarthy", "Steelers", ["without his usual starting QB"], "since 2006", 12, 4, 0), "Mike McCarthy is 12-4 ATS without his usual starting QB since 2006"),
         (("ats", "team", "The Lions", "Lions", ["after losing as a favorite of 3 or more"], "since 2021", 8, 1, 0), "The Lions are 8-1 ATS after losing as a favorite of 3 or more since 2021"),
         (("ou", "team", "The Packers", "Packers", ["on the road", "on grass"], "since 2024", 10, 2, 0), "The over is 10-2 in Packers games on the road on grass since 2024"),
         (("ou", "coach", "Andy Reid", "Chiefs", ["at home", "in conference title games"], "since 1999", 2, 5, 0), "The under is 5-2 in Andy Reid's conference title games at home since 1999"),
@@ -890,6 +916,8 @@ def self_test(games_path: str = "") -> None:
     assert combo_ok((("role", "on the road", p), ("mnf", "on Monday night", p)))
     assert combo_ok((("div", "in division games", p), ("prev", "after a loss", p)))
     assert possessive("Todd Bowles") == "Todd Bowles'" and possessive("Andy Reid") == "Andy Reid's"
+    assert not short_enough("The over is 11-0-1 in Matthew Stafford's games against teams over .500 after winning by 17 or more in his career")
+    assert short_enough("The Bills are 21-9 ATS in December since 2021")
     assert night("Monday", "09:00", "Monday") and night("Thursday", "12:30", "Thursday") is False and night("Sunday", "", "Sunday") is None
     print(f"self-test: {len(cases)} sentences in both shapes and the wording guards pass")
     if games_path:
@@ -901,7 +929,7 @@ def self_test(games_path: str = "") -> None:
         for g in week:
             for a in build_angles(g, rows, int(g["season"]), ctx):
                 n += 1
-                if not sentence_ok(a.text):
+                if not sentence_ok(a.text) or not short_enough(a.text):
                     bad.append(a.text)
                 assert verify(a, idx), a.text
         assert not bad, bad[:10]
