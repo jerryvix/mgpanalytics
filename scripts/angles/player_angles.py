@@ -1,4 +1,4 @@
-"""Player lines (DECISIONS D-105, D-106): for every upcoming NFL and NBA game, true facts
+"""Player lines (DECISIONS D-105, D-106, D-119): for every upcoming NFL and NBA game, true facts
 about its players measured against that game's actual DraftKings prop number.
 
 "Dak Prescott has gone over 263.5 Pass Yds in 5 of his last 6 Thanksgiving games." A fact,
@@ -13,21 +13,27 @@ line a game shows and may reword it, never change its numbers.
 For each player and market with a line, it builds every condition that is TRUE for this
 game, alone and in pairs, and measures his record against the number in each:
   the defense     tonight's opponent at either end of the league this season (Pass YPG,
-                  Rush YPG and points allowed, yards to his position, sacks, blitz rate;
-                  NBA points and threes allowed, pace), with a ticker that names
+                  Rush YPG and points allowed, yards to his position, sacks, blitz rate,
+                  the top end of pressure rate and interceptions; NBA points, threes,
+                  rebounds and assists allowed, pace), with a ticker that names
                   tonight's opponent's exact rank: "CHI DEF 7th in Rush YPG Allowed"
   special dates   Thanksgiving, Christmas, season openers, season finales, international
-                  games, off a bye (at least 5 games, 80% or better)
+                  games, off a bye, the playoffs, NBA games back after missing five or more
+                  (at least 5 games, 80% or better)
   his team        his quarterback when it isn't the usual one, a top teammate out
   the matchup     this head coach (NFL), his former team, this opponent
   the setting     prime time, national TV, division, indoors or outdoors, the cold, wind,
-                  short week, back-to-backs and rest
+                  short week, back-to-backs, three games in four nights, rest, at Denver and Utah
   his form        after a big game, after going over or being held under this number,
-                  after heavy minutes
+                  after heavy minutes; his current streak against the number; a milestone
+                  just above the line ("30 or more Pts")
   plain splits    home or road, favorite or underdog, after a win or a loss
-over his last three seasons, this season, his games since joining a new team, his last
-10, and (for rare situations) every game in the data. Each sample is literally "his last
-n" such games. Over and under are both tried; a push counts as a miss for both.
+over his last three seasons, this season, his games since joining a new team, since moving
+into the starting lineup (NBA) or becoming the lead back (NFL), his last 10, and (for rare
+situations) every game in the data. Each sample is literally "his last n" such games: where
+the file can't say whether a condition held (a blank temperature) the sample stops there.
+Over and under are both tried; a push counts as a miss for both. A sentence over 20 words
+is dropped (after one try with the shortest verb).
 
 A condition has to leave out at least a quarter of his games in the window (a QB who
 started every one of them, "this season" for a rookie, are not stats). A line needs a
@@ -45,6 +51,7 @@ Usage:
 snap_counts_<s>.csv and advstats_week_pass_<s>.csv.
 """
 import argparse
+import bisect
 import csv
 import gzip
 import json
@@ -80,6 +87,16 @@ SEASON_CHECK = {"NFL": 4, "NBA": 5}   # with this many games this season, a line
 SPECIAL_MIN_GAMES, SPECIAL_RATE, SPECIAL_Z = 5, 0.80, 1.3   # special dates: small samples, high bar
 FRESH_SHARE = 0.5           # at least half the sample from this season and the two before, or it ranks last
 PAIR_PENALTY = 0.6
+MAX_WORDS = 20              # a longer sentence is dropped before ranking (D-118's 18-word spirit; names take a word or two)
+STREAK_MIN = {"NFL": 7, "NBA": 8}   # "in 9 straight games": his current run against tonight's number (D-119)
+# Milestones (D-119): a round number just above tonight's line, shown beside it ("has scored 30 or more Pts" over
+# "G. Antetokounmpo O 28.5 Pts"). Only the next one up, more than 1 above the line (25 over a 24.5 line is the line
+# itself) and within a quarter of it; over only, so "30 or more" always means over the line too
+MILESTONES = {"pts": (20, 25, 30, 35, 40, 45, 50), "reb": (10, 15, 20), "ast": (10, 15),
+              "pass_yds": (250, 300, 350), "rush_yds": (100, 150), "rec_yds": (100, 150)}
+MILESTONE_VERBS = {"pts": ("scored", "put up", "posted"), "": ("put up", "posted", "had")}
+ALTITUDE = {"7": "Denver", "26": "Utah"}   # ESPN ids of the NBA's two mile-high arenas (D-119)
+ROLE_BEFORE = {"NBA": 5, "NFL": 3}   # games out of the role right before the run, so "since moving into" is a real move
 TOP_N = 3                   # stored per game
 CANDIDATES = 12             # sent to the judge per game
 CHECKED = 120               # the best candidates per game that go through the check pass
@@ -167,20 +184,26 @@ DEF_FEATURES = {
     "rec_RB": {"top": "Top-10 defenses against RBs", "bottom": "Bottom-10 defenses against RBs", "ticker": "Rec YPG Allowed to RBs"},
     "sacks":  {"more": True, "top": "Top-10 pass rushes", "bottom": "Bottom-10 pass rushes", "ticker": "Sacks"},
     "blitz":  {"more": True, "top": "blitz-heavy defenses", "bottom": "defenses that rarely blitz", "ticker": "Blitz Rate"},
+    # D-119: pressures per dropback (PFR) and interceptions a game, named only at the top end, as the catalog does
+    "press":  {"more": True, "top": "pressure-heavy defenses", "ticker": "Pressure Rate"},
+    "intd":   {"more": True, "top": "ball-hawking defenses", "ticker": "INTs"},
     "pa":     {"top": "Top-10 scoring defenses", "bottom": "Bottom-10 scoring defenses", "ticker": "Pts Allowed"},
     "fg3a":   {"top": "Top-10 three-point defenses", "bottom": "Bottom-10 three-point defenses", "ticker": "3PM Allowed"},
     "pace":   {"more": True, "top": "fast-paced teams", "bottom": "slow-paced teams", "ticker": "Pace"},
+    # D-119: rebounds and assists the opponent's players get a game, from the box scores
+    "rba":    {"top": "Top-10 rebounding teams", "bottom": "Bottom-10 rebounding teams", "ticker": "Reb Allowed"},
+    "asta":   {"top": "Top-10 assist defenses", "bottom": "Bottom-10 assist defenses", "ticker": "Ast Allowed"},
 }
 # which defense features speak to which markets ("rec_POS" = yards allowed to his position; "@RB" = only for backs)
 FEATURES_FOR = {
-    "pass_yds": ["pass", "blitz", "sacks"], "pass_rush_yds": ["pass", "blitz", "sacks"],
-    "completions": ["pass", "blitz"], "pass_att": ["pass", "blitz"],
-    "pass_tds": ["pts", "pass", "blitz"], "ints": ["blitz", "pass", "sacks"],
+    "pass_yds": ["pass", "blitz", "press", "sacks"], "pass_rush_yds": ["pass", "blitz", "press", "sacks"],
+    "completions": ["pass", "blitz", "press"], "pass_att": ["pass", "blitz", "press"],
+    "pass_tds": ["pts", "pass", "blitz", "press", "intd"], "ints": ["blitz", "press", "intd", "pass", "sacks"],
     "rush_yds": ["rush"], "rush_rec_yds": ["rush"], "carries": ["rush"],
     "rec_yds": ["rec_POS", "pass"], "receptions": ["rec_POS", "pass"],
     "anytime_td": ["pts", "rush@RB", "rec_POS@WR", "rec_POS@TE"],
     "pts": ["pa", "pace"], "pts_reb": ["pa", "pace"], "pts_ast": ["pa", "pace"], "pra": ["pa", "pace"], "fg3": ["fg3a", "pace"],
-    "reb": ["pace"], "ast": ["pace"], "reb_ast": ["pace"], "stl": ["pace"], "blk": ["pace"],
+    "reb": ["rba", "pace"], "ast": ["asta", "pace"], "reb_ast": ["pace"], "stl": ["pace"], "blk": ["pace"],
 }
 BIG_GAMES = {   # (stat, threshold, phrase) for "after a big game", by market family
     "pass": ("passing_yards", 300, "after a 300-yard passing game"),
@@ -190,13 +213,17 @@ BIG_GAMES = {   # (stat, threshold, phrase) for "after a big game", by market fa
 }
 SPECIAL = {   # kind -> (adjective, noun) for the games phrase
     "thanksgiving": ("Thanksgiving", "games"), "christmas": ("Christmas", "games"), "intl": ("international", "games"),
-    "week1": ("", "season openers"), "finale": ("", "season finales"),
+    "week1": ("", "season openers"), "finale": ("", "season finales"), "playoff": ("playoff", "games"),
 }
 # Families, in the engine's order of preference (the judge has the final say, D-106)
 FAMILY = {"defense": "defense", "special": "special", "out": "teammates", "qbout": "teammates", "qb": "teammates",
           "coach": "coach", "former": "coach", "opp": "opponent", "prime": "setting", "tv": "setting", "div": "setting",
-          "roof": "setting", "cold": "setting", "wind": "setting", "rest": "setting", "own": "form", "big": "form",
-          "mins": "form", "role": "plain", "fd": "plain", "bigline": "plain", "prev": "plain"}
+          "roof": "setting", "cold": "setting", "wind": "setting", "rest": "setting", "alt": "setting", "own": "form",
+          "big": "form", "mins": "form", "role": "plain", "fd": "plain", "bigline": "plain", "prev": "plain"}
+# Windows that run from a change in his situation to now: "in 9 of his 11 games since joining the Heat",
+# "since moving into the starting lineup" (NBA box scores' starter flag), "since becoming the lead back" (NFL snap counts)
+SINCE = {"team": "since joining the {team}", "starter": "since moving into the starting lineup", "lead": "since becoming the lead back",
+         "starter_again": "since returning to the starting lineup", "lead_again": "since becoming the lead back again"}
 TIER = {"defense": 1, "special": 1, "teammates": 2, "coach": 3, "opponent": 4, "setting": 5, "form": 6, "plain": 7, "none": 8}
 BOOST = {"defense": 1.5, "special": 1.5, "teammates": 1.5, "coach": 1.4, "opponent": 1.0, "setting": 0.7, "form": 0.5, "plain": 0.0}
 MATCHUP = {"defense", "coach", "former", "out", "qbout", "qb", "cold", "wind", "opp"}   # one of a pair must be one of these
@@ -272,9 +299,14 @@ class PG:
     wind: float | None = None
     qb: str = ""          # his team's starting quarterback that game (most pass attempts)
     coach_opp: str = ""   # the opposing head coach (NFL)
-    special: frozenset = frozenset()   # thanksgiving, christmas, week1, finale, intl
+    special: frozenset = frozenset()   # thanksgiving, christmas, week1, finale, intl, playoff
     defense: dict = field(default_factory=dict)    # feature -> (rank, teams ranked, value) for the opponent at the time
     prev: dict = field(default_factory=dict)       # his previous game this season: market values, plus raw extras
+    g4: int = 1           # his team's games in the four nights ending with this one (NBA)
+    starter: bool | None = None   # he started (NBA box scores); None when the file doesn't say
+    lead: bool | None = None      # his team's lead back that game, most RB snaps (NFL); None when the file doesn't say
+    back: bool | None = False     # his first game back after missing five or more of his team's games in a row (NBA);
+                                  # None when the file can't tell (a game with no box score in between, a trade)
 
 
 @dataclass
@@ -288,6 +320,8 @@ class Cond:
     team_only: bool = False   # about his current team (QB, teammates): share measured on his games for it
     feature: str = ""     # the defense feature, for the ticker and the angle type
     ticker: str | None = None
+    known: object = None  # g -> whether the file says if the condition held; "his last n" stops at a game it can't say
+                          # (a blank temperature), so the sample never skips a game that might have counted
 
     @property
     def family(self) -> str:
@@ -320,6 +354,7 @@ class Angle:
     sample: list = field(default_factory=list)   # [(game key, value)] newest first
     prominence: float = 0.0
     recent_share: float = 1.0
+    mark: float | None = None   # a milestone above the line ("30 or more Pts"), graded instead of the line (D-119)
 
     @property
     def kinds(self) -> tuple:
@@ -341,15 +376,17 @@ class Angle:
 
     @property
     def family(self) -> str:
-        if self.window == "team" and not self.conds:
-            return "form"
+        if not self.conds and (self.window in SINCE or self.window == "streak" or self.mark is not None):
+            return "form"   # his own run: since a change, a streak, a milestone
         fams = [c.family for c in self.conds]
         return min(fams, key=lambda f: TIER[f]) if fams else "none"
 
     @property
     def angle_type(self) -> str:
+        if self.mark is not None and not self.conds:
+            return "form:milestone"
         best = [c for c in self.conds if c.family == self.family]
-        return best[0].angle_type if best else f"{self.family}:{self.window}"
+        return best[0].angle_type if best else f"{self.family}:{self.window.removesuffix('_again')}"
 
     @property
     def ticker(self) -> str | None:
@@ -363,10 +400,12 @@ class Angle:
     @property
     def score(self) -> float:
         credibility = min(1.0, 0.4 * math.log2(max(1, self.games) / CFG[self.sport]["min_games"])) if self.games >= CFG[self.sport]["min_games"] else 0.0
-        words = len(self.text.split())
-        relevance = sum(BOOST.get(c.family, 0) for c in self.conds) + (0.6 if self.window == "team" else 0) - (0.8 if self.window == "last10" else 0)
+        length = words(self.text)
+        relevance = (sum(BOOST.get(c.family, 0) for c in self.conds) + (0.6 if self.window in SINCE else 0)
+                     + (0.3 if self.window == "streak" else 0) - (0.8 if self.window == "last10" else 0)
+                     - (0.3 if self.mark is not None else 0))   # a milestone sits beside the line, so the line's own record comes first
         return (3 * self.rate + 0.35 * min(self.z, 4) + 0.5 * min(self.zbase, 4) + relevance + self.prominence + credibility
-                - PAIR_PENALTY * max(0, len(self.conds) - 1) - 0.06 * max(0, words - 20))
+                - PAIR_PENALTY * max(0, len(self.conds) - 1) - 0.06 * max(0, length - 20))
 
     @property
     def order(self):
@@ -381,6 +420,11 @@ def zscore(h: int, n: int, p: float = 0.5) -> float:
 
 def fmt_num(x: float) -> str:
     return f"{x:g}"
+
+
+def words(text: str) -> int:
+    """Words as a reader counts them: "Pts + Reb" is two."""
+    return sum(1 for w in text.split() if w != "+")
 
 
 # ---------------------------------------------------------------- fetching
@@ -477,7 +521,10 @@ def fetch_injuries(sport: str, event_id: str) -> dict:
     return out
 
 
-def scoreboard(sport: str, days: int) -> list[dict]:
+def scoreboard(sport: str, days: int, others: list | None = None) -> list[dict]:
+    """The games still to start in the next `days` days. `others` collects every other game in those days
+    (live or finished) as (event id, start, team ids), so a later game can tell its team's earlier one isn't in the
+    history yet."""
     now = datetime.now(ET)
     events, seen = [], set()
     for i in range(days):
@@ -490,11 +537,26 @@ def scoreboard(sport: str, days: int) -> list[dict]:
             continue
         for e in data.get("events", []):
             c = e["competitions"][0]
-            if c["status"]["type"]["state"] != "pre" or e["id"] in seen:
+            if e["id"] in seen:
                 continue
             seen.add(e["id"])
+            if c["status"]["type"]["state"] != "pre":
+                if others is not None:
+                    others.append((e["id"], e["date"], {x["team"]["id"] for x in c["competitors"]}))
+                continue
             events.append(e)
     return events
+
+
+def pending_teams(events: list[dict], others: list, recorded) -> dict:
+    """{event id: team ids with an earlier game in the window that isn't in the history yet}: for those teams this
+    game's last result, rest and the player's previous game aren't known (D-119)."""
+    games = [(e["id"], e["date"], {x["team"]["id"] for x in e["competitions"][0]["competitors"]}) for e in events]
+    games += [o for o in others if not recorded(o[0])]
+    out = {}
+    for ev, start, teams in games:
+        out[ev] = {t for t in teams if any(s < start and t in ts for _, s, ts in games)}
+    return out
 
 
 # ---------------------------------------------------------------- shared history helpers
@@ -570,7 +632,8 @@ class History:
 
 # ---------------------------------------------------------------- NFL
 NFL_DEF_SPEC = {"pass": ("pass", None), "rush": ("rush", None), "rec_WR": ("rec_WR", None), "rec_TE": ("rec_TE", None),
-                "rec_RB": ("rec_RB", None), "pts": ("pts", None), "sacks": ("sacks", None), "blitz": ("blitzed", "dropbacks_adv")}
+                "rec_RB": ("rec_RB", None), "pts": ("pts", None), "sacks": ("sacks", None), "blitz": ("blitzed", "dropbacks_adv"),
+                "press": ("pressured", "dropbacks_adv"), "intd": ("ints_def", None)}
 
 
 def nfl_special(g: dict, last_week: dict) -> frozenset:
@@ -585,6 +648,8 @@ def nfl_special(g: dict, last_week: dict) -> frozenset:
             out.add("finale")
         if g["location"] == "Neutral" and INTL_STADIUMS.search(g.get("stadium") or ""):
             out.add("intl")
+    elif g["game_type"] in ("WC", "DIV", "CON", "SB"):
+        out.add("playoff")
     if d.month == 12 and d.day == 25:
         out.add("christmas")
     return frozenset(out)
@@ -605,8 +670,10 @@ class NFLData(History):
         self.espn_to_gsis = {p["espn_id"]: p["gsis_id"] for p in players if p["espn_id"]}
         self.gsis_to_espn = {p["gsis_id"]: p["espn_id"] for p in players if p["espn_id"]}
         self.pfr_to_gsis = {p["pfr_id"]: p["gsis_id"] for p in players if p["pfr_id"]}
+        self.gsis_to_pfr = {p["gsis_id"]: p["pfr_id"] for p in players if p["pfr_id"]}
         self.raw: dict[tuple, dict] = {}
         self.snaps: dict[tuple, str] = {}
+        self.rb_snaps: dict[tuple, dict] = defaultdict(dict)   # (game, team) -> {PFR id: offensive snaps} of its RBs
         self.adv_pass = []
         for s in range(CFG["NFL"]["since"], season + 1):
             path = os.path.join(d, f"stats_player_week_{s}.csv")
@@ -620,6 +687,8 @@ class NFLData(History):
                     gs = self.pfr_to_gsis.get(r["pfr_player_id"])
                     if gs and r["position"] in SKILL and float(r["offense_snaps"] or 0) > 0 and r["game_id"] in self.gidx:
                         self.snaps[(gs, r["game_id"])] = franchise(r["team"])
+                    if r["position"] == "RB" and r["game_id"] in self.gidx:
+                        self.rb_snaps[(r["game_id"], franchise(r["team"]))][r["pfr_player_id"]] = float(r["offense_snaps"] or 0)
             path = os.path.join(d, f"advstats_week_pass_{s}.csv")
             if os.path.exists(path):
                 self.adv_pass.extend(r for r in csv.DictReader(open(path)) if r["game_id"] in self.gidx)
@@ -681,6 +750,7 @@ class NFLData(History):
             d["pass"] += float(r["passing_yards"] or 0)
             d["rush"] += float(r["rushing_yards"] or 0)
             d["sacks"] += float(r["sacks_suffered"] or 0)
+            d["ints_def"] += float(r["passing_interceptions"] or 0)
             pos = (self.info.get(pid) or {}).get("position") or r["position"]
             pos = "RB" if pos == "FB" else pos
             if pos in ("WR", "TE", "RB"):
@@ -691,6 +761,7 @@ class NFLData(History):
             if d is None or st is None:
                 continue
             d["blitzed"] += float(r["times_blitzed"] or 0)
+            d["pressured"] += float(r["times_pressured"] or 0)
             d["dropbacks_adv"] += float(st["attempts"] or 0) + float(st["sacks_suffered"] or 0)
         per_season = defaultdict(list)
         for (s, gid, team, day), vals in allowed.items():
@@ -714,13 +785,23 @@ class NFLData(History):
                            neutral=c["neutral"], vals=vals, pos="RB" if pos == "FB" else pos, prev_team=c["prev"],
                            rest=c["rest"], spread=c["spread"], div=c["div"], prime=c["prime"], roof=c["roof"],
                            temp=c["temp"], wind=c["wind"], qb=self.qb.get((gid, team), ""), coach_opp=c["coach_opp"],
-                           special=c["special"], defense={f: t[c["opp"]] for f, t in table.items() if c["opp"] in t}))
+                           special=c["special"], defense={f: t[c["opp"]] for f, t in table.items() if c["opp"] in t},
+                           lead=self.lead_of(pid, gid, team)))
 
         def extras(g):
             r = self.raw.get((g.player, g.key)) or {}
             return {k: float(r.get(k) or 0) for k in ("passing_yards", "rushing_yards", "receiving_yards")}
         link_previous(rows, extras)
         self.index(rows)
+
+    def lead_of(self, pid: str, gid: str, team: str) -> bool | None:
+        """Was he his team's lead back that game (the most offensive snaps among its RBs, from the snap counts)?
+        None when the snap counts don't have him for that game."""
+        snaps = self.rb_snaps.get((gid, team))
+        pfr = self.gsis_to_pfr.get(pid)
+        if not snaps or not pfr or snaps.get(pfr, 0) <= 0:
+            return None
+        return snaps[pfr] >= max(snaps.values())
 
     def name(self, pid: str) -> str:
         return (self.info.get(pid) or {}).get("display_name", "")
@@ -752,14 +833,35 @@ class NFLData(History):
         """The situational facts of a past game, read again from games.csv for the check pass."""
         g = self.gidx[gid]
         _, home, _ = self.raw_side(pid, gid)
+        indoor = g["roof"] in ("dome", "closed")
         return {"prime": (g["gametime"] or "00:00") >= "19:00", "div": g["div_game"] == "1",
-                "roof": "outdoor" if g["roof"] in ("outdoors", "open") else ("indoor" if g["roof"] in ("dome", "closed") else ""),
+                "roof": "outdoor" if g["roof"] in ("outdoors", "open") else ("indoor" if indoor else ""),
                 "cold": bool(g["temp"]) and float(g["temp"]) < 35, "coach": g["away_coach" if home else "home_coach"],
-                "special": nfl_special(g, self.last_week)}
+                "special": nfl_special(g, self.last_week),
+                "known": {"cold": indoor or bool(g["temp"]), "wind": indoor or bool(g["wind"])}}
 
 
 # ---------------------------------------------------------------- NBA
-NBA_DEF_SPEC = {"pa": ("pts_allowed", None), "fg3a": ("fg3_allowed", None), "pace": ("poss", None)}
+NBA_DEF_SPEC = {"pa": ("pts_allowed", None), "fg3a": ("fg3_allowed", None), "pace": ("poss", None),
+                "rba": ("reb_allowed", None), "asta": ("ast_allowed", None)}
+ABSENCE = 5     # "back after missing five or more": his team's games in a row without him (D-119)
+
+
+def playoff_starts(games) -> dict:
+    """{season: first day of the playoffs}: ESPN's postseason flag covers the play-in too, whose three days have two
+    games each; the first round opens with four. So the playoffs start on the first postseason day with 3 or more games."""
+    per_day = defaultdict(lambda: defaultdict(int))
+    for g in games:
+        if g.get("postseason") == "1" and g["home_pts"] != "":
+            day = datetime.fromisoformat(g["start"].replace("Z", "+00:00")).astimezone(ET).date()
+            per_day[int(g["season"])][day] += 1
+    return {s: min(d for d, n in days.items() if n >= 3) for s, days in per_day.items() if any(n >= 3 for n in days.values())}
+
+
+def games_in_four(before: list, t: str) -> int:
+    """This game plus his team's games in the three days before it: 3 = "three games in four nights"."""
+    day = date.fromisoformat(t[:10])
+    return 1 + sum(1 for pt, _ in before[-4:] if 0 < (day - date.fromisoformat(pt[:10])).days <= 3)
 
 
 class NBAData(History):
@@ -788,9 +890,12 @@ class NBAData(History):
         last = {}
         records = defaultdict(list)
         self.team_games = defaultdict(list)   # team -> [(t, event)] of every finished game
-        fg3 = defaultdict(int)
+        fg3, reb, ast = defaultdict(int), defaultdict(int), defaultdict(int)
         for (aid, ev), r in self.raw.items():
             fg3[(ev, r["team_id"])] += int(r["fg3"])
+            reb[(ev, r["team_id"])] += int(r["reb"])
+            ast[(ev, r["team_id"])] += int(r["ast"])
+        self.playoffs = playoff_starts(games)
 
         def poss(b):
             return float(b["fga"]) - float(b["oreb"]) + float(b["tov"]) + 0.44 * float(b["fta"])
@@ -803,7 +908,9 @@ class NBAData(History):
             hp, ap = float(g["home_pts"]), float(g["away_pts"])
             hb, ab = self.team_box.get((g["event_id"], g["home_id"])), self.team_box.get((g["event_id"], g["away_id"]))
             tv = bool(hb and hb.get("national_tv") == "1")
-            special = frozenset({"christmas"} if (start.month, start.day) == (12, 25) else set())
+            special = set({"christmas"} if (start.month, start.day) == (12, 25) else set())
+            if g.get("postseason") == "1" and s in self.playoffs and start.date() >= self.playoffs[s]:
+                special.add("playoff")
             for side in ("home", "away"):
                 tid, oid = g[f"{side}_id"], g["away_id" if side == "home" else "home_id"]
                 prev_t, prev_res = last.get((tid, s), (None, ""))
@@ -812,13 +919,15 @@ class NBAData(History):
                 self.context[(g["event_id"], tid)] = {
                     "opp": oid, "home": side == "home", "neutral": g["neutral"] == "1", "season": s, "t": t, "tv": tv,
                     "spread": None if hl is None else (hl if side == "home" else -hl), "rest": rest, "prev": prev_res,
-                    "special": special,
+                    "special": frozenset(special), "g4": games_in_four(self.team_games[tid], t),
                 }
                 self.team_games[tid].append((t, g["event_id"]))
             for me, other, pts_against in ((g["home_id"], g["away_id"], ap), (g["away_id"], g["home_id"], hp)):
                 vals = {"pts_allowed": pts_against}
                 if (g["event_id"], other) in fg3:
                     vals["fg3_allowed"] = float(fg3[(g["event_id"], other)])
+                    vals["reb_allowed"] = float(reb[(g["event_id"], other)])
+                    vals["ast_allowed"] = float(ast[(g["event_id"], other)])
                 if hb and ab:
                     vals["poss"] = (poss(hb) + poss(ab)) / 2
                 records[s].append((t[:10], me, vals))
@@ -837,7 +946,8 @@ class NBAData(History):
             table = self.tables.get((c["season"], c["t"][:10]), {})
             rows.append(PG(key=ev, season=c["season"], t=c["t"], player=aid, team=r["team_id"], opp=c["opp"], home=c["home"],
                            neutral=c["neutral"], vals=vals, prev_team=c["prev"], rest=c["rest"], spread=c["spread"], tv=c["tv"],
-                           special=c["special"], defense={f: tb[c["opp"]] for f, tb in table.items() if c["opp"] in tb}))
+                           special=c["special"], defense={f: tb[c["opp"]] for f, tb in table.items() if c["opp"] in tb},
+                           g4=c["g4"], starter={"1": True, "0": False}.get(r.get("starter", ""))))
         link_previous(rows, lambda g: {"min": float(self.raw[(g.player, g.key)]["min"])})
         self.index(rows)
         # finished games ESPN has no box score for: a player's history stops there so "his last n" stays literal
@@ -846,6 +956,65 @@ class NBAData(History):
             for t, ev in lst:
                 if (ev, team) not in self.played:
                     self.gaps[team].append(t)
+        # D-119: his first game back after missing five or more of his team's games in a row
+        self.times = {team: [t for t, _ in lst] for team, lst in self.team_games.items()}
+        self.season_first = {}
+        for team, lst in self.team_games.items():
+            for i, (_, ev) in enumerate(lst):
+                self.season_first.setdefault((team, self.context[(ev, team)]["season"]), i)
+        for lst in self.by_player.values():
+            for g, before in zip(lst, lst[1:] + [None]):   # newest first: `before` is his previous game
+                g.back = self.absence_return(g, before)
+
+    def absence_return(self, g: PG, before: PG | None) -> bool | None:
+        """True when his team played ABSENCE or more games in a row without him right before this one. None when the
+        file can't say: a game in between with no box score, or the games he missed came before his first game this
+        season or for this team (an injury or a roster move, the file doesn't tell)."""
+        times = self.times.get(g.team, [])
+        first = self.season_first.get((g.team, g.season), 0)
+        same = before is not None and before.season == g.season
+        lo = max(first, bisect.bisect_right(times, before.t)) if same else first
+        if bisect.bisect_left(times, g.t) - lo < ABSENCE:
+            return False
+        if not same or before.team != g.team or any(before.t < t < g.t for t in self.gaps.get(g.team, [])):
+            return None
+        return True
+
+    def missed_since(self, team: str, t: str) -> int:
+        """His team's finished games after his last one (at t): "back after missing five or more" tonight."""
+        times = self.times.get(team, [])
+        return len(times) - bisect.bisect_right(times, t)
+
+    def _raw_index(self):
+        """Indexes for the check pass, built straight from the raw CSV rows (not from PG)."""
+        if hasattr(self, "_rx"):
+            return self._rx
+        start = {ev: datetime.fromisoformat(g["start"].replace("Z", "+00:00")).astimezone(ET) for ev, g in self.gidx.items()}
+        team_days = defaultdict(list)
+        for ev, g in self.gidx.items():
+            if g["home_pts"] != "" and g["away_pts"] != "":
+                for tid in (g["home_id"], g["away_id"]):
+                    team_days[tid].append((start[ev], ev, int(g["season"])))
+        boxed = {(ev, r["team_id"]) for (_, ev), r in self.raw.items()}
+        mine = defaultdict(list)
+        for (aid, ev), r in self.raw.items():
+            if ev in start:
+                mine[aid].append((start[ev], ev, r["team_id"], int(self.gidx[ev]["season"])))
+        for lst in list(team_days.values()) + list(mine.values()):
+            lst.sort()
+        self._rx = {"start": start, "team": team_days, "boxed": boxed, "mine": mine, "playoffs": playoff_starts(self.gidx.values())}
+        return self._rx
+
+    def raw_back(self, aid: str, ev: str) -> bool:
+        """The check pass's own count: did his team play ABSENCE or more games in a row without him before this one?"""
+        rx = self._raw_index()
+        games = rx["mine"][aid]
+        i = next(n for n, x in enumerate(games) if x[1] == ev)
+        when, _, team, season = games[i]
+        if i == 0 or games[i - 1][3] != season or games[i - 1][2] != team:
+            return False
+        missed = [x for x in rx["team"][team] if games[i - 1][0] < x[0] < when]
+        return len(missed) >= ABSENCE and all((x[1], team) in rx["boxed"] for x in missed)
 
     def name(self, aid: str) -> str:
         return self.names.get(aid, "")
@@ -867,9 +1036,17 @@ class NBAData(History):
         return (g["away_id"] if home else g["home_id"]), home, g["neutral"] == "1"
 
     def raw_flags(self, aid: str, ev: str) -> dict:
-        b = self.team_box.get((ev, self.raw[(aid, ev)]["team_id"])) or {}
-        start = datetime.fromisoformat(self.gidx[ev]["start"].replace("Z", "+00:00")).astimezone(ET)
-        return {"tv": b.get("national_tv") == "1", "special": frozenset({"christmas"} if (start.month, start.day) == (12, 25) else set())}
+        r = self.raw[(aid, ev)]
+        b = self.team_box.get((ev, r["team_id"])) or {}
+        rx = self._raw_index()
+        start, season = rx["start"][ev], int(self.gidx[ev]["season"])
+        special = {"christmas"} if (start.month, start.day) == (12, 25) else set()
+        if self.gidx[ev].get("postseason") == "1" and season in rx["playoffs"] and start.date() >= rx["playoffs"][season]:
+            special.add("playoff")
+        if self.raw_back(aid, ev):
+            special.add("back")
+        g4 = sum(1 for x in rx["team"][r["team_id"]] if 0 <= (start.date() - x[0].date()).days <= 3 and x[0] <= start)
+        return {"tv": b.get("national_tv") == "1", "special": frozenset(special), "g4": g4, "starter": r.get("starter") == "1"}
 
 
 def cut_at_gaps(rows: list[PG], gaps: dict) -> list[PG]:
@@ -883,6 +1060,51 @@ def cut_at_gaps(rows: list[PG], gaps: dict) -> list[PG]:
         if any(r.t < t < newer for t in gaps.get(r.team, [])):
             return rows[:i]
     return rows
+
+
+def select(rows: list[PG], combo: tuple) -> list[PG]:
+    """The games of a window where every condition held, newest first. It stops at the first game the file can't
+    say about (a blank temperature) where the other conditions held, so "his last n" never skips one that might count."""
+    sel = []
+    for g in rows:
+        known = [c.known is None or c.known(g) for c in combo]
+        if not all(known):
+            if all(c.pred(g) for c, k in zip(combo, known) if k):
+                break
+            continue
+        if all(c.pred(g) for c in combo):
+            sel.append(g)
+    return sel
+
+
+def leading(rows: list[PG], ok) -> list[PG]:
+    """His current run, newest first: the games before the first one where ok fails."""
+    out = []
+    for g in rows:
+        if not ok(g):
+            break
+        out.append(g)
+    return out
+
+
+def role_run(hist: list[PG], team: str, role: str, before: int) -> tuple[list[PG], bool]:
+    """(run, again): his current run as a starter (NBA) or as his team's lead back (NFL), newest first, when at least
+    `before` games for this team out of that role came right before it (a one-game benching isn't a move into the
+    lineup); `again` when he had the role for this team before that stretch ("since returning to the starting lineup").
+    ([], False) when the data starts inside the run, or the run or that stretch reaches another team or a game the
+    file can't say about."""
+    run, out_of = [], 0
+    for g in hist:
+        v = getattr(g, role)
+        if out_of >= before and not (g.team == team and v is False):
+            return run, g.team == team and v is True   # the game before the whole stretch out of the role
+        if out_of < before and (g.team != team or v is None or (v and out_of)):
+            return [], False
+        if v:
+            run.append(g)
+        else:
+            out_of += 1
+    return (run, False) if out_of >= before else ([], False)
 
 
 # ---------------------------------------------------------------- the upcoming game
@@ -912,7 +1134,10 @@ def team_conds(sport: str, u: Upcoming, team: str) -> list[Cond]:
         else:
             out.append(Cond("role", "road", "", lambda g: (not g.home) and not g.neutral))
     out.append(Cond("opp", "", f"vs the {c['opp_name']}", lambda g, o=c["opp"]: g.opp == o, rare=True))
-    if c["prev"] in ("W", "L"):
+    # a team with an earlier game still to play (NBA tomorrow, after tonight): its last result, rest and form
+    # aren't known yet, so they aren't used (D-119, as D-118 does for the NFL game lines)
+    pending = c.get("pending", False)
+    if c["prev"] in ("W", "L") and not pending:
         out.append(Cond("prev", "", "after a loss" if c["prev"] == "L" else "after a win", lambda g, p=c["prev"]: g.prev_team == p))
     if c.get("spread") is not None and c["spread"] != 0:
         fav = c["spread"] < 0
@@ -937,19 +1162,25 @@ def team_conds(sport: str, u: Upcoming, team: str) -> list[Cond]:
             out.append(Cond("prime", "prime-time", "", lambda g: g.prime, rare=True))
         if c["roof"] == "outdoor":
             out.append(Cond("roof", "outdoor", "", lambda g: g.roof == "outdoor"))
+            # games.csv leaves temperature and wind blank for many outdoor games (70 of 2026's first 114), so the
+            # sample stops at the first one it can't say about rather than skipping it (D-119)
             if c.get("temp") is not None and c["temp"] < 35:
-                out.append(Cond("cold", "", "in temperatures under 35 degrees", lambda g: g.temp is not None and g.temp < 35, rare=True))
+                out.append(Cond("cold", "", "in temperatures under 35 degrees", lambda g: g.temp is not None and g.temp < 35, rare=True,
+                                known=lambda g: g.roof == "indoor" or g.temp is not None))
             if c.get("windy"):
-                out.append(Cond("wind", "", "in winds of 15 mph or more", lambda g: g.wind is not None and g.wind >= 15, rare=True))
+                out.append(Cond("wind", "", "in winds of 15 mph or more", lambda g: g.wind is not None and g.wind >= 15, rare=True,
+                                known=lambda g: g.roof == "indoor" or g.wind is not None))
         elif c["roof"] == "indoor":
             out.append(Cond("roof", "indoor", "", lambda g: g.roof == "indoor"))
-    else:
+    elif not pending:
         if c["rest"] == 1:
             out.append(Cond("rest", "", "on the second night of a back-to-back", lambda g: g.rest == 1))
         elif 3 <= c["rest"] < 99:
             out.append(Cond("rest", "", "on two or more days of rest", lambda g: 3 <= g.rest < 99))
-        if c.get("tv"):
-            out.append(Cond("tv", "national TV", "", lambda g: g.tv))
+        if c.get("g4", 0) >= 3:   # D-119; a "rest" kind, so it never pairs with the back-to-back
+            out.append(Cond("rest", "", "with three games in four nights", lambda g: g.g4 >= 3, feature="g4"))
+    if sport == "NBA" and c.get("tv"):
+        out.append(Cond("tv", "national TV", "", lambda g: g.tv))
     return out
 
 
@@ -978,13 +1209,16 @@ def defense_conds(sport: str, u: Upcoming, team: str, m: Market, pos: str) -> li
         if not (low or high):
             continue
         is_top = high if spec.get("more") else low
+        label = spec.get("top" if is_top else "bottom")
+        if not label:
+            continue   # pressure and interceptions are named at the top end only
         if spec.get("more"):
             pred = (lambda g, f=f: f in g.defense and g.defense[f][0] > g.defense[f][1] - 10) if high else \
                    (lambda g, f=f: f in g.defense and g.defense[f][0] <= 10)
         else:
             pred = (lambda g, f=f: f in g.defense and g.defense[f][0] <= 10) if low else \
                    (lambda g, f=f: f in g.defense and g.defense[f][0] > g.defense[f][1] - 10)
-        out.append(Cond("defense", "", f"vs {spec['top'] if is_top else spec['bottom']}", pred, feature=f, ticker=ticker))
+        out.append(Cond("defense", "", f"vs {label}", pred, feature=f, ticker=ticker))
     return out
 
 
@@ -994,7 +1228,8 @@ def player_conds(sport: str, u: Upcoming, team: str, pid: str, m: Market, line: 
     pos = hist[0].pos if hist else ""
     when = CFG[sport]["prev"]
     last = hist[0] if hist else None
-    if last and last.season == u.season:
+    pending = c.get("pending", False)   # an earlier game still to play: "the game before" isn't his last one yet
+    if last and last.season == u.season and not pending:
         if line != 0.5 and m.key in last.vals:
             v = last.vals[m.key]
             if v > line:
@@ -1008,7 +1243,18 @@ def player_conds(sport: str, u: Upcoming, team: str, pid: str, m: Market, line: 
                 out.append(Cond("big", "", ph, lambda g, s=stat, x=thr: g.prev.get(s, -1) >= x))
         if sport == "NBA" and float(data.raw[(last.player, last.key)]["min"]) >= 38:
             out.append(Cond("mins", "", f"after playing 38 or more minutes {when}", lambda g: g.prev.get("min", 0) >= 38))
+        # D-119: tonight he'd be back after missing his team's last five or more games (not listed Out: he has props).
+        # Rare, so it's held to the special-date bar (5 games, 80%)
+        espn = data.gsis_to_espn.get(pid, "") if sport == "NFL" else pid
+        if (sport == "NBA" and last.team == team and data.missed_since(team, last.t) >= ABSENCE
+                and espn not in u.outs.get(team, {})):
+            out.append(Cond("special", "", "back after missing five or more", lambda g: g.back is True, rare=True,
+                            feature="back", known=lambda g: g.back is not None))
     out.extend(defense_conds(sport, u, team, m, pos))
+    # D-119: at altitude, for a visitor who never played for Denver or Utah (so "his games at Denver" are all road games)
+    if (sport == "NBA" and not c["home"] and not c["neutral"] and c["opp"] in ALTITUDE
+            and not any(g.team in ALTITUDE for g in hist)):
+        out.append(Cond("alt", "", "at Denver and Utah", lambda g: not g.home and not g.neutral and g.opp in ALTITUDE, rare=True))
     # his former team: games against them after he left
     left = {}
     in_stint = True
@@ -1097,7 +1343,7 @@ def phrase(conds: tuple, team_name: str = "", team_only_sample: bool = False) ->
     order = {"role": 0, "special": 1, "div": 2, "prime": 3, "tv": 4, "roof": 5}
     adjs = [c.adj for c in sorted(conds, key=lambda c: order.get(c.kind, 9)) if c.adj]
     noun = next((c.noun for c in conds if c.noun), "games")
-    suffix_order = ["opp", "former", "coach", "defense", "qb", "qbout", "out", "special", "cold", "wind", "rest", "fd", "bigline", "prev", "big", "own", "mins"]
+    suffix_order = ["opp", "former", "coach", "defense", "alt", "qb", "qbout", "out", "special", "cold", "wind", "rest", "fd", "bigline", "prev", "big", "own", "mins"]
     sufs = []
     for c in sorted(conds, key=lambda c: suffix_order.index(c.kind) if c.kind in suffix_order else 99):
         if not c.suffix:
@@ -1116,24 +1362,36 @@ def phrase(conds: tuple, team_name: str = "", team_only_sample: bool = False) ->
     return " ".join(adjs + [noun] + merged)
 
 
-def pick_verb(m: Market, side: str, seed: str) -> str:
+def pick_verb(m: Market, side: str, seed: str, short: bool = False) -> str:
     options = VERBS[side] + (VERBS["over_yards"] if side == "over" and m.yards else [])
+    if short:   # a sentence over MAX_WORDS gets one more try with the shortest verbs before it's dropped
+        options = [v for v in options if len(v.split()) == min(len(o.split()) for o in options)]
     return options[zlib.crc32(seed.encode()) % len(options)]
 
 
+def milestone(m: Market, line: float) -> float | None:
+    """The round number a milestone line names for tonight's line, or None (see MILESTONES)."""
+    above = [x for x in MILESTONES.get(m.key, ()) if x > line]
+    return float(above[0]) if above and above[0] > line + 1 and above[0] <= 1.25 * line + 1 else None
+
+
 def sentence(name: str, m: Market, line: float, side: str, hits: int, n: int, window: str, conds: tuple, team_name: str,
-             team_only_sample: bool = False, seed: str = "") -> tuple[str, str]:
-    """(text, record), record being the exact run of the text the app bolds. Varied verbs, short stat names."""
-    if m.one and line == 0.5:
+             team_only_sample: bool = False, seed: str = "", mark: float | None = None, short: bool = False) -> tuple[str, str]:
+    """(text, record), record being the exact run of the text the app bolds. Varied verbs, short stat names.
+    A perfect record reads "in 9 straight games" in every window."""
+    if mark is not None:   # "has scored 30 or more Pts", over only
+        verbs = [v for v in MILESTONE_VERBS.get(m.key, MILESTONE_VERBS[""]) if not short or " " not in v]
+        lead = f"has {verbs[zlib.crc32((seed or name + m.key).encode()) % len(verbs)]} {fmt_num(mark)} or more {m.stat}"
+    elif m.one and line == 0.5:
         lead = "has " + (m.one[0] if side == "over" else m.one[1])
     else:
-        lead = f"has {pick_verb(m, side, seed or name + m.key)} {fmt_num(line)} {m.stat}"
+        lead = f"has {pick_verb(m, side, seed or name + m.key, short)} {fmt_num(line)} {m.stat}"
     games = phrase(conds, team_name, team_only_sample)
     perfect = hits == n
-    if window in ("season", "team"):
-        tail = "this season" if window == "season" else f"since joining the {team_name}"
-        record = f"all {n}" if perfect else f"{hits} of his {n}"
-        text = f"in all {n} of his {games} {tail}" if perfect else f"in {hits} of his {n} {games} {tail}"
+    if window == "season" or window in SINCE:
+        tail = "this season" if window == "season" else SINCE[window].format(team=team_name)
+        record = f"{n} straight" if perfect else f"{hits} of his {n}"
+        text = f"in {n} straight {games} {tail}" if perfect else f"in {hits} of his {n} {games} {tail}"
     else:
         record = f"{n} straight" if perfect else f"{hits} of his last {n}"
         text = f"in {n} straight {games}" if perfect else f"in {hits} of his last {n} {games}"
@@ -1195,7 +1453,33 @@ def evaluate(sport: str, u: Upcoming, team: str, pid: str, prop: str, line: floa
         stint.append(g)
     if len(stint) < len(hist) and stint and stint[-1].season >= season - 1 and len(stint) <= MAX_SHARE * len(recent):
         windows["team"] = stint
+    # D-119: since moving into the starting lineup (NBA) or becoming his team's lead back (NFL), on the same terms
+    role = "starter" if sport == "NBA" else ("lead" if hist[0].pos == "RB" else "")
+    run, again = role_run(hist, team, role, ROLE_BEFORE[sport]) if role else ([], False)
+    if run and len(run) <= MAX_SHARE * len(recent):
+        windows[role + ("_again" if again else "")] = run
     out = []
+
+    def add(window, combo, sel, side, hits, z, zb, base_rate, mark=None):
+        n = len(sel)
+        if window == "last10" and hits == n:
+            return   # a perfect last 10 is part of a streak, which says it whole ("in 12 straight games")
+        team_sample = all(g.team == team for g in sel)
+        seed = f"{pid}|{m.key}|{side}|{window}|{'|'.join(c.adj + c.suffix + c.noun for c in combo)}" + (f"|{mark:g}" if mark else "")
+        text, record = sentence(name, m, line, side, hits, n, window, combo, team_name, team_sample, seed, mark)
+        if words(text) > MAX_WORDS:
+            text, record = sentence(name, m, line, side, hits, n, window, combo, team_name, team_sample, seed, mark, short=True)
+        if words(text) > MAX_WORDS:
+            return   # too long to read at a glance, even with the shortest verb (D-119)
+        out.append(Angle(sport, pid, name, team, m, prop, line, side, hits, n, z, zb, base_rate, window,
+                         combo, text, record, [(g.key, g.vals[m.key]) for g in sel], prominence,
+                         sum(1 for g in sel if g.season >= season - (WINDOW_SEASONS - 1)) / n, mark))
+
+    def clears(hits, n, base_rate):
+        z, zb = zscore(hits, n), zscore(hits, n, base_rate)
+        rate = hits / n
+        return rate >= base_rate + MIN_UPLIFT and rate >= FLOOR_RATE and z >= FLOOR_Z and zb >= FLOOR_ZBASE, z, zb
+
     for window, rows in windows.items():
         if not rows:
             continue
@@ -1206,7 +1490,7 @@ def evaluate(sport: str, u: Upcoming, team: str, pid: str, prop: str, line: floa
             base_rows = [g for g in rows if g.team == team] if c.team_only else rows
             if base_rows and sum(1 for g in base_rows if c.pred(g)) / len(base_rows) <= MAX_SHARE:
                 usable.append(c)
-        size = 2 if window in ("recent", "career") else (1 if window in ("season", "team") else 0)
+        size = 2 if window in ("recent", "career") else (1 if window == "season" or window in SINCE else 0)
         single_n, single_rate = {}, {}
         for combo in combos(usable, size):
             if window == "career" and not any(c.rare for c in combo):
@@ -1214,7 +1498,7 @@ def evaluate(sport: str, u: Upcoming, team: str, pid: str, prop: str, line: floa
             if window == "recent" and not combo:
                 continue  # that's the base rate itself
             special = len(combo) == 1 and combo[0].kind == "special"
-            sel = [g for g in rows if all(c.pred(g) for c in combo)]
+            sel = select(rows, combo)
             n = len(sel)
             if len(combo) == 1 and n:
                 single_n[id(combo[0])] = n
@@ -1243,20 +1527,41 @@ def evaluate(sport: str, u: Upcoming, team: str, pid: str, prop: str, line: floa
                     parts = [single_rate.get((id(c), side)) for c in combo]
                     if any(p is None or p < base[side] or p >= rate for p in parts):
                         continue
-                team_sample = all(g.team == team for g in sel)
-                seed = f"{pid}|{m.key}|{side}|{window}|{'|'.join(c.adj + c.suffix + c.noun for c in combo)}"
-                text, record = sentence(name, m, line, side, hits, n, window, combo, team_name, team_sample, seed)
-                out.append(Angle(sport, pid, name, team, m, prop, line, side, hits, n, z, zb, base[side], window,
-                                 combo, text, record, [(g.key, g.vals[m.key]) for g in sel], prominence,
-                                 sum(1 for g in sel if g.season >= season - (WINDOW_SEASONS - 1)) / n))
+                add(window, combo, sel, side, hits, z, zb, base[side])
+    # D-119: his current run against tonight's number, no condition: "in 9 straight games"
+    for side in ("over", "under"):
+        if base[side] > MAX_BASE or not current_ok[side] or (m.key == "anytime_td" and side == "under"):
+            continue
+        streak = leading(hist, lambda g, s=side: hit(g, s))
+        if len(streak) >= STREAK_MIN[sport]:
+            ok, z, zb = clears(len(streak), len(streak), base[side])
+            if ok:
+                add("streak", (), streak, side, len(streak), z, zb, base[side])
+    # D-119: a milestone just above the line, no condition: "has scored 30 or more Pts in 8 of his last 10 games"
+    mark = milestone(m, line)
+    if mark is not None:
+        reached = lambda g: g.vals[m.key] >= mark   # noqa: E731
+        mbase = sum(1 for g in recent if reached(g)) / len(recent)
+        now_ok = len(this_season) < SEASON_CHECK[sport] or sum(1 for g in this_season if reached(g)) / len(this_season) >= 0.5
+        streak = leading(hist, reached)
+        for window, sel, floor_n in (("last10", recent[:10], min_games), ("season", windows.get("season", []), min_games),
+                                     ("streak", streak, STREAK_MIN[sport])):
+            if mbase > MAX_BASE or not now_ok or len(sel) < floor_n:
+                continue
+            hits = sum(1 for g in sel if reached(g))
+            ok, z, zb = clears(hits, len(sel), mbase)
+            if ok:
+                add(window, (), sel, "over", hits, z, zb, mbase, mark)
     # the same sample in several windows (career = recent when there are no older games): keep one
     seen, uniq = set(), []
     for a in sorted(out, key=lambda a: a.order, reverse=True):
-        k = (a.side, a.hits, a.games, a.kinds, tuple(k for k, _ in a.sample[:3]))
+        k = (a.side, a.hits, a.games, a.kinds, a.mark, tuple(k for k, _ in a.sample[:3]))
         if k not in seen:
             seen.add(k)
             uniq.append(a)
-    return uniq
+    # a milestone with the same record as the line itself in the same games adds nothing: the line's number wins (D-105)
+    plain = {(a.side, a.hits, a.games, a.kinds, tuple(k for k, _ in a.sample)) for a in uniq if a.mark is None}
+    return [a for a in uniq if a.mark is None or (a.side, a.hits, a.games, a.kinds, tuple(k for k, _ in a.sample)) not in plain]
 
 
 def verify(a: Angle, data, u: Upcoming) -> str | None:
@@ -1269,12 +1574,17 @@ def verify(a: Angle, data, u: Upcoming) -> str | None:
         v = data.value(a.player, key, a.market)
         if v is None:
             return f"no raw row for {key}"
-        hits += (v > a.line) if a.side == "over" else (v < a.line)
+        if a.mark is not None:
+            hits += v >= a.mark
+        else:
+            hits += (v > a.line) if a.side == "over" else (v < a.line)
         opp, home, neutral = data.raw_side(a.player, key)
         if "role" in a.kinds and (neutral or home != want["home"]):
             return f"home/road wrong in {key}"
         if ("opp" in a.kinds or "former" in a.kinds) and opp != want["opp"]:
             return f"opponent wrong in {key}"
+        if "alt" in a.kinds and (home or neutral or opp not in ALTITUDE):
+            return f"altitude wrong in {key}"
         flags = data.raw_flags(a.player, key)
         for c in a.conds:
             if c.kind == "special" and c.feature != "bye" and c.feature not in flags.get("special", ()):
@@ -1287,9 +1597,35 @@ def verify(a: Angle, data, u: Upcoming) -> str | None:
                 return f"coach wrong in {key}"
             if c.kind == "tv" and "tv" in flags and not flags["tv"]:
                 return f"tv wrong in {key}"
+            if c.feature == "g4" and "g4" in flags and flags["g4"] < 3:
+                return f"three in four wrong in {key}"
+        if a.window.startswith("starter") and flags.get("starter") is not True:
+            return f"not a start in {key}"
+        if a.window.startswith("lead") and data.lead_of(a.player, key, a.team) is not True:
+            return f"not the lead back in {key}"
     if hits != a.hits:
         return f"hits {hits} != {a.hits}"
-    if a.record not in a.text or (a.line != 0.5 and fmt_num(a.line) not in a.text):
+    # "his last n": a streak is his newest games, and a condition the file can't always say about (temperature)
+    # skipped no game newer than the oldest one in the sample where the rest of the combo held
+    hist = cut_at_gaps([g for g in data.by_player.get(a.player, []) if g.t < u.t], getattr(data, "gaps", {}))
+    keys = [k for k, _ in a.sample]
+    if a.window == "streak" and (keys != [g.key for g in hist[:a.games]] or a.hits != a.games):
+        return "streak is not his latest games"
+    unsure = [c for c in a.conds if c.known is not None]
+    if unsure:
+        oldest = next((g.t for g in hist if g.key == keys[-1]), None)
+        if oldest is None:
+            return "sample not in his history"
+        for g in hist:
+            if g.t <= oldest or g.key in keys or not all(c.pred(g) for c in a.conds if c.known is None):
+                continue
+            known = data.raw_flags(a.player, g.key).get("known", {})
+            if not all(known.get(c.kind, True) for c in unsure):
+                return f"skipped {g.key}, which the file can't say about"
+    if a.mark is not None:
+        if f"{fmt_num(a.mark)} or more" not in a.text or a.record not in a.text:
+            return "sentence lost its numbers"
+    elif a.record not in a.text or (a.line != 0.5 and fmt_num(a.line) not in a.text):
         return "sentence lost its numbers"
     if not re.search(rf"\b({a.hits} of his (last )?{a.games}|{a.games} straight|all {a.games})\b", a.text):
         return "record wording"
@@ -1358,10 +1694,14 @@ def nfl_upcoming(data: NFLData, days: int) -> list[Upcoming]:
             t = k["t"]
             roof = k["roof"] or ("indoor" if venue.get("indoor") else ("outdoor" if venue.get("indoor") is False else ""))
             temp = weather.get("temperature") if roof == "outdoor" else None
+            # an earlier game of this team still to be played: its last result isn't the one games.csv has yet
+            pending = any(o["season"] == g["season"] and o["result"] == "" and o["game_id"] != g["game_id"]
+                          and team in (franchise(o["home_team"]), franchise(o["away_team"]))
+                          and (o["gameday"], o["gametime"] or "") < (g["gameday"], g["gametime"] or "") for o in data.games)
             situ[team] = {**k, "roof": roof, "temp": float(temp) if temp is not None else None,
                           "windy": "wind" in (weather.get("displayValue") or "").lower(),
                           "opp_name": NFL_TEAMS.get(k["opp"], k["opp"]), "opp_abbr": espn_abbr.get("away" if side == "home" else "home", k["opp"]),
-                          "defense": {f: tb[k["opp"]] for f, tb in table.items() if k["opp"] in tb}}
+                          "defense": {f: tb[k["opp"]] for f, tb in table.items() if k["opp"] in tb}, "pending": pending}
             teams[side] = {"id": team, "abbr": espn_abbr.get(side, team), "name": NFL_TEAMS.get(team, team)}
         injuries = fetch_injuries("NFL", e["id"])
         outs = {teams[s]["id"]: injuries.get(teams[s]["abbr"], {}) for s in ("home", "away")}
@@ -1374,7 +1714,10 @@ def nfl_upcoming(data: NFLData, days: int) -> list[Upcoming]:
 
 def nba_upcoming(data: NBAData, days: int) -> list[Upcoming]:
     out = []
-    for e in scoreboard("NBA", days):
+    others = []
+    events = scoreboard("NBA", days, others)
+    pending = pending_teams(events, others, lambda ev: ev in data.gidx and data.gidx[ev]["home_pts"] != "")
+    for e in events:
         c = e["competitions"][0]
         start = datetime.fromisoformat(e["date"].replace("Z", "+00:00")).astimezone(ET)
         t = start.strftime("%Y-%m-%dT%H:%M")
@@ -1402,11 +1745,15 @@ def nba_upcoming(data: NBAData, days: int) -> list[Upcoming]:
             situ[tid] = {"opp": oid, "home": side == "home", "neutral": bool(c.get("neutralSite")), "rest": rest, "prev": prev_res,
                          "spread": None if home_line is None else (home_line if side == "home" else -home_line), "tv": tv,
                          "opp_name": op["team"].get("name") or op["team"].get("shortDisplayName"), "opp_abbr": op["team"]["abbreviation"],
-                         "defense": {f: tb[oid] for f, tb in table.items() if oid in tb}}
+                         "defense": {f: tb[oid] for f, tb in table.items() if oid in tb},
+                         "g4": games_in_four(data.team_games.get(tid, []), t), "pending": tid in pending.get(e["id"], set())}
             teams[side] = {"id": tid, "abbr": me["team"]["abbreviation"], "name": me["team"].get("name") or me["team"].get("shortDisplayName")}
         injuries = fetch_injuries("NBA", e["id"])
         outs = {teams[s]["id"]: injuries.get(teams[s]["abbr"], {}) for s in ("home", "away")}
-        special = frozenset({"christmas"} if (start.month, start.day) == (12, 25) else set())
+        special = set({"christmas"} if (start.month, start.day) == (12, 25) else set())
+        if (e.get("season") or {}).get("type") == 3:   # the playoffs (ESPN's play-in is type 5)
+            special.add("playoff")
+        special = frozenset(special)
         out.append(Upcoming("NBA", e["id"], e["date"], t, season, f"{teams['away']['name']} at {teams['home']['name']}",
                             teams, situ, fetch_props("NBA", e["id"]), outs, special))
     return out
@@ -1460,14 +1807,14 @@ def candidate_json(u: Upcoming, a: Angle, i: int, data) -> dict:
             "sentence": a.text, "window": a.window, "conditions": [c.kind for c in a.conds], "family": a.family,
             "angle_type": a.angle_type, "ticker": a.ticker, "tier": "strong" if a.strong else "fallback",
             "z": round(a.z, 2), "z_base": round(a.zbase, 2), "base_rate": round(a.base, 3), "score": round(a.score, 2),
-            "recent_share": round(a.recent_share, 2), "stale": not a.fresh}
+            "recent_share": round(a.recent_share, 2), "stale": not a.fresh, "milestone": a.mark}
 
 
 def game_context(u: Upcoming) -> dict:
     start = datetime.fromisoformat(u.start.replace("Z", "+00:00")).astimezone(ET)
     home = u.ctx[u.teams["home"]["id"]]
     special = {"thanksgiving": "Thanksgiving", "christmas": "Christmas Day", "week1": "season opener",
-               "finale": "season finale", "intl": "international game"}
+               "finale": "season finale", "intl": "international game", "playoff": "playoff game"}
     return {"sport": u.sport, "matchup": u.matchup, "date_et": start.strftime("%A, %B %-d, %Y"), "kickoff_et": start.strftime("%-I:%M %p ET"),
             "special": [special[k] for k in sorted(u.special)], "prime_time": bool(home.get("prime")) if u.sport == "NFL" else None,
             "national_tv": bool(home.get("tv")) if u.sport == "NBA" else None, "roof": home.get("roof"), "temp_f": home.get("temp"),
@@ -1541,7 +1888,7 @@ def self_test() -> None:
         espn_to_gsis = {}
 
         def name(self, pid):
-            return "Test Player"
+            return getattr(self, "full", "Test Player")
 
         def value(self, pid, key, mk):
             return next(r.vals[mk.key] for r in rows if r.key == key)
@@ -1550,10 +1897,14 @@ def self_test() -> None:
             return next((r.opp, r.home, r.neutral) for r in rows if r.key == key)
 
         def raw_flags(self, pid, key):
-            return {"special": next(r.special for r in rows if r.key == key)}
+            r = next(r for r in rows if r.key == key)
+            return {"special": r.special, "g4": r.g4, "starter": r.starter, "known": {"cold": r.temp is not None}}
 
         def prev_stat(self, g, stat):
             return g.vals.get(stat, 0.0)
+
+        def missed_since(self, team, t):
+            return getattr(self, "missed", 0)
     data = Fake()
     data.index(rows)
     data.raw = {("p1", r.key): {"min": "30"} for r in rows}
@@ -1637,7 +1988,117 @@ def self_test() -> None:
     assert short_name("Amon-Ra St. Brown", "Amon-Ra", "St. Brown") == "A. St. Brown"
     assert american(-110) == "-110" and american("105") == "+105" and american(None) is None
     assert set(MARKET_SHORT) >= {m.key for mk_ in MARKETS.values() for m in mk_.values()}
+    self_test_wave1(Fake)
     print("self-test passed")
+
+
+def self_test_wave1(Fake) -> None:
+    """D-119: streaks, milestones, the starting lineup window, the known-temperature stop, altitude, three in four
+    nights, games back from an absence, playoffs, top-only defenses, the pending-game guard and the word cap."""
+    pts, reb, ast = NBA_MARKETS["Total Points"], NBA_MARKETS["Total Rebounds"], NBA_MARKETS["Total Assists"]
+    rows = []
+    # 40 games, newest first once indexed: last season (2026) and this one (2027), 20 each
+    for i in range(40):
+        s = 2026 + i // 20
+        newest = 39 - i   # 0 = his latest game
+        p = 31.0 if (newest < 10 and newest not in (3, 7)) or (newest >= 10 and newest % 10 < 3) else (27.0 if newest < 10 else 22.0)
+        r = 25.0 if newest < 9 else (10.0 if newest == 9 else (25.0 if newest % 2 else 6.0))
+        a = (7.0 if newest != 5 else 4.0) if newest < 12 else (7.0 if newest % 5 < 2 else 4.0)
+        rows.append(PG(key=f"w{i}", season=s, t=(date(s - 1, 11, 1) + timedelta(days=3 * (i % 20))).isoformat() + "T19:00",
+                       player="p2", team="T1", opp="T2", home=i % 2 == 0, neutral=False,
+                       vals={k.key: 0.0 for k in NBA_MARKETS.values()} | {"pts": p, "reb": r, "ast": a},
+                       starter=newest < 12 or newest % 3 == 0))
+    for r in rows[-17:-12]:
+        r.starter = False   # five games off the bench right before his current run of 12 starts
+    data = Fake()
+    data.index(rows)
+    data.raw = {("p2", r.key): {"min": "30"} for r in rows}
+    data.value = lambda pid, key, mk: next(r.vals[mk.key] for r in rows if r.key == key)
+    data.raw_side = lambda pid, key: next((r.opp, r.home, r.neutral) for r in rows if r.key == key)
+    data.raw_flags = lambda pid, key: next({"special": r.special, "g4": r.g4, "starter": r.starter} for r in rows if r.key == key)
+    u = Upcoming("NBA", "y", "2027-02-01T00:00Z", "2027-02-01T19:00", 2027, "A at B",
+                 {"home": {"id": "T1", "abbr": "ONE", "name": "Ones"}, "away": {"id": "T2", "abbr": "TWO", "name": "Twos"}},
+                 {"T1": {"opp": "T2", "opp_abbr": "TWO", "home": True, "neutral": False, "rest": 2, "prev": "W", "spread": None,
+                         "opp_name": "Twos", "defense": {}, "tv": False}}, {}, {})
+    # a streak against tonight's number: his last 9, then a miss
+    st = [x for x in evaluate("NBA", u, "T1", "p2", "Total Rebounds", 20.5, data, "Ones") if x.window == "streak"]
+    assert st and st[0].text.endswith("20.5 Reb in 9 straight games") and st[0].family == "form", [x.text for x in st]
+    assert st[0].angle_type == "form:streak" and verify(st[0], data, u) is None
+    assert verify(Angle(**{**st[0].__dict__, "sample": st[0].sample[1:] + st[0].sample[:1]}), data, u) is not None
+    # a milestone: 30 or more over a 26.5 line, 8 of his last 10
+    assert milestone(pts, 26.5) == 30 and milestone(pts, 24.5) is None and milestone(pts, 20.5) == 25
+    assert milestone(NFL_MARKETS["Total Receiving Yards (incl. overtime)"], 72.5) is None
+    assert milestone(NFL_MARKETS["Total Receiving Yards (incl. overtime)"], 85.5) == 100
+    ms = [x for x in evaluate("NBA", u, "T1", "p2", "Total Points", 26.5, data, "Ones") if x.mark is not None]
+    assert ms and re.search(r"^Test Player has (scored|put up|posted) 30 or more Pts in 8 of his last 10 games$", ms[0].text), [x.text for x in ms]
+    assert ms[0].angle_type == "form:milestone" and ms[0].side == "over" and ms[0].line == 26.5 and verify(ms[0], data, u) is None
+    assert verify(Angle(**{**ms[0].__dict__, "mark": 31.0}), data, u) is not None
+    # since moving (back) into the starting lineup: his 12 straight starts after six off the bench, 11 over
+    sl = [x for x in evaluate("NBA", u, "T1", "p2", "Total Assists", 5.5, data, "Ones") if x.window == "starter_again" and not x.conds]
+    assert sl and sl[0].text.endswith("5.5 Ast in 11 of his 12 games since returning to the starting lineup"), [x.text for x in sl]
+    assert verify(sl[0], data, u) is None and sl[0].angle_type == "form:starter"
+    assert len(role_run(data.by_player["p2"], "T1", "starter", 5)[0]) == 12 and role_run(data.by_player["p2"], "T1", "starter", 5)[1]
+    assert not role_run(data.by_player["p2"], "T9", "starter", 5)[0] and not role_run(data.by_player["p2"], "T1", "starter", 7)[0]
+    rows[-15].starter = True   # two bench games, a start, two more: a short benching, not a move into the lineup
+    assert not role_run(data.by_player["p2"], "T1", "starter", 5)[0]
+    rows[-15].starter = False
+    for r in rows[:-17]:
+        r.starter = False   # off the bench in every game before: a first move into the lineup
+    sl = [x for x in evaluate("NBA", u, "T1", "p2", "Total Assists", 5.5, data, "Ones") if x.window == "starter" and not x.conds]
+    assert sl and sl[0].text.endswith("5.5 Ast in 11 of his 12 games since moving into the starting lineup"), [x.text for x in sl]
+    t, rec = sentence("A B", NFL_MARKETS["Total Passing Yards (incl. overtime)"], 173.5, "under", 10, 10, "team", (), "Steelers")
+    assert t.endswith("173.5 Pass Yds in 10 straight games since joining the Steelers") and rec == "10 straight", t
+    # the word cap: a long name pushes every sentence past 20 words
+    data.full = "Alpha Beta Gamma Delta Epsilon Zeta Eta Theta Iota"
+    long = evaluate("NBA", u, "T1", "p2", "Total Points", 26.5, data, "Ones")
+    assert long and not [x for x in long if words(x.text) > MAX_WORDS] and not [x for x in long if x.mark is not None]   # 22 words
+    assert words("A B has cleared 17.5 Pts + Reb + Ast") == 8
+    rec_yds = NFL_MARKETS["Total Receiving Yards (incl. overtime)"]
+    assert {pick_verb(rec_yds, "over", str(i), short=True) for i in range(40)} == {"cleared", "topped"}
+    assert {pick_verb(rec_yds, "under", str(i), short=True) for i in range(40)} == {"stayed under", "finished under"}
+    del data.full
+    # the known-temperature stop: a blank temperature where the other conditions held ends "his last n"
+    g = [PG(key=str(i), season=2026, t=f"2026-12-{20 - i:02d}T13:00", player="p", team="T", opp="O", home=True, neutral=False,
+            vals={}, roof="outdoor", temp=(None if i == 2 else (20.0 if i % 2 == 0 else 50.0))) for i in range(8)]
+    cold = Cond("cold", "", "in temperatures under 35 degrees", lambda x: x.temp is not None and x.temp < 35,
+                known=lambda x: x.roof == "indoor" or x.temp is not None)
+    assert [x.key for x in select(g, (cold,))] == ["0"]
+    home_only = Cond("role", "road", "", lambda x: not x.home)
+    assert select(g, (cold, home_only)) == []   # road games only: the blank home game doesn't matter, nothing qualifies
+    # altitude, three in four nights, back from an absence, playoffs: phrases and flags
+    assert phrase((Cond("alt", "", "at Denver and Utah", None),)) == "games at Denver and Utah"
+    assert phrase((Cond("rest", "", "with three games in four nights", None),)) == "games with three games in four nights"
+    assert phrase((Cond("special", "", "back after missing five or more", None, feature="back"),)) == "games back after missing five or more"
+    assert phrase((Cond("special", "playoff", "", None, feature="playoff"),)) == "playoff games"
+    assert games_in_four([("2027-01-28T19:00", "a"), ("2027-01-29T19:00", "b"), ("2027-01-31T19:00", "c")], "2027-02-01T19:00") == 3
+    assert games_in_four([("2027-01-27T19:00", "a"), ("2027-01-30T19:00", "b")], "2027-02-01T19:00") == 2
+    assert "playoff" in nfl_special({"gameday": "2027-01-10", "game_type": "WC", "week": "19", "season": "2026", "location": "Home"}, {})
+    days = [("2026-04-14", 2), ("2026-04-15", 2), ("2026-04-17", 2), ("2026-04-18", 4)]
+    post = [{"postseason": "1", "home_pts": "100", "season": "2026", "start": f"{d}T23:00Z"} for d, n in days for _ in range(n)]
+    assert playoff_starts(post) == {2026: date(2026, 4, 18)}
+    nba = NBAData.__new__(NBAData)
+    tt = [f"2027-01-{d:02d}T19:00" for d in range(1, 13)]
+    nba.times, nba.season_first, nba.gaps = {"T": tt}, {("T", 2027): 0}, {}
+
+    def pg(day, team="T", season=2027):
+        return PG(key=str(day), season=season, t=f"2027-01-{day:02d}T19:00", player="p", team=team, opp="O", home=True, neutral=False, vals={})
+    assert nba.absence_return(pg(8), pg(1)) is True        # missed six in a row
+    assert nba.absence_return(pg(5), pg(1)) is False       # missed three
+    assert nba.absence_return(pg(8), None) is None         # his first game this season, after seven: the file can't say why
+    assert nba.absence_return(pg(3), None) is False        # two before his first game: not five
+    nba.gaps = {"T": ["2027-01-04T19:00"]}
+    assert nba.absence_return(pg(8), pg(1)) is None        # a game with no box score in between
+    assert nba.missed_since("T", "2027-01-08T19:00") == 4
+    # pressure and interceptions are named at the top end only, with the opponent's exact rank
+    uq = Upcoming("NFL", "q", "", "2026-12-01T13:00", 2026, "", {}, {"T": {"opp": "O", "opp_abbr": "GB", "defense": {"press": (32, 32, 0.4), "intd": (1, 32, 0.2)}}}, {}, {})
+    dc = defense_conds("NFL", uq, "T", NFL_MARKETS["Total Passing Interceptions (incl. overtime)"], "QB")
+    assert [(x.suffix, x.ticker) for x in dc if x.feature in ("press", "intd")] == [("vs pressure-heavy defenses", "GB DEF 1st in Pressure Rate")], dc
+    # an earlier game still to play: no last result, rest or three in four for this one
+    up = {**u.ctx["T1"], "prev": "W", "rest": 1, "g4": 3, "pending": True}
+    kinds = {x.kind for x in team_conds("NBA", Upcoming("NBA", "z", "", u.t, 2027, "", u.teams, {"T1": up}, {}, {}), "T1")}
+    assert not kinds & {"prev", "rest"}, kinds
+    kinds = {(x.kind, x.feature) for x in team_conds("NBA", Upcoming("NBA", "z", "", u.t, 2027, "", u.teams, {"T1": {**up, "pending": False}}, {}, {}), "T1")}
+    assert {("prev", ""), ("rest", ""), ("rest", "g4")} <= kinds, kinds
 
 
 if __name__ == "__main__":
