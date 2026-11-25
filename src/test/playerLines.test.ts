@@ -51,6 +51,33 @@ describe("player line judge checks (D-106)", () => {
     expect(checkSentence(dak, "Dak Prescott has cleared 263.5 Pass Yds at home and on the road in 5 of his last 6 Thanksgiving games")).toBe("two splits");
   });
 
+  it("keeps the words that say which games the record covers (D-119)", () => {
+    const amen = { ...dak, player_name: "Amen Thompson", stat: "Pts", stat_terms: ["Pts"], line: 14.5, hits: 11, games: 14, record: "11 of his 14",
+      window: "starter", conditions: [], family: "form", angle_type: "form:starter",
+      sentence: "Amen Thompson has cleared 14.5 Pts in 11 of his 14 games since moving into the starting lineup" };
+    expect(checkSentence(amen, "Amen Thompson has topped 14.5 Pts in 11 of his 14 games since moving into the starting lineup")).toBeNull();
+    expect(checkSentence(amen, "Amen Thompson has topped 14.5 Pts in 11 of his 14 games")).toMatch(/dropped "since"/);
+    const stafford = { ...dak, player_name: "Matthew Stafford", line: 231.5, hits: 25, games: 30, record: "25 of his last 30",
+      sentence: "Matthew Stafford has gone over 231.5 Pass Yds in 25 of his last 30 prime-time games" };
+    expect(checkSentence(stafford, "Matthew Stafford has cleared 231.5 Pass Yds in 25 of his last 30 prime-time games")).toBeNull();
+    expect(checkSentence(stafford, "Matthew Stafford has cleared 231.5 Pass Yds in 25 of his last 30 games")).toMatch(/prime-time/);
+    expect(checkSentence(gibbs, "Jahmyr Gibbs has scored in 10 of his last 11 games against Top-10 run defenses")).toBeNull();
+  });
+
+  it("checks milestones and streaks (D-119)", () => {
+    const giannis = { ...dak, player_name: "Giannis Antetokounmpo", stat: "Pts", stat_terms: ["Pts"], line: 28.5, hits: 8, games: 10,
+      record: "8 of his last 10", window: "last10", conditions: [], family: "form", angle_type: "form:milestone", milestone: 30,
+      sentence: "Giannis Antetokounmpo has scored 30 or more Pts in 8 of his last 10 games" };
+    expect(checkSentence(giannis, "Giannis Antetokounmpo has put up 30 or more Pts in 8 of his last 10 games")).toBeNull();
+    expect(checkSentence(giannis, "Giannis Antetokounmpo has scored at least 30 Pts in 8 of his last 10 games")).toBeNull();
+    expect(checkSentence(giannis, "Giannis Antetokounmpo has scored 30 Pts in 8 of his last 10 games")).toBe('dropped "or more"');
+    expect(checkSentence(giannis, "Giannis Antetokounmpo has cleared 28.5 Pts in 8 of his last 10 games")).toMatch(/number 28.5/);
+    const jokic = { ...dak, player_name: "Nikola Jokic", stat: "Reb", stat_terms: ["Reb"], line: 11.5, hits: 9, games: 9, record: "9 straight",
+      window: "streak", conditions: [], family: "form", angle_type: "form:streak", sentence: "Nikola Jokic has gone over 11.5 Reb in 9 straight games" };
+    expect(checkSentence(jokic, "Nikola Jokic has topped 11.5 Reb in 9 straight games")).toBeNull();
+    expect(checkSentence(jokic, "Nikola Jokic has topped 11.5 Reb in all 9 of his games")).toBe("record changed");
+  });
+
   it("finds the record to bold", () => {
     expect(recordRun("CeeDee Lamb has stayed under 7.5 catches in 16 straight games after a Cowboys win", 16, 16)).toBe("16 straight");
     expect(recordRun("x in all 5 of his Thanksgiving games", 5, 5)).toBe("all 5");

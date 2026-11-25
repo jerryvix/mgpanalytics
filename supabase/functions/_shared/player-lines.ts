@@ -30,6 +30,8 @@ export interface Candidate {
   tier: "strong" | "fallback";
   score?: number;
   stale?: boolean;
+  /** D-119: the round number a milestone line names ("30 or more Pts"), above `line`, which stays the prop's number */
+  milestone?: number | null;
 }
 
 export interface GamePayload {
@@ -101,6 +103,18 @@ export function recordRun(sentence: string, hits: number, games: number): string
   return null;
 }
 
+// D-119: the words after the record say which games it covers ("since moving into the starting lineup", "home",
+// "after a win", "prime-time"). Dropping one would claim a different sample, so each lowercase word of four or more
+// letters there has to survive a rewording. "vs" and "against" are interchangeable (the rubric says so).
+const SWAPPABLE = new Set(["against", "games", "game"]);
+
+/** The condition words a rewording must keep: "since moving into the starting lineup" -> since, moving, into, starting, lineup. */
+export function conditionWords(c: Candidate): string[] {
+  const at = c.sentence.indexOf(c.record);
+  const tail = at < 0 ? "" : c.sentence.slice(at + c.record.length);
+  return [...new Set((tail.match(/\b[a-z][a-z-]{3,}\b/g) ?? []).filter((w) => !SWAPPABLE.has(w)))];
+}
+
 /** Why the judge's sentence can't be used for this candidate, or null when it holds. */
 export function checkSentence(c: Candidate, raw: string): string | null {
   const s = raw.trim().replace(/\.+$/, "");
@@ -129,6 +143,13 @@ export function checkSentence(c: Candidate, raw: string): string | null {
   for (const w of properNouns(c.sentence)) {
     if (!s.includes(w)) return `dropped "${w}"`;
   }
+  const lower = s.toLowerCase();
+  for (const w of conditionWords(c)) {
+    if (!lower.includes(w)) return `dropped "${w}"`;
+  }
+  // a milestone ("has scored 30 or more Pts") can't lose its "or more": "scored 30 Pts" would say exactly 30
+  const head = c.sentence.slice(0, Math.max(0, c.sentence.indexOf(c.record)));
+  if (/\bor more\b/.test(head) && !/\bor more\b|\bat least\b/.test(s)) return 'dropped "or more"';
   // the record keeps its exact form: "5 straight" can't become "all 5 of his" (that claims a whole career,
   // and the data starts in 2018)
   if (!s.includes(c.record) || !recordRun(s, c.hits, c.games)) return "record changed";

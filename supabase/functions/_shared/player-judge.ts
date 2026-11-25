@@ -58,7 +58,8 @@ How to choose:
 - Variety across the slate: the angle types already shown on other games are listed; don't repeat one that is already on two games unless nothing else here is close.
 
 How to write:
-- Start from the candidate's sentence. You may reword it for flow, but keep every number exactly as written (the line stays 3.5, not 3; the hits; the games), the player's full name, the stat name, the side (over or under) and every condition. Don't add facts, numbers or opinions. "vs" or "against" are both fine.
+- Start from the candidate's sentence. You may reword it for flow, but keep every number exactly as written (the line stays 3.5, not 3; the hits; the games), the player's full name, the stat name, the side (over or under) and every condition, word for word after the record ("since moving into the starting lineup", "home", "after a win"). Don't add facts, numbers or opinions. "vs" or "against" are both fine.
+- Some lines are a milestone: a round number just above the prop's line, shown beside it ("Giannis Antetokounmpo has scored 30 or more Pts in 8 of his last 10 games" over "O 28.5 Pts"). Keep its number and "or more"; never swap in the prop's line. A streak ("in 9 straight games") is his current run against tonight's number.
 - No pick language: never "bet", "take", "lock", "should", "play", "value", "edge", "hammer", "fade", "tail". No em dashes or en dashes; plain hyphens only. No period at the end.
 - show_ticker: true when the sentence refers to a class of opponents (Top-10, Bottom-10, blitz-heavy, fast-paced) and the candidate has a ticker; otherwise false.
 - Name a class of opponents the short way, with "Top" and "Bottom" always capitalized: "Top-10 three-point defenses", "Bottom-10 pass rushes", "blitz-heavy defenses". Never "the 10 teams that allow the fewest threes" or "the 10 defenses with the most sacks" (the owner said it reads weird).
