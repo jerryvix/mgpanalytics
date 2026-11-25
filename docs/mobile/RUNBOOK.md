@@ -6,7 +6,7 @@ How to build, test and ship the MGP iPhone app. Sections marked **pending** get 
 
 | System | Owner account | How the builder gets access |
 |---|---|---|
-| Apple Developer / App Store Connect | LLC organization account | App Store Connect API key stored in Expo (never in the repo) |
+| Apple Developer / App Store Connect | Team 4939734628, app Apple ID 6838568637, bundle `com.mgpanalytics.app`. The LLC is not filed (D-110). Confirm Entity Type under Membership details. An Individual account can submit this app (`APP_STORE_COMPLIANCE.md`) | App Store Connect API key stored in Expo (never in the repo) |
 | Expo (EAS) | Business email | Access token via secure form, stored as `EXPO_TOKEN` in the build environment |
 | Supabase | Existing project `vwezujtftfccamoduglp` | Access token via secure form |
 | Figma | Owner | Owner imports review pages; optional token for comments |
@@ -48,20 +48,25 @@ If a build fails: `eas build:view <id> --json` gives `logFiles`; download with `
 
 ## Over-the-air update (EAS Update)
 
-When to use: JavaScript-only fixes that don't change native code or the app's purpose. Anything touching native modules, permissions or app.json native config needs a new store build.
+When to use: JavaScript-only fixes that don't change native code or the app's purpose. Anything touching native modules, permissions, or `app.json` native config needs a new store build. A new build changes the runtime fingerprint, so an update published from a different fingerprint does not reach the previous build.
 
-TestFlight and App Store builds listen on the `production` channel (runtime `exposdk:58.0.0`); Expo Go previews use `preview`.
+Runtime policy is `fingerprint` (`mobile/app.json`, `runtimeVersion.policy`). `mobile/eas.json` does not set its own runtime, so this policy covers every profile. Store and TestFlight builds use the `production` channel (`build.production.channel` in `eas.json`). The release task names the store build on this policy as build 6. Git does not store the EAS build number or the fingerprint hash. Publish a production update from a tree whose native fingerprint matches that build, or the phone will not apply it.
+
+Checked 2026-11-25 against `mobile/app.json`, `mobile/eas.json`, `mobile/src/lib/app-updates.ts`, and `mobile/src/app/_layout.tsx` (`useAppUpdates()`).
+
+What the previous runbook said, and what the files say now:
+
+- It said TestFlight builds use runtime `exposdk:58.0.0`. `app.json` says `fingerprint`. The `exposdk` runtime was the Expo Go policy. It is no longer the store policy.
+- It said testers get the update the second time they open the app. D-108 and `app-updates.ts` apply an update on the open that downloads it, when the download finishes within 10 seconds. Coming back after a minute or more away counts as opening again. An update that finishes later, while the app is in use, waits for the next return. Off in development and on the web preview (`ON` in `app-updates.ts`).
 
 ```sh
 cd mobile
 EXPO_TOKEN=proxy-injected npx -y eas-cli@latest update --channel production --environment production --message "<what changed>" --non-interactive
 ```
 
-Testers get the update the second time they open the app (the first launch downloads it).
-
 ## App Store submission (pending)
 
-Checklist lives in `APP_STORE_COMPLIANCE.md`. Store listing copy must trace to `docs/positioning.md`.
+Checklist lives in `APP_STORE_COMPLIANCE.md`. Paste-ready listing, age rating, privacy answers, review notes, TestFlight text, and the steps only Jerry can take are in `APP_STORE_LISTING.md`. Store listing copy must trace to `docs/positioning.md`.
 
 ## If App Review rejects
 
@@ -80,12 +85,12 @@ SUPABASE_ACCESS_TOKEN="sbp_$(printf '0%.0s' $(seq 40))" npx supabase functions d
 
 On your own machine, run `npx supabase login` once instead and drop the placeholder. Deploy only from a branch whose tests pass; the functions serve the live website.
 
-## Preview the app on a phone (Expo Go)
+## Preview the app on a phone
 
-The app runs in Expo Go (free on the App Store) before any TestFlight build. Each `eas update` to the `preview` channel shows up the next time Expo Go opens the app.
+TestFlight is the preview that matches the store runtime. Build 6 (and any later store build on the same fingerprint) takes `production` channel updates, and those updates apply on the first open as described above.
+
+Expo Go does not match this project anymore. `app.json` uses the `fingerprint` runtime policy, and Expo Go only loads an `exposdk` runtime. The old preview URL `exp://u.expo.dev/e2931e03-8ca1-450e-a95e-82cafa55c651?channel-name=preview&runtime-version=exposdk:58.0.0` and `docs/mobile/preview-qr.png` were for the `sdkVersion` policy. They do not load a fingerprint update. The `preview` channel in `eas.json` is still there, for an internal build made with the `preview` profile, and that build's fingerprint has to match the update. It is not an Expo Go channel.
 
 ```bash
 cd mobile && EXPO_TOKEN=proxy-injected npx -y eas-cli@latest update --channel preview --environment preview --platform ios --message "what changed" --non-interactive
 ```
-
-Open on the phone: install Expo Go, then scan `docs/mobile/preview-qr.png` with the iPhone camera, or open `exp://u.expo.dev/e2931e03-8ca1-450e-a95e-82cafa55c651?channel-name=preview&runtime-version=exposdk:58.0.0`. The runtime version is `exposdk:58.0.0` because `app.json` uses the `sdkVersion` runtime policy, which is what Expo Go loads. Switch to the `fingerprint` policy once TestFlight builds replace Expo Go.
