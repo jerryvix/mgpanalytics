@@ -21,7 +21,7 @@ export default function WelcomeScreen() {
           <Icon name="waveform.path.ecg" size={34} color={c.brand} weight="bold" />
         </View>
         <T size={34} weight="medium" style={{ letterSpacing: -0.8 }}>Welcome to MGP</T>
-        <T size={17} style={{ lineHeight: 24 }}>Get Betting Splits, trends and Expert Picks for NFL, college football and NBA games</T>
+        <T size={17} style={{ lineHeight: 24 }}>Get Betting Splits, trends and Capper Picks for NFL, college football and NBA games</T>
         <T size={17} style={{ lineHeight: 24 }}>Ask the Analyst anything about tonight&apos;s games</T>
       </View>
       <View style={{ paddingHorizontal: 24, paddingBottom: 16, gap: 14 }}>

@@ -680,3 +680,9 @@ It returns `{candidate_id, sentence, show_ticker, reason}`.
   - Each agent merges its own pull request once checks pass (D-078 and the owner's "merge everything through"), not "Jerry merges".
   - Over-the-air updates ship with the product change that needs them (Claude Code's lane), since every app change reaches phones that way. Native builds and `app.json` / `eas.json` are shared: whoever needs a new build makes it, with an In progress line first. Grok Bot keeps App Store Connect (listing, screenshots, App Privacy answers, review notes), TestFlight groups and the release docs.
 - `CLAUDE.md` now points to `AGENTS.md`. jerryvix/mgpanalytics#27 is closed in favor of this version.
+
+### D-112 "Expert Picks" becomes "Capper Picks", with no tag
+**Date:** 2026-11-25 · **By:** Owner ("change that to Capper Picks and remove the bubble that says Expert, don't want people thinking MGP thinks these people are experts").
+- The game page section, the Pulse view label and the welcome screen say "Capper Picks". The EXPERT tag beside the section title is gone. DATA stays on Betting Splits (D-104).
+- The terms of use (effective November 25, 2026) and the store listing drafts (APP_STORE_LISTING.md, APP_STORE_COMPLIANCE.md) use the new name. The website's capper directory no longer calls its analysts "Expert analysts".
+- MGP never calls a show or host an expert; picks stay credited to the show and linked to the original.

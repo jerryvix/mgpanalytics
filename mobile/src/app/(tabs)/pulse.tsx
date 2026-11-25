@@ -80,7 +80,7 @@ export default function PulseScreen() {
         <TopBar />
         <View style={{ paddingHorizontal: 16, paddingTop: 10, gap: 6 }}>
           <T size={34} weight="medium" style={{ letterSpacing: -0.8 }}>Pulse</T>
-          <Mono>{view === 'takes' ? 'Expert Picks' : 'The next three days'}</Mono>
+          <Mono>{view === 'takes' ? 'Capper Picks' : 'The next three days'}</Mono>
         </View>
         <Segs items={[{ key: 'splits', label: 'Betting Splits' }, { key: 'takes', label: 'Takes' }, { key: 'trends', label: 'Trends' }]} active={view} onChange={setView} />
         {loading && !data ? <ActivityIndicator color={c.text} style={{ paddingVertical: 32 }} /> : null}

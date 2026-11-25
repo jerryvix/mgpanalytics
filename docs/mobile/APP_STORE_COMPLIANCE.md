@@ -62,7 +62,7 @@ Sign in with Apple is not required for this submission. Add it later only if the
 | Age rating reflects betting content | Age rating | Answers and the 18+ override are in `APP_STORE_LISTING.md`. Enter them in App Store Connect | in progress |
 | No real-money wagering; no purchase tied to wagering | 5.3 | The app takes no bets, holds no money, and has no sportsbook links (D-008). No purchase code in `mobile/` | done |
 | Responsible gambling messaging | Best practice | 1-800-GAMBLER on welcome and Profile, plus the 18+ gate. Terms carry the entertainment sentence | done |
-| No "picks" or guaranteed-win language from MGP | 2.3, 5.3 | The Analyst is descriptive. Store copy is in `APP_STORE_LISTING.md`. Expert Picks are other people's opinions, credited | done |
+| No "picks" or guaranteed-win language from MGP | 2.3, 5.3 | The Analyst is descriptive. Store copy is in `APP_STORE_LISTING.md`. Capper Picks are other people's opinions, credited | done |
 
 ## Guideline 5.1.1(ix) and 5.3: Individual account or the LLC first?
 
@@ -94,7 +94,7 @@ Apple's review help (same day, https://developer.apple.com/help/app-review/befor
 
 ### Why MGP is outside those sentences
 
-5.1.1(ix) applies to apps that provide the regulated service, and to apps that require sensitive user information. 5.3.4 applies to apps that offer real money gaming. MGP shows odds, line movement, betting splits, stats, Expert Picks from public shows, and an AI chat. It does not take a bet, hold a balance, pay winnings, sell credits to wager, or link out to a sportsbook (D-008). There is no payments code in the app. Email and chat are ordinary account data, not the sensitive information the examples point at (health, a financial account, a government ID).
+5.1.1(ix) applies to apps that provide the regulated service, and to apps that require sensitive user information. 5.3.4 applies to apps that offer real money gaming. MGP shows odds, line movement, betting splits, stats, Capper Picks from public shows, and an AI chat. It does not take a bet, hold a balance, pay winnings, sell credits to wager, or link out to a sportsbook (D-008). There is no payments code in the app. Email and chat are ordinary account data, not the sensitive information the examples point at (health, a financial account, a government ID).
 
 The age-rating definition of Gambling, fetched the same day, is the same line: betting or wagering with real money, not reading about it. See `APP_STORE_LISTING.md`.
 
