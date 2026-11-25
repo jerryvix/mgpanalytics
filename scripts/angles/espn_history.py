@@ -18,10 +18,17 @@ ESPN's note for the others). ESPN's coach lists have errors (2024 lists coaches 
 decades ago; 2025 lists some spring 2025 hires), so a coach counts only when his own season
 entry shows games for that team that season (D-116).
 
+College football and the NBA (D-120) also keep, from the same scoreboard: the last period played
+(5 or more is overtime), ESPN's season type (2 regular season, 3 postseason, 5 NBA play-in), its note
+(NBA Cup games, playoff rounds, conference title games, bowls, College Football Playoff rounds) and the
+venue's city and state. --backfill adds those columns to a finished-seasons file in place, leaving
+every other value as it was.
+
 Usage:
   python3 -I scripts/angles/espn_history.py --league cfb --seasons 2016-2025 --out data/history/cfb_espn.csv --cache <dir>
   python3 -I scripts/angles/espn_history.py --league nba --seasons 2023-2026 --out data/history/nba_espn.csv --cache <dir>
   python3 -I scripts/angles/espn_history.py --league cbb --seasons 2014-2026 --out data/history/cbb_espn.csv --cache <dir>
+  python3 -I scripts/angles/espn_history.py --league nba --seasons 2023-2026 --out data/history/nba_espn.csv --cache <dir> --backfill
 NBA and college basketball seasons are named by the year they end (2026 = 2025-26), as ESPN does.
 """
 import argparse
@@ -61,6 +68,11 @@ FIELDS = ["league", "season", "week", "postseason", "start", "event_id", "home_i
           "away_abbr", "home_pts", "away_pts", "neutral", "conf_game", "home_rank", "away_rank", "home_line", "total",
           "provider", "home_coach", "away_coach"]
 FIELDS_CBB = FIELDS + ["home_coach_id", "away_coach_id", "home_conf", "away_conf", "home_seed", "away_seed", "tourney", "round"]
+# College football and the NBA (D-120), straight from the scoreboard: the last period played (5+ = overtime), ESPN's
+# season type (2 regular season, 3 postseason, 5 NBA play-in), its note ("NBA Cup - Group Play", "East Semifinals -
+# Game 3", "SEC Championship", "Rose Bowl", "College Football Playoff First Round Game") and where the game was played
+EXTRA = ["periods", "season_type", "note", "venue_city", "venue_state"]
+FIELDS_EXTRA = FIELDS + EXTRA
 THREADS = {"cfb": 8, "nba": 8, "cbb": 6}
 CBB_CORE = "https://sports.core.api.espn.com/v2/sports/basketball/leagues/mens-college-basketball"
 NCAA_ROUNDS = ["R64", "R32", "S16", "E8", "F4", "NC"]
@@ -175,6 +187,34 @@ def scoreboards(f: Fetcher, league: str, season: int, refresh_current: bool):
                 if st in (2, 3, 5):  # regular season, playoffs, play-in
                     events.append((0, st != 2, e))
     return events
+
+
+def extras(e: dict) -> dict:
+    """EXTRA columns for one scoreboard event (D-120)."""
+    c = e["competitions"][0]
+    venue = (c.get("venue") or {}).get("address") or {}
+    return {"periods": (c.get("status") or {}).get("period") or "", "season_type": (e.get("season") or {}).get("type", ""),
+            "note": "; ".join((n.get("headline") or "").strip() for n in c.get("notes", []) if n.get("headline")),
+            "venue_city": venue.get("city", ""), "venue_state": venue.get("state", "")}
+
+
+def backfill(league: str, path: str, cache: str) -> None:
+    """--backfill: add the EXTRA columns to a finished-seasons file from the same scoreboards, leaving every other
+    value as it is (its lines, scores and coaches don't move)."""
+    rows = list(csv.DictReader(open(path)))
+    f = Fetcher(cache)
+    found = {}
+    for season in sorted({int(r["season"]) for r in rows}):
+        for _, _, e in scoreboards(f, league, season, False):
+            found[e["id"]] = extras(e)
+    missing = [r["event_id"] for r in rows if r["event_id"] not in found]
+    for r in rows:
+        r.update(found.get(r["event_id"], {k: "" for k in EXTRA}))
+    with open(path, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=FIELDS_EXTRA)
+        w.writeheader()
+        w.writerows(rows)
+    print(f"{path}: {len(rows) - len(missing)} of {len(rows)} games filled" + (f"; not on a scoreboard: {' '.join(missing[:20])}" if missing else ""))
 
 
 def coaches_for(f: Fetcher, season: int, team_id: str) -> str:
@@ -357,6 +397,8 @@ def build(league: str, seasons: list[int], cache: str, current: int | None) -> l
                 "home_line": "" if line is None else line, "total": "" if total is None else total, "provider": provider or "",
                 "home_coach": coach_cache.get(h["team"]["id"], ""), "away_coach": coach_cache.get(a["team"]["id"], ""),
             }
+            if league != "cbb":
+                row.update(extras(e))
             if league == "cbb":
                 st = e.get("season", {}).get("type", 2)
                 tourney, rnd = cbb_tourney(st, c, h, a)
@@ -396,13 +438,17 @@ def main() -> None:
     ap.add_argument("--current", type=int, default=0, help="the in-progress season, re-fetched each run")
     ap.add_argument("--out", required=True)
     ap.add_argument("--cache", required=True)
+    ap.add_argument("--backfill", action="store_true", help="college football and NBA: add the D-120 columns to --out in place")
     args = ap.parse_args()
+    if args.backfill:
+        backfill(args.league, args.out, args.cache)
+        return
     a, _, b = args.seasons.partition("-")
     seasons = list(range(int(a), int(b or a) + 1))
     rows = build(args.league, seasons, args.cache, args.current or None)
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=FIELDS_CBB if args.league == "cbb" else FIELDS)
+        w = csv.DictWriter(fh, fieldnames=FIELDS_CBB if args.league == "cbb" else FIELDS_EXTRA)
         w.writeheader()
         w.writerows(sorted(rows, key=lambda r: (r["start"], r["event_id"])))
     print(f"wrote {len(rows)} games to {args.out}")
