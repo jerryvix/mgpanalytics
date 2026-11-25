@@ -32,7 +32,7 @@ over his last three seasons, this season, his games since joining a new team, si
 into the starting lineup (NBA) or becoming the lead back (NFL), his last 10, and (for rare
 situations) every game in the data. Each sample is literally "his last n" such games: where
 the file can't say whether a condition held (a blank temperature) the sample stops there.
-Over and under are both tried; a push counts as a miss for both. A sentence over 20 words
+Over and under are both tried; a push counts as a miss for both. A sentence over 24 words
 is dropped (after one try with the shortest verb).
 
 A condition has to leave out at least a quarter of his games in the window (a QB who
@@ -87,7 +87,7 @@ SEASON_CHECK = {"NFL": 4, "NBA": 5}   # with this many games this season, a line
 SPECIAL_MIN_GAMES, SPECIAL_RATE, SPECIAL_Z = 5, 0.80, 1.3   # special dates: small samples, high bar
 FRESH_SHARE = 0.5           # at least half the sample from this season and the two before, or it ranks last
 PAIR_PENALTY = 0.6
-MAX_WORDS = 20              # a longer sentence is dropped before ranking (D-118's 18-word spirit; names take a word or two)
+MAX_WORDS = 24              # a longer sentence is dropped before ranking; player lines carry a stat and a number, so 24, not 18 (D-119)
 STREAK_MIN = {"NFL": 7, "NBA": 8}   # "in 9 straight games": his current run against tonight's number (D-119)
 # Milestones (D-119): a round number just above tonight's line, shown beside it ("has scored 30 or more Pts" over
 # "G. Antetokounmpo O 28.5 Pts"). Only the next one up, more than 1 above the line (25 over a 24.5 line is the line
@@ -185,13 +185,13 @@ DEF_FEATURES = {
     "sacks":  {"more": True, "top": "Top-10 pass rushes", "bottom": "Bottom-10 pass rushes", "ticker": "Sacks"},
     "blitz":  {"more": True, "top": "blitz-heavy defenses", "bottom": "defenses that rarely blitz", "ticker": "Blitz Rate"},
     # D-119: pressures per dropback (PFR) and interceptions a game, named only at the top end, as the catalog does
-    "press":  {"more": True, "top": "pressure-heavy defenses", "ticker": "Pressure Rate"},
-    "intd":   {"more": True, "top": "ball-hawking defenses", "ticker": "INTs"},
+    "press":  {"more": True, "top": "Top-10 pressure defenses", "ticker": "Pressure Rate"},
+    "intd":   {"more": True, "top": "Top-10 interception defenses", "ticker": "INTs"},
     "pa":     {"top": "Top-10 scoring defenses", "bottom": "Bottom-10 scoring defenses", "ticker": "Pts Allowed"},
     "fg3a":   {"top": "Top-10 three-point defenses", "bottom": "Bottom-10 three-point defenses", "ticker": "3PM Allowed"},
     "pace":   {"more": True, "top": "fast-paced teams", "bottom": "slow-paced teams", "ticker": "Pace"},
     # D-119: rebounds and assists the opponent's players get a game, from the box scores
-    "rba":    {"top": "Top-10 rebounding teams", "bottom": "Bottom-10 rebounding teams", "ticker": "Reb Allowed"},
+    "rba":    {"top": "Top-10 rebounding defenses", "bottom": "Bottom-10 rebounding defenses", "ticker": "Reb Allowed"},
     "asta":   {"top": "Top-10 assist defenses", "bottom": "Bottom-10 assist defenses", "ticker": "Ast Allowed"},
 }
 # which defense features speak to which markets ("rec_POS" = yards allowed to his position; "@RB" = only for backs)
@@ -2048,10 +2048,10 @@ def self_test_wave1(Fake) -> None:
     assert sl and sl[0].text.endswith("5.5 Ast in 11 of his 12 games since moving into the starting lineup"), [x.text for x in sl]
     t, rec = sentence("A B", NFL_MARKETS["Total Passing Yards (incl. overtime)"], 173.5, "under", 10, 10, "team", (), "Steelers")
     assert t.endswith("173.5 Pass Yds in 10 straight games since joining the Steelers") and rec == "10 straight", t
-    # the word cap: a long name pushes every sentence past 20 words
-    data.full = "Alpha Beta Gamma Delta Epsilon Zeta Eta Theta Iota"
+    # the word cap: a long name pushes every sentence past 24 words
+    data.full = "Alpha Beta Gamma Delta Epsilon Zeta Eta Theta Iota Kappa Lambda Mu Nu"
     long = evaluate("NBA", u, "T1", "p2", "Total Points", 26.5, data, "Ones")
-    assert long and not [x for x in long if words(x.text) > MAX_WORDS] and not [x for x in long if x.mark is not None]   # 22 words
+    assert long and not [x for x in long if words(x.text) > MAX_WORDS] and not [x for x in long if x.mark is not None]   # 26 words
     assert words("A B has cleared 17.5 Pts + Reb + Ast") == 8
     rec_yds = NFL_MARKETS["Total Receiving Yards (incl. overtime)"]
     assert {pick_verb(rec_yds, "over", str(i), short=True) for i in range(40)} == {"cleared", "topped"}
@@ -2092,7 +2092,7 @@ def self_test_wave1(Fake) -> None:
     # pressure and interceptions are named at the top end only, with the opponent's exact rank
     uq = Upcoming("NFL", "q", "", "2026-12-01T13:00", 2026, "", {}, {"T": {"opp": "O", "opp_abbr": "GB", "defense": {"press": (32, 32, 0.4), "intd": (1, 32, 0.2)}}}, {}, {})
     dc = defense_conds("NFL", uq, "T", NFL_MARKETS["Total Passing Interceptions (incl. overtime)"], "QB")
-    assert [(x.suffix, x.ticker) for x in dc if x.feature in ("press", "intd")] == [("vs pressure-heavy defenses", "GB DEF 1st in Pressure Rate")], dc
+    assert [(x.suffix, x.ticker) for x in dc if x.feature in ("press", "intd")] == [("vs Top-10 pressure defenses", "GB DEF 1st in Pressure Rate")], dc
     # an earlier game still to play: no last result, rest or three in four for this one
     up = {**u.ctx["T1"], "prev": "W", "rest": 1, "g4": 3, "pending": True}
     kinds = {x.kind for x in team_conds("NBA", Upcoming("NBA", "z", "", u.t, 2027, "", u.teams, {"T1": up}, {}, {}), "T1")}
