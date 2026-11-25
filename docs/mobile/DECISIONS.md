@@ -524,7 +524,7 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-093 Skinny splits bars everywhere; "Based on DraftKings"; Expert Picks all day
 **Date:** 2026-11-24 · **By:** Owner ("I really like the skinny bar graphs... we just need to make it clear which side"; picked skinny bars on rows too; "Based on DraftKings (italicize it and shrink it). Remove the Updated... add that to Pulse"; "change that to Expert Picks... bring them back")
 **Splits:** thin bars, white for the first side (away, Over) and gray for the second (home, Under), the bigger share bold. Game rows on Today and Games show the spread as two bars, BETS and MONEY, with each team's logo at its end. The game page shows each market (Spread, Total, Moneyline) with the two sides' logos and bets ("MEM -2.5", "O 212.5") above the matching ends of its Bets and Money bars. Replaces D-089 and D-092.
-**Source line:** "Based on DraftKings" in Geist Italic, 12 points, no update time, on Today, Games, Pulse (Betting Splits) and the game page.
+**Source line:** "Based on DraftKings" in Geist Italic, 12 points, no update time, on Today, Games, Pulse (Betting Splits) and the game page. On the game page it sits directly under Betting Splits, before the one line and the player line, and shows only when the splits do (owner, Nov 25: "right below the betting splits").
 **Expert Picks:** the Pulse subtitle reads "Expert Picks". Picks stay up for 12 hours after their game starts; each shows Live during the game, then Hit, Miss or Push (Final when it can't be graded), and the game header shows the final score. Credit is the person when exactly one is known, else the show.
 
 ### D-094 The Analyst works like a normal iOS chat app

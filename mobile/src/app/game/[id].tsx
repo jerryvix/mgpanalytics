@@ -5,7 +5,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, View }
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { matchupLabel, winnerOf } from '@/components/game-row';
-import { Empty, Icon, Logo, OneLineText, SectionTitle, SourceNote, T } from '@/components/night';
+import { Empty, Icon, Logo, OneLineText, SectionTitle, T } from '@/components/night';
 import { SplitsBlock } from '@/components/splits';
 import { MarketNotes } from '@/components/market-notes';
 import { TakeRow } from '@/components/take-row';
@@ -67,7 +67,6 @@ export default function GameScreen() {
                 <OneLineText line={g.playerLine} size={18} sub={playerLineSub(g.playerLine)} />
               </View>
             ) : null}
-            {g.splits && !g.splitsPending ? <SourceNote /> : null}
             <MarketNotes notes={g.notes} />
             {g.takes && g.takes.length ? (
               <>
