@@ -9,9 +9,22 @@ name: Game lines
 on:
   schedule:
     # 9:23 AM and 3:23 PM Eastern (UTC times; off the hour so GitHub doesn't delay them).
-    # The afternoon run picks up NBA lines posted after the morning.
+    # The afternoon run picks up NBA lines posted after the morning. GitHub treats schedules as
+    # best effort and skipped both runs on Nov 25, so two backups follow each (D-121); a run
+    # with nothing new rewrites the same lines.
     - cron: "23 14 * * *"
+    - cron: "53 16 * * *"
     - cron: "23 20 * * *"
+    - cron: "53 22 * * *"
+  # A merged change to the engines, their data or this file refreshes the lines right away (D-121)
+  push:
+    branches: [main]
+    paths:
+      - "scripts/angles/**"
+      - "data/history/**"
+      - ".github/workflows/game-lines.yml"
+      - "supabase/functions/_shared/player-lines*.ts"
+      - "supabase/functions/_shared/player-judge.ts"
   workflow_dispatch:
 
 permissions:
