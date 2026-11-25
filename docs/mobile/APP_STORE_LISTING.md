@@ -69,79 +69,81 @@ The record already uses this name (D-083). Leave it.
 Paste:
 
 ```
-Bet Smarter, Not Harder
+The Numbers Behind Every Game
 ```
 
-23 characters. Limit 30.
+29 characters. Limit 30.
 
 Path: App Information > Subtitle. Same page as Name.
 
-Source: `docs/positioning.md`, "Shipped pitch lines", the /why hero: "Bet Smarter, Not Harder. Get real insights."
+Source: `docs/positioning.md`, "Shipped pitch lines" and "Research framing" (owner, Nov 25: lead with research and data, not betting).
 
 ### Promotional Text
 
 Paste:
 
 ```
-Get an edge on the books. See the bets and the money, then ask the Analyst about tonight's game
+Know the matchup before it starts. See the stats, trends and market data behind every game, then ask the Analyst anything
 ```
 
-95 characters. Limit 170. This field can change later without a new review.
+121 characters. Limit 170. This field can change later without a new review.
 
 Path: Distribution > iOS App > 1.0 > Promotional Text.
 
-Source: "Get an edge on the books." is the landing hero in "Shipped pitch lines". "The bets and the money" is the public betting split (audit note, 2026-11-21: real for NFL and college football). "Ask the Analyst" is advantage 1, the grounded analyst.
+Source: the landing hero ("The numbers behind every game") and advantage 1, the grounded analyst. Research framing (owner, Nov 25).
 
 ### Description
 
 Paste:
 
 ```
-Bet Smarter, Not Harder.
+The numbers behind every game.
 
-MGP Analytics brings odds, line moves, and betting splits for NFL, college football, and NBA games into one app.
+MGP Analytics is your sports research app for the NFL, college football and the NBA. Get matchup stats, trends, market data and historical records for every game in one place.
 
-Betting Splits show the share of bets and the share of money on each side.
+See where public sentiment is leaning on every game.
 
-Ask the Analyst about games, odds, splits, and trends.
+Each game page pairs the matchup with a verified stat from its history.
 
-Capper Picks show what public shows are saying, with the show credited.
+Ask the Analyst, an AI research assistant, anything about a matchup.
+
+Capper Picks show what popular sports shows are saying, with the show credited.
 
 Browse without an account. Sign in when you want to ask the Analyst.
 
-MGP shows information. It does not take bets or hold your money
+MGP is a sports information app. It does not take bets or hold your money
 ```
 
-478 characters. Limit 4000.
+630 characters. Limit 4000.
 
 Path: Distribution > iOS App > 1.0 > Description.
 
-Source, by sentence:
+Source, by sentence (research framing, owner Nov 25; `docs/positioning.md`, "Research framing"):
 
-- "Bet Smarter, Not Harder." Shipped pitch lines, /why hero.
-- Odds and line moves. Shipped pitch lines, landing hero ("Live odds. Line moves."). The word "Live" is left out on purpose. "Known copy debt" says odds are not real time. Terms: they update on a schedule, about every 6 hours.
-- NFL, college football, and NBA. Those are the sports in the app (`mobile/src/lib/feed.ts`, `SPORTS`). Positioning covers more sports than the app ships. The description names only the three on the board.
-- Share of bets and share of money. Audit note, 2026-11-21: public betting % is real for NFL and college football. That note still said NBA was not available. The app's board includes NBA (`mobile/src/lib/feed.ts`), and a market with no real split is hidden (D-088). The description names NBA because the app does.
-- Ask the Analyst about games, odds, splits, and trends. Advantage 1, and the in-app notice (D-085). The sentence does not say the Analyst tells you what to bet. Guardrail in advantage 1: no "should bet", no "lock".
-- Capper Picks. The section name is in the app (welcome screen, D-093). Positioning's rule is that MGP does not sell picks. The sentence credits the shows and does not call them MGP's advice.
-- Browse without an account. D-014, built. Not a positioning claim. It is how the app works, and App Review asks for it.
-- Does not take bets or hold money. Terms, "MGP Isn't Betting Advice". Required so the description is not a gambling claim (guideline 2.3.1 and 5.3).
+- "The numbers behind every game." The landing hero.
+- Matchup stats, trends, market data and historical records for the NFL, college football and the NBA. The sports on the board (`mobile/src/lib/feed.ts`). "Market data" covers the odds and line moves, which update on a schedule, about every 6 hours (not real time).
+- Public sentiment. The Betting Splits section: the share of bets and money on each side (D-088 hides a market with no real split).
+- A verified stat from each game's history. The one line per game and the player line (D-075, D-105, D-115 to D-120), every record recomputed from the raw data.
+- Ask the Analyst. Advantage 1, the in-app notice (D-085). It never says the Analyst tells you what to bet.
+- Capper Picks. The section name in the app (D-112), credited to the shows, not MGP's advice.
+- Browse without an account. D-014, built.
+- A sports information app that does not take bets or hold money. Kept on purpose: it protects the listing under guidelines 2.3.1 and 5.3 and states what MGP is.
 
-Not used, from "DO NOT CLAIM": Kalshi, real time, 50+ sportsbooks, "Powered by Gemini", live futures.
+Not used, from "DO NOT CLAIM": Kalshi or prediction markets, real time, 50+ sportsbooks, "Powered by Gemini", live futures. No "predictions": MGP doesn't predict outcomes.
 
 ### Keywords
 
 Paste, with the commas and without spaces:
 
 ```
-betting,odds,splits,lines,spreads,totals,moneylines,props,nfl,nba,ncaaf,trends,matchups,scores
+sports,stats,analytics,research,trends,matchups,odds,splits,data,nfl,nba,ncaaf,college,scores
 ```
 
-94 characters. Limit 100. No spaces. The app name is not repeated.
+93 characters. Limit 100. No spaces. The app name is not repeated.
 
 Path: Distribution > iOS App > 1.0 > Keywords.
 
-Source: the same feature words as the description (odds, splits, lines, the NFL / NBA / college football board, trends). Spreads, totals, moneylines, and props are markets the app shows. Scores are on final games. "betting" matches the category of the product. No competitor names. No "picks", "lock", or "guaranteed".
+Source: the research framing (owner, Nov 25): sports, stats, analytics, research, data, plus the board's sports and what people search for (odds, splits, matchups, scores). No "betting", no market names (spreads, totals, moneylines, props). No competitor names. No "picks", "lock", "guaranteed" or "predictions".
 
 ## Category
 

@@ -88,10 +88,10 @@ const Index = () => {
           className="mb-7 max-w-xl text-center"
         >
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3 text-balance">
-            Get an edge on the books.
+            The numbers behind every game
           </h2>
           <p className="text-sm md:text-base text-muted-foreground leading-relaxed">
-            Live odds. Line moves. Hot streaks. One screen.
+            Stats. Trends. Market data. One screen
           </p>
         </motion.div>
 

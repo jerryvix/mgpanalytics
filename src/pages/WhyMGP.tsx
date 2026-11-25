@@ -4,13 +4,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 // Why MGP: public positioning page. Every claim traces to docs/positioning.md.
+// Research and data framing, not betting (owner, Nov 25; positioning "Research framing").
 // Voice rules for this surface (owner-set): positive benefits only, nothing
 // defensive, no jargon, no analogies, no em dashes, one line per card.
 
 const SECTIONS: Array<{ title: string; body: string }> = [
   {
     title: "No guesses. Just real numbers.",
-    body: "Every answer pulls the live line straight from the books.",
+    body: "Every answer is grounded in real data, with the source named.",
   },
   {
     title: "Get specialized data and insights.",
@@ -18,7 +19,7 @@ const SECTIONS: Array<{ title: string; body: string }> = [
   },
   {
     title: "Stop checking multiple apps.",
-    body: "Odds, line moves, live scores and hot streaks in one place.",
+    body: "Stats, trends, market data and live scores in one place.",
   },
 ];
 
@@ -68,7 +69,7 @@ const WhyMGP = () => {
           className="mt-10 mb-14"
         >
           <h1 className="text-3xl md:text-5xl font-bold text-foreground leading-tight mb-5">
-            Bet Smarter, Not Harder. Get real insights.
+            Know every matchup. Get real insights
           </h1>
           <p className="font-mono text-[11px] tracking-widest uppercase text-terminal-green">
             Real numbers • Specialized insights • One screen
