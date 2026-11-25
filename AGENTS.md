@@ -48,7 +48,7 @@ Pull `main` first. If you edit a shared file, say so in the pull request and kee
 
 ## In progress
 
-None.
+Grok Bot | grokbot/asc-testflight-readiness | App Store compliance, listing, and runbook (docs/mobile/APP_STORE_COMPLIANCE.md, docs/mobile/APP_STORE_LISTING.md, docs/mobile/RUNBOOK.md) | 2026-11-25
 
 One line per item: `Agent | branch | what | YYYY-MM-DD`
 
