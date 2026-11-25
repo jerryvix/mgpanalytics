@@ -45,14 +45,23 @@
 | "Powered by Gemini" | The live analyst is Claude Sonnet 4.6 (`gemini-chat` name is legacy). |
 | Rich prop-grading analyst in chat (EPA, CPOE, target share) | That code lives in the deprecated, unmounted `useChatQuery` path. Users never see it. |
 
-## Shipped pitch lines (approved July 17, 2026, rev 2)
-- Landing hero: "Get an edge on the books." / "Live odds. Line moves. Hot streaks. One screen."
-- /why hero: "Bet Smarter, Not Harder. Get real insights."
+## Shipped pitch lines (approved July 17, 2026, rev 2; research framing Nov 25, 2026)
+- Landing hero: "The numbers behind every game" / "Stats. Trends. Market data. One screen"
+- /why hero: "Know every matchup. Get real insights"
+- App Store subtitle: "The Numbers Behind Every Game"; TestFlight and store copy: "your sports research app"
+- Retired Nov 25: "Get an edge on the books.", "Live odds. Line moves.", "Bet Smarter, Not Harder."
 - /why card headers: "No guesses. Just real numbers." · "Get specialized data and insights." · "Stop checking multiple apps."
 - Cut by owner direction: platform name-drops on the landing subhead (retires the Kalshi flag), the /why contrast grid and the "what we do not do" card.
 
 ## Consumer voice rule (owner-set, July 17, 2026)
 Positive claims only on consumer surfaces. No defensive framing: nothing about hallucination, staleness, unverified claims or AI memory. Consumers are not doubting the data until copy plants that seed. The integrity story stays real in the product (provenance on cards, staleness warnings in chat) and in this doc; it is not marketing copy.
+
+## Research framing (owner, Nov 25, 2026)
+MGP presents sports data. Marketing surfaces (App Store and TestFlight copy, the website's public pages, link previews, social) lead with research, analytics and data, not betting: sports betting isn't legal everywhere, and MGP is a sports information app. What keeps MGP on the right side is what it does (no wagers, no money held, no sportsbook links or promos); the framing keeps the marketing out of gambling promotion.
+- Say: research, analytics, stats, trends, matchups, historical records, market data, public sentiment, the numbers behind every game, know the matchup.
+- Don't say in marketing: bet, betting, bettors, wager, gamble, sportsbook, "edge on the books", picks (other than the Capper Picks section name). Never "predictions" or prediction markets: MGP doesn't predict outcomes.
+- Keep: the responsible-gaming line (1-800-GAMBLER), the legal disclaimers ("does not take bets or hold your money"), and Apple's private review notes, which say plainly there's no wagering.
+- In-app data labels (Betting Splits, ATS, O/U) describe the data and stay as they are.
 
 ## Copy rules for shipped surfaces
 - Lead with the grounded-analyst story. Benefit language, second person.

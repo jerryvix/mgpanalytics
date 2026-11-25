@@ -92,8 +92,8 @@ export function Support() {
           screen and follow the link we email you.
         </li>
         <li>
-          <strong className="font-semibold text-foreground">How fresh are the odds:</strong> odds update on a schedule, about
-          every 6 hours. Always confirm lines with your sportsbook.
+          <strong className="font-semibold text-foreground">How fresh is the market data:</strong> it updates on a schedule,
+          about every 6 hours.
         </li>
         <li>
           <strong className="font-semibold text-foreground">Need help with gambling:</strong> call 1-800-GAMBLER for free,
