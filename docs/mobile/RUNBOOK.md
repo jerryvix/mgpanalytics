@@ -85,6 +85,33 @@ SUPABASE_ACCESS_TOKEN="sbp_$(printf '0%.0s' $(seq 40))" npx supabase functions d
 
 On your own machine, run `npx supabase login` once instead and drop the placeholder. Deploy only from a branch whose tests pass; the functions serve the live website.
 
+## College basketball switch (D-116)
+
+Men's college basketball is built and **off**. Two switches turn it on, and each is off unless it says exactly `true`.
+
+| Switch | Where | What it does |
+|---|---|---|
+| `ENABLE_NCAAB` repository variable | GitHub, Settings > Secrets and variables > Actions > Variables (a variable, not a secret), or `gh variable set ENABLE_NCAAB --body true --repo jerryvix/mgpanalytics` | The Game lines workflow (`game-lines.yml`) also refreshes this season's college basketball history, runs the engine for the next 2 days and stores the lines through `ingest-game-lines`, in calls of their own. A failure there marks the run failed but never holds back the NFL, college football or NBA lines |
+| `ENABLE_NCAAB` function secret | Supabase: `supabase secrets set ENABLE_NCAAB=true --project-ref vwezujtftfccamoduglp` | `app-feed` serves college basketball games and lists "College Basketball" in the `sports` it returns. The app builds its sport chips and sections from that list, so it shows up on the next fetch with no app update |
+
+Turning it on, in order:
+
+1. Deploy `app-feed` from `main` (the switch is in the new code; see "Deploying a Supabase edge function").
+2. Before the first NCAA tournament game (Selection Sunday, mid-March 2027): apply `supabase/migrations/20261125200000_game_lines_moneyline.sql`. Straight-up tournament lines (seed matchups, coaches) use market `moneyline`, which `game_lines` rejects until then. Spread and total lines don't need it.
+3. Set the repository variable and let one run finish (or run the workflow by hand). Check its log for "college basketball lines".
+4. Set the function secret.
+
+Turning it off: delete either one, or set it to anything other than `true`. Lines already stored stay until their games start.
+
+Each spring, after the title game, add the finished season to the committed history and the tournament file (the workflow only refreshes the current season):
+
+```sh
+python3 -I scripts/angles/espn_history.py --league cbb --seasons 2027 --out /tmp/cbb_2027.csv --cache ~/.cache/espn-history
+# append its rows to data/history/cbb_espn.csv (same columns), then:
+python3 -I scripts/angles/ncaa_tournament.py build --wiki ~/.cache/ncaa-wiki --fetch --cache ~/.cache/espn-history
+python3 -I scripts/angles/ncaa_tournament.py --self-test
+```
+
 ## Preview the app on a phone
 
 TestFlight is the preview that matches the store runtime. Build 6 (and any later store build on the same fingerprint) takes `production` channel updates, and those updates apply on the first open as described above.

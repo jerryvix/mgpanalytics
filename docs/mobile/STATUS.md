@@ -37,6 +37,7 @@
 
 ## In progress
 
+- Men's college basketball (D-116), built and **off** until the owner says go, on `claude/ncaab-groundwork`: ESPN history with lines since 2012-13 (82,527 games), every NCAA tournament game since 1985 with seeds (lines since 2013), the one-line engine with seed matchups and coaches' tournament records, and two switches named `ENABLE_NCAAB` (the workflow and `app-feed`; `RUNBOOK.md`). The app now takes its sport list from the feed, so nothing changes on screen until it's on. Research: `research/ncaab-data.md`.
 - Supabase client and sign-in in the app.
 - X posts as a free Takes source (picks in Takes, market notes next to Betting Splits) through `ingest-x-takes`. No paid X API. In progress on `grokbot/x-takes-ingest`. Jerry merges.
 

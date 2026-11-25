@@ -64,12 +64,17 @@ jobs:
       - name: Engine self-test
         run: python -I scripts/angles/player_angles.py --self-test
       - name: Compute and store the lines
+        env:
+          # Men's college basketball (D-116) runs only when the repo variable ENABLE_NCAAB is "true"
+          ENABLE_NCAAB: ${{ vars.ENABLE_NCAAB }}
         run: |
-          # College football and NFL seasons are named by their start year, the NBA by its end year.
+          # College football and NFL seasons are named by their start year, the NBA and college basketball by their end year.
           M=$(date -u +%m); Y=$(date -u +%Y)
           if [ "$M" -le 6 ]; then CFB=$((Y-1)); else CFB=$Y; fi
           if [ "$M" -ge 8 ]; then NBA=$((Y+1)); else NBA=$Y; fi
+          NCAAB=""
+          if [ "$ENABLE_NCAAB" = "true" ]; then NCAAB="--ncaab --cbb-season $NBA"; fi
           python -I scripts/angles/run_daily.py --nflverse games.csv --cfb-season "$CFB" --nba-season "$NBA" \
             --ingest-url https://vwezujtftfccamoduglp.supabase.co/functions/v1/ingest-game-lines \
             --nflverse-dir nflverse \
-            --player-ingest-url https://vwezujtftfccamoduglp.supabase.co/functions/v1/ingest-player-lines
+            --player-ingest-url https://vwezujtftfccamoduglp.supabase.co/functions/v1/ingest-player-lines $NCAAB

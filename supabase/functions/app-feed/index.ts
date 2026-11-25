@@ -10,6 +10,11 @@
 // GET ?view=day&date=YYYY-MM-DD&sports=NFL,NCAAF,NBA   games on one Eastern date
 // GET ?view=game&id=<ESPN event id>&sport=NBA           one game with every market's splits, its Takes and its player line
 // GET ?view=pulse&sports=NFL,NCAAF,NBA                  boards across the next 3 days, Takes, the day's strongest lines
+// GET ?view=sports                                      the sports the feed serves, [{ key, label }]
+//
+// Sports (D-116): NFL, college football and the NBA. Men's college basketball (NCAAB) joins only
+// when the function secret ENABLE_NCAAB is "true"; the day and pulse views also return `sports`,
+// which the app uses for its sport chips and sections, so turning it on needs no app update.
 //
 // Capper Picks (D-093, D-112): a show's pick stays up for 12 hours after its game starts. Each
 // pick on the pulse and game views carries `state` (ESPN's pre, in or post), `final`
@@ -22,16 +27,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { espnFetch } from "../_shared/espn-fetch.ts";
 import { xAccount } from "../_shared/takes-sources.ts";
 import { creditedPerson, finalLabel, type GameBox, gradeTake, needsBox, parseBox } from "../_shared/takes-grade.ts";
+import { type FeedSport, feedSports, requestedSports, sportList } from "../_shared/feed-sports.ts";
 
-type Sport = "NFL" | "NCAAF" | "NBA";
+type Sport = FeedSport;
 const PATHS: Record<Sport, string> = {
   NFL: "football/nfl",
   NCAAF: "football/college-football",
   NBA: "basketball/nba",
+  NCAAB: "basketball/mens-college-basketball",
 };
-const QUERY: Record<Sport, string> = { NFL: "", NCAAF: "&groups=80&limit=300", NBA: "" };
-const LEAGUE: Record<Sport, string> = { NFL: "nfl", NCAAF: "college-football", NBA: "nba" };
-const ALL: Sport[] = ["NFL", "NCAAF", "NBA"];
+// College basketball: Division I only (ESPN group 50)
+const QUERY: Record<Sport, string> = { NFL: "", NCAAF: "&groups=80&limit=300", NBA: "", NCAAB: "&groups=50&limit=400" };
+const LEAGUE: Record<Sport, string> = { NFL: "nfl", NCAAF: "college-football", NBA: "nba", NCAAB: "mens-college-basketball" };
 const ET = "America/New_York";
 const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, apikey, content-type" };
 
@@ -304,8 +311,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
   const url = new URL(req.url);
   const view = url.searchParams.get("view") ?? "day";
-  const sports = (url.searchParams.get("sports")?.split(",").filter((s) => (ALL as string[]).includes(s)) as Sport[]) ?? ALL;
-  const want = sports.length ? sports : ALL;
+  // D-116: college basketball only when ENABLE_NCAAB is "true"
+  const on = feedSports(Deno.env.get("ENABLE_NCAAB"));
+  const want = requestedSports(url.searchParams.get("sports"), on);
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
   if (view === "day") {
@@ -315,12 +323,13 @@ serve(async (req) => {
     const games = lists.flat().sort((a, b) => a.start.localeCompare(b.start));
     await attachSplits(supabase, games);
     await attachLinesAndTakes(supabase, games, false);
-    return json({ date, games });
+    return json({ date, games, sports: sportList(on) });
   }
 
   if (view === "game") {
     const id = url.searchParams.get("id") ?? "";
     const sport = (url.searchParams.get("sport") ?? "NFL") as Sport;
+    if (!on.includes(sport)) return json({ error: "not found" }, 30);
     const date = url.searchParams.get("date") ?? "";
     if (!EVENT_ID_RE.test(id)) return badRequest("id must be an ESPN event id (digits only)");
     if (date && !DATE_RE.test(date)) return badRequest("date must be YYYY-MM-DD");
@@ -384,8 +393,11 @@ serve(async (req) => {
       mostBets: top(sides, (x) => x.bets),
       takes,
       lines: strongest,
+      sports: sportList(on),
     });
   }
+
+  if (view === "sports") return json({ sports: sportList(on) }, 300);
 
   return json({ error: "unknown view" }, 30);
 });
