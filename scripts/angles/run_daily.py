@@ -2,7 +2,8 @@
 
 1. Refresh this season's ESPN history for college football and the NBA (completed seasons
    are committed under data/history/).
-2. Run the three engines: NFL (nflverse), college football and NBA (ESPN).
+2. Run the three engines: NFL (nflverse), college football and NBA (ESPN). The NBA box scores
+   are refreshed first: the game lines use them for "without a top-3 scorer" (D-115).
 3. Post the one line per game to the ingest-game-lines function with the run's GitHub
    OIDC token. With --dry-run, print instead of posting.
 4. Player lines (D-105, D-106): refresh this season's NBA box scores, run player_angles.py for the
@@ -58,7 +59,12 @@ def main() -> None:
     run([os.path.join(HERE, "nfl_angles.py"), "--games", args.nflverse, "--season", str(args.cfb_season), "--json", w("nfl.json")])
     run([os.path.join(HERE, "espn_angles.py"), "--league", "cfb", "--history", os.path.join(hist, "cfb_espn.csv"), w("cfb_current.csv"),
          "--coaches", os.path.join(hist, "cfb_coaches_cfbd.json"), "--season", str(args.cfb_season), "--days", "7", "--json", w("cfb.json")])
+    # D-115: this season's NBA box scores first, so the game lines know who played (and who's out tonight)
+    run([os.path.join(HERE, "nba_boxes.py"), "--games", w("nba_current.csv"), "--out", w("nba_players_current.csv"),
+         "--teams-out", w("nba_team_games_current.csv"), "--cache", args.cache])
     run([os.path.join(HERE, "espn_angles.py"), "--league", "nba", "--history", os.path.join(hist, "nba_espn.csv"), w("nba_current.csv"),
+         "--boxes", os.path.join(hist, "nba_players_espn.csv"), w("nba_players_current.csv"),
+         "--teams", os.path.join(hist, "nba_team_games_espn.csv"), w("nba_team_games_current.csv"),
          "--season", str(args.nba_season), "--days", "2", "--json", w("nba.json")])
 
     lines = []
@@ -88,8 +94,6 @@ def main() -> None:
 
 def player_lines(args, w, hist: str) -> None:
     """D-105, D-106: each upcoming NFL and NBA game's verified candidates, judged and stored by ingest-player-lines."""
-    run([os.path.join(HERE, "nba_boxes.py"), "--games", w("nba_current.csv"), "--out", w("nba_players_current.csv"),
-         "--teams-out", w("nba_team_games_current.csv"), "--cache", args.cache])
     run([os.path.join(HERE, "player_angles.py"), "--league", "nfl", "--nflverse", args.nflverse_dir, "--season", str(args.cfb_season),
          "--days", "7", "--json", w("nfl_players.json")])
     run([os.path.join(HERE, "player_angles.py"), "--league", "nba",

@@ -17,7 +17,7 @@ import json
 import math
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 
 TEAM_NAMES = {
@@ -126,6 +126,11 @@ class Angle:
     relevance: float = 0.0   # head-to-head and holiday angles lead; prime time and division a little
     metric: str = "ats"
     sample: list = field(default_factory=list)  # (gameday, team) of every game counted, for the check pass
+    kinds: frozenset = frozenset()               # the conditions used, for the slate's variety (D-115)
+
+    @property
+    def families(self) -> frozenset:
+        return frozenset("fd" if k == "big" else k for k in self.kinds) or frozenset({"season"})
 
     @property
     def record(self) -> str:
@@ -259,7 +264,7 @@ def build_angles(game: dict, rows: list[Row], season: int) -> list[Angle]:
                         supports = f"{'Over' if over else 'Under'} {total_line:g}"
                     out.append(Angle(text=text, supports=supports, market="spread" if metric == "ats" else "total",
                                      w=w, l=l, p=p, z=z, conds=len(combo), rate=rate, last_season=last,
-                                     relevance=relevance, metric=metric,
+                                     relevance=relevance, metric=metric, kinds=frozenset(kinds),
                                      sample=[(r.gameday, r.team) for r in sel]))
     return out
 
@@ -307,6 +312,28 @@ def season_fallback(game: dict, rows: list[Row], season: int) -> Angle | None:
     return best
 
 
+def pick_slate(week: list[dict], found: dict[str, list[Angle]]) -> dict[str, Angle]:
+    """D-115: one line per game, picked per game day so no condition family (favorite or underdog, after a win
+    or loss, home or road...) shows on more than 2 games. Games with the fewest kinds of angle choose first; a game
+    whose every angle is over the limit takes the one whose families are least used."""
+    by_day = defaultdict(list)
+    for g in week:
+        if found[g["game_id"]]:
+            by_day[g["gameday"]].append(g)
+    picked = {}
+    for day_games in by_day.values():
+        used = Counter()
+        options = {g["game_id"]: len({f for a in found[g["game_id"]] for f in a.families}) for g in day_games}
+        for g in sorted(day_games, key=lambda g: (options[g["game_id"]], -found[g["game_id"]][0].score)):
+            angles = found[g["game_id"]]
+            best = next((a for a in angles if all(used[f] < 2 for f in a.families)), None)
+            if best is None:
+                best = min(angles, key=lambda a: (max(used[f] for f in a.families), -a.strong, -a.score))
+            used.update(best.families)
+            picked[g["game_id"]] = best
+    return picked
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--games", required=True)
@@ -322,11 +349,15 @@ def main() -> None:
         week = [g for g in games if g["result"] == "" and g["spread_line"] and g["gameday"]
                 and today <= date.fromisoformat(g["gameday"]) <= today + timedelta(days=8)]
     results = []
+    found = {}
     for g in week:
         angles = sorted(build_angles(g, rows, args.season), key=lambda a: (a.strong, a.score), reverse=True)
-        angles = [a for a in angles if verify(a, games)]          # nothing unverified moves up
-        best = angles[0] if angles else season_fallback(g, rows, args.season)
-        tier = "strong" if angles and angles[0].strong else ("fallback" if angles else "season")
+        found[g["game_id"]] = [a for a in angles[:60] if verify(a, games)]   # nothing unverified moves up
+    picked = pick_slate(week, found)
+    for g in week:
+        angles = found[g["game_id"]]
+        best = picked.get(g["game_id"]) or season_fallback(g, rows, args.season)
+        tier = "strong" if angles and best.strong else ("fallback" if angles else "season")
         kickoff = datetime.fromisoformat(f"{g['gameday']}T{g['gametime'] or '13:00'}").replace(tzinfo=ET)
         results.append({
             "espn_event_id": g["espn"], "sport": "NFL", "starts_at": kickoff.astimezone(timezone.utc).isoformat(),
