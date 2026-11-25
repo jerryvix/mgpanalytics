@@ -686,3 +686,8 @@ It returns `{candidate_id, sentence, show_ticker, reason}`.
 - The game page section, the Pulse view label and the welcome screen say "Capper Picks". The EXPERT tag beside the section title is gone. DATA stays on Betting Splits (D-104).
 - The terms of use (effective November 25, 2026) and the store listing drafts (APP_STORE_LISTING.md, APP_STORE_COMPLIANCE.md) use the new name. The website's capper directory no longer calls its analysts "Expert analysts".
 - MGP never calls a show or host an expert; picks stay credited to the show and linked to the original.
+
+### D-113 The MGP wordmark in the game page header
+**Date:** 2026-11-25 · **By:** Owner ("add in a MGP logo here so when I screenshot and share people know where it's from").
+- The green "MGP" wordmark (`mobile/assets/images/splash-icon.png`, the app icon's lettering on a clear background) sits centered between the back and share buttons, 32 points tall. It isn't a button, and screen readers read it as "MGP Analytics". Works in light and dark.
+- The tabs' top bar and the footer still use the small pulse mark (D-086). Switching them to the wordmark is open if the owner wants every screenshot branded the same way.
