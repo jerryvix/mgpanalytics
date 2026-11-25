@@ -10,6 +10,12 @@
    NFL (next 7 days) and the NBA (next 2 days), and post each game's verified candidates to
    ingest-player-lines the same way, where the judge picks the line each game shows. A failure
    here doesn't undo the game lines already stored.
+5. Men's college basketball (D-116), only with --ncaab (the workflow passes it when the repo
+   variable ENABLE_NCAAB is "true"): refresh this season's ESPN history, run espn_angles.py
+   with the NCAA tournament file, and post the lines in calls of their own, so nothing about
+   college basketball can stop the other sports' lines. Straight-up lines (seed matchups and
+   coaches in the NCAA tournament, market "moneyline") go in a separate call: game_lines
+   accepts them once migration 20261125200000_game_lines_moneyline.sql is applied.
 """
 import argparse
 import json
@@ -46,6 +52,8 @@ def main() -> None:
     ap.add_argument("--ingest-url", default="")
     ap.add_argument("--nflverse-dir", default="", help="directory with nflverse player files for the player lines (D-105)")
     ap.add_argument("--player-ingest-url", default="")
+    ap.add_argument("--ncaab", action="store_true", help="also men's college basketball (D-116; off by default)")
+    ap.add_argument("--cbb-season", type=int, default=0, help="the year the college basketball season ends, ESPN style")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     os.makedirs(args.work, exist_ok=True)
@@ -67,8 +75,35 @@ def main() -> None:
          "--teams", os.path.join(hist, "nba_team_games_espn.csv"), w("nba_team_games_current.csv"),
          "--season", str(args.nba_season), "--days", "2", "--json", w("nba.json")])
 
+    lines = collect(w, ("nfl.json", "cfb.json", "nba.json"))
+    print(f"{len(lines)} lines", flush=True)
+    if args.dry_run or not args.ingest_url:
+        for l in lines:
+            print(f"  {l['sport']:5} {l['matchup']}: {l['line_text']}  ->  {l['supports']}")
+    else:
+        post(args.ingest_url, "mgp-ingest-game-lines", {"lines": lines})
+
+    ncaab_ok = True
+    if args.ncaab:
+        try:
+            ncaab(args, w, hist)
+        except (subprocess.CalledProcessError, OSError, ValueError, RuntimeError, SystemExit) as e:
+            print("college basketball lines failed:", e, flush=True)
+            ncaab_ok = False
+
+    if args.nflverse_dir:
+        try:
+            player_lines(args, w, hist)
+        except (subprocess.CalledProcessError, OSError, ValueError, RuntimeError) as e:
+            print("player lines failed:", e, flush=True)
+            sys.exit(1)
+    if not ncaab_ok:
+        sys.exit(1)
+
+
+def collect(w, names) -> list[dict]:
     lines = []
-    for name in ("nfl.json", "cfb.json", "nba.json"):
+    for name in names:
         for g in json.load(open(w(name))):
             b = g.get("best")
             if not b or not g.get("espn_event_id"):
@@ -77,19 +112,31 @@ def main() -> None:
             lines.append({"espn_event_id": str(g["espn_event_id"]), "sport": g["sport"], "matchup": g["matchup"],
                           "starts_at": g["starts_at"], "line_text": b["text"], "supports": b["supports"],
                           "market": b["market"], "record": shown.group(0) if shown else b["record"], "tier": b.get("tier", "strong")})
-    print(f"{len(lines)} lines", flush=True)
+    return lines
+
+
+def ncaab(args, w, hist: str) -> None:
+    """D-116: men's college basketball, next 2 days. Its own ingest calls, so it can't hold up the other sports."""
+    if not args.cbb_season:
+        raise ValueError("--ncaab needs --cbb-season")
+    run([os.path.join(HERE, "espn_history.py"), "--league", "cbb", "--seasons", str(args.cbb_season), "--current", str(args.cbb_season),
+         "--out", w("cbb_current.csv"), "--cache", args.cache])
+    run([os.path.join(HERE, "ncaa_tournament.py"), "--self-test"])
+    run([os.path.join(HERE, "espn_angles.py"), "--league", "cbb", "--history", os.path.join(hist, "cbb_espn.csv"), w("cbb_current.csv"),
+         "--tournament", os.path.join(hist, "ncaab_tournament.csv"), "--season", str(args.cbb_season), "--days", "2",
+         "--json", w("cbb.json")])
+    lines = collect(w, ("cbb.json",))
+    print(f"{len(lines)} college basketball lines", flush=True)
     if args.dry_run or not args.ingest_url:
         for l in lines:
             print(f"  {l['sport']:5} {l['matchup']}: {l['line_text']}  ->  {l['supports']}")
-    else:
-        post(args.ingest_url, "mgp-ingest-game-lines", {"lines": lines})
-
-    if args.nflverse_dir:
-        try:
-            player_lines(args, w, hist)
-        except (subprocess.CalledProcessError, OSError, ValueError, RuntimeError) as e:
-            print("player lines failed:", e, flush=True)
-            sys.exit(1)
+        return
+    ats = [l for l in lines if l["market"] in ("spread", "total")]
+    su = [l for l in lines if l["market"] not in ("spread", "total")]
+    if ats:
+        post(args.ingest_url, "mgp-ingest-game-lines", {"lines": ats})
+    if su:   # seed matchups and coaches in the NCAA tournament (March); needs the moneyline migration
+        post(args.ingest_url, "mgp-ingest-game-lines", {"lines": su})
 
 
 def player_lines(args, w, hist: str) -> None:

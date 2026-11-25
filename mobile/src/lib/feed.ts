@@ -4,16 +4,53 @@
  * the one line per game (D-075), the game page's player line (D-105) and the shows' Takes
  * (D-074). Public data, no sign-in.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { AppState } from 'react-native';
 
 import { easternDate } from '@/lib/time';
 
 export const FEED_URL = 'https://vwezujtftfccamoduglp.supabase.co/functions/v1/app-feed';
 
-export type Sport = 'NFL' | 'NCAAF' | 'NBA';
+export type Sport = 'NFL' | 'NCAAF' | 'NBA' | 'NCAAB';
+/** The sports until the feed says otherwise (D-116): what the app has always shown. */
 export const SPORTS: Sport[] = ['NFL', 'NCAAF', 'NBA'];
-export const SPORT_LABEL: Record<Sport, string> = { NFL: 'NFL', NCAAF: 'College Football', NBA: 'NBA' };
+export const SPORT_LABEL: Record<Sport, string> = { NFL: 'NFL', NCAAF: 'College Football', NBA: 'NBA', NCAAB: 'College Basketball' };
+/** Sports named inside a sentence ("No NFL, college football or NBA games today"). */
+const SPORT_IN_SENTENCE: Record<Sport, string> = { NFL: 'NFL', NCAAF: 'college football', NBA: 'NBA', NCAAB: 'college basketball' };
+
+/**
+ * The sports the feed serves (D-116). app-feed's day and pulse views carry `sports`; the app shows those,
+ * in that order, so a sport turned on in the feed (college basketball, behind ENABLE_NCAAB) appears without
+ * an app update. Keys the app doesn't know are left out. Until a response says otherwise: SPORTS.
+ */
+let feedSports: Sport[] = SPORTS;
+const sportListeners = new Set<() => void>();
+
+function rememberSports(list: unknown) {
+  if (!Array.isArray(list)) return;
+  const keys = list
+    .map((s) => (s && typeof s === 'object' ? (s as { key?: unknown }).key : s))
+    .filter((k): k is Sport => typeof k === 'string' && k in SPORT_LABEL);
+  if (!keys.length || keys.join() === feedSports.join()) return;
+  feedSports = keys;
+  sportListeners.forEach((l) => l());
+}
+
+export function useSports(): Sport[] {
+  return useSyncExternalStore(
+    (l) => {
+      sportListeners.add(l);
+      return () => sportListeners.delete(l);
+    },
+    () => feedSports,
+  );
+}
+
+/** "NFL, college football or NBA" */
+export function sportsSentence(list: Sport[]): string {
+  const names = list.map((s) => SPORT_IN_SENTENCE[s]);
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} or ${names[names.length - 1]}` : (names[0] ?? '');
+}
 
 export type Team = {
   id: string;
@@ -185,6 +222,7 @@ export function useFeed<T>(params: Record<string, string>) {
       const res = await fetch(`${FEED_URL}?${query}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const body = (await res.json()) as T;
+      rememberSports((body as { sports?: unknown } | null)?.sports);
       if (latest.current === query) setState({ query, data: body, error: null });
     } catch (e) {
       if (latest.current === query && !silent) setState((s) => ({ query, data: s.query === query ? s.data : null, error: (e as Error).message }));

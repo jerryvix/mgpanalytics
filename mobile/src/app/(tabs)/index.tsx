@@ -7,12 +7,13 @@ import { Divider, Empty, Footer, SectionTitle, SourceNote, T, TopBar } from '@/c
 import { TAB_BAR_SPACE } from '@/constants/layout';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
-import { SPORT_LABEL, SPORTS, useFeed, type Game } from '@/lib/feed';
+import { SPORT_LABEL, sportsSentence, useFeed, useSports, type Game } from '@/lib/feed';
 import { longDate, ymd } from '@/lib/time';
 
 export default function TodayScreen() {
   const c = useTheme();
   const today = useToday();
+  const sports = useSports();
   const { data, loading, error, reload } = useFeed<{ games: Game[] }>({ view: 'day', date: ymd(today) });
   const games = data?.games ?? [];
   const asOf = games.map((g) => g.splitsAsOf).filter(Boolean).sort().pop();
@@ -26,8 +27,8 @@ export default function TodayScreen() {
         </View>
         {loading && !data ? <ActivityIndicator color={c.text} style={{ paddingVertical: 32 }} /> : null}
         {error && !loading ? <Empty>{"Today couldn't load. Pull down to try again"}</Empty> : null}
-        {!loading && !error && games.length === 0 ? <Empty>No NFL, college football or NBA games today</Empty> : null}
-        {SPORTS.map((sport) => {
+        {!loading && !error && games.length === 0 ? <Empty>{`No ${sportsSentence(sports)} games today`}</Empty> : null}
+        {sports.map((sport) => {
           const list = games.filter((g) => g.sport === sport);
           if (!list.length) return null;
           return (

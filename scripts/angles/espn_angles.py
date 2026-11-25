@@ -31,15 +31,34 @@ teams over or under .500; division games, against the other conference; national
 high or low totals; the month; without a top-3 scorer who is listed out tonight (ESPN's
 injury report, checked against the box scores).
 
+Men's college basketball ("cbb", D-116, off until the owner turns it on): Division I games only.
+The head coach's record (ESPN's coach, checked against his own season record), the team this
+season, since 2024-25, and against this opponent since 2012-13; home, road or neutral site;
+favorite or underdog; 10+ point spreads; conference games; against ranked teams; against
+teams over or under .500; after a win or loss; streaks; a day after the last game, after a
+week or more off, more rest than the opponent; on the road after a road game; high or low
+totals; the month; conference tournaments; the NCAA tournament. In NCAA tournament games,
+seed matchups ("1 seeds are 162-2 against 16 seeds since 1985", "5 seeds are 22-28-2 ATS against
+12 seeds since 2013", both through the 2026 tournament) and the coach's tournament record since 2014
+(within his unbroken run in the data), from data/history/ncaab_tournament.csv
+(ncaa_tournament.py), each recomputed from that file before it can be used.
+
 Usage:
   python3 -I scripts/angles/espn_angles.py --league cfb --history data/history/cfb_espn.csv --coaches <cfbd coaches.json> --days 6
   python3 -I scripts/angles/espn_angles.py --league nba --history data/history/nba_espn.csv \
       --boxes data/history/nba_players_espn.csv --teams data/history/nba_team_games_espn.csv --days 2
+  python3 -I scripts/angles/espn_angles.py --league cbb --history data/history/cbb_espn.csv <current season csv> \
+      --tournament data/history/ncaab_tournament.csv --season 2027 --days 2
+  (--replay 2026-03-19 runs a past day as if its games were upcoming, from the history before it)
 """
 import argparse
 import csv
 import json
 import math
+import os
+import re
+import sys
+import unicodedata
 import urllib.request
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -47,6 +66,7 @@ from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"}
+HERE = os.path.dirname(os.path.abspath(__file__))
 MIN_GAMES, MIN_RATE, MIN_Z = 10, 0.65, 2.0
 FLOOR_RATE, FLOOR_Z = 0.62, 1.6
 SERIES_MIN = 6          # college teams meet once a year: a series or rivalry-week record needs 6 games (D-115)
@@ -57,7 +77,12 @@ NY = ZoneInfo("America/New_York")   # kickoff clock time (night games) follows d
 CONF = {
     "cfb": {"path": "football/college-football", "query": "&groups=80&limit=400", "big": 10, "since": 2016, "hi": 60, "lo": 42},
     "nba": {"path": "basketball/nba", "query": "", "big": 7, "since": 2023, "hi": 238, "lo": 222},
+    # men's college basketball (D-116): lines start with 2012-13; Division I only (ESPN group 50)
+    # totals: 2025-26's median was 148.5; 160+ and 135- are about its top 12% and bottom 8%
+    "cbb": {"path": "basketball/mens-college-basketball", "query": "&groups=50&limit=400", "big": 10, "since": 2013, "hi": 160, "lo": 135},
 }
+SPORT = {"cfb": "NCAAF", "nba": "NBA", "cbb": "NCAAB"}
+COACH_TOURNEY_SINCE = 2014   # ESPN's checked coaches start with 2013-14 (Wikipedia's 2013 table misses 12 games' coaches)
 
 # NBA divisions by ESPN abbreviation (D-115)
 NBA_DIV = {
@@ -80,7 +105,8 @@ CFB_RIVALRIES = {frozenset(p): n for p, n in [
 ]}
 
 # Condition kinds that count as one family for the slate's variety (D-115)
-FAMILY = {"big": "fd", "streak": "prev", "restadv": "rest", "g4": "rest", "home_after": "trip"}
+FAMILY = {"big": "fd", "streak": "prev", "restadv": "rest", "g4": "rest", "home_after": "trip",
+          "ctourney": "tourney", "ncaa": "tourney", "ncaa_coach": "tourney"}
 TOTALS_ONLY = {"tot"}
 OPPONENT_KINDS = {"oppq", "opprest", "div", "xconf", "ranked", "conf", "rweek"}   # say something about the opponent already named
 MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
@@ -120,6 +146,8 @@ class Row:
     rweek: bool        # college: Thanksgiving week, Tuesday to Sunday
     night: bool        # college: kickoff at 7 PM Eastern or later
     month: int
+    coach_id: str = ""  # college basketball: ESPN's id for the checked head coach
+    tourney: str = ""   # college basketball: NCAA, NIT, CONF (conference tournament) and the rest (espn_history.py)
 
 
 def zscore(w: int, l: int) -> float:
@@ -132,7 +160,7 @@ def fmt_line(x: float) -> str:
 
 
 def season_label(league: str, s: int) -> str:
-    return str(s) if league == "cfb" else f"{s - 1}-{str(s)[2:]}"
+    return str(s) if league == "cfb" else f"{s - 1}-{str(s)[2:]}"   # NBA and college basketball: "2025-26"
 
 
 def thanksgiving(year: int) -> date:
@@ -216,9 +244,11 @@ def situation(tl: list[Played], start: datetime, home: bool, road: bool) -> dict
 
 
 # ---------------------------------------------------------------- history
-def load(league: str, paths: list[str], coaches_path: str, team_paths: list[str]):
+def load(league: str, paths: list[str], coaches_path: str, team_paths: list[str], cutoff: str = ""):
     raw = [r for p in paths for r in csv.DictReader(open(p))]
     raw = list({r["event_id"]: r for r in raw}.values())  # later files (the current season) win
+    if cutoff:
+        raw = [r for r in raw if r["start"] < cutoff]   # --replay: only what was known before that day
     raw.sort(key=lambda r: (r["start"], r["event_id"]))
     lookup = coach_lookup(coaches_path) if league == "cfb" else {}
     schools = sorted({s for s, _ in lookup})
@@ -284,7 +314,7 @@ def load(league: str, paths: list[str], coaches_path: str, team_paths: list[str]
                     ou = (t > 0) - (t < 0)
                 opp_rank = int(r["away_rank" if side == "home" else "home_rank"] or 99)
                 me, op = sit[side], sit[other]
-                d1, d2 = NBA_DIV.get(r[f"{side}_abbr"]), NBA_DIV.get(r[f"{other}_abbr"])
+                d1, d2 = (NBA_DIV.get(r[f"{side}_abbr"]), NBA_DIV.get(r[f"{other}_abbr"])) if league == "nba" else (None, None)
                 rows.append(Row(season=season, start=start, event=r["event_id"], team=tid, opp=oid, home=side == "home",
                                 neutral=neutral, line=line, ats=ats, ou=ou, total=total,
                                 coach=coach, conf=r["conf_game"] == "1", opp_ranked=opp_rank <= 25, prev=me["prev"],
@@ -293,7 +323,9 @@ def load(league: str, paths: list[str], coaches_path: str, team_paths: list[str]
                                 div=bool(d1 and d1 == d2), xconf=bool(d1 and d2 and (d1 in EAST) != (d2 in EAST)),
                                 tv=r["event_id"] in tv_events, rweek=league == "cfb" and in_rivalry_week(start.astimezone(ET).date()),
                                 night=start.astimezone(NY).hour >= 19,
-                                month=start.astimezone(ET).month))
+                                month=start.astimezone(ET).month,
+                                coach_id=r.get(f"{side}_coach_id", "") if league == "cbb" else "",
+                                tourney=r.get("tourney", "") if league == "cbb" else ""))
         for side in ("home", "away"):
             tid = r[f"{side}_id"]
             won = (hp > ap) if side == "home" else (ap > hp)
@@ -361,6 +393,50 @@ def get(url: str):
         return json.load(r)
 
 
+def espn_history_module():
+    """espn_history.py, for college basketball's tournament marker (scripts run with -I don't put their folder on the path)."""
+    if HERE not in sys.path:
+        sys.path.insert(0, HERE)
+    import espn_history
+    return espn_history
+
+
+def game_from_event(league: str, e: dict, line: tuple[float, float | None] | None = None) -> dict | None:
+    """One game as the engine reads it. `line` (home line, total) replaces ESPN's posted odds (--replay)."""
+    c = e["competitions"][0]
+    h = next(x for x in c["competitors"] if x["homeAway"] == "home")
+    a = next(x for x in c["competitors"] if x["homeAway"] == "away")
+    if line is not None:
+        hl, total = line
+    else:
+        odds = (c.get("odds") or [{}])[0]
+        details = (odds.get("details") or "").strip()
+        if not details:
+            return None
+        if details.upper() in ("EVEN", "PK"):
+            hl = 0.0
+        else:
+            abbr, _, num = details.rpartition(" ")
+            n = abs(float(num))
+            hl = -n if abbr == h["team"]["abbreviation"] else n
+        total = odds.get("overUnder")
+    g = {
+        "id": e["id"], "start": datetime.fromisoformat(e["date"].replace("Z", "+00:00")), "home": h, "away": a,
+        "neutral": bool(c.get("neutralSite")), "conf": bool(c.get("conferenceCompetition")), "home_line": hl,
+        "total": total, "tv": any(b.get("market") == "national" for b in c.get("broadcasts", [])),
+    }
+    if league == "cbb":
+        if not (h["team"].get("conferenceId") and a["team"].get("conferenceId")):
+            return None   # Division I against Division I only
+        tourney, _ = espn_history_module().cbb_tourney(e.get("season", {}).get("type", 2), c, h, a)
+        g["tourney"] = tourney
+        # in the NCAA tournament ESPN's rank field is the seed; elsewhere it's the AP rank
+        rank = {s: (x.get("curatedRank") or {}).get("current") or 99 for s, x in (("home", h), ("away", a))}
+        g["seed"] = {s: (r if tourney == "NCAA" and r <= 16 else 0) for s, r in rank.items()}
+        g["ap"] = {s: (r if tourney != "NCAA" else 99) for s, r in rank.items()}
+    return g
+
+
 def upcoming(league: str, days: int):
     cfg = CONF[league]
     now = datetime.now(timezone.utc)
@@ -373,23 +449,24 @@ def upcoming(league: str, days: int):
             if c["status"]["type"]["state"] != "pre" or e["id"] in seen:
                 continue
             seen.add(e["id"])
-            h = next(x for x in c["competitors"] if x["homeAway"] == "home")
-            a = next(x for x in c["competitors"] if x["homeAway"] == "away")
-            odds = (c.get("odds") or [{}])[0]
-            details = (odds.get("details") or "").strip()
-            if not details:
-                continue
-            if details.upper() in ("EVEN", "PK"):
-                hl = 0.0
-            else:
-                abbr, _, num = details.rpartition(" ")
-                n = abs(float(num))
-                hl = -n if abbr == h["team"]["abbreviation"] else n
-            out.append({
-                "id": e["id"], "start": datetime.fromisoformat(e["date"].replace("Z", "+00:00")), "home": h, "away": a,
-                "neutral": bool(c.get("neutralSite")), "conf": bool(c.get("conferenceCompetition")), "home_line": hl,
-                "total": odds.get("overUnder"), "tv": any(b.get("market") == "national" for b in c.get("broadcasts", [])),
-            })
+            g = game_from_event(league, e)
+            if g:
+                out.append(g)
+    return out
+
+
+def replay(league: str, day: str, idx: dict[str, dict]):
+    """--replay: a past day's games as if they were upcoming, with the lines from the history file."""
+    cfg = CONF[league]
+    data = get(f"https://site.api.espn.com/apis/site/v2/sports/{cfg['path']}/scoreboard?dates={day.replace('-', '')}{cfg['query']}")
+    out = []
+    for e in data.get("events", []):
+        r = idx.get(e["id"])
+        if not r or r["home_line"] == "":
+            continue
+        g = game_from_event(league, e, (float(r["home_line"]), float(r["total"]) if r["total"] != "" else None))
+        if g:
+            out.append(g)
     return out
 
 
@@ -409,6 +486,7 @@ class Angle:
     kinds: frozenset = frozenset()
     relevance: float = 0.0
     sample: list = field(default_factory=list)  # (event, team)
+    crit: dict = field(default_factory=dict)    # NCAA tournament angles: what to recount from the tournament file
 
     @property
     def score(self) -> float:
@@ -423,12 +501,25 @@ class Angle:
         return frozenset(family(k) for k in self.kinds)
 
 
-def continuity_start(league: str, tid: str, season: int, lookup, school_of, boxes, first_season: int) -> int:
+def continuity_start(league: str, tid: str, season: int, lookup, school_of, boxes, first_season: int,
+                     team_rows: list | None = None) -> int:
     """D-117 (owner, Nov 25: "consider if there's been the same factors like same coach, same key players"): the
     first season of the stretch this team's core has been together. College: the current head coach's first
     straight season at the school. NBA: back while the current top scorer played 20+ games for the team.
-    Without the data to tell, the old two-season window stands."""
+    Without the data to tell, the old two-season window stands (college basketball: this season only)."""
     s = season
+    if league == "cbb":
+        # D-116: ESPN's checked coach on every game; a season counts only if he coached all of its games there
+        mine = [r for r in team_rows or [] if r.season == season and r.coach_id]
+        if not mine:
+            return season
+        coach = mine[-1].coach_id
+        seasons = defaultdict(set)
+        for r in team_rows:
+            seasons[r.season].add(r.coach_id)
+        while s - 1 >= first_season and seasons.get(s - 1) == {coach}:
+            s -= 1
+        return s
     if league == "cfb":
         school = school_of.get(tid)
         lst = lookup.get((school, season)) if school else None
@@ -449,11 +540,12 @@ def continuity_start(league: str, tid: str, season: int, lookup, school_of, boxe
 
 
 def short(league: str, team: dict) -> str:
-    return team.get("location") if league == "cfb" else team.get("name") or team.get("shortDisplayName")
+    return team.get("location") if league in ("cfb", "cbb") else team.get("name") or team.get("shortDisplayName")
 
 
 def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, season: int,
-                 boxes: Boxes | None = None, outs: dict | None = None) -> list[Angle]:
+                 boxes: Boxes | None = None, outs: dict | None = None, by_team: dict | None = None,
+                 by_coach: dict | None = None) -> list[Angle]:
     cfg = CONF[league]
     out = []
     total = g["total"]
@@ -473,11 +565,13 @@ def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, s
         fd = "favorite" if fav else "underdog"
         art = "an" if fd == "underdog" else "a"
         name, opp_name = short(league, me["team"]), short(league, op["team"])
-        opp_label = opp_name if league == "cfb" else f"the {opp_name}"
+        opp_label = opp_name if league in ("cfb", "cbb") else f"the {opp_name}"
         side_label = f"{me['team']['abbreviation']} {fmt_line(line)}"
         other_label = f"{op['team']['abbreviation']} {fmt_line(-line)}"
         prev_res, rest = my["prev"], my["rest"]
         opp_rank = (op.get("curatedRank") or {}).get("current") or 99
+        if league == "cbb":
+            opp_rank = g["ap"][other]   # in the NCAA tournament the rank field holds the seed, not the AP rank
 
         role = "neutral" if g["neutral"] else ("home" if side == "home" else "road")
         conds = []
@@ -485,6 +579,8 @@ def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, s
             conds.append(("role", "at home", lambda r: r.home and not r.neutral))
         elif role == "road":
             conds.append(("role", "on the road", lambda r: (not r.home) and not r.neutral))
+        elif league == "cbb":
+            conds.append(("role", "at neutral sites", lambda r: r.neutral))
         conds.append(("fd", f"as {art} {fd}", lambda r, f=fav: (r.line < 0) == f))
         rivalry = CFB_RIVALRIES.get(frozenset((me["team"]["abbreviation"], op["team"]["abbreviation"]))) if league == "cfb" else None
         conds.append(("opp", f"in {rivalry}" if rivalry else f"against {opp_label}", lambda r, o=oid: r.opp == o))
@@ -524,6 +620,27 @@ def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, s
             met = {r.season for r in rows if r.team == tid and r.opp == oid and season - 6 <= r.season < season}
             if in_rivalry_week(day) and len(met) >= 5:
                 conds.append(("rweek", "in rivalry week", lambda r: r.rweek))
+        elif league == "cbb":
+            if g["conf"]:
+                conds.append(("conf", "in conference games", lambda r: r.conf))
+            if opp_rank <= 25:
+                conds.append(("ranked", "against ranked teams", lambda r: r.opp_ranked))
+            if rest == 1:
+                conds.append(("rest", "the day after a game", lambda r: r.rest == 1))
+            elif 7 <= rest < 99:
+                conds.append(("rest", "after a week or more off", lambda r: 7 <= r.rest < 99))
+            if their["rest"] < 99 and rest < 99 and rest > their["rest"]:
+                conds.append(("restadv", "with more rest than the opponent", lambda r: r.opp_rest < 99 and r.rest < 99 and r.rest > r.opp_rest))
+            if my["trip"] >= 2:
+                conds.append(("trip", "on the road after a road game", lambda r: r.trip >= 2))
+            if their["over"]:
+                conds.append(("oppq", "against teams over .500" if their["over"] > 0 else "against teams under .500",
+                              lambda r, o=their["over"]: r.opp_over == o))
+            conds.append(("month", f"in {MONTHS[day.month]}", lambda r, m=day.month: r.month == m))
+            if g.get("tourney") == "CONF":
+                conds.append(("ctourney", "in conference tournaments", lambda r: r.tourney == "CONF"))
+            elif g.get("tourney") == "NCAA":
+                conds.append(("ncaa", "in the NCAA tournament", lambda r: r.tourney == "NCAA"))
         else:
             if rest == 1:
                 conds.append(("rest", "on the second night of a back-to-back", lambda r: r.rest == 1))
@@ -564,15 +681,25 @@ def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, s
             parts = []
             if "role" in kinds and ({"fd", "big"} & kinds):
                 big = f" of {cfg['big']} or more" if "big" in kinds else ""
-                parts.append(f"as a {role} {fd}{big}")
+                # "as a road underdog", and at a neutral site "as an underdog at neutral sites"
+                parts.append(f"as {art} {fd}{big} at neutral sites" if role == "neutral" else f"as a {role} {fd}{big}")
             for k, ph, _ in combo:
                 if parts and k in ("role", "fd", "big") and parts[0].startswith("as a"):
                     continue
                 parts.append(ph)
             return " ".join(parts)
 
-        team_rows = [r for r in rows if r.team == tid]
+        team_rows = by_team.get(tid, []) if by_team is not None else [r for r in rows if r.team == tid]
         subjects = []
+        if league == "cbb":
+            # the head coach: ESPN's checked coach on his team's latest game; his record wherever he coached since 2013-14
+            mine = [r for r in team_rows if r.season == season and r.coach_id]
+            if mine:
+                cid, coach = mine[-1].coach_id, mine[-1].coach
+                crow = by_coach.get(cid, []) if by_coach is not None else [r for r in rows if r.coach_id == cid]
+                first = coach_start(crow, season)   # never across a season his games are missing from
+                crow = [r for r in crow if r.season >= first]
+                subjects.append(("coach", coach, crow, "this season" if first == season else f"since {season_label(league, first)}"))
         if league == "cfb":
             school = school_of.get(tid)
             lst = lookup.get((school, season)) if school else None
@@ -585,7 +712,7 @@ def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, s
                     subjects.append(("coach", coach, crow, "this season" if first == season else f"since {first}"))
         # D-117: a team's multi-season record only covers the stretch with the same core (the head coach in
         # college; the current top scorer in the NBA). A new core gets this season only.
-        stable = continuity_start(league, tid, season, lookup, school_of, boxes, cfg["since"])
+        stable = continuity_start(league, tid, season, lookup, school_of, boxes, cfg["since"], team_rows)
         recent = max(season - 2, stable)
         long_ = max(cfg["since"], stable)
         recent_frame = f"since {season_label(league, recent)}"
@@ -606,8 +733,8 @@ def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, s
         for kind, who, srows, frame in subjects:
             for combo in combos:
                 kinds = {k for k, _, _ in combo}
-                if kind == "team" and frame.startswith("since") and frame != recent_frame and not kinds & {"opp", "rweek"}:
-                    continue  # the long team window is for this matchup (or rivalry week) only
+                if kind == "team" and frame.startswith("since") and frame != recent_frame and not kinds & {"opp", "rweek", "ncaa", "ctourney"}:
+                    continue  # the long team window is for this matchup (or rivalry week, or a tournament) only
                 sel = [r for r in srows if all(p(r) for _, _, p in combo)]
                 phrase = phrase_for(combo)
                 # the month is a weak reason on its own: it wins only when it's clearly the strongest record
@@ -652,8 +779,157 @@ def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, s
     return out
 
 
-def verify(a: Angle, idx: dict[str, dict]) -> bool:
-    """Recompute the record straight from the CSV rows, independently of Row."""
+# ---------------------------------------------------------------- NCAA tournament (college basketball, D-116)
+def tourney_module():
+    if HERE not in sys.path:
+        sys.path.insert(0, HERE)
+    import ncaa_tournament
+    return ncaa_tournament
+
+
+def name_key(s: str) -> str:
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+    return re.sub(r"[^a-z]+", "", s)
+
+
+def load_tourney(path: str, cutoff: str = "") -> list[dict]:
+    """ncaab_tournament.csv; with --replay, only the tournaments (and that tournament's games) before that day."""
+    if not path:
+        return []
+    rows = list(csv.DictReader(open(path)))
+    if cutoff:
+        y = int(cutoff[:4])
+        rows = [r for r in rows if int(r["season"]) < y or (int(r["season"]) == y and r["date"] and r["date"] < cutoff[:10])]
+    return rows
+
+
+def passes(w: int, l: int, last: int, season: int) -> bool:
+    """The same bar as every other angle: 10+ decided games, 62% or better (or 38% or worse), 1.6 standard
+    deviations from a coin flip, and a game in the last two tournaments."""
+    n = w + l
+    if n < MIN_GAMES:
+        return False
+    rate = w / n
+    return not (FLOOR_RATE > rate > 1 - FLOOR_RATE) and abs(zscore(w, l)) >= FLOOR_Z and last >= season - (RECENT_SEASONS - 1)
+
+
+def coach_start(crow: list, season: int) -> int:
+    """The first season of the coach's unbroken run in the data, up to this one. ESPN's coach data has a few
+    holes (some 2024 and 2025 teams have no checked coach), so a coach's record never reaches across a season
+    with none of his games: "since 2013-14" has to mean every game he coached since then."""
+    have = {r.season for r in crow}
+    s = season
+    while s - 1 in have:
+        s -= 1
+    return s
+
+
+def tourney_angles(g: dict, trows: list[dict], by_team: dict, season: int, by_coach: dict | None = None,
+                   team_names: dict | None = None) -> list[Angle]:
+    """In an NCAA tournament game: the seed matchup straight up (since 1985) and against the spread (lines
+    since 2013), and each head coach's tournament record since 2013, written from the side with the winning
+    record: "1 seeds are 162-2 against 16 seeds since 1985", "Mark Few is 29-11 in the NCAA tournament since 2014"
+    (going into March 19, 2026)."""
+    out = []
+    if g.get("tourney") != "NCAA" or not trows:
+        return out
+    line = {"home": g["home_line"], "away": -g["home_line"]}
+    abbr = {s: g[s]["team"]["abbreviation"] for s in ("home", "away")}
+    seed = g["seed"]
+    if seed["home"] and seed["away"] and seed["home"] != seed["away"]:
+        for metric in ("su", "ats"):
+            w = l = p = 0
+            first = last = None
+            for r in trows:
+                sa, sb = int(r["seed_a"]), int(r["seed_b"])
+                if {sa, sb} != {seed["home"], seed["away"]} or (metric == "ats" and r["line_a"] == ""):
+                    continue
+                mine, theirs = ("a", "b") if sa == seed["home"] else ("b", "a")
+                m = int(r[f"pts_{mine}"]) - int(r[f"pts_{theirs}"])
+                if metric == "ats":
+                    m += float(r["line_a"]) if mine == "a" else -float(r["line_a"])
+                w, l, p = w + (m > 0), l + (m < 0), p + (m == 0)
+                y = int(r["season"])
+                first, last = (y if first is None else min(first, y)), (y if last is None else max(last, y))
+            if first is None or w == l:
+                continue
+            side = "home" if w > l else "away"   # the home team's seed has the winning record, or the away team's
+            other = "away" if side == "home" else "home"
+            sw, sl = (w, l) if side == "home" else (l, w)
+            if not passes(sw, sl, last, season):
+                continue
+            rec = f"{sw}-{sl}" + (f"-{p}" if p else "")
+            ats = " ATS" if metric == "ats" else ""
+            text = f"{seed[side]} seeds are {rec}{ats} against {seed[other]} seeds since {first}"
+            supports = f"{abbr[side]} {fmt_line(line[side])}" if metric == "ats" else f"{abbr[side]} ML"
+            out.append(Angle(text, supports, "spread" if metric == "ats" else "moneyline", f"seed_{metric}", sw, sl, p,
+                             zscore(sw, sl), 1, sw / (sw + sl), frozenset({"seed"}), 0.0, [],
+                             {"kind": "seed", "metric": metric, "s": seed[side], "t": seed[other], "first": first}))
+    for side in ("home", "away"):
+        other = "away" if side == "home" else "home"
+        mine = [r for r in by_team.get(g[side]["team"]["id"], []) if r.season == season and r.coach_id]
+        if not mine or by_coach is None:
+            continue
+        cid, coach = mine[-1].coach_id, mine[-1].coach
+        crow = by_coach.get(cid, [])
+        start = max(COACH_TOURNEY_SINCE, coach_start(crow, season))
+        teams = defaultdict(set)   # his team each season of the run, by ESPN id
+        for r in crow:
+            if r.season >= start:
+                teams[r.season].add(r.team)
+        key = name_key(coach)
+        w = l = 0
+        seasons, names, complete = [], set(), True
+        for r in trows:
+            y = int(r["season"])
+            if y < start or y not in teams:
+                continue
+            for x, o in (("a", "b"), ("b", "a")):
+                tid = r[f"espn_id_{x}"]
+                if tid and tid not in teams[y]:
+                    continue
+                if not tid and not any(k.startswith(name_key(r[f"team_{x}"])) for t in teams[y] for k in (team_names or {}).get(t, ())):
+                    continue
+                if not tid or name_key(r[f"coach_{x}"]) != key:
+                    complete = False   # one of his team's games without his name on it: the record can't be told
+                    continue
+                names.add(r[f"coach_{x}"])
+                m = int(r[f"pts_{x}"]) - int(r[f"pts_{o}"])
+                w, l = w + (m > 0), l + (m < 0)
+                seasons.append(y)
+        if not complete or not seasons or not passes(w, l, max(seasons), season):
+            continue
+        text = f"{coach} is {w}-{l} in the NCAA tournament since {min(seasons)}"
+        supports = f"{abbr[side]} ML" if w > l else f"{abbr[other]} ML"
+        out.append(Angle(text, supports, "moneyline", "coach_su", w, l, 0, zscore(w, l), 1, w / (w + l),
+                         frozenset({"ncaa_coach"}), 0.0, [],
+                         {"kind": "coach", "names": sorted(names), "since": start, "first": min(seasons)}))
+    return out
+
+
+def verify_tourney(a: Angle, trows: list[dict]) -> bool:
+    """Recount a tournament angle with ncaa_tournament.py's own record functions, a separate code path."""
+    nt = tourney_module()
+    c = a.crit
+    if c["kind"] == "seed":
+        r = nt.seed_record(trows, c["s"], c["t"])
+        got = r["su"] + (0,) if c["metric"] == "su" else r["ats"]
+        first = r["first"] if c["metric"] == "su" else r["first_ats"]
+        return got == (a.w, a.l, a.p) and first == c["first"] and a.text.endswith(f"since {first}")
+    w = l = 0
+    first = None
+    for name in c["names"]:
+        r = nt.coach_record(trows, name, since=c["since"])
+        w, l = w + r["su"][0], l + r["su"][1]
+        if r["first"] is not None:
+            first = r["first"] if first is None else min(first, r["first"])
+    return (w, l) == (a.w, a.l) and first == c["first"] and a.text.endswith(f"since {first}")
+
+
+def verify(a: Angle, idx: dict[str, dict], trows: list[dict] | None = None) -> bool:
+    """Recompute the record straight from the CSV rows, independently of Row (tournament angles: the tournament file)."""
+    if a.crit:
+        return verify_tourney(a, trows or [])
     w = l = p = 0
     for event, team in a.sample:
         r = idx[event]
@@ -668,7 +944,7 @@ def verify(a: Angle, idx: dict[str, dict]) -> bool:
     return (w, l, p) == (a.w, a.l, a.p)
 
 
-def pick_slate(games: list[tuple[dict, list[Angle]]], ok) -> dict[str, Angle]:
+def pick_slate(games: list[tuple[dict, list[Angle]]], ok, overflow: int | None = None) -> dict[str, Angle]:
     """D-115: one line per game, picked per Eastern day so no condition family shows on more than
     2 games (one in eight on a big college Saturday). Games with the fewest kinds of angle choose first;
     a game whose every angle is over the limit takes the one whose families are least used."""
@@ -685,7 +961,8 @@ def pick_slate(games: list[tuple[dict, list[Angle]]], ok) -> dict[str, Angle]:
             fresh = (a for a in angles if all(used[f] < cap for f in a.families) and ok(a))
             best = next(fresh, None)
             if best is None:   # every angle is over the limit: the one whose families are least used, then the strongest
-                over = [a for a in angles[:40] if ok(a)]
+                # college basketball (D-116): at most `overflow` past the limit; a game that can't fit goes without
+                over = [a for a in angles[:40] if ok(a) and (overflow is None or max(used[f] for f in a.families) < cap + overflow)]
                 best = min(over, key=lambda a: (max(used[f] for f in a.families), -a.strong, -a.score), default=None)
             if best:
                 used.update(best.families)
@@ -704,35 +981,55 @@ def main() -> None:
     ap.add_argument("--days", type=int, default=2)
     ap.add_argument("--json", default="")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--tournament", default="", help="college basketball: ncaab_tournament.csv (seed matchups, coaches)")
+    ap.add_argument("--replay", default="", help="YYYY-MM-DD: run a past day's games as if upcoming, from the history before it")
     args = ap.parse_args()
-    raw, rows, tl, lookup, school_of = load(args.league, args.history, args.coaches, args.teams)
+    cutoff = f"{args.replay}T08:00Z" if args.replay else ""   # 3 or 4 AM Eastern: every game of the day before is in
+    raw, rows, tl, lookup, school_of = load(args.league, args.history, args.coaches, args.teams, cutoff)
     idx = {r["event_id"]: r for r in raw}
     boxes = Boxes(args.boxes, raw) if args.league == "nba" and args.boxes else None
-    games = upcoming(args.league, args.days)
+    by_team, by_coach = defaultdict(list), defaultdict(list)
+    for r in rows:
+        by_team[r.team].append(r)
+        if r.coach_id:
+            by_coach[r.coach_id].append(r)
+    trows = load_tourney(args.tournament, cutoff) if args.league == "cbb" else []
+    team_names = defaultdict(set)   # ESPN team id -> its names, to place Wikipedia-only tournament games
+    for r in raw:
+        for x in ("home", "away"):
+            team_names[r[f"{x}_id"]].add(name_key(r[x]))
+    if args.replay:
+        full = {r["event_id"]: r for p in args.history for r in csv.DictReader(open(p))}
+        games = replay(args.league, args.replay, full)
+    else:
+        games = upcoming(args.league, args.days)
     if args.limit:
         games = games[: args.limit]
     found = []
     for g in games:
         outs = injuries(g["id"]) if boxes else None
-        angles = sorted(build_angles(args.league, g, rows, tl, lookup, school_of, args.season, boxes, outs),
-                        key=lambda a: (a.strong, a.score), reverse=True)
+        angles = build_angles(args.league, g, rows, tl, lookup, school_of, args.season, boxes, outs, by_team,
+                              by_coach if args.league == "cbb" else None)
+        if args.league == "cbb":
+            angles += tourney_angles(g, trows, by_team, args.season, by_coach, team_names)
+        angles = sorted(angles, key=lambda a: (a.strong, a.score), reverse=True)
         if angles:
             found.append((g, angles))
     checked: dict[int, bool] = {}
 
     def ok(a: Angle) -> bool:
         if id(a) not in checked:
-            checked[id(a)] = verify(a, idx)
+            checked[id(a)] = verify(a, idx, trows)
         return checked[id(a)]
 
-    picked = pick_slate(found, ok)
+    picked = pick_slate(found, ok, overflow=1 if args.league == "cbb" else None)
     results = []
     for g, _ in found:
         best = picked.get(g["id"])
         label = f"{g['away']['team']['shortDisplayName']} {'vs' if g['neutral'] else 'at'} {g['home']['team']['shortDisplayName']}"
         if best is None:
             continue
-        results.append({"espn_event_id": g["id"], "sport": "NCAAF" if args.league == "cfb" else "NBA", "matchup": label,
+        results.append({"espn_event_id": g["id"], "sport": SPORT[args.league], "matchup": label,
                         "starts_at": g["start"].isoformat(),
                         "best": {"text": best.text, "supports": best.supports, "market": best.market,
                                  "record": f"{best.w}-{best.l}" + (f"-{best.p}" if best.p else ""),

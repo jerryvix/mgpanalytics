@@ -8,7 +8,7 @@ import { Divider, Empty, Footer, Mono, SectionTitle, T, TopBar, SourceNote } fro
 import { TAB_BAR_SPACE } from '@/constants/layout';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
-import { SPORT_LABEL, SPORTS, useFeed, type Game, type Sport } from '@/lib/feed';
+import { SPORT_LABEL, useFeed, useSports, type Game, type Sport } from '@/lib/feed';
 import { ymd } from '@/lib/time';
 
 export default function GamesScreen() {
@@ -16,7 +16,10 @@ export default function GamesScreen() {
   const today = useToday();
   const days = Array.from({ length: 7 }, (_, i) => new Date(today.getFullYear(), today.getMonth(), today.getDate() + i));
   const [day, setDay] = useState(0);
-  const [sport, setSport] = useState<Sport | 'ALL'>('ALL');
+  const sports = useSports();
+  const [picked, setSport] = useState<Sport | 'ALL'>('ALL');
+  // a sport the feed no longer serves falls back to All Sports
+  const sport = picked !== 'ALL' && !sports.includes(picked) ? 'ALL' : picked;
   const { data, loading, error, reload } = useFeed<{ games: Game[] }>({ view: 'day', date: ymd(days[day]), ...(sport === 'ALL' ? {} : { sports: sport }) });
   const games = data?.games ?? [];
   return (
@@ -39,7 +42,7 @@ export default function GamesScreen() {
           })}
         </ScrollView>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 8, gap: 4 }}>
-          {(['ALL', ...SPORTS] as const).map((s) => {
+          {(['ALL', ...sports] as const).map((s) => {
             const on = s === sport;
             return (
               <Pressable key={s} onPress={() => setSport(s)} accessibilityRole="tab" accessibilityState={{ selected: on }}
@@ -52,7 +55,7 @@ export default function GamesScreen() {
         {loading && !data ? <ActivityIndicator color={c.text} style={{ paddingVertical: 32 }} /> : null}
         {error && !loading ? <Empty>{"Games couldn't load. Pull down to try again"}</Empty> : null}
         {!loading && !error && games.length === 0 ? <Empty>No games that day</Empty> : null}
-        {SPORTS.map((s) => {
+        {sports.map((s) => {
           const list = games.filter((g) => g.sport === s);
           if (!list.length) return null;
           return (
