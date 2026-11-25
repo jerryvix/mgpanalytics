@@ -48,7 +48,7 @@ Pull `main` first. If you edit a shared file, say so in the pull request and kee
 
 ## In progress
 
-None.
+- Claude Code | claude/ncaab-groundwork | Men's college basketball groundwork, off by default (D-116); also edits `docs/mobile/RUNBOOK.md` for the ENABLE_NCAAB switch | 2026-11-25
 
 One line per item: `Agent | branch | what | YYYY-MM-DD`
 
