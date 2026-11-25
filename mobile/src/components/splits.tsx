@@ -9,7 +9,7 @@
 import { Image } from 'expo-image';
 import { Platform, Text, View } from 'react-native';
 
-import { Icon, Mono, SectionTitle, T } from '@/components/night';
+import { Icon, Mono, SectionTitle, SourceNote, T } from '@/components/night';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { Game, SideSplit } from '@/lib/feed';
@@ -158,7 +158,7 @@ export function RowSplits({ game: g }: { game: Game }) {
   return <View style={{ paddingTop: 2 }}><PairLines p={spread} compact /></View>;
 }
 
-/** Game page: every market with real numbers. */
+/** Game page: every market with real numbers, then the source right under them (owner, Nov 25). */
 export function SplitsBlock({ game: g }: { game: Game }) {
   const c = useTheme();
   const list = pairs(g);
@@ -174,6 +174,7 @@ export function SplitsBlock({ game: g }: { game: Game }) {
           </View>
         ))}
       </View>
+      <SourceNote style={{ paddingTop: 10 }} />
     </>
   );
 }

@@ -105,7 +105,7 @@ Betting Splits show the share of bets and the share of money on each side.
 
 Ask the Analyst about games, odds, splits, and trends.
 
-Expert Picks show what public shows are saying, with the show credited.
+Capper Picks show what public shows are saying, with the show credited.
 
 Browse without an account. Sign in when you want to ask the Analyst.
 
@@ -123,7 +123,7 @@ Source, by sentence:
 - NFL, college football, and NBA. Those are the sports in the app (`mobile/src/lib/feed.ts`, `SPORTS`). Positioning covers more sports than the app ships. The description names only the three on the board.
 - Share of bets and share of money. Audit note, 2026-11-21: public betting % is real for NFL and college football. That note still said NBA was not available. The app's board includes NBA (`mobile/src/lib/feed.ts`), and a market with no real split is hidden (D-088). The description names NBA because the app does.
 - Ask the Analyst about games, odds, splits, and trends. Advantage 1, and the in-app notice (D-085). The sentence does not say the Analyst tells you what to bet. Guardrail in advantage 1: no "should bet", no "lock".
-- Expert Picks. The section name is in the app (welcome screen, D-093). Positioning's rule is that MGP does not sell picks. The sentence credits the shows and does not call them MGP's advice.
+- Capper Picks. The section name is in the app (welcome screen, D-093). Positioning's rule is that MGP does not sell picks. The sentence credits the shows and does not call them MGP's advice.
 - Browse without an account. D-014, built. Not a positioning claim. It is how the app works, and App Review asks for it.
 - Does not take bets or hold money. Terms, "MGP Isn't Betting Advice". Required so the description is not a gambling claim (guideline 2.3.1 and 5.3).
 
@@ -169,7 +169,7 @@ Answer No to each.
 | Parental Controls | No | None in the app |
 | Age Assurance | No | Welcome asks the person to tap "I'm 18 or Older". That is a self-confirmation. Apple's definition is a mechanism that confirms age (Declared Age Range API, estimation, or a government ID). The app does not call that API. FLAG: do not check Age Assurance unless that API is added |
 | Unrestricted Web Access | No | The app opens specific https links (Analyst sources, X posts, privacy, terms) in the system browser sheet. There is no address bar and no general browser. FLAG: if a reviewer treats that sheet as unrestricted web access, the calculated rating becomes 16+ on the new scale. The override below still sets 18+ |
-| User-Generated Content | No | Apple's definition is content the app broadcasts to many users. Chats stay on the account. Feedback stays on the account. Expert Picks are from outside shows, not from app users |
+| User-Generated Content | No | Apple's definition is content the app broadcasts to many users. Chats stay on the account. Feedback stays on the account. Capper Picks are from outside shows, not from app users |
 | Social Media | No | No social feed of user posts |
 | Messaging and Chat | No | Apple's definition is users communicating with one another. The Analyst is an AI chat with one person. FLAG: there is no separate "AI chat" question on the published questionnaire. Do not check Messaging and Chat to cover the Analyst. The AI disclosure is the in-app notice and guideline 5.1.2(i), not this age question |
 | Shared Location | No | The app does not ask for location |

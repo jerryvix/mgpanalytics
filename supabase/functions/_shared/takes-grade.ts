@@ -1,4 +1,4 @@
-// Expert Picks results (DECISIONS D-093): grade a show's pick once its game is final.
+// Capper Picks results (DECISIONS D-093, D-112): grade a show's pick once its game is final.
 //
 // Pure functions, no network, so the web tests can import them. app-feed feeds them
 // ESPN's final score and, for player props, the game summary's box score.

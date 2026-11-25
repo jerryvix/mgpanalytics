@@ -11,7 +11,7 @@
 // GET ?view=game&id=<ESPN event id>&sport=NBA           one game with every market's splits, its Takes and its player line
 // GET ?view=pulse&sports=NFL,NCAAF,NBA                  boards across the next 3 days, Takes, the day's strongest lines
 //
-// Expert Picks (D-093): a show's pick stays up for 12 hours after its game starts. Each
+// Capper Picks (D-093, D-112): a show's pick stays up for 12 hours after its game starts. Each
 // pick on the pulse and game views carries `state` (ESPN's pre, in or post), `final`
 // ("WSH 22, CIN 20" once the game is final) and `result` (hit, miss, push, or null when
 // it can't be graded; see _shared/takes-grade.ts). `person` is one host's name only
@@ -136,7 +136,7 @@ async function attachSplits(supabase: any, games: any[]) {
   }
 }
 
-// Expert Picks stay up for 12 hours after their game starts, so tonight's picks are still there in the morning (D-093)
+// Capper Picks stay up for 12 hours after their game starts, so tonight's picks are still there in the morning (D-093)
 const TAKES_KEEP_MS = 12 * 3600_000;
 const takesSince = () => new Date(Date.now() - TAKES_KEEP_MS).toISOString();
 

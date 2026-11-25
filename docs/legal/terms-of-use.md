@@ -1,12 +1,12 @@
 # MGP Analytics Terms of Use
 
-**Effective date:** November 24, 2026
+**Effective date:** November 25, 2026
 
 These Terms are an agreement between you and MGP Analytics ("MGP," "we," "us"). They cover the MGP Analytics website at mgp-analytics.com and the MGP Analytics iPhone app (together, "MGP"). By using MGP, you agree to these Terms and to our Privacy Policy (mgp-analytics.com/privacy). If you don't agree, please don't use MGP.
 
 ## What MGP Is
 
-MGP shows sports data for leagues like the NFL, NBA, college football, college basketball and MLB: odds and line movement, public betting splits, player and team stats, trends, hit streaks, picks from outside shows ("Expert Picks"), and the Analyst, an AI chat that answers your questions. Coverage varies by sport and can change. MGP is for information and entertainment.
+MGP shows sports data for leagues like the NFL, NBA, college football, college basketball and MLB: odds and line movement, public betting splits, player and team stats, trends, hit streaks, picks from outside shows ("Capper Picks"), and the Analyst, an AI chat that answers your questions. Coverage varies by sport and can change. MGP is for information and entertainment.
 
 ## MGP Isn't Betting Advice
 
@@ -16,11 +16,11 @@ MGP shows sports data for leagues like the NFL, NBA, college football, college b
 - You decide whether to bet. You're responsible for your bets, any losses, and following the laws where you live. Sports betting isn't legal everywhere.
 - MGP isn't financial, legal or tax advice.
 
-## Expert Picks Are Other People's Opinions
+## Capper Picks Are Other People's Opinions
 
-- Expert Picks come from public podcasts, YouTube video descriptions, and credited public posts on X by outside shows and hosts. We credit the show or person and link to the original. Podcast and YouTube picks are found with AI. Posts on X are sent to us already read from the public post.
+- Capper Picks come from public podcasts, YouTube video descriptions, and credited public posts on X by outside shows and hosts. We credit the show or person and link to the original. Podcast and YouTube picks are found with AI. Posts on X are sent to us already read from the public post.
 - They're the opinions of those shows and hosts, not MGP's. We don't endorse them, and we're not affiliated with those shows.
-- Some public X posts are market notes, such as where the tickets and the money are. We show those next to betting splits, with credit and a link to the post. A market note is not an Expert Pick.
+- Some public X posts are market notes, such as where the tickets and the money are. We show those next to betting splits, with credit and a link to the post. A market note is not a Capper Pick.
 - A summary can miss a pick, get a detail wrong or match a pick to the wrong game. Results we show, like Hit, Miss or Push, are graded automatically from final scores and box scores and can be wrong. Check the original show or post if a pick matters to you.
 
 ## Data Can Be Delayed or Wrong
@@ -112,7 +112,7 @@ You can stop using MGP and delete your account anytime. We can suspend or end yo
 
 ## Disclaimers
 
-**MGP is provided "as is" and "as available."** To the fullest extent the law allows, we make no promises or warranties of any kind, express or implied. That includes warranties of merchantability, fitness for a particular purpose, non-infringement and accuracy, and any promise that MGP will be available, error-free or secure. We don't guarantee any data, odds, betting splits, Expert Picks, Analyst answers or third-party content. Some states don't allow these exclusions, so some of them may not apply to you.
+**MGP is provided "as is" and "as available."** To the fullest extent the law allows, we make no promises or warranties of any kind, express or implied. That includes warranties of merchantability, fitness for a particular purpose, non-infringement and accuracy, and any promise that MGP will be available, error-free or secure. We don't guarantee any data, odds, betting splits, Capper Picks, Analyst answers or third-party content. Some states don't allow these exclusions, so some of them may not apply to you.
 
 ## Limitation of Liability
 

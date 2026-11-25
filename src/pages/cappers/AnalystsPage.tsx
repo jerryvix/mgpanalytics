@@ -5,7 +5,7 @@ export default function AnalystsPage() {
     <CappersCategoryPage
       category="analyst"
       title="Data & Analytics"
-      description="Expert analysts who break down the numbers and trends"
+      description="Analysts who break down the numbers and trends"
       icon="📊"
     />
   );

@@ -524,7 +524,7 @@ Newest at the bottom. Each entry: what was decided, why, and who decided. "Owner
 ### D-093 Skinny splits bars everywhere; "Based on DraftKings"; Expert Picks all day
 **Date:** 2026-11-24 · **By:** Owner ("I really like the skinny bar graphs... we just need to make it clear which side"; picked skinny bars on rows too; "Based on DraftKings (italicize it and shrink it). Remove the Updated... add that to Pulse"; "change that to Expert Picks... bring them back")
 **Splits:** thin bars, white for the first side (away, Over) and gray for the second (home, Under), the bigger share bold. Game rows on Today and Games show the spread as two bars, BETS and MONEY, with each team's logo at its end. The game page shows each market (Spread, Total, Moneyline) with the two sides' logos and bets ("MEM -2.5", "O 212.5") above the matching ends of its Bets and Money bars. Replaces D-089 and D-092.
-**Source line:** "Based on DraftKings" in Geist Italic, 12 points, no update time, on Today, Games, Pulse (Betting Splits) and the game page.
+**Source line:** "Based on DraftKings" in Geist Italic, 12 points, no update time, on Today, Games, Pulse (Betting Splits) and the game page. On the game page it sits directly under Betting Splits, before the one line and the player line, and shows only when the splits do (owner, Nov 25: "right below the betting splits").
 **Expert Picks:** the Pulse subtitle reads "Expert Picks". Picks stay up for 12 hours after their game starts; each shows Live during the game, then Hit, Miss or Push (Final when it can't be graded), and the game header shows the final score. Credit is the person when exactly one is known, else the show.
 
 ### D-094 The Analyst works like a normal iOS chat app
@@ -680,3 +680,9 @@ It returns `{candidate_id, sentence, show_ticker, reason}`.
   - Each agent merges its own pull request once checks pass (D-078 and the owner's "merge everything through"), not "Jerry merges".
   - Over-the-air updates ship with the product change that needs them (Claude Code's lane), since every app change reaches phones that way. Native builds and `app.json` / `eas.json` are shared: whoever needs a new build makes it, with an In progress line first. Grok Bot keeps App Store Connect (listing, screenshots, App Privacy answers, review notes), TestFlight groups and the release docs.
 - `CLAUDE.md` now points to `AGENTS.md`. jerryvix/mgpanalytics#27 is closed in favor of this version.
+
+### D-112 "Expert Picks" becomes "Capper Picks", with no tag
+**Date:** 2026-11-25 · **By:** Owner ("change that to Capper Picks and remove the bubble that says Expert, don't want people thinking MGP thinks these people are experts").
+- The game page section, the Pulse view label and the welcome screen say "Capper Picks". The EXPERT tag beside the section title is gone. DATA stays on Betting Splits (D-104).
+- The terms of use (effective November 25, 2026) and the store listing drafts (APP_STORE_LISTING.md, APP_STORE_COMPLIANCE.md) use the new name. The website's capper directory no longer calls its analysts "Expert analysts".
+- MGP never calls a show or host an expert; picks stay credited to the show and linked to the original.

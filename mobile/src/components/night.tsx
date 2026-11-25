@@ -119,7 +119,7 @@ export function Segs<K extends string>({ items, active, onChange }: { items: { k
   );
 }
 
-/** A tiny outlined tag beside a section title: DATA for numbers, EXPERT for people's picks (D-104). */
+/** A tiny outlined tag beside a section title: DATA for numbers (D-104). Capper Picks carry no tag (D-112). */
 export function Tag({ children }: { children: string }) {
   const c = useTheme();
   return (
