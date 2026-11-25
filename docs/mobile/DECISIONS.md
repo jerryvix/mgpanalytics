@@ -691,3 +691,8 @@ It returns `{candidate_id, sentence, show_ticker, reason}`.
 **Date:** 2026-11-25 · **By:** Owner ("add in a MGP logo here so when I screenshot and share people know where it's from").
 - The green "MGP" wordmark (`mobile/assets/images/splash-icon.png`, the app icon's lettering on a clear background) sits centered between the back and share buttons, 32 points tall. It isn't a button, and screen readers read it as "MGP Analytics". Works in light and dark.
 - The tabs' top bar and the footer still use the small pulse mark (D-086). Switching them to the wordmark is open if the owner wants every screenshot branded the same way.
+
+### D-114 No DATA tag; the MGP wordmark in every top bar
+**Date:** 2026-11-25 · **By:** Owner ("Remove this data bubble"; "keep the pulse icon in the top corner but also have MGP logo in the center").
+- Betting Splits has no DATA tag. With EXPERT gone too (D-112), no section carries a tag. `Tag` and `SectionTitle`'s `tag` prop stay in `night.tsx`, unused. Replaces D-104's tags.
+- The tabs' top bar (Today, Games, Pulse, Analyst) keeps the pulse mark on the left and Profile on the right, with the green MGP wordmark centered, 28 points tall. The game page has it at 32 (D-113). Both use one `Wordmark` component in `night.tsx`.

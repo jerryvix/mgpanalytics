@@ -119,7 +119,7 @@ export function Segs<K extends string>({ items, active, onChange }: { items: { k
   );
 }
 
-/** A tiny outlined tag beside a section title: DATA for numbers (D-104). Capper Picks carry no tag (D-112). */
+/** A tiny outlined tag beside a section title. Unused for now: the DATA and EXPERT tags were removed (D-112, D-114). */
 export function Tag({ children }: { children: string }) {
   const c = useTheme();
   return (
@@ -142,10 +142,21 @@ export function SectionTitle({ children, sub, tag, style }: { children: ReactNod
 }
 
 /** Top bar: MGP mark, profile button. */
+/** The green MGP wordmark (the app icon's lettering), so a shared screenshot shows where it's from (D-113, D-114). */
+export function Wordmark({ height = 32 }: { height?: number }) {
+  return (
+    <Image source={require('@/assets/images/splash-icon.png')} style={{ width: Math.round(height * 2.2), height }} contentFit="contain" accessible accessibilityLabel="MGP Analytics" />
+  );
+}
+
+/** Tabs' top bar: the pulse mark on the left, the MGP wordmark centered, Profile on the right. */
 export function TopBar() {
   const c = useTheme();
   return (
     <View style={styles.topbar}>
+      <View style={{ position: 'absolute', left: 0, right: 0, top: 4, bottom: 0, alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+        <Wordmark height={28} />
+      </View>
       <View style={[styles.mark, { backgroundColor: c.surface }]}>
         <Icon name="waveform.path.ecg" size={18} color={c.brand} weight="bold" />
       </View>
