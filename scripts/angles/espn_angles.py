@@ -161,6 +161,23 @@ FAMILY = {"big": "fd", "small": "fd", "huge": "fd",
           "bowl": "post", "cfp": "post", "ccg": "post",
           "ctourney": "tourney", "ncaa": "tourney", "ncaa_coach": "tourney"}
 TOTALS_ONLY = {"tot", "pace", "offs"}
+# D-123 relevance (owner, Nov 25: "is that a stat that holds?"). A backtest of every line shown in 2025-26 (NBA 50.2%,
+# college football 50.4%) showed the most lopsided record per game is mostly a fluke found by searching. Three checks:
+# 1. A reason: each condition is rated for the spread and for the total. "none" drops the record (three straight
+#    non-covers say nothing about the total), "weak" marks it down.
+NO_REASON = {"ats": {"tot", "pace", "offs"},
+             "ou": {"prev", "streak", "atsrun", "upset"}}
+WEAK_REASON = {"ats": {"month", "opening", "allstar", "tv", "night", "tipoff", "midweek", "noon", "xconf"},
+               "ou": {"role", "fd", "big", "small", "huge", "month", "opening", "allstar", "div", "conf", "ranked", "top10", "bothrk",
+                      "unrk", "hot", "champ", "oppq", "trip", "home_after", "tripend", "tripstart", "stand", "tz", "rweek", "finale",
+                      "homefinale", "prerival", "cup", "academy", "instate", "xconf", "tv", "night", "tipoff", "midweek", "noon",
+                      "blowout", "scored", "ot", "close"}}
+# 2. Beyond one team: the record is shrunk toward how every team did in the same spot over the same seasons
+#    (SHRINK games of the league's rate), so a short lucky run counts for less and a league-wide lean counts for more.
+SHRINK = 12
+NO_BASELINE = {"out", "lastmeet", "lastyr", "sameopp", "oppcoach"}   # about this team or this pairing only
+# 3. It holds: the first and second halves of the sample both lean the same way, 55% or more each.
+HALF_RATE, HALF_MIN = 0.55, 4
 SIZE_KINDS = {"fd", "big", "small", "huge"}
 OPP_LIKE = {"opp", "oppcoach"}   # name this opponent (or its coach)
 # say something about the opponent already named, so they never pair with OPP_LIKE
@@ -186,7 +203,7 @@ CUP_NOTE = re.compile(r"^NBA (Cup|In-Season Tournament)")
 # D-120: every phrase the engine writes (the self-test renders each in both sentence shapes)
 P = {
     "home": "at home", "road": "on the road", "neutral": "at neutral sites",
-    "fav": "as a favorite", "dog": "as an underdog", "size": "as {art} {fd} of {n} or {more}",
+    "fav": "as a favorite", "dog": "as an underdog", "size": "as {art} {fd} of {n}{more}",
     "prev_w": "after a win", "prev_l": "after a loss",
     "streak_l2": "after two or more straight losses", "streak_w3": "after three or more straight wins",
     "streak_w4": "after four or more straight wins",
@@ -1104,7 +1121,7 @@ def render(league: str, metric: str, kind: str, who: str, parts: list[str], fram
 
 
 FRAME = r"(this season|since (19|20)\d\d(-\d\d)?)"
-SHAPES = (re.compile(r"^(The [A-Z0-9].* are|[A-Z].* is) \d+-\d+(-\d+)? ATS .+ " + FRAME + "$"),
+SHAPES = (re.compile(r"^(The [A-Z0-9].* are|[A-Z].* is) \d+-\d+(-\d+)? ATS (.+ )?" + FRAME + "$"),
           re.compile(r"^The (over|under) is \d+-\d+(-\d+)? in .+ games\b.* " + FRAME + "$"),
           re.compile(r"^\d+ seeds are \d+-\d+(-\d+)?( ATS)? against \d+ seeds since (19|20)\d\d$"),
           re.compile(r"^[A-Z].* is \d+-\d+ in the NCAA tournament since (19|20)\d\d$"))
@@ -1135,6 +1152,62 @@ def cond_masks(srows: list[Row], pred) -> tuple[int, int]:
         elif y:
             t |= 1 << i
     return t, u
+
+
+_BASE: dict = {}
+
+
+def league_rows(rows: list[Row], start: int) -> tuple[list[Row], dict]:
+    """Every team's games from a season on, with their outcome masks (D-123)."""
+    key = (id(rows), start)
+    if key not in _BASE:
+        lst = [r for r in rows if r.season >= start]
+        outc = {(m, x): sum(1 << i for i, r in enumerate(lst) if getattr(r, m) == x) for m in ("ats", "ou") for x in (1, -1)}
+        _BASE[key] = (lst, outc, {})
+    return _BASE[key][0], _BASE[key]
+
+
+def pred_key(k: str, ph: str, pred):
+    """A cache key for a condition's predicate, or None when its captured values can't be compared."""
+    try:
+        cells = tuple(c.cell_contents for c in (pred.__closure__ or ()))
+        key = (k, ph, pred.__code__, pred.__defaults__, cells)
+        hash(key)
+        return key
+    except (TypeError, ValueError):
+        return None
+
+
+def league_rate(rows: list[Row], start: int, combo, metric: str) -> tuple[float, int]:
+    """How every team did in this spot since `start`: the share of covers (or overs), and the games counted."""
+    lst, entry = league_rows(rows, start)
+    masks = entry[2]
+    sel = (1 << len(lst)) - 1
+    for k, ph, pred in combo:
+        key = pred_key(k, ph, pred)
+        if key is None:
+            t, _ = cond_masks(lst, pred)
+        else:
+            if key not in masks:
+                masks[key] = cond_masks(lst, pred)
+            t = masks[key][0]
+        sel &= t
+    w = (sel & entry[1][(metric, 1)]).bit_count()
+    l = (sel & entry[1][(metric, -1)]).bit_count()
+    return (w / (w + l) if w + l else 0.5), w + l
+
+
+def holds(srows: list[Row], sel: int, metric: str, side: int) -> bool:
+    """The first and second halves of the sample (in date order) both lean the shown way (D-123)."""
+    res = [getattr(srows[i], metric) for i in range(len(srows)) if sel >> i & 1]
+    res = [x for x in res if x in (1, -1)]
+    if len(res) < 2 * HALF_MIN:
+        return True   # too few games to split: the floors already cover it
+    h = len(res) // 2
+    for part in (res[:h], res[h:]):
+        if sum(1 for x in part if x == side) / len(part) < HALF_RATE:
+            return False
+    return True
 
 
 def next_game(ctx: Ctx, tid: str, season: int, start: datetime) -> Played | None:
@@ -1207,13 +1280,13 @@ def build_angles(league: str, g: dict, rows: list[Row], ctx: Ctx, lookup, school
             if league == "nba" and my["streak"] >= 4:
                 conds.append(("streak", P["streak_w4"], lambda r: r.streak >= 4))
         if abs(line) >= cfg["big"]:
-            conds.append(("big", f("size", art=art, fd=fd, n=cfg["big"], more="more"),
+            conds.append(("big", f("size", art=art, fd=fd, n=cfg["big"], more="+"),
                           lambda r, f_=fav, b=cfg["big"]: (r.line <= -b) if f_ else (r.line >= b)))
         if league in ("nba", "cfb") and 0 < abs(line) <= cfg["small"]:
-            conds.append(("small", f("size", art=art, fd=fd, n=f"{cfg['small']:g}", more="less"),
+            conds.append(("small", f("size", art=art, fd=fd, n=f"{cfg['small']:g}", more=" or less"),
                           lambda r, f_=fav, b=cfg["small"]: (-b <= r.line < 0) if f_ else (0 < r.line <= b)))
         if league == "cfb" and abs(line) >= cfg["huge"]:
-            conds.append(("huge", f("size", art=art, fd=fd, n=cfg["huge"], more="more"),
+            conds.append(("huge", f("size", art=art, fd=fd, n=cfg["huge"], more="+"),
                           lambda r, f_=fav, b=cfg["huge"]: (r.line <= -b) if f_ else (r.line >= b)))
         if total is not None:
             t = float(total)
@@ -1439,8 +1512,8 @@ def build_angles(league: str, g: dict, rows: list[Row], ctx: Ctx, lookup, school
             parts = []
             if "role" in kinds and size:
                 k = next(iter(size))
-                tail = {"fd": "", "big": f" of {cfg['big']} or more", "small": f" of {cfg.get('small', 0):g} or less",
-                        "huge": f" of {cfg.get('huge', 0)} or more"}[k]
+                tail = {"fd": "", "big": f" of {cfg['big']}+", "small": f" of {cfg.get('small', 0):g} or less",
+                        "huge": f" of {cfg.get('huge', 0)}+"}[k]
                 # "as a road underdog", and at a neutral site "as an underdog at neutral sites"
                 parts.append(f"as {art} {fd}{tail} {P['neutral']}" if role == "neutral" else f"as a {role} {fd}{tail}")
             for k, ph, _ in combo:
@@ -1534,6 +1607,8 @@ def build_angles(league: str, g: dict, rows: list[Row], ctx: Ctx, lookup, school
                         continue
                     if metric == "ats" and kinds & TOTALS_ONLY:
                         continue
+                    if kinds & NO_REASON[metric]:
+                        continue   # D-123: no reason this condition moves this market
                     w, l, p = ((sel & outcome[(metric, x)]).bit_count() for x in (1, -1, 0))
                     n = w + l
                     if n < floor:
@@ -1541,9 +1616,22 @@ def build_angles(league: str, g: dict, rows: list[Row], ctx: Ctx, lookup, school
                     rate = w / n
                     if FLOOR_RATE > rate > 1 - FLOOR_RATE:
                         continue
-                    z = zscore(w, l)
-                    if abs(z) < FLOOR_Z or not sel & recent_mask:
+                    if abs(zscore(w, l)) < FLOOR_Z or not sel & recent_mask:
                         continue
+                    # D-123: shrink toward every team in the same spot, then require it to hold in both halves
+                    start = min(srows[i].season for i in range(n_rows) if sel >> i & 1)
+                    if kinds & NO_BASELINE:
+                        base, base_n = 0.5, 0
+                    else:
+                        base, base_n = league_rate(rows, start, combo, metric)
+                    z = (w + SHRINK * base - (n + SHRINK) / 2) / math.sqrt((n + SHRINK) / 4)
+                    if abs(z) < FLOOR_Z or (z > 0) != (rate > 0.5):
+                        continue
+                    if not holds(srows, sel, metric, 1 if rate > 0.5 else -1):
+                        continue
+                    rel = relevance - 0.3 * len(kinds & WEAK_REASON[metric])
+                    if base_n >= 100 and abs(base - 0.5) >= 0.03 and (base > 0.5) == (rate > 0.5):
+                        rel += 0.2   # every team leans the same way in this spot
                     text = render(league, metric, kind, who, parts, fr, w, l, p)
                     if not short_enough(text):
                         continue
@@ -1553,7 +1641,7 @@ def build_angles(league: str, g: dict, rows: list[Row], ctx: Ctx, lookup, school
                         supports = f"{'Over' if rate > 0.5 else 'Under'} {float(total):g}"
                     sample = [(srows[i].event, srows[i].team) for i in range(n_rows) if sel >> i & 1 and getattr(srows[i], metric) is not None]
                     out.append(Angle(text, supports, "spread" if metric == "ats" else "total", metric,
-                                     w, l, p, z, len(combo), rate, frozenset(kinds), relevance, sample))
+                                     w, l, p, z, len(combo), rate, frozenset(kinds), rel, sample))
     return out
 
 
@@ -1720,6 +1808,40 @@ def verify(a: Angle, idx: dict[str, dict], trows: list[dict] | None = None) -> b
             m = hp + ap - float(r["total"])
         w, l, p = w + (m > 0), l + (m < 0), p + (m == 0)
     return (w, l, p) == (a.w, a.l, a.p)
+
+
+def season_fallback(league: str, g: dict, by_team: dict, season: int) -> Angle | None:
+    """D-123 (owner, Nov 25: "Ship, fill the gaps"): a game with no line that clears the relevance bar shows its
+    plainest fact, a team's record this season against the spread or on the total, whichever of the four is
+    furthest from even. Needs 4+ decided games and a lean; same shapes and same recount as every other line."""
+    best = None
+    for side in ("home", "away"):
+        me, op = (g["home"], g["away"]) if side == "home" else (g["away"], g["home"])
+        tid = me["team"]["id"]
+        line = g["home_line"] if side == "home" else -g["home_line"]
+        name = short(league, me["team"])
+        cur = [r for r in by_team.get(tid, []) if r.season == season]
+        for metric in ("ats", "ou"):
+            if metric == "ou" and g["total"] is None:
+                continue
+            sel = [r for r in cur if getattr(r, metric) is not None]
+            w = sum(1 for r in sel if getattr(r, metric) == 1)
+            l = sum(1 for r in sel if getattr(r, metric) == -1)
+            p = sum(1 for r in sel if getattr(r, metric) == 0)
+            if w + l < 4 or w == l:
+                continue
+            z = zscore(w, l)
+            if best is not None and abs(z) <= abs(best.z):
+                continue
+            text = render(league, metric, "team", name, [], "this season", w, l, p)
+            if metric == "ats":
+                supports = (f"{me['team']['abbreviation']} {fmt_line(line)}" if w > l
+                            else f"{op['team']['abbreviation']} {fmt_line(-line)}")
+            else:
+                supports = f"{'Over' if w > l else 'Under'} {float(g['total']):g}"
+            best = Angle(text, supports, "spread" if metric == "ats" else "total", metric, w, l, p, z, 1, w / (w + l),
+                         frozenset({"season"}), 0.0, [(r.event, r.team) for r in sel])
+    return best
 
 
 def pick_slate(games: list[tuple[dict, list[Angle]]], ok, overflow: int | None = None) -> dict[str, Angle]:
@@ -1982,8 +2104,14 @@ def main() -> None:
 
     picked = pick_slate(found, ok, overflow=1 if args.league == "cbb" else None)
     results = []
-    for g, _ in found:
+    for g in games:
         best = picked.get(g["id"])
+        tier = None if best is None else ("strong" if best.strong else "fallback")
+        if best is None:   # D-123: no line clears the bar, so the plain season record fills the gap
+            best = season_fallback(args.league, g, by_team, args.season)
+            if best is not None and not ok(best):
+                best = None
+            tier = "season"
         label = f"{g['away']['team']['shortDisplayName']} {'vs' if g['neutral'] else 'at'} {g['home']['team']['shortDisplayName']}"
         if best is None:
             continue
@@ -1991,7 +2119,7 @@ def main() -> None:
                         "starts_at": g["start"].isoformat(),
                         "best": {"text": best.text, "supports": best.supports, "market": best.market,
                                  "record": f"{best.w}-{best.l}" + (f"-{best.p}" if best.p else ""),
-                                 "z": round(best.z, 2), "tier": "strong" if best.strong else "fallback",
+                                 "z": round(best.z, 2), "tier": tier,
                                  "families": sorted(best.families)}})
         print(f"{label} ({g['home']['team']['abbreviation']} {fmt_line(g['home_line'])}, O/U {g['total']}): "
               f"{best.text}  ->  {best.supports}  [{', '.join(sorted(best.families))}]")

@@ -1143,7 +1143,7 @@ def team_conds(sport: str, u: Upcoming, team: str) -> list[Cond]:
         fav = c["spread"] < 0
         out.append(Cond("fd", "", "as a favorite" if fav else "as an underdog", lambda g, f=fav: g.spread is not None and g.spread != 0 and (g.spread < 0) == f))
         if abs(c["spread"]) >= big:
-            out.append(Cond("bigline", "", f"as a favorite of {big} or more" if fav else f"as an underdog of {big} or more",
+            out.append(Cond("bigline", "", f"as a favorite of {big}+" if fav else f"as an underdog of {big}+",
                             lambda g, f=fav: g.spread is not None and ((g.spread <= -big) if f else (g.spread >= big))))
     for kind in sorted(u.special):
         adj, noun = SPECIAL[kind]
