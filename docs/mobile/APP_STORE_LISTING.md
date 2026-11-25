@@ -305,10 +305,10 @@ Role for these screens: Account Holder, Admin, or App Manager. The phone number 
 Paste:
 
 ```
-MGP Analytics shows odds, line moves, and betting splits for NFL, college football, and NBA games. You can browse as a guest. Sign in to ask the Analyst, which is an AI chat. MGP does not take bets.
+MGP Analytics is your sports research app for the NFL, college football and the NBA. Get matchup stats, trends, market data and historical records for every game. Ask the Analyst, an AI research assistant, anything about a matchup. Browse as a guest, or sign in to chat.
 ```
 
-Source: the same lines as the App Store description, shortened for a tester invite.
+Source: the owner's approved wording (Nov 25). Lead with research and data, not betting: sports betting isn't legal everywhere, and MGP is a sports information app. Don't use "predictions" (MGP doesn't predict outcomes, and `docs/positioning.md` rules out prediction-market claims). The "no wagering, no deposits, no sportsbook links" line stays in the Beta App Review notes, which only Apple sees.
 
 ### What to Test
 
