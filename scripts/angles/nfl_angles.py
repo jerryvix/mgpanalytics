@@ -98,6 +98,17 @@ FD_KINDS = {"fd", "big", "three", "ml"}
 OPP_LIKE = {"opp", "oppcoach", "former"}            # name this opponent (or its coach)
 OPPONENT_KINDS = {"div", "xconf", "rematch", "prematch", "oppwin", "oppplayoff", "oppdef", "oppleader", "oppqbchange"}
 TOTALS_ONLY = {"tot"}
+# D-123 relevance (owner, Nov 25: "is that a stat that holds?"; "make sure we have filter for NFL and all sports"):
+# 1. a reason for the market (none drops the record, weak costs 0.3), 2. shrunk toward every team in the same spot,
+# 3. both halves of the sample lean the same way. Same rules as espn_angles.py.
+NO_REASON = {"ats": {"tot"}, "ou": {"prev", "streak", "upset", "oppwin"}}
+WEAK_REASON = {"ats": {"dec", "wk14", "prime", "mnf", "snf", "tnf", "xconf"},
+               "ou": {"role", "fd", "big", "three", "ml", "div", "xconf", "oppleader", "oppplayoff", "rematch", "prematch",
+                      "finale", "wk14", "prime", "mnf", "snf", "tnf", "thanks", "xmas", "former", "blowout", "ot", "tz", "early",
+                      "intl"}}
+SHRINK = 12
+NO_BASELINE = {"former", "oppcoach", "rematch", "prematch", "oppwin"}   # about this coach or this pairing only
+HALF_RATE, HALF_MIN = 0.55, 4
 LONG_OK = {"opp", "oppcoach", "thanks", "xmas"}      # the long team window is for rivalry and holiday angles only
 GUARD_WORDS = {"against", "with", "after", "on"}    # two phrases never start the same way ("on the road" excepted)
 # In the over/under shape these fold into the lead: "the under is 9-2 in Steelers division games"
@@ -546,6 +557,51 @@ def cond_masks(srows: list[Row], pred) -> tuple[int, int]:
     return t, u
 
 
+_BASE: dict = {}
+
+
+def pred_key(k: str, ph: str, pred):
+    """A cache key for a condition's predicate, or None when its captured values can't be compared."""
+    try:
+        cells = tuple(c.cell_contents for c in (pred.__closure__ or ()))
+        key = (k, ph, pred.__code__, pred.__defaults__, cells)
+        hash(key)
+        return key
+    except (TypeError, ValueError):
+        return None
+
+
+def league_rate(rows: list[Row], start: int, combo, metric: str) -> tuple[float, int]:
+    """How every team did in this spot since `start`: the share of covers (or overs), and the games counted (D-123)."""
+    key = (id(rows), start)
+    if key not in _BASE:
+        lst = [r for r in rows if r.season >= start]
+        outc = {(m, x): sum(1 << i for i, r in enumerate(lst) if getattr(r, m) == x) for m in ("ats", "ou") for x in (1, -1)}
+        _BASE[key] = (lst, outc, {})
+    lst, outc, masks = _BASE[key]
+    sel = (1 << len(lst)) - 1
+    for k, ph, pred in combo:
+        pk = pred_key(k, ph, pred)
+        if pk is None:
+            t, _ = cond_masks(lst, pred)
+        else:
+            if pk not in masks:
+                masks[pk] = cond_masks(lst, pred)
+            t = masks[pk][0]
+        sel &= t
+    w, l = (sel & outc[(metric, 1)]).bit_count(), (sel & outc[(metric, -1)]).bit_count()
+    return (w / (w + l) if w + l else 0.5), w + l
+
+
+def holds(srows: list[Row], sel: int, metric: str, side: int) -> bool:
+    """The first and second halves of the sample (in date order) both lean the shown way (D-123)."""
+    res = [x for x in (getattr(srows[i], metric) for i in range(len(srows)) if sel >> i & 1) if x in (1, -1)]
+    if len(res) < 2 * HALF_MIN:
+        return True
+    h = len(res) // 2
+    return all(sum(1 for x in part if x == side) / len(part) >= HALF_RATE for part in (res[:h], res[h:]))
+
+
 def combo_ok(combo) -> bool:
     """D-115 wording guards, as in espn_angles.py: one condition per family; the opponent described once; no
     two phrases starting the same way ("on the road" pairs with anything); at most one folded group."""
@@ -559,7 +615,7 @@ def combo_ok(combo) -> bool:
     firsts = [ph.split()[0] for k, ph, _ in combo if k != "role"]
     if len(firsts) == 2 and firsts[0] == firsts[1] and firsts[0] in GUARD_WORDS:
         return False
-    # "as a favorite after losing as a favorite of 3 or more" says favorite twice
+    # "as a favorite after losing as a favorite of 3+" says favorite twice
     if sum(1 for _, ph, _ in combo if re.search(r"\b(favorite|underdog)\b", ph)) > 1:
         return False
     return sum(1 for _, ph, _ in combo if ph in GROUPS) <= 1
@@ -601,7 +657,7 @@ def build_angles(game: dict, rows: list[Row], season: int, ctx: Context | None =
             ("fd", f"as {art} {fd}", lambda r, f=fav: (r.line < 0) == f),
         ]
         if abs(line) >= 7:
-            conds.append(("big", f"as {art} {fd} of 7 or more", lambda r, f=fav: (r.line <= -7) if f else (r.line >= 7)))
+            conds.append(("big", f"as {art} {fd} of 7+", lambda r, f=fav: (r.line <= -7) if f else (r.line >= 7)))
         if abs(line) == 3:
             conds.append(("three", f"as a 3-point {fd}", lambda r, x=line: r.line == x))
         if c and not fav and c["ml"] is not None and c["ml"] >= 200:
@@ -686,7 +742,7 @@ def build_angles(game: dict, rows: list[Row], season: int, ctx: Context | None =
                 conds.append(("blowout", f"after {'winning' if won else 'losing'} by 17 or more",
                               lambda r, won=won: r.prev_margin is not None and (r.prev_margin >= 17 if won else r.prev_margin <= -17)))
             if me["upset"]:
-                conds.append(("upset", "after losing as a favorite of 3 or more", lambda r: r.prev_upset))
+                conds.append(("upset", "after losing as a favorite of 3+", lambda r: r.prev_upset))
             if me["ot"]:
                 conds.append(("ot", "after an overtime game", lambda r: r.prev_ot))
             if me["streak"] >= 4:
@@ -700,7 +756,7 @@ def build_angles(game: dict, rows: list[Row], season: int, ctx: Context | None =
             parts = []
             if "role" in kinds and size:
                 k = next(iter(size))
-                parts.append({"fd": f"as a {role} {fd}", "big": f"as a {role} {fd} of 7 or more",
+                parts.append({"fd": f"as a {role} {fd}", "big": f"as a {role} {fd} of 7+",
                               "three": f"as a 3-point {role} {fd}", "ml": f"as a {role} underdog of +200 or more"}[k])
             for k, ph, _ in combo:
                 if parts and (k == "role" or k in FD_KINDS):
@@ -775,6 +831,8 @@ def build_angles(game: dict, rows: list[Row], season: int, ctx: Context | None =
                         continue
                     if metric == "ats" and kinds & TOTALS_ONLY:
                         continue
+                    if kinds & NO_REASON[metric]:
+                        continue   # D-123: no reason this condition moves this market
                     w, l, p = ((sel & outcome[(metric, x)]).bit_count() for x in (1, -1, 0))
                     n = w + l
                     if n < MIN_GAMES:
@@ -782,11 +840,21 @@ def build_angles(game: dict, rows: list[Row], season: int, ctx: Context | None =
                     rate = w / n
                     if FLOOR_RATE > rate > 1 - FLOOR_RATE:
                         continue
-                    z = zscore(w, l)
-                    if abs(z) < FLOOR_Z:
+                    if abs(zscore(w, l)) < FLOOR_Z:
                         continue
                     if not sel & recent_mask:
                         continue
+                    # D-123: shrink toward every team in the same spot, then require it to hold in both halves
+                    start = min(srows[i].season for i in range(len(srows)) if sel >> i & 1)
+                    base, base_n = (0.5, 0) if kinds & NO_BASELINE else league_rate(rows, start, combo, metric)
+                    z = (w + SHRINK * base - (n + SHRINK) / 2) / math.sqrt((n + SHRINK) / 4)
+                    if abs(z) < FLOOR_Z or (z > 0) != (rate > 0.5):
+                        continue
+                    if not holds(srows, sel, metric, 1 if rate > 0.5 else -1):
+                        continue
+                    rel = relevance - 0.3 * len(kinds & WEAK_REASON[metric])
+                    if base_n >= 100 and abs(base - 0.5) >= 0.03 and (base > 0.5) == (rate > 0.5):
+                        rel += 0.2   # every team leans the same way in this spot
                     sample = [srows[i] for i in range(len(srows)) if sel >> i & 1]
                     last = max(r.season for r in sample)
                     text = render(metric, kind, who, name, parts, frame, w, l, p)
@@ -798,7 +866,7 @@ def build_angles(game: dict, rows: list[Row], season: int, ctx: Context | None =
                         supports = f"{'Over' if rate > 0.5 else 'Under'} {total_line:g}"
                     out.append(Angle(text=text, supports=supports, market="spread" if metric == "ats" else "total",
                                      w=w, l=l, p=p, z=z, conds=len(combo), rate=rate, last_season=last,
-                                     relevance=relevance, metric=metric, kinds=frozenset(kinds),
+                                     relevance=rel, metric=metric, kinds=frozenset(kinds),
                                      sample=[(r.gameday, r.team) for r in sample]))
     return out
 
@@ -894,7 +962,7 @@ def self_test(games_path: str = "") -> None:
         (("ats", "qb", "Jared Goff", "Lions", ["against Kevin O'Connell's teams"], "in his career", 6, 1, 0), "Jared Goff is 6-1 ATS against Kevin O'Connell's teams in his career"),
         (("ou", "team", "The Giants", "Giants", ["against division leaders"], "since 2024", 11, 3, 0), "The over is 11-3 in Giants games against division leaders since 2024"),
         (("ats", "coach", "Mike McCarthy", "Steelers", ["without his usual starting QB"], "since 2006", 12, 4, 0), "Mike McCarthy is 12-4 ATS without his usual starting QB since 2006"),
-        (("ats", "team", "The Lions", "Lions", ["after losing as a favorite of 3 or more"], "since 2021", 8, 1, 0), "The Lions are 8-1 ATS after losing as a favorite of 3 or more since 2021"),
+        (("ats", "team", "The Lions", "Lions", ["after losing as a favorite of 3+"], "since 2021", 8, 1, 0), "The Lions are 8-1 ATS after losing as a favorite of 3+ since 2021"),
         (("ou", "team", "The Packers", "Packers", ["on the road", "on grass"], "since 2024", 10, 2, 0), "The over is 10-2 in Packers games on the road on grass since 2024"),
         (("ou", "coach", "Andy Reid", "Chiefs", ["at home", "in conference title games"], "since 1999", 2, 5, 0), "The under is 5-2 in Andy Reid's conference title games at home since 1999"),
         (("ats", "coach", "Andy Reid", "Chiefs", ["in the Divisional round", "off a bye"], "since 1999", 9, 3, 0), "Andy Reid is 9-3 ATS in the Divisional round off a bye since 1999"),
@@ -916,7 +984,7 @@ def self_test(games_path: str = "") -> None:
     assert not combo_ok((("xconf", "against AFC teams", p), ("oppleader", "against division leaders", p)))  # "against ... against"
     assert not combo_ok((("tnf", "on Thursday night", p), ("thanks", "on Thanksgiving", p)))              # "on ... on"
     assert not combo_ok((("tot", "with a total of 50 or more", p), ("restadv", "with a rest edge of 3 or more days", p)))
-    assert not combo_ok((("fd", "as a favorite", p), ("upset", "after losing as a favorite of 3 or more", p)))  # favorite twice
+    assert not combo_ok((("fd", "as a favorite", p), ("upset", "after losing as a favorite of 3+", p)))  # favorite twice
     assert combo_ok((("role", "on the road", p), ("mnf", "on Monday night", p)))
     assert combo_ok((("div", "in division games", p), ("prev", "after a loss", p)))
     assert possessive("Todd Bowles") == "Todd Bowles'" and possessive("Andy Reid") == "Andy Reid's"

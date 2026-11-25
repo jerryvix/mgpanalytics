@@ -203,7 +203,7 @@ CUP_NOTE = re.compile(r"^NBA (Cup|In-Season Tournament)")
 # D-120: every phrase the engine writes (the self-test renders each in both sentence shapes)
 P = {
     "home": "at home", "road": "on the road", "neutral": "at neutral sites",
-    "fav": "as a favorite", "dog": "as an underdog", "size": "as {art} {fd} of {n} or {more}",
+    "fav": "as a favorite", "dog": "as an underdog", "size": "as {art} {fd} of {n}{more}",
     "prev_w": "after a win", "prev_l": "after a loss",
     "streak_l2": "after two or more straight losses", "streak_w3": "after three or more straight wins",
     "streak_w4": "after four or more straight wins",
@@ -1121,7 +1121,7 @@ def render(league: str, metric: str, kind: str, who: str, parts: list[str], fram
 
 
 FRAME = r"(this season|since (19|20)\d\d(-\d\d)?)"
-SHAPES = (re.compile(r"^(The [A-Z0-9].* are|[A-Z].* is) \d+-\d+(-\d+)? ATS .+ " + FRAME + "$"),
+SHAPES = (re.compile(r"^(The [A-Z0-9].* are|[A-Z].* is) \d+-\d+(-\d+)? ATS (.+ )?" + FRAME + "$"),
           re.compile(r"^The (over|under) is \d+-\d+(-\d+)? in .+ games\b.* " + FRAME + "$"),
           re.compile(r"^\d+ seeds are \d+-\d+(-\d+)?( ATS)? against \d+ seeds since (19|20)\d\d$"),
           re.compile(r"^[A-Z].* is \d+-\d+ in the NCAA tournament since (19|20)\d\d$"))
@@ -1280,13 +1280,13 @@ def build_angles(league: str, g: dict, rows: list[Row], ctx: Ctx, lookup, school
             if league == "nba" and my["streak"] >= 4:
                 conds.append(("streak", P["streak_w4"], lambda r: r.streak >= 4))
         if abs(line) >= cfg["big"]:
-            conds.append(("big", f("size", art=art, fd=fd, n=cfg["big"], more="more"),
+            conds.append(("big", f("size", art=art, fd=fd, n=cfg["big"], more="+"),
                           lambda r, f_=fav, b=cfg["big"]: (r.line <= -b) if f_ else (r.line >= b)))
         if league in ("nba", "cfb") and 0 < abs(line) <= cfg["small"]:
-            conds.append(("small", f("size", art=art, fd=fd, n=f"{cfg['small']:g}", more="less"),
+            conds.append(("small", f("size", art=art, fd=fd, n=f"{cfg['small']:g}", more=" or less"),
                           lambda r, f_=fav, b=cfg["small"]: (-b <= r.line < 0) if f_ else (0 < r.line <= b)))
         if league == "cfb" and abs(line) >= cfg["huge"]:
-            conds.append(("huge", f("size", art=art, fd=fd, n=cfg["huge"], more="more"),
+            conds.append(("huge", f("size", art=art, fd=fd, n=cfg["huge"], more="+"),
                           lambda r, f_=fav, b=cfg["huge"]: (r.line <= -b) if f_ else (r.line >= b)))
         if total is not None:
             t = float(total)
@@ -1512,8 +1512,8 @@ def build_angles(league: str, g: dict, rows: list[Row], ctx: Ctx, lookup, school
             parts = []
             if "role" in kinds and size:
                 k = next(iter(size))
-                tail = {"fd": "", "big": f" of {cfg['big']} or more", "small": f" of {cfg.get('small', 0):g} or less",
-                        "huge": f" of {cfg.get('huge', 0)} or more"}[k]
+                tail = {"fd": "", "big": f" of {cfg['big']}+", "small": f" of {cfg.get('small', 0):g} or less",
+                        "huge": f" of {cfg.get('huge', 0)}+"}[k]
                 # "as a road underdog", and at a neutral site "as an underdog at neutral sites"
                 parts.append(f"as {art} {fd}{tail} {P['neutral']}" if role == "neutral" else f"as a {role} {fd}{tail}")
             for k, ph, _ in combo:
@@ -1810,6 +1810,40 @@ def verify(a: Angle, idx: dict[str, dict], trows: list[dict] | None = None) -> b
     return (w, l, p) == (a.w, a.l, a.p)
 
 
+def season_fallback(league: str, g: dict, by_team: dict, season: int) -> Angle | None:
+    """D-123 (owner, Nov 25: "Ship, fill the gaps"): a game with no line that clears the relevance bar shows its
+    plainest fact, a team's record this season against the spread or on the total, whichever of the four is
+    furthest from even. Needs 4+ decided games and a lean; same shapes and same recount as every other line."""
+    best = None
+    for side in ("home", "away"):
+        me, op = (g["home"], g["away"]) if side == "home" else (g["away"], g["home"])
+        tid = me["team"]["id"]
+        line = g["home_line"] if side == "home" else -g["home_line"]
+        name = short(league, me["team"])
+        cur = [r for r in by_team.get(tid, []) if r.season == season]
+        for metric in ("ats", "ou"):
+            if metric == "ou" and g["total"] is None:
+                continue
+            sel = [r for r in cur if getattr(r, metric) is not None]
+            w = sum(1 for r in sel if getattr(r, metric) == 1)
+            l = sum(1 for r in sel if getattr(r, metric) == -1)
+            p = sum(1 for r in sel if getattr(r, metric) == 0)
+            if w + l < 4 or w == l:
+                continue
+            z = zscore(w, l)
+            if best is not None and abs(z) <= abs(best.z):
+                continue
+            text = render(league, metric, "team", name, [], "this season", w, l, p)
+            if metric == "ats":
+                supports = (f"{me['team']['abbreviation']} {fmt_line(line)}" if w > l
+                            else f"{op['team']['abbreviation']} {fmt_line(-line)}")
+            else:
+                supports = f"{'Over' if w > l else 'Under'} {float(g['total']):g}"
+            best = Angle(text, supports, "spread" if metric == "ats" else "total", metric, w, l, p, z, 1, w / (w + l),
+                         frozenset({"season"}), 0.0, [(r.event, r.team) for r in sel])
+    return best
+
+
 def pick_slate(games: list[tuple[dict, list[Angle]]], ok, overflow: int | None = None) -> dict[str, Angle]:
     """D-115: one line per game, picked per Eastern day so no condition family shows on more than
     2 games (one in eight on a big college Saturday). Games with the fewest kinds of angle choose first;
@@ -2070,8 +2104,14 @@ def main() -> None:
 
     picked = pick_slate(found, ok, overflow=1 if args.league == "cbb" else None)
     results = []
-    for g, _ in found:
+    for g in games:
         best = picked.get(g["id"])
+        tier = None if best is None else ("strong" if best.strong else "fallback")
+        if best is None:   # D-123: no line clears the bar, so the plain season record fills the gap
+            best = season_fallback(args.league, g, by_team, args.season)
+            if best is not None and not ok(best):
+                best = None
+            tier = "season"
         label = f"{g['away']['team']['shortDisplayName']} {'vs' if g['neutral'] else 'at'} {g['home']['team']['shortDisplayName']}"
         if best is None:
             continue
@@ -2079,7 +2119,7 @@ def main() -> None:
                         "starts_at": g["start"].isoformat(),
                         "best": {"text": best.text, "supports": best.supports, "market": best.market,
                                  "record": f"{best.w}-{best.l}" + (f"-{best.p}" if best.p else ""),
-                                 "z": round(best.z, 2), "tier": "strong" if best.strong else "fallback",
+                                 "z": round(best.z, 2), "tier": tier,
                                  "families": sorted(best.families)}})
         print(f"{label} ({g['home']['team']['abbreviation']} {fmt_line(g['home_line'])}, O/U {g['total']}): "
               f"{best.text}  ->  {best.supports}  [{', '.join(sorted(best.families))}]")
