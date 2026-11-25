@@ -65,6 +65,8 @@ def main() -> None:
     run([os.path.join(HERE, "espn_history.py"), "--league", "nba", "--seasons", str(args.nba_season), "--current", str(args.nba_season),
          "--out", w("nba_current.csv"), "--cache", args.cache])
     run([os.path.join(HERE, "nfl_angles.py"), "--games", args.nflverse, "--season", str(args.cfb_season), "--json", w("nfl.json")])
+    # D-120: both sentence shapes for every phrase and the wording guards, before any college or NBA line is written
+    run([os.path.join(HERE, "espn_angles.py"), "--self-test"])
     run([os.path.join(HERE, "espn_angles.py"), "--league", "cfb", "--history", os.path.join(hist, "cfb_espn.csv"), w("cfb_current.csv"),
          "--coaches", os.path.join(hist, "cfb_coaches_cfbd.json"), "--season", str(args.cfb_season), "--days", "7", "--json", w("cfb.json")])
     # D-115: this season's NBA box scores first, so the game lines know who played (and who's out tonight)
