@@ -1,12 +1,11 @@
 /** The game page (D-055, D-075, D-076, D-105): Betting Splits first, the one line and the player line, the shows' Takes. */
-import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Share, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { matchupLabel, winnerOf } from '@/components/game-row';
-import { Empty, Icon, Logo, OneLineText, SectionTitle, T } from '@/components/night';
+import { Empty, Icon, Logo, OneLineText, SectionTitle, T, Wordmark } from '@/components/night';
 import { SplitsBlock } from '@/components/splits';
 import { MarketNotes } from '@/components/market-notes';
 import { TakeRow } from '@/components/take-row';
@@ -36,8 +35,8 @@ export default function GameScreen() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 6 }}>
         {/* The MGP wordmark, centered between the buttons, so a screenshot shows where it's from (D-113) */}
-        <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 6, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-          <Image source={require('@/assets/images/splash-icon.png')} style={{ width: 70, height: 32 }} contentFit="contain" accessible accessibilityLabel="MGP Analytics" />
+        <View style={{ position: 'absolute', left: 0, right: 0, top: 6, height: 44, alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+          <Wordmark />
         </View>
         <Pressable accessibilityLabel="Back" onPress={() => router.back()} style={circle}><Icon name="chevron.left" size={18} /></Pressable>
         <View style={{ flexDirection: 'row', gap: 10 }}>
