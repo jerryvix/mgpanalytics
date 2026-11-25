@@ -108,6 +108,12 @@ export function checkSentence(c: Candidate, raw: string): string | null {
   if (DASHES.test(s)) return "dash";
   if (PICK_WORDS.test(s)) return "pick words";
   if (!s.includes(c.player_name)) return "player name missing";
+  // D-117: the owner's sentence shape in every sport. Name first (no "Since 2021, ...", no "Teams facing ..."),
+  // no percentages, no points a game against a line, no two splits in one sentence
+  if (!s.startsWith(c.player_name)) return "player name not first";
+  if (/\d%|percent/i.test(s)) return "percentage";
+  if (/points? (?:a|per) game/i.test(s)) return "points a game";
+  if (/\bat home\b.*\bon the road\b|\bon the road\b.*\bat home\b/i.test(s)) return "two splits";
   const terms = c.stat_terms?.length ? c.stat_terms : [c.stat];
   if (!terms.some((t) => s.toLowerCase().includes(t.toLowerCase()))) return "stat name missing";
   const allowed = new Set(numbers(c.sentence));
