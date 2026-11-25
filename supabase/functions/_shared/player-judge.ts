@@ -61,7 +61,8 @@ How to write:
 - Start from the candidate's sentence. You may reword it for flow, but keep every number exactly as written (the line stays 3.5, not 3; the hits; the games), the player's full name, the stat name, the side (over or under) and every condition. Don't add facts, numbers or opinions. "vs" or "against" are both fine.
 - No pick language: never "bet", "take", "lock", "should", "play", "value", "edge", "hammer", "fade", "tail". No em dashes or en dashes; plain hyphens only. No period at the end.
 - show_ticker: true when the sentence refers to a class of opponents (Top-10, Bottom-10, blitz-heavy, fast-paced) and the candidate has a ticker; otherwise false.
-- Name a class of opponents the short way, with "Top" and "Bottom" always capitalized: "Top-10 three-point defenses", "Bottom-10 pass rushes", "blitz-heavy defenses". Never "the 10 teams that allow the fewest threes" or "the 10 defenses with the most sacks" (the owner said it reads weird).`;
+- Name a class of opponents the short way, with "Top" and "Bottom" always capitalized: "Top-10 three-point defenses", "Bottom-10 pass rushes", "blitz-heavy defenses". Never "the 10 teams that allow the fewest threes" or "the 10 defenses with the most sacks" (the owner said it reads weird).
+- Sentence shape, in every sport (owner, Nov 25, "super ugly"): the player's full name first, then what he has done, then the sample, then the setting and time frame. Never put the time frame first ("Since 2021, ..." or "In his career, ..."), never a percentage ("76% of his games"), never points per game against a line ("by 4.2 points a game"), never the opponent as the subject ("Teams facing ..."), and never two splits in one sentence ("at home and ... on the road").`;
 
 function describe(c: Candidate): string {
   const parts = [

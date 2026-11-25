@@ -1,4 +1,4 @@
-"""The one line per game for college football and the NBA (DECISIONS D-075, D-078, D-115).
+"""The one line per game for college football and the NBA (DECISIONS D-075, D-078, D-115, D-117).
 
 Same method as nfl_angles.py: every angle that is true for this game, for both teams,
 spread and total, from the free ESPN history built by espn_history.py; a real sample,
@@ -11,6 +11,9 @@ picked together, not game by game. A condition family (after a win or loss, favo
 underdog, home or road, rest, the series...) shows on at most 2 games of a sport's day, or
 one in eight on a big college Saturday. Context such as rivalry week is one angle among
 many, not a theme every line carries.
+
+D-117: a team's record over several seasons only covers the stretch its core has been together
+(college: the head coach's tenure; NBA: the current top scorer's seasons with the team).
 
 College football angles: the head coach's record (with the correct coach per season from
 CollegeFootballData's coach list), the team this season, since 2024, and against this
@@ -420,6 +423,31 @@ class Angle:
         return frozenset(family(k) for k in self.kinds)
 
 
+def continuity_start(league: str, tid: str, season: int, lookup, school_of, boxes, first_season: int) -> int:
+    """D-117 (owner, Nov 25: "consider if there's been the same factors like same coach, same key players"): the
+    first season of the stretch this team's core has been together. College: the current head coach's first
+    straight season at the school. NBA: back while the current top scorer played 20+ games for the team.
+    Without the data to tell, the old two-season window stands."""
+    s = season
+    if league == "cfb":
+        school = school_of.get(tid)
+        lst = lookup.get((school, season)) if school else None
+        if not lst:
+            return season - 2
+        coach = lst[-1][0]
+        while s - 1 >= first_season and any(n == coach for n, _ in lookup.get((school, s - 1), [])):
+            s -= 1
+        return s
+    if not boxes:
+        return season - 2
+    core = boxes.top_scorers(tid, season, 1)
+    if not core:
+        return season - 2
+    while s - 1 >= first_season and all(sum(1 for g in boxes.games.get((p, tid), []) if g[0] == s - 1) >= 20 for p in core):
+        s -= 1
+    return s
+
+
 def short(league: str, team: dict) -> str:
     return team.get("location") if league == "cfb" else team.get("name") or team.get("shortDisplayName")
 
@@ -555,9 +583,17 @@ def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, s
                 if crow:
                     first = min(r.season for r in crow)
                     subjects.append(("coach", coach, crow, "this season" if first == season else f"since {first}"))
+        # D-117: a team's multi-season record only covers the stretch with the same core (the head coach in
+        # college; the current top scorer in the NBA). A new core gets this season only.
+        stable = continuity_start(league, tid, season, lookup, school_of, boxes, cfg["since"])
+        recent = max(season - 2, stable)
+        long_ = max(cfg["since"], stable)
+        recent_frame = f"since {season_label(league, recent)}"
         subjects.append(("team", name, [r for r in team_rows if r.season == season], "this season"))
-        subjects.append(("team", name, [r for r in team_rows if r.season >= season - 2], f"since {season_label(league, season - 2)}"))
-        subjects.append(("team", name, [r for r in team_rows if r.season >= cfg["since"]], f"since {season_label(league, cfg['since'])}"))
+        if recent < season:
+            subjects.append(("team", name, [r for r in team_rows if r.season >= recent], recent_frame))
+        if long_ < recent:
+            subjects.append(("team", name, [r for r in team_rows if r.season >= long_], f"since {season_label(league, long_)}"))
 
         combos = [(c,) for c in conds] + [(a, b) for i, a in enumerate(conds) for b in conds[i + 1:]]
         # two conditions from one family say the same thing twice ("after a loss after two straight losses")
@@ -570,7 +606,7 @@ def build_angles(league: str, g: dict, rows: list[Row], tl, lookup, school_of, s
         for kind, who, srows, frame in subjects:
             for combo in combos:
                 kinds = {k for k, _, _ in combo}
-                if kind == "team" and frame.startswith("since") and frame != f"since {season_label(league, season - 2)}" and not kinds & {"opp", "rweek"}:
+                if kind == "team" and frame.startswith("since") and frame != recent_frame and not kinds & {"opp", "rweek"}:
                     continue  # the long team window is for this matchup (or rivalry week) only
                 sel = [r for r in srows if all(p(r) for _, _, p in combo)]
                 phrase = phrase_for(combo)

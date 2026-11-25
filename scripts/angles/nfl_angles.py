@@ -157,6 +157,20 @@ def zscore(w: int, l: int) -> float:
     return (w - n / 2) / math.sqrt(n / 4) if n else 0.0
 
 
+def continuity_start(team_rows: list[Row], season: int, coach: str, qb: str) -> int:
+    """D-117 (owner, Nov 25: "consider if there's been the same factors like same coach, same key players"): the
+    first season of the stretch with this head coach and this starting QB: going back, every game of a season had
+    this coach and this QB started at least half of them. A season that fails stops the window after it."""
+    s = season
+    while True:
+        prev = [r for r in team_rows if r.season == s - 1]
+        if not prev or not coach or any(r.coach != coach for r in prev):
+            return s
+        if qb and sum(1 for r in prev if r.qb == qb) * 2 < len(prev):
+            return s
+        s -= 1
+
+
 def build_angles(game: dict, rows: list[Row], season: int) -> list[Angle]:
     """Every angle that holds for this game, scored. Both teams, spread and total."""
     out: list[Angle] = []
@@ -221,16 +235,22 @@ def build_angles(game: dict, rows: list[Row], season: int) -> list[Angle]:
             if crow:
                 first = min(r.season for r in crow)
                 subjects.append(("coach", coach, crow, "this season" if first == season else f"since {first}"))
-        subjects.append(("team", f"The {name}", [r for r in team_rows if r.season >= season - 2], f"since {season - 2}"))
+        # D-117: a team's multi-season record only covers the stretch with the same head coach and starting QB
+        stable = continuity_start(team_rows, season, coach, qb)
+        recent, long_ = max(season - 2, stable), max(2010, stable)
+        recent_frame, long_frame = f"since {recent}", f"since {long_}"
+        if recent < season:
+            subjects.append(("team", f"The {name}", [r for r in team_rows if r.season >= recent], recent_frame))
         subjects.append(("team", f"The {name}", [r for r in team_rows if r.season == season], "this season"))
-        subjects.append(("team", f"The {name}", [r for r in team_rows if r.season >= 2010], "since 2010"))
+        if long_ < recent:
+            subjects.append(("team", f"The {name}", [r for r in team_rows if r.season >= long_], long_frame))
 
         combos = [(c,) for c in conds] + [(a, b) for i, a in enumerate(conds) for b in conds[i + 1:]]
         combos = [c for c in combos if not ({"fd", "big"} <= {k for k, _, _ in c})]
         for kind, who, srows, frame in subjects:
             for combo in combos:
                 kinds = {k for k, _, _ in combo}
-                if kind == "team" and frame == "since 2010" and not kinds & {"opp", "thanks"}:
+                if kind == "team" and frame.startswith("since") and frame != recent_frame and not kinds & {"opp", "thanks"}:
                     continue  # long team windows only for rivalry and holiday angles
                 sel = [r for r in srows if all(pred(r) for _, _, pred in combo)]
                 phrase = phrase_for(combo)

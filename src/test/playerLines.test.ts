@@ -45,6 +45,12 @@ describe("player line judge checks (D-106)", () => {
     expect(checkSentence(dak, `Dak Prescott ${em} 263.5 Pass Yds in 5 of his last 6 Thanksgiving games`)).toBe("dash");
   });
 
+  it("keeps the owner's sentence shape (D-117)", () => {
+    expect(checkSentence(dak, "In 5 of his last 6 Thanksgiving games, Dak Prescott has cleared 263.5 Pass Yds")).toBe("player name not first");
+    expect(checkSentence(dak, "Dak Prescott has cleared 263.5 Pass Yds in 83% of his Thanksgiving games, 5 of his last 6")).toBe("percentage");
+    expect(checkSentence(dak, "Dak Prescott has cleared 263.5 Pass Yds at home and on the road in 5 of his last 6 Thanksgiving games")).toBe("two splits");
+  });
+
   it("finds the record to bold", () => {
     expect(recordRun("CeeDee Lamb has stayed under 7.5 catches in 16 straight games after a Cowboys win", 16, 16)).toBe("16 straight");
     expect(recordRun("x in all 5 of his Thanksgiving games", 5, 5)).toBe("all 5");
