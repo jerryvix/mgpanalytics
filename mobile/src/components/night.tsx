@@ -6,7 +6,7 @@
 import { Image } from 'expo-image';
 import { Link } from 'expo-router';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import type { ReactNode } from 'react';
+import type { ComponentRef, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type TextStyle, type ViewStyle } from 'react-native';
 
 import { Font } from '@/constants/theme';
@@ -150,7 +150,8 @@ export function Wordmark({ height = 32 }: { height?: number }) {
 }
 
 /** Tabs' top bar: the pulse mark on the left, the MGP wordmark centered, Profile on the right. */
-export function TopBar() {
+/** `profileRef` lets the first-run tour point at the Profile button (D-124). */
+export function TopBar({ profileRef }: { profileRef?: (view: ComponentRef<typeof View> | null) => void } = {}) {
   const c = useTheme();
   return (
     <View style={styles.topbar}>
@@ -160,11 +161,13 @@ export function TopBar() {
       <View style={[styles.mark, { backgroundColor: c.surface }]}>
         <Icon name="waveform.path.ecg" size={18} color={c.brand} weight="bold" />
       </View>
-      <Link href="/profile" asChild>
-        <Pressable accessibilityLabel="Profile" style={StyleSheet.flatten([styles.avatar, { backgroundColor: c.surfaceRaised }])}>
-          <Icon name="person.fill" size={16} />
-        </Pressable>
-      </Link>
+      <View ref={profileRef} collapsable={false}>
+        <Link href="/profile" asChild>
+          <Pressable accessibilityLabel="Profile" style={StyleSheet.flatten([styles.avatar, { backgroundColor: c.surfaceRaised }])}>
+            <Icon name="person.fill" size={16} />
+          </Pressable>
+        </Link>
+      </View>
     </View>
   );
 }

@@ -12,6 +12,7 @@ import { Icon, T } from '@/components/night';
 import { GAMBLER_LABEL, GAMBLER_TEL, PRIVACY_URL, SUPPORT_EMAIL, TERMS_URL } from '@/constants/links';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/lib/auth';
+import { useTour } from '@/lib/tour';
 import { PUBLISHABLE_KEY, SUPABASE_URL, supabase } from '@/lib/supabase';
 
 function Row({ label, desc, icon, onPress, busy }: { label: string; desc?: string; icon: 'chevron.right' | 'arrow.up.right'; onPress: () => void; busy?: boolean }) {
@@ -33,6 +34,7 @@ const openPage = (url: string) => WebBrowser.openBrowserAsync(url).catch(() => u
 export default function ProfileScreen() {
   const c = useTheme();
   const { user, signedIn } = useAuth();
+  const tour = useTour();
   const [deleting, setDeleting] = useState(false);
   const deletingNow = useRef(false);
 
@@ -103,6 +105,7 @@ export default function ProfileScreen() {
             <T size={15} weight="semibold">{signedIn ? 'Sign Out' : 'Sign In'}</T>
           </Pressable>
         </View>
+        <Row label="Show Me Around" desc="A quick tour of the app" icon="chevron.right" onPress={() => { router.back(); setTimeout(tour.start, 350); }} />
         <Row label="Contact Support" desc={SUPPORT_EMAIL} icon="arrow.up.right" onPress={contactSupport} />
         <Row label="Privacy Policy" icon="arrow.up.right" onPress={() => openPage(PRIVACY_URL)} />
         <Row label="Terms of Use" icon="arrow.up.right" onPress={() => openPage(TERMS_URL)} />
