@@ -12,10 +12,10 @@ const SPORT_LABEL = { nfl: "NFL", ncaaf: "College Football", nba: "NBA", ncaab: 
 const APP_STORE_ID = "6838568637";
 
 /**
- * Where "Get the App" goes: the TestFlight public link while the app is in beta, the App Store
- * once it's live. Set MGP_DOWNLOAD_URL on Vercel, or change the default here.
+ * Where "Get the App" goes: MGP in TestFlight during the beta (owner, Nov 26), the App Store
+ * (https://apps.apple.com/app/id6838568637) once it's live. MGP_DOWNLOAD_URL on Vercel overrides it.
  */
-export const DOWNLOAD_URL = process.env.MGP_DOWNLOAD_URL || `https://apps.apple.com/app/id${APP_STORE_ID}`;
+export const DOWNLOAD_URL = process.env.MGP_DOWNLOAD_URL || `https://testflight.apple.com/v1/app/${APP_STORE_ID}`;
 
 /** Returns { sport, id, date } for a valid request, or null. */
 export function parseShareParams(query) {
