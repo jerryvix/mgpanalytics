@@ -36,7 +36,8 @@ describe("team records for the Analyst", () => {
     const bills = of("NFL").find((r) => r.team === "BUF")!;
     const block = formatTeamRecords([bills]);
     expect(block).toContain("AUTHORITATIVE");
-    expect(block).toContain(`Buffalo Bills ('26 NFL, ${bills.record.games} games through`);
+    expect(block).toContain(`Buffalo Bills ('26 NFL, ${bills.record.games} games, this season through Nov 22nd)`);
+    expect(block).toContain("(Tied 1st in NFL)");
     expect(block).toContain(`ATS ${bills.record.ats} (`);
     const sum = (rec: string) => rec.split("-").reduce((n, x) => n + Number(x), 0);
     expect(sum(bills.record.ats)).toBe(bills.record.games);

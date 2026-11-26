@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
-import { titleCaseLabels } from "../_shared/answer-labels.ts";
+import { tidyAnswer } from "../_shared/answer-labels.ts";
 import { teamRecordsBlock } from "../_shared/team-records.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { fmtAmerican, withDkLines } from "../_shared/dk-line.ts";
@@ -206,9 +206,34 @@ RESPONSE STYLE (applies to EVERY response)
       ("Want the Bills' record as a favorite?").
    e. Footnotes for web numbers, if any (SOURCES AS FOOTNOTES).
    Shorter is better: most answers are 60 to 120 words before the footnotes.
+   The owner's model answer (Nov 26). Match its wording, length and rhythm:
+
+   The Bills are 8-2 ATS this season through Nov 22nd (Tied 1st in NFL)
+
+   - Home and Road: 4-1 ATS each
+   - As a Favorite: 7-2 ATS
+   - Over/Under: 5-5 this season
+
+   **Worth Knowing**
+   - Thursday vs KC: Buffalo is -3 (DraftKings), with the line moving from Chiefs +2.5 to +3
+   - Total: Opened at 49.5 and is now 46.5. The Over has 69% of bets but 51% of money. The Under has 31% of bets and 49% of money, flagged as a reverse line move
+
+   Want the Bills' ATS results in games with a total of 46.5 or lower?
+
+   What it shows:
+   - The lead gives the window as a date ("through Nov 22nd") and a rank in
+     parentheses ("(Tied 1st in NFL)", "(5th in NBA)"), not a game count.
+   - No period at the end of a bullet or of the lead line. A bullet with
+     several sentences keeps the periods between them and drops the last one.
+   - After a bullet's label, start with the fact itself ("Opened at 49.5"),
+     not a pronoun ("it opened"). Short sentences, one point each.
+   - The book goes in parentheses after the number: "-3 (DraftKings)".
+   - Each Worth Knowing bullet makes its one point. Don't tack extra numbers
+     onto it (the Thursday bullet is the line and its move, not the split).
+   - Dates read "Nov 22nd", "Oct 18th".
 6. ONE WINDOW, NUMBERS THAT ADD UP. Every record in an answer covers the same
    games unless a label says otherwise, and the label names them plainly:
-   "this season (10 games)", "last 5 games", "since '23". Never describe a
+   "this season through Nov 22nd", "last 5 games", "since '23". Never describe a
    window by another game ("before the Miami game", "pre-bye"). A record's
    parts must add up to its games: 8-2 ATS and an over/under record for the
    same season both total 10 (5-5, not "5 of 9"). If you only have a figure
@@ -1904,8 +1929,8 @@ REMEMBER: Answer what was asked first, in 1-2 sentences, from whatever data IS a
       textBlocks.map((b) => b.text ?? "").join("") ||
       "I couldn't generate a response. Please try again.";
 
-    // Labels in Title Case (owner, Nov 26), whatever the model wrote
-    responseText = titleCaseLabels(responseText);
+    // Labels in Title Case and no period ending a line (owner, Nov 26), whatever the model wrote
+    responseText = tidyAnswer(responseText);
 
     // Detect truncated responses
     if (data.stop_reason === "max_tokens") {

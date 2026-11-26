@@ -76,8 +76,10 @@ export function matchTeams(message: string, rows: TeamRecordRow[], limit = 2): T
 }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const day = (iso: string) => `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${Number(iso.slice(8, 10))}`;
 const ordinal = (n: number) => `${n}${n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th"}`;
+/** "Nov 22nd" (owner, Nov 26) */
+const day = (iso: string) => `${MONTHS[Number(iso.slice(5, 7)) - 1]} ${ordinal(Number(iso.slice(8, 10)))}`;
+const LEAGUE: Record<string, string> = { NFL: "NFL", NBA: "NBA", NCAAF: "college football", NCAAB: "college basketball" };
 
 function seasonLabel(sport: string, season: number): string {
   const yy = (y: number) => `'${String(y).slice(-2)}`;
@@ -87,10 +89,11 @@ function seasonLabel(sport: string, season: number): string {
 export function formatTeamRecords(rows: TeamRecordRow[]): string {
   if (!rows.length) return "";
   let out = "\n📈 TEAM RECORDS AGAINST THE SPREAD AND ON THE TOTAL: AUTHORITATIVE, MGP DATA\n";
-  out += "Closing lines, every game this season (regular season and postseason). Use these for any ATS, cover or over/under record this season: no web search for them, and no web figure beside them. Every record adds up to its games. Name the window as given (\"this season (10 games)\").\n";
+  out += "Closing lines, every game this season (regular season and postseason). Use these for any ATS, cover or over/under record this season: no web search for them, and no web figure beside them. Every record adds up to its games. Give the window and rank as written here (\"8-2 ATS this season through Nov 22nd (Tied 1st in NFL)\").\n";
   for (const r of rows) {
     const x = r.record;
-    const rank = x.ats_rank ? ` (${x.ats_rank.tied ? "tied for " : ""}${ordinal(x.ats_rank.place)} of ${x.ats_rank.of})` : "";
+    // The owner's form (Nov 26): "(Tied 1st in NFL)"
+    const rank = x.ats_rank ? ` (${x.ats_rank.tied ? "Tied " : ""}${ordinal(x.ats_rank.place)} in ${LEAGUE[r.sport] ?? r.sport})` : "";
     // Every label says which record it is, so an ATS record is never read as straight up
     const parts = [
       `Straight up (W-L) ${x.su}`, `ATS ${x.ats}${rank}`,
@@ -99,7 +102,7 @@ export function formatTeamRecords(rows: TeamRecordRow[]): string {
       ...(x.neutral_ats !== "0-0" ? [`ATS at neutral sites ${x.neutral_ats}`] : []),
       `ATS as a favorite ${x.fav_ats}`, `ATS as an underdog ${x.dog_ats}`, `ATS in the last 5 ${x.last5_ats}`,
     ];
-    out += `• ${r.team_name} (${seasonLabel(r.sport, r.season)} ${r.sport === "NCAAF" ? "college football" : r.sport}, ${x.games} games through ${day(r.through)}): ${parts.join(" · ")}\n`;
+    out += `• ${r.team_name} (${seasonLabel(r.sport, r.season)} ${LEAGUE[r.sport] ?? r.sport}, ${x.games} games, this season through ${day(r.through)}): ${parts.join(" · ")}\n`;
     out += `  Last ${x.log.length} games: ` + x.log.map((g) =>
       `${day(g.date)} ${g.site === "road" ? "at" : "vs"} ${g.opp}${g.site === "neutral" ? " (neutral)" : ""}${g.post ? " (postseason)" : ""}, ${r.team} ${g.line}, ${g.su} ${g.score}, ${g.ats}` +
       (g.total !== null && g.ou ? `, total ${g.total} ${g.ou}` : "")).join("; ") + "\n";
