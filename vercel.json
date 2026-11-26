@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/g/:sport/:id",
+      "destination": "/api/share?sport=:sport&id=:id"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

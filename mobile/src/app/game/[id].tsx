@@ -13,7 +13,7 @@ import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { useFeed, type Game, type PlayerLine } from '@/lib/feed';
 import { formatPropBet } from '@shared/odds/format';
-import { whenLabel } from '@/lib/time';
+import { easternDate, whenLabel } from '@/lib/time';
 
 export default function GameScreen() {
   const c = useTheme();
@@ -40,7 +40,7 @@ export default function GameScreen() {
         </View>
         <Pressable accessibilityLabel="Back" onPress={() => router.back()} style={circle}><Icon name="chevron.left" size={18} /></Pressable>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Pressable accessibilityLabel="Share" style={circle} onPress={() => g && Share.share({ message: `${matchupLabel(g)} on MGP Analytics: https://www.mgp-analytics.com` })}>
+          <Pressable accessibilityLabel="Share" style={circle} onPress={() => g && shareGame(g)}>
             <Icon name="square.and.arrow.up" size={18} />
           </Pressable>
         </View>
@@ -92,4 +92,14 @@ export default function GameScreen() {
 function playerLineSub(l: PlayerLine): string {
   const bet = formatPropBet({ shortName: l.short_name, side: l.side, line: l.line, market: l.market_short, price: l.price });
   return [l.ticker, bet].filter(Boolean).join(' · ');
+}
+
+/**
+ * Share (D-128): the game's own link, mgp-analytics.com/g/<sport>/<id>. In iMessage, X and the rest it
+ * shows a picture of the game card with MGP along the bottom; tapping it on an iPhone opens the download.
+ */
+function shareGame(g: Game) {
+  const date = easternDate(g.start);
+  const url = `https://www.mgp-analytics.com/g/${g.sport.toLowerCase()}/${g.id}${date ? `?d=${date}` : ''}`;
+  Share.share({ message: `${matchupLabel(g)} on MGP`, url }).catch(() => undefined);
 }
