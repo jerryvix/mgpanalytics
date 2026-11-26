@@ -1,18 +1,18 @@
 /**
- * Sign in or create an account (PLAN v1 #7). Email and password, the same accounts as the
- * website. Email confirmation is off, so a new account is signed in right away. Creating an
- * account from a guest session turns that guest into the account (same user, so its first
- * visit stays with it); signing in to an existing account leaves the guest behind. Forgot
- * Password sends a reset link (it also sets a first password for people who signed up on the
- * website with Google), an "Email not confirmed" error offers the link again, and Supabase
- * errors read as plain sentences.
+ * Sign in or create an account (PLAN v1 #7). Continue with Apple or Google in a tap (D-125), or
+ * email and password, the same accounts as the website. Email confirmation is off, so a new
+ * account is signed in right away. Creating an account from a guest session turns that guest into
+ * the account (same user, so its first visit stays with it); signing in to an existing account
+ * leaves the guest behind. Forgot Password sends a reset link, an "Email not confirmed" error
+ * offers the link again, and Supabase errors read as plain sentences.
  */
 import { router } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, ScrollView, TextInput } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Icon, Mono, T } from '@/components/night';
+import { SocialButtons } from '@/components/social-buttons';
 import { PASSWORD_RESET_REDIRECT } from '@/constants/links';
 import { Font } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -151,6 +151,12 @@ export default function SignInScreen() {
         </Pressable>
         <T size={30} weight="semibold" style={{ letterSpacing: -0.6 }}>{mode === 'in' ? 'Sign In' : 'Create Account'}</T>
         <T size={16} style={{ lineHeight: 22 }}>Use the same account as mgp-analytics.com</T>
+        <SocialButtons onDone={() => router.back()} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: c.border }} />
+          <Mono>Or with Email</Mono>
+          <View style={{ flex: 1, height: 1, backgroundColor: c.border }} />
+        </View>
         <TextInput value={email} onChangeText={setEmail} placeholder="Email" placeholderTextColor={c.textTertiary} autoCapitalize="none" autoComplete="email" keyboardType="email-address" textContentType="emailAddress" style={input} />
         <TextInput value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor={c.textTertiary} secureTextEntry autoComplete={mode === 'in' ? 'current-password' : 'new-password'} textContentType={mode === 'in' ? 'password' : 'newPassword'} style={input} onSubmitEditing={() => canSubmit && submit()} />
         {message ? <T size={15} style={{ lineHeight: 21 }}>{message}</T> : null}
@@ -173,9 +179,6 @@ export default function SignInScreen() {
           <T size={15}>{mode === 'in' ? 'New to MGP? ' : 'Have an account? '}<T size={15} weight="semibold">{mode === 'in' ? 'Create Account' : 'Sign In'}</T></T>
         </Pressable>
         {mode === 'up' ? <Mono style={{ textAlign: 'center' }}>Passwords need 8 or more characters</Mono> : null}
-        {mode === 'in' ? (
-          <T size={14} style={{ lineHeight: 20, textAlign: 'center' }}>Signed up on the website with Google? Use Forgot Password to set a password for the app</T>
-        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

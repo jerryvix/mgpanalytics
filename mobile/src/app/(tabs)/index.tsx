@@ -1,5 +1,6 @@
 /** Today (D-070, D-077): your sports' games today, splits and the one line on each row. */
-import { useEffect } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -8,7 +9,9 @@ import { Divider, Empty, Footer, SectionTitle, SourceNote, T, TopBar } from '@/c
 import { TAB_BAR_SPACE } from '@/constants/layout';
 import { useTheme } from '@/hooks/use-theme';
 import { useToday } from '@/hooks/use-today';
+import { useAuth } from '@/lib/auth';
 import { SPORT_LABEL, sportsSentence, useFeed, useSports, type Game } from '@/lib/feed';
+import { nextFirstRunStep } from '@/lib/onboarding';
 import { TourTarget, useTour } from '@/lib/tour';
 import { longDate, ymd } from '@/lib/time';
 
@@ -20,11 +23,13 @@ export default function TodayScreen() {
   const games = data?.games ?? [];
   const asOf = games.map((g) => g.splitsAsOf).filter(Boolean).sort().pop();
   const tour = useTour();
-  // The first-run tour (D-124) starts once today's games have loaded, so it can point at one
+  const { ready, signedIn } = useAuth();
+  // First run (D-124, D-125): Get Started for guests, then the tour, once today's games have
+  // loaded so the tour can point at one. Runs each time Today comes back into view.
   const settled = !loading || !!error;
-  useEffect(() => {
-    if (settled) tour.maybeStart();
-  }, [settled, tour]);
+  useFocusEffect(useCallback(() => {
+    if (settled && ready) nextFirstRunStep(!signedIn, tour.maybeStart);
+  }, [settled, ready, signedIn, tour]));
   const firstSport = sports.find((s) => games.some((g) => g.sport === s));
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.bg }}>
