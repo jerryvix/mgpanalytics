@@ -41,6 +41,7 @@ describe("team records for the Analyst", () => {
     const sum = (rec: string) => rec.split("-").reduce((n, x) => n + Number(x), 0);
     expect(sum(bills.record.ats)).toBe(bills.record.games);
     expect(sum(bills.record.ou)).toBe(bills.record.ou_games);
-    expect(block).not.toMatch(/[–—]/);
+    const dashes = [0x2212, 0x2013, 0x2014].map((c) => String.fromCharCode(c));
+    expect(dashes.some((d) => block.includes(d))).toBe(false);
   });
 });
