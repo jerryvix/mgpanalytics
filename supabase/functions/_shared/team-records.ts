@@ -91,11 +91,13 @@ export function formatTeamRecords(rows: TeamRecordRow[]): string {
   for (const r of rows) {
     const x = r.record;
     const rank = x.ats_rank ? ` (${x.ats_rank.tied ? "tied for " : ""}${ordinal(x.ats_rank.place)} of ${x.ats_rank.of})` : "";
+    // Every label says which record it is, so an ATS record is never read as straight up
     const parts = [
-      `SU ${x.su}`, `ATS ${x.ats}${rank}`, `Over/under ${x.ou} (over-under${x.ou_games < x.games ? `, ${x.ou_games} games with a total` : ""})`,
-      `Home ATS ${x.home_ats}`, `Road ATS ${x.road_ats}`,
-      ...(x.neutral_ats !== "0-0" ? [`Neutral site ATS ${x.neutral_ats}`] : []),
-      `As a favorite ${x.fav_ats}`, `As an underdog ${x.dog_ats}`, `Last 5 ATS ${x.last5_ats}`,
+      `Straight up (W-L) ${x.su}`, `ATS ${x.ats}${rank}`,
+      `Over/under (overs-unders) ${x.ou}${x.ou_games < x.games ? ` in ${x.ou_games} games with a total` : ""}`,
+      `ATS at home ${x.home_ats}`, `ATS on the road ${x.road_ats}`,
+      ...(x.neutral_ats !== "0-0" ? [`ATS at neutral sites ${x.neutral_ats}`] : []),
+      `ATS as a favorite ${x.fav_ats}`, `ATS as an underdog ${x.dog_ats}`, `ATS in the last 5 ${x.last5_ats}`,
     ];
     out += `• ${r.team_name} (${seasonLabel(r.sport, r.season)} ${r.sport === "NCAAF" ? "college football" : r.sport}, ${x.games} games through ${day(r.through)}): ${parts.join(" · ")}\n`;
     out += `  Last ${x.log.length} games: ` + x.log.map((g) =>
