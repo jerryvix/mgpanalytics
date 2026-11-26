@@ -16,6 +16,7 @@ import { Icon, T } from '@/components/night';
 import { useTheme } from '@/hooks/use-theme';
 import { useAppUpdates } from '@/lib/app-updates';
 import { AuthProvider } from '@/lib/auth';
+import { TourProvider } from '@/lib/tour';
 import { hasSeenWelcome, rememberWelcome, WelcomeContext } from '@/lib/welcome';
 
 
@@ -81,6 +82,7 @@ export default function RootLayout() {
     <AuthProvider>
     <WelcomeContext value={welcome}>
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <TourProvider>
       <Stack screenOptions={{ headerShown: false }}>
         {/* Until the welcome is done, every other screen sends you to it */}
         <Stack.Protected guard={!!welcomed} redirectTo="/welcome">
@@ -94,6 +96,7 @@ export default function RootLayout() {
           <Stack.Screen name="welcome" options={{ gestureEnabled: false, animation: 'fade' }} />
         </Stack.Protected>
       </Stack>
+    </TourProvider>
     </ThemeProvider>
     </WelcomeContext>
     </AuthProvider>
