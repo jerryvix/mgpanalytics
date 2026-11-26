@@ -128,3 +128,7 @@ verify_jwt = false
 [functions.delete-account]
 # The function checks the user's token itself (auth.getUser); the gateway check is off so ES256 user tokens always reach it
 verify_jwt = false
+
+# D-128: the picture a shared game link shows; public, no sign-in
+[functions.share-card]
+verify_jwt = false
