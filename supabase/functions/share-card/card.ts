@@ -3,9 +3,9 @@
 // the rest show for a shared link. Built as a satori element tree, no Deno or Node APIs, so the same
 // code renders in the edge function and in a local check.
 //
-// Night List look (D-050): true black, Geist, one green. The game's matchup, time, line and total,
-// Betting Splits (who has the bets and the money, and how much), the game's one line, and MGP along
-// the bottom with "Based on DraftKings" (D-093).
+// Night List look (D-050): true black, Geist, one green. Top to bottom (owner, Nov 26): the game's one
+// line as the headline, Betting Splits (who has the bets and the money, and how much), the matchup with
+// its time, line and total, and MGP along the bottom. No other company is named on the card.
 
 export interface CardTeam { abbr: string; name: string; logo?: string; record?: string | null; rank?: number | null; score?: string | null }
 export interface CardSide { bets: number; money: number; line: number | null; price?: number | null }
@@ -61,40 +61,41 @@ export function whenLabel(startIso: string): string {
 /** DraftKings shows 100% / 0% before real betting comes in; those stay hidden (D-071, D-088) */
 const realSplit = (m?: CardSide) => !!m && m.bets > 2 && m.bets < 98 && m.money > 2 && m.money < 98;
 
-function teamRow(t: CardTeam, showScore: boolean, bold: boolean | null): El {
-  const dim = bold === false ? { color: C.third } : {};
-  return box({ alignItems: "center", gap: 22 },
-    box({ flexShrink: 0, width: 66, height: 66, borderRadius: 33, backgroundColor: C.surface, alignItems: "center", justifyContent: "center" },
-      t.logo ? img(t.logo, 48) : text(t.abbr, { fontSize: 20, fontWeight: 600, color: C.text })),
-    text(`${t.rank ? `#${t.rank} ` : ""}${t.name}`, { fontSize: 48, fontWeight: 600, color: C.text, letterSpacing: -0.8, ...dim }),
-    showScore && t.score ? text(t.score, { fontSize: 48, fontWeight: 600, color: C.text, marginLeft: 14, ...dim }) : null,
-  );
+/** "Bears at Lions" with both logos */
+function matchup(g: CardGame, winner: "home" | "away" | null): El {
+  const team = (t: CardTeam, side: "home" | "away") => box({ alignItems: "center", gap: 14 },
+    box({ flexShrink: 0, width: 52, height: 52, borderRadius: 26, backgroundColor: C.surface, alignItems: "center", justifyContent: "center" },
+      t.logo ? img(t.logo, 38) : text(t.abbr, { fontSize: 16, fontWeight: 600, color: C.text })),
+    text(`${t.rank ? `#${t.rank} ` : ""}${t.name}${g.state !== "pre" && t.score ? ` ${t.score}` : ""}`,
+      { fontSize: 34, fontWeight: 600, letterSpacing: -0.5, color: winner && winner !== side ? C.third : C.text }));
+  return box({ alignItems: "center", gap: 18 },
+    team(g.away, "away"),
+    text(g.neutral ? "vs" : "at", { fontSize: 28, color: C.third }),
+    team(g.home, "home"));
 }
 
 function splitRow(label: string, logo: string | undefined, side: string, pct: number): El {
   // Fixed columns don't shrink, so the two rows line up whatever the team names
   const fixed = { flexShrink: 0 };
-  return box({ alignItems: "center", gap: 18, height: 40, width: "100%" },
-    text(label, { ...fixed, width: 108, fontSize: 20, letterSpacing: 3, color: C.second, fontFamily: "Geist Mono" }),
-    box({ ...fixed, width: 32, height: 32 }, logo ? img(logo, 32) : null),
-    text(side, { ...fixed, width: 210, fontSize: 28, fontWeight: 600, color: C.text }),
-    text(`${pct}%`, { ...fixed, width: 86, fontSize: 28, fontWeight: 600, color: C.text, justifyContent: "flex-end" }),
-    box({ flexGrow: 1, flexShrink: 1, minWidth: 0, height: 8, borderRadius: 4, backgroundColor: C.raised, overflow: "hidden" },
-      box({ width: `${pct}%`, height: 8, backgroundColor: C.text })),
+  return box({ alignItems: "center", gap: 18, height: 44, width: "100%" },
+    text(label, { ...fixed, width: 112, fontSize: 21, letterSpacing: 3, color: C.second, fontFamily: "Geist Mono" }),
+    box({ ...fixed, width: 34, height: 34 }, logo ? img(logo, 34) : null),
+    text(side, { ...fixed, width: 220, fontSize: 30, fontWeight: 600, color: C.text }),
+    text(`${pct}%`, { ...fixed, width: 92, fontSize: 30, fontWeight: 600, color: C.text, justifyContent: "flex-end" }),
+    box({ flexGrow: 1, flexShrink: 1, minWidth: 0, height: 9, borderRadius: 5, backgroundColor: C.raised, overflow: "hidden" },
+      box({ width: `${pct}%`, height: 9, backgroundColor: C.text })),
   );
 }
 
-/** The record in the one line, in bold, the rest regular */
+/** The game's one line, the headline: its record in bold, the rest regular */
 function oneLine(line: { text: string; record: string }): El {
   const at = line.text.indexOf(line.record);
   const parts = at < 0 ? [line.text] : [line.text.slice(0, at), line.record, line.text.slice(at + line.record.length)];
-  return box({ alignItems: "flex-start", gap: 16 },
-    box({ flexShrink: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: C.brand, marginTop: 14 }),
-    // One box per word, spaced by a margin: renderers differ on spaces between boxes, margins they don't
-    box({ flexWrap: "wrap", fontSize: 28, lineHeight: 1.3, color: C.text, maxWidth: 1040 },
-      ...parts.flatMap((p, i) => p.split(/\s+/).filter(Boolean).map((w) => ({ w, bold: i === 1 })))
-        .map(({ w, bold }, j, all) => text(w, { ...(bold ? { fontWeight: 700 } : {}), ...(j < all.length - 1 ? { marginRight: 7 } : {}) }))),
-  );
+  const size = line.text.length > 90 ? 36 : 42;
+  // One box per word, spaced by a margin: renderers differ on spaces between boxes, margins they don't
+  return box({ flexWrap: "wrap", fontSize: size, lineHeight: 1.22, color: C.text, letterSpacing: -0.4 },
+    ...parts.flatMap((p, i) => p.split(/\s+/).filter(Boolean).map((w) => ({ w, bold: i === 1 })))
+      .map(({ w, bold }, j, all) => text(w, { ...(bold ? { fontWeight: 700, color: C.brand } : {}), ...(j < all.length - 1 ? { marginRight: Math.round(size * 0.26) } : {}) })));
 }
 
 export function shareCard(g: CardGame, wordmark: string): El {
@@ -104,23 +105,23 @@ export function shareCard(g: CardGame, wordmark: string): El {
   const winner = g.state === "post" && g.home.score && g.away.score
     ? (Number(g.home.score) > Number(g.away.score) ? "home" : Number(g.home.score) < Number(g.away.score) ? "away" : null) : null;
   const status = g.state === "pre" ? whenLabel(g.start) : g.status;
-  const facts = [SPORT[g.sport] ?? g.sport, status, g.state === "post" ? null : g.tv].filter(Boolean).join(" · ");
-  const market = [g.line, g.total ? `O/U ${g.total}` : null].filter(Boolean).join(" · ");
-  return box({ width: WIDTH, height: HEIGHT, flexDirection: "column", backgroundColor: C.bg, color: C.text, fontFamily: "Geist", padding: "48px 64px 0 64px" },
-    text(facts.toUpperCase(), { fontSize: 20, letterSpacing: 3, color: C.second, fontFamily: "Geist Mono" }),
-    box({ flexDirection: "column", gap: 10, marginTop: 20 },
-      teamRow(g.away, g.state !== "pre", winner ? winner === "away" : null),
-      teamRow(g.home, g.state !== "pre", winner ? winner === "home" : null)),
-    market ? text(market, { fontSize: 28, color: C.second, marginTop: 16 }) : null,
-    showSplits ? box({ flexDirection: "column", gap: 4, marginTop: 18 },
-      splitRow("BETS", logoOf(g.publicBets!.team), `${g.publicBets!.team} ${fmtLine(g.publicBets!.line)}`.trim(), g.publicBets!.pct),
-      splitRow("MONEY", logoOf(g.publicMoney!.team), `${g.publicMoney!.team} ${fmtLine(g.publicMoney!.line)}`.trim(), g.publicMoney!.pct)) : null,
-    g.oneLine ? box({ marginTop: showSplits ? 20 : 30 }, oneLine(g.oneLine)) : null,
-    // MGP along the bottom, so the picture says where it's from
-    box({ position: "absolute", left: 0, right: 0, bottom: 0, height: 92, alignItems: "center", justifyContent: "space-between",
-      padding: "0 64px", borderTop: `2px solid ${C.border}`, backgroundColor: C.bg },
-      { type: "img", props: { src: wordmark, width: 128, height: 58, style: { width: 128, height: 58, objectFit: "contain" } } },
-      text(showSplits ? "Splits based on DraftKings · mgp-analytics.com" : "mgp-analytics.com", { fontSize: 22, color: C.third, fontStyle: "italic" })),
+  const facts = [SPORT[g.sport] ?? g.sport, status, g.line, g.total ? `O/U ${g.total}` : null].filter(Boolean).join(" · ");
+  // Owner, Nov 26: the one line first, then the splits, then the matchup; everything sits well inside
+  // the edges and above the MGP band, so a preview that crops the picture keeps what matters
+  return box({ width: WIDTH, height: HEIGHT, flexDirection: "column", backgroundColor: C.bg, color: C.text, fontFamily: "Geist", padding: "0 80px 84px 80px" },
+    box({ flexDirection: "column", justifyContent: "center", flexGrow: 1, gap: 34 },
+      g.oneLine ? oneLine(g.oneLine) : null,
+      showSplits ? box({ flexDirection: "column", gap: 4 },
+        splitRow("BETS", logoOf(g.publicBets!.team), `${g.publicBets!.team} ${fmtLine(g.publicBets!.line)}`.trim(), g.publicBets!.pct),
+        splitRow("MONEY", logoOf(g.publicMoney!.team), `${g.publicMoney!.team} ${fmtLine(g.publicMoney!.line)}`.trim(), g.publicMoney!.pct)) : null,
+      box({ flexDirection: "column", gap: 10 },
+        matchup(g, winner),
+        text(facts.toUpperCase(), { fontSize: 19, letterSpacing: 2.5, color: C.second, fontFamily: "Geist Mono" }))),
+    // MGP along the bottom, so the picture says where it's from (and only MGP: owner, Nov 26)
+    box({ position: "absolute", left: 0, right: 0, bottom: 0, height: 84, alignItems: "center", justifyContent: "space-between",
+      padding: "0 80px", borderTop: `2px solid ${C.border}`, backgroundColor: C.bg },
+      { type: "img", props: { src: wordmark, width: 120, height: 54, style: { width: 120, height: 54, objectFit: "contain" } } },
+      text("mgp-analytics.com", { fontSize: 22, color: C.third })),
   );
 }
 
