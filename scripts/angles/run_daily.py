@@ -10,7 +10,9 @@
    NFL (next 7 days) and the NBA (next 2 days), and post each game's verified candidates to
    ingest-player-lines the same way, where the judge picks the line each game shows. A failure
    here doesn't undo the game lines already stored.
-5. Men's college basketball (D-116), only with --ncaab (the workflow passes it when the repo
+5. Team records (D-127): each team's season ATS and over/under record from the same games and
+   lines, posted to ingest-game-lines for the Analyst.
+6. Men's college basketball (D-116), only with --ncaab (the workflow passes it when the repo
    variable ENABLE_NCAAB is "true"): refresh this season's ESPN history, run espn_angles.py
    with the NCAA tournament file, and post the lines in calls of their own, so nothing about
    college basketball can stop the other sports' lines. Straight-up lines (seed matchups and
@@ -77,6 +79,13 @@ def main() -> None:
          "--teams", os.path.join(hist, "nba_team_games_espn.csv"), w("nba_team_games_current.csv"),
          "--season", str(args.nba_season), "--days", "2", "--json", w("nba.json")])
 
+    # D-127: each team's season ATS and over/under record, for the Analyst (same games and lines)
+    run([os.path.join(HERE, "team_records.py"), "--self-test"])
+    run([os.path.join(HERE, "team_records.py"), "--nflverse", args.nflverse, "--nfl-season", str(args.cfb_season),
+         "--cfb", os.path.join(hist, "cfb_espn.csv"), w("cfb_current.csv"), "--cfb-season", str(args.cfb_season),
+         "--nba", os.path.join(hist, "nba_espn.csv"), w("nba_current.csv"), "--nba-season", str(args.nba_season),
+         "--json", w("team_records.json")])
+
     lines = collect(w, ("nfl.json", "cfb.json", "nba.json"))
     print(f"{len(lines)} lines", flush=True)
     if args.dry_run or not args.ingest_url:
@@ -84,6 +93,7 @@ def main() -> None:
             print(f"  {l['sport']:5} {l['matchup']}: {l['line_text']}  ->  {l['supports']}")
     else:
         post(args.ingest_url, "mgp-ingest-game-lines", {"lines": lines})
+        post(args.ingest_url, "mgp-ingest-game-lines", {"team_records": json.load(open(w("team_records.json")))})
 
     ncaab_ok = True
     if args.ncaab:

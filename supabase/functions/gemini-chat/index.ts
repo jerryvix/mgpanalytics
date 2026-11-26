@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { titleCaseLabels } from "../_shared/answer-labels.ts";
+import { teamRecordsBlock } from "../_shared/team-records.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { fmtAmerican, withDkLines } from "../_shared/dk-line.ts";
 import { isPulseQuestion, marketPulseBlock } from "../_shared/pulse-chat.ts";
@@ -1751,6 +1752,10 @@ serve(async (req) => {
       dataPrompt = result.formattedPrompt;
       sources = result.sources;
     }
+
+    // D-127: the season ATS and over/under records of the teams asked about, from MGP's own games
+    // and closing lines (AUTHORITATIVE), so a record never comes from web pages with different windows
+    dataPrompt += await teamRecordsBlock(supabase, lastUserMessage, groundingLeague || league);
 
     // DraftKings' public split and line for the NCAAF/NFL game(s) asked about:
     // both sides' % of bets and money, the markers, the split's page time and
