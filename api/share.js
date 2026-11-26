@@ -12,10 +12,12 @@ const SPORT_LABEL = { nfl: "NFL", ncaaf: "College Football", nba: "NBA", ncaab: 
 const APP_STORE_ID = "6838568637";
 
 /**
- * Where "Get the App" goes: MGP in TestFlight during the beta (owner, Nov 26), the App Store
- * (https://apps.apple.com/app/id6838568637) once it's live. MGP_DOWNLOAD_URL on Vercel overrides it.
+ * Where an iPhone goes: the TestFlight public link (testflight.apple.com/join/...) during the beta,
+ * the App Store (https://apps.apple.com/app/id6838568637) once it's live. MGP_DOWNLOAD_URL on Vercel
+ * overrides it. Empty until Apple approves the beta and the public link exists (owner, Nov 26): until
+ * then the page doesn't redirect, and its button opens the website, which works for anyone today.
  */
-export const DOWNLOAD_URL = process.env.MGP_DOWNLOAD_URL || `https://testflight.apple.com/v1/app/${APP_STORE_ID}`;
+export const DOWNLOAD_URL = process.env.MGP_DOWNLOAD_URL || "";
 
 /** Returns { sport, id, date } for a valid request, or null. */
 export function parseShareParams(query) {
@@ -43,6 +45,7 @@ export function shareDescription(game) {
 }
 
 export function sharePage({ params, game, download = DOWNLOAD_URL }) {
+  const button = download ? { href: download, label: "Get the App" } : { href: SITE, label: "Open MGP" };
   const q = new URLSearchParams({ sport: params.sport, id: params.id, ...(params.date ? { d: params.date } : {}) });
   // A new image address when the splits move, so previews don't keep an old card
   if (game?.splitsAsOf) q.set("v", String(Date.parse(game.splitsAsOf) || ""));
@@ -51,7 +54,7 @@ export function sharePage({ params, game, download = DOWNLOAD_URL }) {
   const title = escapeHtml(shareTitle(game));
   const description = escapeHtml(shareDescription(game));
   const sport = escapeHtml(SPORT_LABEL[params.sport] ?? "");
-  const dl = escapeHtml(download);
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -86,12 +89,12 @@ export function sharePage({ params, game, download = DOWNLOAD_URL }) {
 </head>
 <body>
 <img class="card" src="${escapeHtml(image)}" width="1200" height="630" alt="${title}">
-<a class="get" href="${dl}">Get the App</a>
-<p>Free on iPhone. Betting Splits, trends and Capper Picks for every game</p>
-<script>
+<a class="get" href="${escapeHtml(button.href)}">${button.label}</a>
+<p>${download ? "Free on iPhone. " : ""}Betting Splits, trends and Capper Picks for every game</p>
+${download ? `<script>
   // On an iPhone, the link goes straight to the download
   if (/iPhone|iPod/.test(navigator.userAgent)) location.replace(${JSON.stringify(download)});
-</script>
+</script>` : ""}
 </body>
 </html>`;
 }

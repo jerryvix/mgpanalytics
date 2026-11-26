@@ -47,9 +47,16 @@ describe("share links", () => {
   });
 
   it("still works without the game", () => {
-    const html = sharePage({ params, game: null });
+    const html = sharePage({ params, game: null, download: "https://testflight.apple.com/join/ABC" });
     expect(html).toContain('<meta property="og:title" content="MGP Analytics">');
-    expect(html).toContain(DOWNLOAD_URL);
+    expect(html).toContain("https://testflight.apple.com/join/ABC");
+  });
+
+  it("before the public beta link exists, opens the website and doesn't redirect", () => {
+    expect(DOWNLOAD_URL).toBe("");
+    const html = sharePage({ params, game, download: "" });
+    expect(html).toContain('<a class="get" href="https://www.mgp-analytics.com">Open MGP</a>');
+    expect(html).not.toContain("location.replace");
   });
 
   it("escapes what it puts in the page", () => {
