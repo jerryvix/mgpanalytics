@@ -1,0 +1,665 @@
+[
+ {
+  "sport": "NFL",
+  "season": 2026,
+  "team": "BUF",
+  "team_name": "Buffalo Bills",
+  "through": "2026-11-22",
+  "record": {
+   "games": 10,
+   "su": "9-1",
+   "ats": "8-2",
+   "ats_rank": {
+    "place": 1,
+    "tied": true,
+    "of": 32
+   },
+   "ou": "5-5",
+   "ou_games": 10,
+   "home_ats": "4-1",
+   "road_ats": "4-1",
+   "neutral_ats": "0-0",
+   "fav_ats": "7-2",
+   "dog_ats": "1-0",
+   "last5_ats": "4-1",
+   "log": [
+    {
+     "date": "2026-11-15",
+     "opp": "NYJ",
+     "site": "road",
+     "line": "-8.5",
+     "score": "31-12",
+     "su": "W",
+     "ats": "covered",
+     "total": 50.5,
+     "ou": "under",
+     "post": false
+    },
+    {
+     "date": "2026-11-22",
+     "opp": "MIA",
+     "site": "home",
+     "line": "-16.5",
+     "score": "26-9",
+     "su": "W",
+     "ats": "covered",
+     "total": 45.5,
+     "ou": "under",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NFL",
+  "season": 2026,
+  "team": "MIA",
+  "team_name": "Miami Dolphins",
+  "through": "2026-11-22",
+  "record": {
+   "games": 10,
+   "su": "1-9",
+   "ats": "4-5-1",
+   "ats_rank": {
+    "place": 20,
+    "tied": true,
+    "of": 32
+   },
+   "ou": "5-5",
+   "ou_games": 10,
+   "home_ats": "1-2-1",
+   "road_ats": "3-3",
+   "neutral_ats": "0-0",
+   "fav_ats": "0-0",
+   "dog_ats": "4-5-1",
+   "last5_ats": "3-2",
+   "log": [
+    {
+     "date": "2026-11-15",
+     "opp": "IND",
+     "site": "road",
+     "line": "+4.5",
+     "score": "22-24",
+     "su": "L",
+     "ats": "covered",
+     "total": 37.5,
+     "ou": "over",
+     "post": false
+    },
+    {
+     "date": "2026-11-22",
+     "opp": "BUF",
+     "site": "road",
+     "line": "+16.5",
+     "score": "9-26",
+     "su": "L",
+     "ats": "didn't cover",
+     "total": 45.5,
+     "ou": "under",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NFL",
+  "season": 2026,
+  "team": "KC",
+  "team_name": "Kansas City Chiefs",
+  "through": "2026-11-22",
+  "record": {
+   "games": 10,
+   "su": "8-2",
+   "ats": "6-4",
+   "ats_rank": {
+    "place": 7,
+    "tied": true,
+    "of": 32
+   },
+   "ou": "5-5",
+   "ou_games": 10,
+   "home_ats": "4-1",
+   "road_ats": "2-3",
+   "neutral_ats": "0-0",
+   "fav_ats": "6-2",
+   "dog_ats": "0-2",
+   "last5_ats": "3-2",
+   "log": [
+    {
+     "date": "2026-11-15",
+     "opp": "ATL",
+     "site": "road",
+     "line": "-3",
+     "score": "35-13",
+     "su": "W",
+     "ats": "covered",
+     "total": 47.5,
+     "ou": "over",
+     "post": false
+    },
+    {
+     "date": "2026-11-22",
+     "opp": "ARI",
+     "site": "home",
+     "line": "-15.5",
+     "score": "34-7",
+     "su": "W",
+     "ats": "covered",
+     "total": 40.5,
+     "ou": "over",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NCAAF",
+  "season": 2026,
+  "team": "UNC",
+  "team_name": "North Carolina Tar Heels",
+  "through": "2026-11-21",
+  "record": {
+   "games": 11,
+   "su": "5-6",
+   "ats": "7-4",
+   "ats_rank": {
+    "place": 15,
+    "tied": true,
+    "of": 138
+   },
+   "ou": "6-5",
+   "ou_games": 11,
+   "home_ats": "3-2",
+   "road_ats": "3-2",
+   "neutral_ats": "1-0",
+   "fav_ats": "1-3",
+   "dog_ats": "6-1",
+   "last5_ats": "3-2",
+   "log": [
+    {
+     "date": "2026-11-14",
+     "opp": "LOU",
+     "site": "home",
+     "line": "+3.5",
+     "score": "14-16",
+     "su": "L",
+     "ats": "covered",
+     "total": 57.5,
+     "ou": "under",
+     "post": false
+    },
+    {
+     "date": "2026-11-21",
+     "opp": "UVA",
+     "site": "road",
+     "line": "-1.5",
+     "score": "24-41",
+     "su": "L",
+     "ats": "didn't cover",
+     "total": 42.5,
+     "ou": "over",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NCAAF",
+  "season": 2026,
+  "team": "MIA",
+  "team_name": "Miami Hurricanes",
+  "through": "2026-11-21",
+  "record": {
+   "games": 11,
+   "su": "10-1",
+   "ats": "6-5",
+   "ats_rank": {
+    "place": 43,
+    "tied": true,
+    "of": 138
+   },
+   "ou": "9-2",
+   "ou_games": 11,
+   "home_ats": "3-3",
+   "road_ats": "3-2",
+   "neutral_ats": "0-0",
+   "fav_ats": "5-5",
+   "dog_ats": "1-0",
+   "last5_ats": "2-3",
+   "log": [
+    {
+     "date": "2026-11-14",
+     "opp": "DUKE",
+     "site": "home",
+     "line": "-14",
+     "score": "36-25",
+     "su": "W",
+     "ats": "didn't cover",
+     "total": 55.5,
+     "ou": "over",
+     "post": false
+    },
+    {
+     "date": "2026-11-21",
+     "opp": "VT",
+     "site": "home",
+     "line": "-21.5",
+     "score": "28-20",
+     "su": "W",
+     "ats": "didn't cover",
+     "total": 62.5,
+     "ou": "under",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NCAAF",
+  "season": 2026,
+  "team": "ALA",
+  "team_name": "Alabama Crimson Tide",
+  "through": "2026-11-21",
+  "record": {
+   "games": 11,
+   "su": "9-2",
+   "ats": "6-5",
+   "ats_rank": {
+    "place": 43,
+    "tied": true,
+    "of": 138
+   },
+   "ou": "6-5",
+   "ou_games": 11,
+   "home_ats": "3-3",
+   "road_ats": "3-2",
+   "neutral_ats": "0-0",
+   "fav_ats": "5-5",
+   "dog_ats": "1-0",
+   "last5_ats": "2-3",
+   "log": [
+    {
+     "date": "2026-11-14",
+     "opp": "VAN",
+     "site": "road",
+     "line": "-15.5",
+     "score": "21-6",
+     "su": "W",
+     "ats": "didn't cover",
+     "total": 48.5,
+     "ou": "under",
+     "post": false
+    },
+    {
+     "date": "2026-11-21",
+     "opp": "UTC",
+     "site": "home",
+     "line": "-46.5",
+     "score": "47-0",
+     "su": "W",
+     "ats": "covered",
+     "total": 55.5,
+     "ou": "under",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NCAAF",
+  "season": 2026,
+  "team": "OHIO",
+  "team_name": "Ohio Bobcats",
+  "through": "2026-11-17",
+  "record": {
+   "games": 11,
+   "su": "8-3",
+   "ats": "4-7",
+   "ats_rank": {
+    "place": 106,
+    "tied": true,
+    "of": 138
+   },
+   "ou": "6-5",
+   "ou_games": 11,
+   "home_ats": "2-3",
+   "road_ats": "2-4",
+   "neutral_ats": "0-0",
+   "fav_ats": "3-6",
+   "dog_ats": "1-1",
+   "last5_ats": "1-4",
+   "log": [
+    {
+     "date": "2026-11-10",
+     "opp": "M-OH",
+     "site": "road",
+     "line": "-1.5",
+     "score": "17-34",
+     "su": "L",
+     "ats": "didn't cover",
+     "total": 47.5,
+     "ou": "over",
+     "post": false
+    },
+    {
+     "date": "2026-11-17",
+     "opp": "BALL",
+     "site": "home",
+     "line": "-10",
+     "score": "35-28",
+     "su": "W",
+     "ats": "didn't cover",
+     "total": 49.5,
+     "ou": "over",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NCAAF",
+  "season": 2026,
+  "team": "M-OH",
+  "team_name": "Miami (OH) RedHawks",
+  "through": "2026-11-24",
+  "record": {
+   "games": 12,
+   "su": "8-4",
+   "ats": "7-5",
+   "ats_rank": {
+    "place": 42,
+    "tied": false,
+    "of": 138
+   },
+   "ou": "9-3",
+   "ou_games": 12,
+   "home_ats": "4-2",
+   "road_ats": "3-3",
+   "neutral_ats": "0-0",
+   "fav_ats": "4-4",
+   "dog_ats": "3-1",
+   "last5_ats": "3-2",
+   "log": [
+    {
+     "date": "2026-11-17",
+     "opp": "KENT",
+     "site": "road",
+     "line": "-9.5",
+     "score": "20-3",
+     "su": "W",
+     "ats": "covered",
+     "total": 46.5,
+     "ou": "under",
+     "post": false
+    },
+    {
+     "date": "2026-11-24",
+     "opp": "WMU",
+     "site": "road",
+     "line": "+4",
+     "score": "28-24",
+     "su": "W",
+     "ats": "covered",
+     "total": 44.5,
+     "ou": "over",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NCAAF",
+  "season": 2026,
+  "team": "OSU",
+  "team_name": "Ohio State Buckeyes",
+  "through": "2026-11-21",
+  "record": {
+   "games": 11,
+   "su": "7-4",
+   "ats": "5-6",
+   "ats_rank": {
+    "place": 77,
+    "tied": true,
+    "of": 138
+   },
+   "ou": "7-4",
+   "ou_games": 11,
+   "home_ats": "2-4",
+   "road_ats": "3-2",
+   "neutral_ats": "0-0",
+   "fav_ats": "4-6",
+   "dog_ats": "1-0",
+   "last5_ats": "1-4",
+   "log": [
+    {
+     "date": "2026-11-14",
+     "opp": "NU",
+     "site": "home",
+     "line": "-14.5",
+     "score": "28-19",
+     "su": "W",
+     "ats": "didn't cover",
+     "total": 45.5,
+     "ou": "over",
+     "post": false
+    },
+    {
+     "date": "2026-11-21",
+     "opp": "NEB",
+     "site": "road",
+     "line": "-3.5",
+     "score": "28-31",
+     "su": "L",
+     "ats": "didn't cover",
+     "total": 42.5,
+     "ou": "over",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NCAAF",
+  "season": 2026,
+  "team": "TEX",
+  "team_name": "Texas Longhorns",
+  "through": "2026-11-21",
+  "record": {
+   "games": 11,
+   "su": "9-2",
+   "ats": "6-5",
+   "ats_rank": {
+    "place": 43,
+    "tied": true,
+    "of": 138
+   },
+   "ou": "5-6",
+   "ou_games": 11,
+   "home_ats": "4-3",
+   "road_ats": "2-1",
+   "neutral_ats": "0-1",
+   "fav_ats": "5-5",
+   "dog_ats": "1-0",
+   "last5_ats": "5-0",
+   "log": [
+    {
+     "date": "2026-11-14",
+     "opp": "LSU",
+     "site": "road",
+     "line": "+5.5",
+     "score": "22-21",
+     "su": "W",
+     "ats": "covered",
+     "total": 47.5,
+     "ou": "under",
+     "post": false
+    },
+    {
+     "date": "2026-11-21",
+     "opp": "ARK",
+     "site": "home",
+     "line": "-18.5",
+     "score": "45-3",
+     "su": "W",
+     "ats": "covered",
+     "total": 46.5,
+     "ou": "over",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NCAAF",
+  "season": 2026,
+  "team": "TA&M",
+  "team_name": "Texas A&M Aggies",
+  "through": "2026-11-21",
+  "record": {
+   "games": 11,
+   "su": "4-7",
+   "ats": "4-7",
+   "ats_rank": {
+    "place": 106,
+    "tied": true,
+    "of": 138
+   },
+   "ou": "3-8",
+   "ou_games": 11,
+   "home_ats": "3-3",
+   "road_ats": "1-4",
+   "neutral_ats": "0-0",
+   "fav_ats": "3-2",
+   "dog_ats": "1-5",
+   "last5_ats": "1-4",
+   "log": [
+    {
+     "date": "2026-11-14",
+     "opp": "TENN",
+     "site": "home",
+     "line": "+1.5",
+     "score": "7-22",
+     "su": "L",
+     "ats": "didn't cover",
+     "total": 44.5,
+     "ou": "under",
+     "post": false
+    },
+    {
+     "date": "2026-11-21",
+     "opp": "OU",
+     "site": "road",
+     "line": "+7",
+     "score": "7-28",
+     "su": "L",
+     "ats": "didn't cover",
+     "total": 36.5,
+     "ou": "under",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NBA",
+  "season": 2027,
+  "team": "OKC",
+  "team_name": "Oklahoma City Thunder",
+  "through": "2026-11-23",
+  "record": {
+   "games": 18,
+   "su": "10-8",
+   "ats": "8-10",
+   "ats_rank": {
+    "place": 19,
+    "tied": true,
+    "of": 30
+   },
+   "ou": "10-8",
+   "ou_games": 18,
+   "home_ats": "4-3",
+   "road_ats": "4-7",
+   "neutral_ats": "0-0",
+   "fav_ats": "7-7",
+   "dog_ats": "1-3",
+   "last5_ats": "1-4",
+   "log": [
+    {
+     "date": "2026-11-22",
+     "opp": "MIA",
+     "site": "road",
+     "line": "+4.5",
+     "score": "113-123",
+     "su": "L",
+     "ats": "didn't cover",
+     "total": 225.5,
+     "ou": "over",
+     "post": false
+    },
+    {
+     "date": "2026-11-23",
+     "opp": "IND",
+     "site": "road",
+     "line": "-4.5",
+     "score": "120-125",
+     "su": "L",
+     "ats": "didn't cover",
+     "total": 226.5,
+     "ou": "over",
+     "post": false
+    }
+   ]
+  }
+ },
+ {
+  "sport": "NBA",
+  "season": 2027,
+  "team": "POR",
+  "team_name": "Portland Trail Blazers",
+  "through": "2026-11-23",
+  "record": {
+   "games": 17,
+   "su": "11-6",
+   "ats": "11-6",
+   "ats_rank": {
+    "place": 3,
+    "tied": false,
+    "of": 30
+   },
+   "ou": "7-10",
+   "ou_games": 17,
+   "home_ats": "3-2",
+   "road_ats": "8-4",
+   "neutral_ats": "0-0",
+   "fav_ats": "7-3",
+   "dog_ats": "4-3",
+   "last5_ats": "3-2",
+   "log": [
+    {
+     "date": "2026-11-21",
+     "opp": "NY",
+     "site": "road",
+     "line": "-1.5",
+     "score": "96-97",
+     "su": "L",
+     "ats": "didn't cover",
+     "total": 213.5,
+     "ou": "under",
+     "post": false
+    },
+    {
+     "date": "2026-11-23",
+     "opp": "PHI",
+     "site": "road",
+     "line": "-1.5",
+     "score": "128-111",
+     "su": "W",
+     "ats": "covered",
+     "total": 230.5,
+     "ou": "over",
+     "post": false
+    }
+   ]
+  }
+ }
+]
