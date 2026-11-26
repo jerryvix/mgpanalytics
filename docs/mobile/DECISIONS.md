@@ -783,3 +783,11 @@ It returns `{candidate_id, sentence, show_ticker, reason}`.
 - **Once per phone:** Done or Skip ends it for good; Profile has Show Me Around to see it again. Phones that already passed the welcome see it once on their next open.
 - **How it points at tabs:** the tab bar is native, so its items can't be measured. The whole bar is lit and the arrow points at the middle of the tab's slot (four equal slots, a little in from the edges on iOS 26, where the bar floats).
 - **Ships over the air** to build 6. Google and Apple sign-in come with the next build (they need a native module).
+
+### D-125 One-tap sign-in: Apple and Google, then the tour
+**Date:** 2026-11-26 · **By:** Owner ("super quick, honestly, like a simple Google sign-in... then give them the option to exit out or skip"), builder design.
+- **Flow on a new install:** the 18+ welcome, then Get Started ("Join MGP Free": Continue with Apple, Continue with Google, Continue with Email, Not Now), then the first-run tour (D-124). Get Started shows once per phone and only to guests; Not Now keeps browsing as a guest, as before (App Store rule 5.1.1(v): don't make people sign in to see content that doesn't need an account). Sign In (from Profile or the Analyst) gets the same two buttons above the email form.
+- **Why Apple too:** App Store rule 4.8 asks apps that offer a social sign-in like Google to also offer Sign in with Apple. It's also the fastest sign-in on an iPhone (Face ID, no typing).
+- **How:** Apple uses the native sheet (`expo-apple-authentication`, a new native module, so this ships in build 7, not over the air) and Supabase checks Apple's ID token with the bundle ID as the client ID, so no Apple key or service ID is needed. Google uses the same Supabase Google sign-in as the website, in the iOS sign-in sheet, returning to `mgp://auth-callback`. A guest is turned into the account by linking (manual identity linking), so their first visit stays with them; if that Apple or Google account already exists, it signs in to it instead.
+- **Supabase settings it needs:** `mgp://auth-callback` in the redirect allow list, the Apple provider on with client ID `com.mgpanalytics.app`, and manual identity linking on.
+- **Build 6 phones** keep email sign-in until they install build 7 from TestFlight; the tour reached them over the air.

@@ -90,6 +90,7 @@ export default function RootLayout() {
           <Stack.Screen name="game/[id]" />
           <Stack.Screen name="profile" options={{ presentation: 'card' }} />
           <Stack.Screen name="sign-in" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="get-started" options={{ presentation: 'fullScreenModal', gestureEnabled: false }} />
           <Stack.Screen name="analyst-history" options={{ presentation: 'modal' }} />
         </Stack.Protected>
         <Stack.Protected guard={!welcomed} redirectTo="/">
