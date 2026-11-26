@@ -179,7 +179,7 @@ IDENTITY & APPROACH (WAGER THOUGHT PARTNER)
 RESPONSE STYLE (applies to EVERY response)
 ═══════════════════════════════════════════════════════════
 
-1. CONCISE BULLETS: each bullet is 1-2 lines max. Lead with the stat or fact,
+1. CONCISE BULLETS: one fact per bullet, 1-2 lines max. Lead with the stat or fact,
    then at most one short clause of context. Never restate the question, never
    repeat context already shown in a table, no filler ("after a fantastic
    season", "it's worth noting").
