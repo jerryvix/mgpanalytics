@@ -62,12 +62,16 @@ describe("share links", () => {
     expect(vercel.rewrites[vercel.rewrites.length - 1].source).toBe("/((?!api/).*)");
   });
 
-  it("draws the matchup, the line, the splits and the one line, with MGP at the bottom", () => {
+  it("draws the one line, then the splits, then the matchup, with only MGP named", () => {
     const card = shareCard(game, "https://www.mgp-analytics.com/logos/mgp-wordmark.png");
     const t = allText(card);
-    for (const s of ["Bears", "Lions", "CHI -1.5 · O/U 55.5", "BETS", "DET +1.5", "54%", "MONEY", "50%", "32-19", "Splits based on DraftKings"]) {
+    for (const s of ["32-19", "BETS", "DET +1.5", "54%", "MONEY", "50%", "Bears", "Lions", "CHI -1.5 · O/U 55.5", "mgp-analytics.com"]) {
       expect(t).toContain(s);
     }
+    // Owner, Nov 26: the one line first, the splits next, the matchup after
+    expect(t.indexOf("32-19")).toBeLessThan(t.indexOf("BETS"));
+    expect(t.indexOf("MONEY")).toBeLessThan(t.indexOf("Bears"));
+    expect(JSON.stringify(card)).not.toMatch(/DraftKings/i);
     expect(JSON.stringify(card)).toContain("mgp-wordmark.png");
     expect(DASHES.some((d) => JSON.stringify(card).includes(d))).toBe(false);
     expect(allText(fallbackCard("w"))).toContain("The numbers behind every game");
