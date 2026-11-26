@@ -1,4 +1,9 @@
 /**
+ * Tidying every Analyst answer the same way, whatever the model wrote.
+ *
+ * No period at the end of a line (owner, Nov 26: "don't end bullets with a period"; D-040): a bullet
+ * or paragraph with several sentences keeps the periods between them and drops the last one.
+ *
  * Labels in the Analyst's answers read in Title Case (owner, Nov 26: "Capitalize all words that
  * aren't articles when they're used as a header or title"; D-027). The prompt asks for it; this
  * makes sure: markdown headings, a label alone on its line ("Worth knowing:" or **Worth
@@ -54,4 +59,27 @@ export function titleCaseLabels(text: string): string {
         `${lead}${b1}${titleCase(label)}${colon}${b2}${colon2}`);
     })
     .join("\n");
+}
+
+// Endings that are abbreviations, not sentence periods
+const ABBREVIATION = /(?:^|[\s(])(?:vs|Jr|Sr|St|Inc|Co|Mt|Ft|[A-Z](?:\.[A-Z])+)\.$/;
+
+/** Drops the period that ends a line (inside closing italics or bold too). Tables and code are left alone. */
+export function dropFinalPeriods(text: string): string {
+  let code = false;
+  return text
+    .split("\n")
+    .map((line) => {
+      if (line.trim().startsWith("```")) code = !code;
+      if (code || line.trim().startsWith("|")) return line;
+      const m = line.match(/^(.*?[^.])\.([*_]*)\s*$/);
+      if (!m || ABBREVIATION.test(`${m[1]}.`)) return line;
+      return m[1] + m[2];
+    })
+    .join("\n");
+}
+
+/** Every answer: Title Case labels, then no final periods. */
+export function tidyAnswer(text: string): string {
+  return dropFinalPeriods(titleCaseLabels(text));
 }
