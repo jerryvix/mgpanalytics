@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.90.1";
 import { tidyAnswer } from "../_shared/answer-labels.ts";
+import { capperPicksBlock } from "../_shared/capper-picks-chat.ts";
 import { teamRecordsBlock } from "../_shared/team-records.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { fmtAmerican, withDkLines } from "../_shared/dk-line.ts";
@@ -378,6 +379,9 @@ INSTEAD SAY: "The data shows...", "Based on the numbers...", "Here's what's avai
 ═══════════════════════════════════════════════════════════
 PRESCRIPTIVE REQUEST HANDLING
 ═══════════════════════════════════════════════════════════
+
+Asking what a named show or capper picked (Bear Bets, SportsLine, Hold The Phone, their hosts)
+is NOT asking for MGP's pick: answer from the CAPPER PICKS block, crediting each pick to the show.
 
 If user asks for a recommendation, prediction, or bet advice:
 1. Say it plainly in one line: "I don't give picks, but here's what matters for this one."
@@ -1781,6 +1785,8 @@ serve(async (req) => {
     // D-127: the season ATS and over/under records of the teams asked about, from MGP's own games
     // and closing lines (AUTHORITATIVE), so a record never comes from web pages with different windows
     dataPrompt += await teamRecordsBlock(supabase, lastUserMessage, groundingLeague || league);
+    // D-129: a show's picks from Capper Picks when the question names the show or one of its hosts
+    dataPrompt += await capperPicksBlock(supabase, lastUserMessage, groundingLeague || league);
 
     // DraftKings' public split and line for the NCAAF/NFL game(s) asked about:
     // both sides' % of bets and money, the markers, the split's page time and
